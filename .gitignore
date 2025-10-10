@@ -1,0 +1,48 @@
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# ---- Virtual Environments ----
+.env/
+.venv/
+venv/
+env/
+.fakect_env/
+*.conda/
+*.yml~
+
+# ---- Jupyter / IDE / Logs ----
+.ipynb_checkpoints/
+.vscode/
+.idea/
+*.log
+
+# ---- Outputs & Artifacts ----
+outputs/
+demos/outputs/
+*.nii
+*.nii.gz
+*.mhd
+*.raw
+*.nrrd
+*.vtk
+*.vti
+*.vtp
+*.vtu
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Coverage / Test ----
+htmlcov/
+.coverage
+.cache/
+pytest_cache/

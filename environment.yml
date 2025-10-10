@@ -1,0 +1,40 @@
+name: fakect
+channels:
+  - conda-forge
+  - vmtk
+dependencies:
+  # Core
+  - python=3.10
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - scikit-image
+
+  # Mesh & volume processing
+  - vtk>=9.2
+  - vmtk>=1.5
+  - trimesh
+  - nibabel
+
+  # Command line interface
+  - click
+  - rich                     # pretty CLI printing/logging
+
+  # Testing / linting
+  - pytest
+  - pytest-cov
+  - black
+  - isort
+  - flake8
+
+  # Optional visualization tools
+  - pyvista
+  - imageio
+  - pyyaml
+
+  # For packaging and installation
+  - pip
+  - pip:
+      - opencv-python
+      - pyqt5                  # GUI support for some VTK viewers
