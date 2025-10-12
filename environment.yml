@@ -1,25 +1,21 @@
 name: fakect
 channels:
   - conda-forge
-  - vmtk
 dependencies:
-  # Core
+  # Core Python
   - python=3.10
+  - pip
+
+  # Scientific stack
   - numpy
   - scipy
-  - pandas
   - matplotlib
+  - trimesh
   - scikit-image
 
-  # Mesh & volume processing
-  - vtk>=9.2
-  - vmtk>=1.5
-  - trimesh
-  - nibabel
-
-  # Command line interface
+  # CLI & utilities
   - click
-  - rich                     # pretty CLI printing/logging
+  - rich          # optional: pretty CLI/logging
 
   # Testing / linting
   - pytest
@@ -28,13 +24,10 @@ dependencies:
   - isort
   - flake8
 
-  # Optional visualization tools
-  - pyvista
+  # Optional visualization / GUI support (safe defaults)
+  - pyqt
   - imageio
-  - pyyaml
 
-  # For packaging and installation
-  - pip
+  # Extra pip-only dependencies (conda doesn't have trimesh wheel sometimes)
   - pip:
-      - opencv-python
-      - pyqt5                  # GUI support for some VTK viewers
+      - trimesh[easy]

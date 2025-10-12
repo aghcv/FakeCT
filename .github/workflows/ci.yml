@@ -1,24 +1,71 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
-  test:
+  build-test-lint:
+    name: Build, Test, and Lint
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      # -----------------------------------
+      # 1. Checkout repository
+      # -----------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------
+      # 2. Set up Miniconda environment
+      # -----------------------------------
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: environment.yml
           activate-environment: fakect
           python-version: 3.10
+          auto-activate-base: false
+          miniforge-variant: Mambaforge  # faster solver
+          use-mamba: true
+
+      # -----------------------------------
+      # 3. Cache Conda environment (optional, speeds up rebuilds)
+      # -----------------------------------
+      - name: Cache conda env
+        uses: actions/cache@v3
+        with:
+          path: ~/conda_pkgs_dir
+          key: ${{ runner.os }}-conda-${{ hashFiles('environment.yml') }}
+
+      # -----------------------------------
+      # 4. Install package (editable mode)
+      # -----------------------------------
       - name: Install package
-        run: pip install -e .
-      - name: Run tests
-        run: pytest -v --maxfail=1 --disable-warnings --cov=fakect
-      - name: Lint
         run: |
-          black --check fakect
-          flake8 fakect
-          isort --check fakect
+          pip install -e .
+
+      # -----------------------------------
+      # 5. Run unit tests with pytest
+      # -----------------------------------
+      - name: Run tests
+        run: |
+          pytest -v --maxfail=1 --disable-warnings --cov=src/fakect --cov-report=term-missing
+
+      # -----------------------------------
+      # 6. Code style and linting checks
+      # -----------------------------------
+      - name: Lint code
+        run: |
+          black --check src tests
+          flake8 src tests
+          isort --check src tests
+
+      # -----------------------------------
+      # 7. Build verification (optional, ensures pyproject.toml is valid)
+      # -----------------------------------
+      - name: Verify build
+        run: |
+          python -m build --wheel --no-isolation
