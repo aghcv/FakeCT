@@ -5,24 +5,18 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fakect"
 version = "0.1.0"
-description = "Generate realistic synthetic CT volumes from closed 3D surface meshes — voxelize, assign Hounsfield units, and simulate imaging blur/noise for AI and visualization demos."
-authors = [
-  { name = "Arash Ghorbanniahassankiad", email = "aghorban@odu.edu" }
-]
-license = { text = "MIT" }
+description = "Synthetic CT and geometry voxelization toolkit"
+authors = [{ name = "Arash Ghorbannia" }]
 readme = "README.md"
-requires-python = ">=3.9"
-
+requires-python = ">=3.10"
 dependencies = [
-  "numpy",
-  "scipy",
-  "matplotlib",
-  "scikit-image",
-  "trimesh",
-  "nibabel",
-  "click",
-  "pyyaml",
-  "rich"
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "trimesh",
+    "scikit-image",
+    "plotly",
+    "dash"
 ]
 
 [project.optional-dependencies]

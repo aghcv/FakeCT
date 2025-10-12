@@ -1,351 +1,386 @@
-# src/fakect/simple_pipeline.py
-# Minimal mesh → CT-like grid → in/on/out masks → interactive viewer
-# Deps: numpy, trimesh, matplotlib, scipy (for binary erosion)
-# Run:  python -m fakect.simple_pipeline --in inputs/example_cube.stl
+# src/fakect/core.py
+# Mesh → power-of-two cubic grid derived from mesh AABB → inside/on/out masks → Plotly viewer
+# Examples:
+#   python -m fakect.core --in data/carotid.stl --spacing 1.0 --mc-map xyz
+#   python -m fakect.core --in data/carotid.stl --n 7 --margin 0.10 --mc-map xyz
 
 from __future__ import annotations
 import os
 import argparse
 import numpy as np
 import trimesh
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.ndimage import binary_erosion
+from skimage import measure
+import plotly.graph_objects as go
+import plotly.io as pio
+import webbrowser
+from typing import Tuple
 
-# ------------------------------
-# 1) Mesh I/O + basic checks
-# ------------------------------
+# ---------------------------
+# Utilities
+# ---------------------------
+def next_pow2(n: int) -> int:
+    if n < 1:
+        return 1
+    return 1 << (n - 1).bit_length()
+
 def load_mesh(path: str) -> trimesh.Trimesh:
+    """Load a mesh or Scene and concatenate parts if necessary."""
     mesh = trimesh.load(path, force="mesh")
-
-    # If it's already a single Trimesh, return it
     if isinstance(mesh, trimesh.Trimesh):
         return mesh
-
-    # If it's a Scene (multiple parts), merge geometries robustly:
-    # Try direct Scene.geometry first, then fall back to dump() serialized dict.
-    # Use an explicit Scene type check so type-checkers know what we're doing.
-    try:
-        Scene = trimesh.Scene
-    except Exception:
-        Scene = None
-
-    parts = ()
-    if Scene is not None and isinstance(mesh, Scene):
-        geoms = getattr(mesh, "geometry", None)
-        if geoms:
-            parts = tuple(geoms.values())
-
+    parts = getattr(mesh, "geometry", {}).values()
     if not parts:
-        raise ValueError("Loaded mesh is a Scene with no geometry parts")
-
-    return trimesh.util.concatenate(parts)
+        raise ValueError("Scene has no geometry parts")
+    return trimesh.util.concatenate(tuple(parts))
 
 def is_closed(mesh: trimesh.Trimesh) -> bool:
     return bool(mesh.is_watertight)
 
-# ------------------------------
-# 2) Define clinical-like grid
-# ------------------------------
-def make_grid(
-    rows: int = 256, cols: int = 256, slices: int = 256,
-    spacing_xyz=(0.8, 0.8, 1.5),  # (dy, dx, dz) in mm; dz ~ slice thickness
-    origin_xyz=None
-):
+def center_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    m = mesh.copy()
+    m.apply_translation(-m.centroid)
+    return m
+
+def generate_cube_stl(path: str, side_mm: float = 60.0):
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    cube = trimesh.creation.box(extents=(side_mm, side_mm, side_mm))
+    cube.export(path)
+    print(f"Generated cube mesh: {path}")
+
+# ---------------------------
+# Grid construction (derived from mesh AABB)
+# ---------------------------
+def make_cube_grid_from_mesh(
+    mesh: trimesh.Trimesh,
+    spacing: float | None,
+    n: int | None,
+    margin_frac: float = 0.10
+) -> dict:
     """
-    Returns grid spec and the world coords of the volume center.
-    Order convention: vol[z, y, x] with spacing (dy, dx, dz) noted separately.
+    Build an isotropic cubic grid whose side is the next power-of-two large enough
+    to contain the mesh AABB (after adding a margin). Either spacing or n can be given:
+      - If spacing is given: N = next_pow2(ceil(Lmax_with_margin / spacing))
+      - If n is given: spacing = Lmax_with_margin / (2^n)
+      - If both are given: spacing takes precedence and N computed from it.
+    The grid is centered at (0,0,0); mesh should be centered beforehand.
     """
-    dy, dx, dz = spacing_xyz
-    # indices
-    yy = np.arange(rows) * dy
-    xx = np.arange(cols) * dx
-    zz = np.arange(slices) * dz
-    if origin_xyz is None:
-        origin_xyz = (-(xx[-1] / 2.0), -(yy[-1] / 2.0), -(zz[-1] / 2.0))
-    # Center in world coords:
-    center_world = (0.0, 0.0, 0.0)  # by construction (origin centered)
+    bounds = mesh.bounds  # [[xmin,ymin,zmin],[xmax,ymax,zmax]]
+    Lx, Ly, Lz = (bounds[1] - bounds[0]).astype(float)
+    Lmax = float(max(Lx, Ly, Lz))
+    Lmax_with_margin = Lmax * (1.0 + margin_frac)
+    if spacing is not None:
+        raw = int(np.ceil(Lmax_with_margin / spacing))
+        N = next_pow2(raw)
+        s = float(spacing)
+    else:
+        if n is None:
+            n = 7
+        N = 2 ** int(n)
+        s = float(Lmax_with_margin / N)
+
+    extent = N * s
+    origin = (-extent / 2.0, -extent / 2.0, -extent / 2.0)  # world origin at cube low corner
     grid = {
-        "rows": rows, "cols": cols, "slices": slices,
-        "spacing": (dy, dx, dz),
-        "origin": origin_xyz,
-        "extent_mm": (xx[-1], yy[-1], zz[-1]),
-        "center_world": center_world
+        "shape": (N, N, N),                 # index order: (Z, Y, X)
+        "spacing": (s, s, s),               # voxel edge length (mm)
+        "origin": origin,                   # world origin (mm) at low corner
+        "extent_mm": (extent, extent, extent),
+        "aabb_mm": (Lx, Ly, Lz),
+        "aabb_margin_mm": Lmax_with_margin,
     }
     return grid
 
-# ------------------------------
-# 3) Center mesh inside grid
-# ------------------------------
-def center_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
-    # move mesh centroid to (0,0,0)
-    mesh = mesh.copy()
-    mesh.apply_translation(-mesh.centroid)
-    return mesh
-
-def scale_mesh_to_fit(mesh: trimesh.Trimesh, grid, margin_frac=0.1) -> trimesh.Trimesh:
-    """Uniformly scale mesh to fit within grid extents with a small margin."""
-    mesh = mesh.copy()
-    ext_x, ext_y, ext_z = grid["extent_mm"]
-    bbox = mesh.extents  # (sx, sy, sz)
-    if np.any(bbox == 0):
-        return mesh
-    # allowed max size inside grid (leave a margin)
-    scale_lim = np.array([ext_x, ext_y, ext_z]) * (1.0 - margin_frac)
-    s = float(np.min(scale_lim / bbox))
-    mesh.apply_scale(s)
-    return mesh
-
-# ------------------------------
-# 4) Voxelization + in/on/out masks
-# ------------------------------
-def voxelize_mesh(
-    mesh: trimesh.Trimesh,
-    grid,
-    engine="trimesh"
-):
+# ---------------------------
+# Voxelization and masks
+# ---------------------------
+def fit_to_shape_centered(vol: np.ndarray, target_shape: Tuple[int, int, int]):
     """
-    Create boolean volume 'inside' using trimesh voxelization.
-    Note: trimesh.voxelized uses an isotropic 'pitch'. We choose pitch = min(dy, dx, dz).
+    Center-pad or crop a 3D volume to match target shape (Z,Y,X).
+    Returns (out, (oz, oy, ox)) where (oz,oy,ox) are the index offsets at which
+    the original 'vol' was placed into 'out'.
     """
-    dy, dx, dz = grid["spacing"]
-    pitch = float(min(dy, dx, dz))
-
-    # Workaround for anisotropy: scale mesh into isotropic space, voxelize, then keep indices.
-    sx, sy, sz = 1.0/dx, 1.0/dy, 1.0/dz
-    iso_mesh = mesh.copy()
-    iso_mesh.apply_scale((sx, sy, sz))
-
-    vg = iso_mesh.voxelized(pitch=1.0)  # isotropic grid in scaled space
-    inside_iso = vg.matrix.astype(bool)  # [z, y, x] boolean
-
-    # Fit to requested grid shape by simple pad/crop to (slices, rows, cols)
-    target = (grid["slices"], grid["rows"], grid["cols"])
-    vol = fit_to_shape(inside_iso, target)
-    return vol
-
-def fit_to_shape(vol: np.ndarray, target_shape: tuple[int, int, int]) -> np.ndarray:
-    """Center-pad or crop a 3D array to target shape."""
-    out = np.zeros(target_shape, dtype=bool)
+    out = np.zeros(target_shape, dtype=vol.dtype)
     sz, sy, sx = vol.shape
     tz, ty, tx = target_shape
-    # start indices to center
-    oz = max((tz - sz) // 2, 0); oy = max((ty - sy) // 2, 0); ox = max((tx - sx) // 2, 0)
-    z0 = max((sz - tz) // 2, 0); y0 = max((sy - ty) // 2, 0); x0 = max((sx - tx) // 2, 0)
-    z1 = z0 + min(sz, tz); y1 = y0 + min(sy, ty); x1 = x0 + min(sx, tx)
-    out[oz:oz+(y1-y0)+(z1-z0)-(z1-z0), oy:oy+(y1-y0), ox:ox+(x1-x0)] = vol[z0:z1, y0:y1, x0:x1]
-    # ^ slightly verbose to make the index math explicit for students
-    out[oz:oz+(z1-z0), oy:oy+(y1-y0), ox:ox+(x1-x0)] = vol[z0:z1, y0:y1, x0:x1]
-    return out
 
-def classify_in_on_out(inside: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    oz = max((tz - sz) // 2, 0)
+    oy = max((ty - sy) // 2, 0)
+    ox = max((tx - sx) // 2, 0)
+
+    z0 = max((sz - tz) // 2, 0)
+    y0 = max((sy - ty) // 2, 0)
+    x0 = max((sx - tx) // 2, 0)
+
+    z1, y1, x1 = z0 + min(sz, tz), y0 + min(sy, ty), x0 + min(sx, tx)
+    out[oz:oz + (z1 - z0), oy:oy + (y1 - y0), ox:ox + (x1 - x0)] = vol[z0:z1, y0:y1, x0:x1]
+    return out, (oz, oy, ox)
+
+def voxelize_mesh(mesh: trimesh.Trimesh, grid: dict):
     """
-    inside: boolean 3D mask (True=interior)
-    on:     boundary voxels by XOR between mask and its eroded version
-    out:    complement of inside
+    Voxelize mesh into boolean volume (True = inside) with isotropic pitch equal to spacing.
+    Returns:
+      inside_bool  : centered boolean volume (Z,Y,X)
+      voxel_xform  : (4x4) affine mapping from *padded array* index (z,y,x,1) to world (X,Y,Z,1)
     """
-    eroded = binary_erosion(inside, structure=np.ones((3,3,3)), iterations=1, border_value=0)
-    on = inside ^ eroded
-    out = ~inside
-    return inside, on, out
+    s = grid["spacing"][0]
+    vg = mesh.voxelized(pitch=s)             # VoxelGrid with its own transform (index -> world)
+    vol = vg.matrix.astype(bool)             # shape (sz, sy, sx) in original voxel frame
 
-# ------------------------------
-# 5) Visualization (3 slices + 3D)
-# ------------------------------
-class Viewer:
-    def __init__(self, inside, on, out, grid):
-        self.inside = inside
-        self.on = on
-        self.out = out
-        self.grid = grid
+    # Center into our target cubic grid and record where we placed it
+    inside_bool, (oz, oy, ox) = fit_to_shape_centered(vol, grid["shape"])
 
-        self.nz, self.ny, self.nx = inside.shape
-        self.iz = self.nz // 2
-        self.iy = self.ny // 2
-        self.ix = self.nx // 2
+    # Build effective transform that maps *padded* array indices -> world
+    # marching_cubes gives vertices in the padded array's index space (z,y,x),
+    # but vg.transform expects original indices; compensate by shifting indices by (-oz,-oy,-ox).
+    voxel_xform = vg.transform.copy()
+    index_shift = np.eye(4, dtype=float)
+    index_shift[:3, 3] = [-oz, -oy, -ox]     # shift indices before applying vg.transform
+    voxel_xform = voxel_xform @ index_shift
 
-        self.fig = plt.figure(figsize=(12, 6))
-        self.ax_axial   = self.fig.add_subplot(2, 2, 1)
-        self.ax_coronal = self.fig.add_subplot(2, 2, 2)
-        self.ax_sag     = self.fig.add_subplot(2, 2, 3)
-        self.ax_3d      = self.fig.add_subplot(2, 2, 4, projection="3d")
+    return inside_bool, voxel_xform
 
-        # draw initial
-        self._draw_slices()
-        self._draw_3d()
+def classify_in_on_out(inside_bool: np.ndarray):
+    """
+    Compute inside, on (1-voxel shell), and out masks.
+    Ensures perfect complementarity: inside + on + out = 1 everywhere.
 
-        # scroll to move slices: axial=Z, coronal=Y, sagittal=X
-        self.fig.canvas.mpl_connect("scroll_event", self.on_scroll)
+    Returns
+    -------
+    inside_u8, on_u8, out_u8 : np.ndarray (uint8)
+        Mutually exclusive binary volumes whose sum equals 1.
+    """
+    eroded = binary_erosion(inside_bool, structure=np.ones((3, 3, 3)), iterations=1)
+    on = inside_bool ^ eroded
 
-    def _composite_slice(self, slc):
-        """
-        Map out/inside/on to 0/1/2 for a simple colored visualization.
-        slc: tuple of slice indices, e.g. (z_idx, slice(None), slice(None))
-        Returns: 2D numpy array with integer codes (0=out, 1=in, 2=on)
-        """
-        # extract 2D planes
-        out_slice = self.out[slc]
-        in_slice = self.inside[slc]
-        on_slice = self.on[slc]
+    inside_u8 = inside_bool.astype(np.uint8)
+    on_u8 = on.astype(np.uint8)
 
-        # ensure 2D shape
-        if out_slice.ndim != 2:
-            raise ValueError(f"Expected 2D slice, got shape {out_slice.shape}")
+    # Start from all ones and zero out voxels occupied by inside or on
+    out_u8 = np.ones_like(inside_u8, dtype=np.uint8)
+    out_u8[(inside_u8 == 1) | (on_u8 == 1)] = 0
 
-        # compose colored map
-        img = np.zeros_like(out_slice, dtype=np.uint8)
-        img[in_slice] = 1
-        img[on_slice] = 2
-        return img
+    # Optional safety check
+    # assert np.all((inside_u8 + on_u8 + out_u8) == 1), "In+On+Out not complementary"
 
-    def _safe_slice(self, idx, axis):
-        slc = [slice(None)] * 3
-        slc[axis] = idx
-        return tuple(slc)
+    return inside_u8, on_u8, out_u8
 
-    def _draw_slices(self):
-        # axial (Z): show YX
-        img_ax = self._composite_slice(self._safe_slice(self.iz, 0))
-        self.ax_axial.imshow(img_ax, origin="lower", interpolation="nearest")
-        self.ax_axial.set_title(f"Axial (Z={self.iz})"); self.ax_axial.set_xlabel("X"); self.ax_axial.set_ylabel("Y")
-        self.ax_axial.spines[:].set_color("r")  # red border
 
-        # coronal (Y): show ZX
-        img_co = self._composite_slice(self._safe_slice(self.iz, 0))
-        self.ax_coronal.imshow(img_co, origin="lower", interpolation="nearest")
-        self.ax_coronal.set_title(f"Coronal (Y={self.iy})"); self.ax_coronal.set_xlabel("X"); self.ax_coronal.set_ylabel("Z")
-        self.ax_coronal.spines[:].set_color("g")  # green border
+# ---------------------------
+# Marching-cubes → Plotly axis mapping
+# ---------------------------
+def apply_axis_map(verts: np.ndarray, origin: Tuple[float,float,float], mc_map: str):
+    """
+    Input verts are (N,3) in world coords but ordered as (z,y,x) because marching_cubes
+    operates in (z,y,x). Remap to (X,Y,Z) for Plotly.
+    """
+    z, y, x = verts[:, 0], verts[:, 1], verts[:, 2]
+    ox, oy, oz = origin
 
-        # sagittal (X): show ZY
-        img_sa = self._composite_slice(self._safe_slice(self.iz, 0))
-        self.ax_sag.imshow(img_sa, origin="lower", interpolation="nearest")
-        self.ax_sag.set_title(f"Sagittal (X={self.ix})"); self.ax_sag.set_xlabel("Y"); self.ax_sag.set_ylabel("Z")
-        self.ax_sag.spines[:].set_color("b")  # blue border
+    if mc_map == "zyx":      # (X=x,Y=y,Z=z)
+        X, Y, Z = x + ox, y + oy, z + oz
+    elif mc_map == "xyz":    # (X=z,Y=y,Z=x)
+        X, Y, Z = z + ox, y + oy, x + oz
+    elif mc_map == "xzy":
+        X, Y, Z = z + ox, x + oy, y + oz
+    elif mc_map == "yxz":
+        X, Y, Z = y + ox, z + oy, x + oz
+    elif mc_map == "yzx":
+        X, Y, Z = y + ox, x + oy, z + oz
+    elif mc_map == "zxy":
+        X, Y, Z = x + ox, z + oy, y + oz
+    else:
+        X, Y, Z = z + ox, y + oy, x + oz
 
-    def _draw_3d(self):
-        self.ax_3d.clear()
-        self.ax_3d.set_title("3D: mesh proxy + slice planes")
-        # draw 3D proxy from ON-mask voxels (sparse)
-        zz, yy, xx = np.where(self.on)
-        if zz.size > 0:
-            # plot small points for boundary voxels
-            # Use keyword `zs=` to disambiguate the 3D scatter signature so
-            # type-checkers (Pylance) don't think the third positional arg is
-            # the 2D `s` (size) parameter.
-            self.ax_3d.scatter(xx, yy, zs=zz.tolist(), s=1, alpha=0.2)
+    return X, Y, Z
 
-        # draw slice planes as transparent rectangles
-        self._draw_plane_x(self.ix)
-        self._draw_plane_y(self.iy)
-        self._draw_plane_z(self.iz)
+# ---------------------------
+# Plotly viewer
+# ---------------------------
+def mask_to_trace(mask_u8, grid, name, color, opacity, mc_map, transform=None):
+    """
+    Convert binary mask (uint8) to Plotly Mesh3d trace with axis remap.
+    IMPORTANT:
+      - We call marching_cubes WITHOUT spacing so vertices are in raw index units (z,y,x).
+      - Then we map indices to world via 'transform' (voxel index -> world).
+    """
+    if mask_u8 is None or not np.any(mask_u8):
+        return None
 
-        self.ax_3d.set_xlabel("X"); self.ax_3d.set_ylabel("Y"); self.ax_3d.set_zlabel("Z")
-        self.ax_3d.set_box_aspect((self.nx, self.ny, self.nz))
-        self.ax_3d.view_init(elev=20, azim=35)
-        plt.tight_layout()
+    # 1) Extract iso-surface in index space (no spacing!) to avoid double-scaling
+    verts_idx, faces, _, _ = measure.marching_cubes(mask_u8, level=0.5)
 
-    def _draw_plane_x(self, ix):
-        # plane perpendicular to X at ix
-        Y, Z = np.mgrid[0:self.ny, 0:self.nz]
-        X = np.full_like(Y, ix)
-        self.ax_3d.plot_surface(X, Y, Z, alpha=0.15, rstride=8, cstride=8)
+    # 2) Map (z,y,x) index coords -> world coords using the effective transform
+    if transform is not None:
+        homog = np.c_[verts_idx, np.ones(len(verts_idx))]
+        verts_world = (transform @ homog.T).T[:, :3]
+    else:
+        # Fallback: simple origin + spacing (not recommended; transform is preferred)
+        s = grid["spacing"][0]
+        origin = np.array(grid["origin"])
+        verts_world = origin + s * verts_idx[:, ::-1]  # crude fallback; reverse order to (x,y,z)
 
-    def _draw_plane_y(self, iy):
-        X, Z = np.mgrid[0:self.nx, 0:self.nz]
-        Y = np.full_like(X, iy)
-        self.ax_3d.plot_surface(X, Y, Z, alpha=0.15, rstride=8, cstride=8)
+    # 3) Remap (world z,y,x) -> Plotly (X,Y,Z)
+    X, Y, Z = apply_axis_map(verts_world, (0, 0, 0), mc_map)
 
-    def _draw_plane_z(self, iz):
-        X, Y = np.mgrid[0:self.nx, 0:self.ny]
-        Z = np.full_like(X, iz)
-        self.ax_3d.plot_surface(X, Y, Z, alpha=0.15, rstride=8, cstride=8)
+    i, j, k = faces.T
+    return go.Mesh3d(x=X, y=Y, z=Z, i=i, j=j, k=k,
+                     name=name, color=color, opacity=opacity,
+                     flatshading=True, showscale=False)
 
-    def on_scroll(self, event):
-        # scroll over each axes adjusts that axis' slice index
-        step = 1 if event.button == "up" else -1
-        if event.inaxes == self.ax_axial:
-            self.iz = np.clip(self.iz + step, 0, self.nz-1)
-        elif event.inaxes == self.ax_coronal:
-            self.iy = np.clip(self.iy + step, 0, self.ny-1)
-        elif event.inaxes == self.ax_sag:
-            self.ix = np.clip(self.ix + step, 0, self.nx-1)
-        else:
-            return
-        # redraw updated slices and 3D planes
-        self.ax_axial.clear(); self.ax_coronal.clear(); self.ax_sag.clear()
-        self._draw_slices()
-        self._draw_3d()
-        self.fig.canvas.draw_idle()
+def mesh_to_trace(mesh: trimesh.Trimesh, name="mesh", color="#FFFFFF", opacity=0.15):
+    """Convert trimesh to Plotly Mesh3d trace (mesh already in (x,y,z))."""
+    if mesh is None or mesh.vertices.size == 0:
+        return None
+    v, f = mesh.vertices, mesh.faces
+    return go.Mesh3d(x=v[:,0], y=v[:,1], z=v[:,2],
+                     i=f[:,0], j=f[:,1], k=f[:,2],
+                     name=name, color=color, opacity=opacity, showscale=False)
 
-# ------------------------------
-# 6) Utilities: save masks, demo cube
-# ------------------------------
-def save_masks_npz(path: str, inside, on, out, grid):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    np.savez_compressed(
-        path, inside=inside.astype(np.uint8),
-        on=on.astype(np.uint8), out=out.astype(np.uint8),
-        spacing=np.array(grid["spacing"]), origin=np.array(grid["origin"])
+def show_viewer(*, mesh, inside_u8, on_u8, out_u8, grid, voxel_transform,
+                html_path="outputs/viewer.html", mc_map="xyz"):
+    os.makedirs(os.path.dirname(html_path) or ".", exist_ok=True)
+    color_map = {"mesh":"#AB1616", "inside":"#3B82F6", "on":"#22C55E", "out":"#F59E0B"}
+
+    traces = [
+        mesh_to_trace(mesh, name="mesh", color=color_map["mesh"], opacity=0.15),
+        mask_to_trace(inside_u8, grid, "inside", color_map["inside"], 0.08, mc_map, transform=voxel_transform),
+        mask_to_trace(on_u8,     grid, "on",     color_map["on"],     0.08, mc_map, transform=voxel_transform),
+        mask_to_trace(out_u8,    grid, "out",    color_map["out"],    0.08, mc_map, transform=voxel_transform),
+    ]
+    traces = [t for t in traces if t]
+
+    fig = go.Figure(data=traces)
+
+    # Enforce physical aspect (cube) since grid is cubic and isotropic
+    fig.update_layout(
+        title="Mesh + in/on/out masks (click legend or buttons to toggle)",
+        scene=dict(
+            xaxis=dict(title="X (mm)"),
+            yaxis=dict(title="Y (mm)"),
+            zaxis=dict(title="Z (mm)"),
+            aspectmode="cube"   # equal scaling on x,y,z visually
+        ),
+        legend=dict(itemsizing="constant"),
+        margin=dict(l=0, r=0, t=40, b=0),
     )
-    print(f"Saved masks: {path}")
 
-def generate_cube_stl(path: str, side_mm: float = 60.0):
-    """Generate a triangulated cube and save to STL (units in mm)."""
-    box = trimesh.creation.box(extents=(side_mm, side_mm, side_mm))
-    box.export(path)
-    print(f"Generated demo mesh: {path}")
+    # Toggle buttons (mesh always visible; toggle masks)
+    names = [t.name for t in fig.data] # type: ignore
+    def vis(active):
+        return [True if n == "mesh" or n in active else False for n in names]
+    buttons = [
+        dict(label="All",    method="update", args=[{"visible": [True]*len(names)}]),
+        dict(label="Inside", method="update", args=[{"visible": vis({'inside'})}]),
+        dict(label="On",     method="update", args=[{"visible": vis({'on'})}]),
+        dict(label="Out",    method="update", args=[{"visible": vis({'out'})}]),
+        dict(label="None",   method="update", args=[{"visible": vis(set())}]),
+    ]
+    fig.update_layout(
+        updatemenus=[dict(
+            type="buttons",
+            buttons=buttons,
+            direction="right",
+            x=0.0, y=1.05,
+            xanchor="left", yanchor="bottom",
+            pad={"r": 4, "t": 2}
+        )]
+    )
 
-# ------------------------------
-# 7) End-to-end driver
-# ------------------------------
+    pio.write_html(fig, html_path, auto_open=False, include_plotlyjs="cdn", full_html=True) #type: ignore
+    try:
+        webbrowser.open(f"file://{os.path.abspath(html_path)}")
+    except Exception:
+        pass
+    print(f"Viewer saved to {html_path}")
+
+# ---------------------------
+# Pipeline
+# ---------------------------
 def run_pipeline(
-    in_mesh_path: str,
-    grid_rows=256, grid_cols=256, grid_slices=256,
-    spacing_xyz=(0.8, 0.8, 1.5),
-    out_npz="outputs/masks_demo.npz",
-    show=True
-):
-    # Load or create mesh
+                in_mesh_path: str,
+                spacing: float | None = None,
+                n: int | None = None,
+                margin_frac: float = 0.10,
+                out_npz: str = "outputs/masks_demo.npz",
+                show: bool = True,
+                mc_map: str = "xyz"
+            ):
     if not os.path.exists(in_mesh_path):
-        os.makedirs(os.path.dirname(in_mesh_path) or ".", exist_ok=True)
         generate_cube_stl(in_mesh_path)
 
     mesh = load_mesh(in_mesh_path)
     print(f"Loaded mesh: {in_mesh_path} | closed={is_closed(mesh)}")
+
+    # Center mesh so its AABB is symmetric around the origin
     mesh = center_mesh(mesh)
 
-    grid = make_grid(grid_rows, grid_cols, grid_slices, spacing_xyz)
-    mesh = scale_mesh_to_fit(mesh, grid, margin_frac=0.1)
+    # Build grid from mesh AABB (no mesh scaling)
+    grid = make_cube_grid_from_mesh(mesh, spacing=spacing, n=n, margin_frac=margin_frac)
 
-    inside = voxelize_mesh(mesh, grid)
-    inside, on, out = classify_in_on_out(inside)
-    save_masks_npz(out_npz, inside, on, out, grid)
+    # Log grid decisions
+    N = grid["shape"][0]
+    s = grid["spacing"][0]
+    Lx, Ly, Lz = grid["aabb_mm"]
+    extent = grid["extent_mm"][0]
+    print(f"[grid] spacing={s:.6f} mm | N={N} (2^n) | cube extent={extent:.3f} mm")
+    print(f"[grid] mesh AABB (mm): Lx={Lx:.3f}, Ly={Ly:.3f}, Lz={Lz:.3f} | margin={margin_frac*100:.1f}%")
 
+    # Voxelize and classify (returns padded mask + effective transform)
+    inside_bool, voxel_transform = voxelize_mesh(mesh, grid)
+    inside_u8, on_u8, out_u8 = classify_in_on_out(inside_bool)
+
+    # Save masks
+    os.makedirs(os.path.dirname(out_npz) or ".", exist_ok=True)
+    np.savez_compressed(out_npz, inside=inside_u8, on=on_u8, out=out_u8,
+                        spacing=np.array(grid["spacing"]),
+                        origin=np.array(grid["origin"]))
+    print(f"Masks saved (uint8) → {out_npz}")
+
+    # Viewer
     if show:
-        viewer = Viewer(inside, on, out, grid)
-        plt.show()
+        show_viewer(
+            mesh=mesh,
+            inside_u8=inside_u8,
+            on_u8=on_u8,
+            out_u8=out_u8,
+            grid=grid,
+            voxel_transform=voxel_transform,
+            html_path="outputs/viewer.html",
+            mc_map=mc_map,
+        )
 
-# ------------------------------
-# 8) CLI
-# ------------------------------
+# ---------------------------
+# CLI
+# ---------------------------
 def main():
-    ap = argparse.ArgumentParser(description="Minimal mesh→grid voxelization demo")
-    ap.add_argument("--in", dest="in_mesh", default="inputs/example_cube.stl", help="Input mesh (.stl/.obj/.ply)")
-    ap.add_argument("--rows", type=int, default=128)
-    ap.add_argument("--cols", type=int, default=128)
-    ap.add_argument("--slices", type=int, default=128)
-    ap.add_argument("--spacing", type=float, nargs=3, default=(0.8, 0.8, 1.5), help="(dy, dx, dz) mm; dz≈slice thickness")
-    ap.add_argument("--out", default="outputs/masks_demo.npz")
-    ap.add_argument("--no-show", action="store_true")
+    ap = argparse.ArgumentParser(description="Voxelize a mesh onto a power-of-two cubic grid derived from mesh AABB")
+    ap.add_argument("--in", dest="in_mesh", default="inputs/example_cube.stl",
+                    help="Input mesh (.stl/.obj/.ply)")
+    ap.add_argument("--spacing", type=float, default=None,
+                    help="Voxel edge length in mm (if provided, N will be computed as next power-of-two)")
+    ap.add_argument("--n", type=int, default=8,
+                    help="Grid exponent (2^n per side). Used if --spacing is None. If both are given, spacing takes precedence.")
+    ap.add_argument("--margin", type=float, default=0.10,
+                    help="Extra margin fraction around the mesh AABB (default 0.10 = 10%)")
+    ap.add_argument("--mc-map", type=str, default="xyz",
+                    choices=["zyx", "xyz", "xzy", "yxz", "yzx", "zxy"],
+                    help="Axis mapping from marching-cubes (z,y,x) → (X,Y,Z). Use 'xyz' if your STL looks correct with X=verts[:,0],Y=verts[:,1],Z=verts[:,2].")
+    ap.add_argument("--out", default="outputs/masks_demo.npz",
+                    help="Output compressed npz file")
+    ap.add_argument("--no-show", action="store_true",
+                    help="Do not open viewer")
     args = ap.parse_args()
 
+    spacing = None if (args.spacing is None or args.spacing <= 0) else float(args.spacing)
     run_pipeline(
         in_mesh_path=args.in_mesh,
-        grid_rows=args.rows, grid_cols=args.cols, grid_slices=args.slices,
-        spacing_xyz=tuple(args.spacing),
+        spacing=spacing,
+        n=args.n,
+        margin_frac=args.margin,
         out_npz=args.out,
-        show=not args.no_show
+        show=not args.no_show,
+        mc_map=args.mc_map
     )
 
 if __name__ == "__main__":

@@ -10,12 +10,19 @@ dependencies:
   - numpy
   - scipy
   - matplotlib
-  - trimesh
   - scikit-image
+  - trimesh
+
+  # Visualization & Interactive UI
+  - plotly
+  - dash
+  - ipywidgets
+  - pyqt
+  - imageio
 
   # CLI & utilities
   - click
-  - rich          # optional: pretty CLI/logging
+  - rich              # optional: pretty CLI/logging
 
   # Testing / linting
   - pytest
@@ -24,10 +31,12 @@ dependencies:
   - isort
   - flake8
 
-  # Optional visualization / GUI support (safe defaults)
-  - pyqt
-  - imageio
-
-  # Extra pip-only dependencies (conda doesn't have trimesh wheel sometimes)
+  # Extra pip-only dependencies
   - pip:
-      - trimesh[easy]
+      # Sometimes trimesh extras need pip for optional features
+      - "trimesh[easy]"
+      # Dash subcomponents (some not always bundled in all conda versions)
+      - dash-core-components
+      - dash-html-components
+      - dash-cytoscape
+      - dash-daq
