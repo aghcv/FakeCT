@@ -19,53 +19,52 @@ jobs:
         uses: actions/checkout@v4
 
       # -----------------------------------
-      # 2. Set up Miniconda environment
+      # 2. Set up Miniforge environment (mamba-enabled)
       # -----------------------------------
-      - name: Set up Miniconda
+      - name: Set up Miniforge
         uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: environment.yml
           activate-environment: fakect
           python-version: 3.10
           auto-activate-base: false
-          miniforge-variant: Mambaforge  # faster solver
+          miniforge-variant: Miniforge3   # ✅ replaces deprecated Mambaforge
           use-mamba: true
 
       # -----------------------------------
-      # 3. Cache Conda environment (optional, speeds up rebuilds)
+      # 3. Cache conda packages (optional but speeds up builds)
       # -----------------------------------
-      - name: Cache conda env
+      - name: Cache conda pkgs
         uses: actions/cache@v3
         with:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{ hashFiles('environment.yml') }}
 
       # -----------------------------------
-      # 4. Install package (editable mode)
+      # 4. Install package in editable mode
       # -----------------------------------
       - name: Install package
-        run: |
-          pip install -e .
+        run: pip install -e .
 
       # -----------------------------------
-      # 5. Run unit tests with pytest
+      # 5. Run tests
       # -----------------------------------
       - name: Run tests
         run: |
           pytest -v --maxfail=1 --disable-warnings --cov=src/fakect --cov-report=term-missing
 
       # -----------------------------------
-      # 6. Code style and linting checks
+      # 6. Lint and format check
       # -----------------------------------
-      - name: Lint code
+      - name: Lint and format
         run: |
           black --check src tests
           flake8 src tests
           isort --check src tests
 
       # -----------------------------------
-      # 7. Build verification (optional, ensures pyproject.toml is valid)
+      # 7. Verify build
       # -----------------------------------
-      - name: Verify build
+      - name: Verify package build
         run: |
           python -m build --wheel --no-isolation
