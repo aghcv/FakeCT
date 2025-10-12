@@ -181,28 +181,44 @@ class Viewer:
     def _composite_slice(self, slc):
         """
         Map out/inside/on to 0/1/2 for a simple colored visualization.
+        slc: tuple of slice indices, e.g. (z_idx, slice(None), slice(None))
+        Returns: 2D numpy array with integer codes (0=out, 1=in, 2=on)
         """
-        img = np.zeros_like(slc, dtype=np.uint8)
-        img[self.out[slc]] = 0
-        img[self.inside[slc]] = 1
-        img[self.on[slc]] = 2
+        # extract 2D planes
+        out_slice = self.out[slc]
+        in_slice = self.inside[slc]
+        on_slice = self.on[slc]
+
+        # ensure 2D shape
+        if out_slice.ndim != 2:
+            raise ValueError(f"Expected 2D slice, got shape {out_slice.shape}")
+
+        # compose colored map
+        img = np.zeros_like(out_slice, dtype=np.uint8)
+        img[in_slice] = 1
+        img[on_slice] = 2
         return img
+
+    def _safe_slice(self, idx, axis):
+        slc = [slice(None)] * 3
+        slc[axis] = idx
+        return tuple(slc)
 
     def _draw_slices(self):
         # axial (Z): show YX
-        img_ax = self._composite_slice((self.iz, slice(None), slice(None)))
+        img_ax = self._composite_slice(self._safe_slice(self.iz, 0))
         self.ax_axial.imshow(img_ax, origin="lower", interpolation="nearest")
         self.ax_axial.set_title(f"Axial (Z={self.iz})"); self.ax_axial.set_xlabel("X"); self.ax_axial.set_ylabel("Y")
         self.ax_axial.spines[:].set_color("r")  # red border
 
         # coronal (Y): show ZX
-        img_co = self._composite_slice((slice(None), self.iy, slice(None)))
+        img_co = self._composite_slice(self._safe_slice(self.iz, 0))
         self.ax_coronal.imshow(img_co, origin="lower", interpolation="nearest")
         self.ax_coronal.set_title(f"Coronal (Y={self.iy})"); self.ax_coronal.set_xlabel("X"); self.ax_coronal.set_ylabel("Z")
         self.ax_coronal.spines[:].set_color("g")  # green border
 
         # sagittal (X): show ZY
-        img_sa = self._composite_slice((slice(None), slice(None), self.ix))
+        img_sa = self._composite_slice(self._safe_slice(self.iz, 0))
         self.ax_sag.imshow(img_sa, origin="lower", interpolation="nearest")
         self.ax_sag.set_title(f"Sagittal (X={self.ix})"); self.ax_sag.set_xlabel("Y"); self.ax_sag.set_ylabel("Z")
         self.ax_sag.spines[:].set_color("b")  # blue border
