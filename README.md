@@ -16,9 +16,11 @@ cloning the repo, creating an environment, installing the package (editable), an
 
 
 ## Your Tasks:
+```bash
 1- Install the prerequisites
 2- Follow the 4 steps of the quickstart guideline to try demo exmaples: demo_cube, demo_sphere, and demo_carotid 
 3- Identify user inputs you think is needed needed for the stenosis tool
+```
 
 ## Prerequisites
 
