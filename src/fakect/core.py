@@ -15,6 +15,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import webbrowser
 from typing import Tuple, List
+from pathlib import Path
 from fakect.fill_parity import classify_by_parity_multi, classify_by_winding
 
 # ---------------------------
@@ -79,11 +80,8 @@ def center_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     m.apply_translation(-m.centroid)
     return m
 
-def generate_cube_stl(path: str, side_mm: float = 60.0):
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    cube = trimesh.creation.box(extents=(side_mm, side_mm, side_mm))
-    cube.export(path)
-    print(f"Generated cube mesh: {path}")
+# NOTE: demo mesh generation helpers were intentionally removed.
+# Inputs must be provided by the user or placed in the repository `data/` directory.
 
 # ---------------------------
 # Grid construction (derived from mesh AABB)
@@ -647,8 +645,16 @@ def run_pipeline(
                 viewer: str = "dash",
                 port: int = 8050
             ):
+    # Require explicit input meshes from the repo-global `data/` directory.
+    # Do NOT auto-generate input meshes or create new directories here.
     if not os.path.exists(in_mesh_path):
-        generate_cube_stl(in_mesh_path)
+        repo_root = Path(__file__).resolve().parents[2]
+        data_dir = repo_root / "data"
+        raise FileNotFoundError(
+            f"Input mesh not found: {in_mesh_path}\n"
+            f"Place demo meshes in the repository data directory: {data_dir}\n"
+            "Run `python scripts/generate_demo_meshes.py` to create small demo meshes."
+        )
 
     mesh = load_mesh(in_mesh_path)
     print(f"Loaded mesh: {in_mesh_path} | closed={is_closed(mesh)}")

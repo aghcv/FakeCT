@@ -7,12 +7,18 @@ set -e  # Exit on any error
 
 # 1. Setup
 FILE_NAME="sphere"
-INPUT_DIR="data"
-OUTPUT_DIR="outputs"
+# Use the repository-global data directory (repo_root/data)
+INPUT_DIR="$(cd "$(dirname "$0")/.." && pwd)/data"
+OUTPUT_DIR="$(cd "$(dirname "$0")/.." && pwd)/examples/outputs"
 MESH_PATH="${INPUT_DIR}/${FILE_NAME}.stl"
 NPZ_PATH="${OUTPUT_DIR}/${FILE_NAME}_masks.npz"
 
-mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}"
+mkdir -p "${OUTPUT_DIR}"
+if [ ! -f "${MESH_PATH}" ]; then
+  echo "Input mesh not found: ${MESH_PATH}"
+  echo "Create demo meshes with: python scripts/generate_demo_meshes.py"
+  exit 2
+fi
 
 echo "=== FakeCT Demo Run ==="
 echo "Input mesh:   ${MESH_PATH}"
