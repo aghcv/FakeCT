@@ -306,7 +306,7 @@ def classify_by_winding(mesh: trimesh.Trimesh, grid: dict, band: float = 0.6) ->
     dil = binary_dilation(inside, structure=np.ones((3,3,3), dtype=bool))
     boundary = dil ^ inside  # voxels adjacent to inside
 
-    on = boundary & inside  # or boundary & ~inside, depending on convention
+    on = boundary & ~inside  # or boundary & ~inside, depending on convention
 
     # 6. Out mask
     out = ~ (inside | on)
