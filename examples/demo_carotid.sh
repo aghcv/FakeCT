@@ -32,4 +32,5 @@ python -m fakect.core \
   --n 7 \
   --margin 0.10 \
   --mc-map zyx \
-  --out "${NPZ_PATH}"
+  --out "${NPZ_PATH}" \
+  --port 8050

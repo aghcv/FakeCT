@@ -3,8 +3,45 @@
 Instructions shows how to load a mesh, voxelize it into a CT-like grid,
 create in/on/out masks and inspect the result with a simple viewer.
 
-This README includes instruction for clone, create a virtual
-environment, install the package (editable), and run the demo.
+This README includes instructions for installing prerequisites (VS Code, Git, Conda),
+cloning the repo, creating an environment, installing the package (editable), and running the demo.
+
+## Prerequisites
+
+Before following the quick start, make sure you have these tools installed. The links go to official installers and the one-liners work on macOS (zsh).
+
+- Visual Studio Code — editor and debugging UI
+	- Website: https://code.visualstudio.com/
+	- macOS (Homebrew):
+
+		```bash
+		brew install --cask visual-studio-code
+		```
+
+- Git — version control
+	- Website: https://git-scm.com/
+	- macOS one-liners (choose one):
+
+		```bash
+		# Install Xcode command-line tools (includes git)
+		xcode-select --install
+
+		# or via Homebrew
+		brew install git
+		```
+
+- Conda (Miniconda recommended) — environment and package manager
+	- Miniconda: https://docs.conda.io/en/latest/miniconda.html
+	- macOS (Homebrew) one-liner:
+
+		```bash
+		brew install --cask miniconda
+		# initialize conda for zsh and reload your shell
+		conda init zsh
+		exec $SHELL
+		```
+
+	If you prefer Anaconda, use the Anaconda installer instead. Follow the official installer pages for platform-specific guidance.
 
 ## Quick start (for students)
 
@@ -15,17 +52,17 @@ git clone https://github.com/aghcv/FakeCT.git
 cd FakeCT
 ```
 
-2. Create and activate a Python virtual environment (macOS / Linux):
+2. Create and activate the Conda environment (uses `environment.yml`):
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+conda env create -f environment.yml
+conda activate fakect
 ```
 
 3. Install the package in editable/development mode and the minimal runtime deps:
 
 ```bash
-pip install -e .[dev]
+pip install -e .
 ```
 
 This installs the project as the `fakect` package and the `fakect` command-line entrypoint.

@@ -31,5 +31,6 @@ python -m fakect.core \
   --in "${MESH_PATH}" \
   --n 7 \
   --margin 0.1 \
-  --out "${NPZ_PATH}"
+  --out "${NPZ_PATH}" \
+  --port 8052
 
