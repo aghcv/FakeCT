@@ -1,3 +1,5 @@
+# Relevant Papers Douglass, M. J. J., et al. (2025). “An open-source tool for converting 3D mesh volumes into synthetic DICOM CT images for medical physics research.”
+
 # FakeCT — Minimal synthetic CT / voxelization toolkit
 
 Instructions shows how to load a mesh, voxelize it into a CT-like grid,
