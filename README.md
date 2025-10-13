@@ -142,4 +142,4 @@ Open an issue or submit a pull request. Keep changes small and add tests for new
 Small, clear, and focused so students can follow the flow from clone → run → edit → test.
 
 # Relevant Papers 
-Douglass, M. J. J., et al. (2025). “An open-source tool for converting 3D mesh volumes into synthetic DICOM CT images for medical physics research.”
+Douglass, M. J. J., et al. (2025). “An open-source tool for converting 3D mesh volumes into synthetic DICOM CT images for medical physics research.” (LINK:https://doi.org/10.1007/s13246-025-01599-x)
