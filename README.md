@@ -59,7 +59,7 @@ Before following the quick start, make sure you have these tools installed. The 
 
 	If you prefer Anaconda, use the Anaconda installer instead. Follow the official installer pages for platform-specific guidance.
 
-## Quick start (for students)
+## Quick start
 
 1. Clone the repository:
 
