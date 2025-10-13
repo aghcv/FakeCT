@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # 1. Setup
-FILE_NAME="cube"
+FILE_NAME="sphere"
 INPUT_DIR="data"
 OUTPUT_DIR="outputs"
 MESH_PATH="${INPUT_DIR}/${FILE_NAME}.stl"
@@ -23,7 +23,7 @@ echo "-------------------------------------------"
 echo "[INFO] Running voxelization pipeline..."
 python -m fakect.core \
   --in "${MESH_PATH}" \
-  --n 5 \
+  --n 6 \
   --margin 0.1 \
   --out "${NPZ_PATH}"
 

@@ -24,4 +24,5 @@ echo "[INFO] Running voxelization pipeline..."
 python -m fakect.core \
   --in "${MESH_PATH}" \
   --n 8 \
+  --margin 0.10 \
   --out "${NPZ_PATH}"

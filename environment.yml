@@ -40,3 +40,4 @@ dependencies:
       - dash-html-components
       - dash-cytoscape
       - dash-daq
+      - libigl==2.5.1
