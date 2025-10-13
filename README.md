@@ -11,7 +11,8 @@ cloning the repo, creating an environment, installing the package (editable), an
 
 
 ## Next Version - Stenosis Tool
-![image](https://github.com/user-attachments/assets/4d8b9547-77ee-4e83-9630-ae5ee65b6d6a)
+<img width="3095" height="1615" alt="image" src="https://github.com/user-attachments/assets/7513c9f2-93ba-4769-968e-10bfc146692f" />
+
 
 
 ## Your Tasks:
