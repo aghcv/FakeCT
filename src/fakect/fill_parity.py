@@ -5,8 +5,6 @@ from scipy.ndimage import binary_dilation, binary_erosion, generate_binary_struc
 from scipy.ndimage import binary_fill_holes
 from scipy.ndimage import binary_fill_holes
 import igl
-print("igl version:", getattr(igl, "__version__", None))
-print("Attributes in igl:", [name for name in dir(igl) if "winding" in name])
 
 EPS = 1e-9
 

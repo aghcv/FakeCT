@@ -23,7 +23,7 @@ echo "-------------------------------------------"
 echo "[INFO] Running voxelization pipeline..."
 python -m fakect.core \
   --in "${MESH_PATH}" \
-  --n 6 \
+  --n 7 \
   --margin 0.1 \
   --out "${NPZ_PATH}"
 

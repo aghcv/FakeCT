@@ -20,6 +20,42 @@ from fakect.fill_parity import classify_by_parity_multi, classify_by_winding
 # ---------------------------
 # Utilities
 # ---------------------------
+
+def _grid_extents_display(grid, mc_map: str):
+    """
+    Return (extent_X, extent_Y, extent_Z) in mm in the *displayed* axes,
+    consistent with apply_axis_map() and your mc_map string.
+    """
+    Nz, Ny, Nx = grid["shape"]    # mask index order is (z, y, x)
+    sz, sy, sx = grid["spacing"]  # voxel size per index axis
+    ext = {"z": Nz * sz, "y": Ny * sy, "x": Nx * sx}
+
+    # apply_axis_map for mc_map:
+    #   "xyz" : X<-z, Y<-y, Z<-x
+    #   "zyx" : X<-x, Y<-y, Z<-z
+    #   "xzy" : X<-z, Y<-x, Z<-y
+    #   "yxz" : X<-y, Y<-z, Z<-x
+    #   "yzx" : X<-y, Y<-x, Z<-z
+    #   "zxy" : X<-x, Y<-z, Z<-y
+    mapping = {
+        "zyx": ("x", "y", "z"),
+        "xyz": ("z", "y", "x"),
+        "xzy": ("z", "x", "y"),
+        "yxz": ("y", "z", "x"),
+        "yzx": ("y", "x", "z"),
+        "zxy": ("x", "z", "y"),
+    }
+    a, b, c = mapping.get(mc_map, ("z", "y", "x"))
+    return (ext[a], ext[b], ext[c])
+
+def _aspectratio_from_extents(extents_xyz):
+    """Normalize to avoid giant numbers; largest dimension → 1."""
+    mx = max(extents_xyz)
+    if mx <= 0:
+        return dict(x=1, y=1, z=1)
+    x, y, z = (e / mx for e in extents_xyz)
+    return dict(x=x, y=y, z=z)
+
 def next_pow2(n: int) -> int:
     if n < 1:
         return 1
@@ -145,11 +181,11 @@ def voxelize_mesh(mesh: trimesh.Trimesh, grid: dict):
     # Center into our target cubic grid and record where we placed it
     inside_bool, (oz, oy, ox) = fit_to_shape_centered(vol, grid["shape"])
 
-    # Build effective transform that maps *padded* array indices -> world
-    voxel_xform = vg.transform.copy()
-    index_shift = np.eye(4, dtype=float)
-    index_shift[:3, 3] = [-oz, -oy, -ox]     # shift indices before applying vg.transform
-    voxel_xform = voxel_xform @ index_shift
+    s = grid["spacing"][0]
+    origin = np.array(grid["origin"])
+    voxel_xform = np.eye(4)
+    voxel_xform[:3, :3] = np.diag([s, s, s])
+    voxel_xform[:3, 3] = origin
 
     return inside_bool, voxel_xform
 
@@ -203,17 +239,19 @@ def mask_to_trace(mask_u8, grid, name, color, opacity, mc_map, transform=None):
     if mask_u8 is None or not np.any(mask_u8):
         return None
 
+    # marching_cubes returns vertices in (z, y, x)
     verts_idx, faces, _, _ = measure.marching_cubes(mask_u8, level=0.5)
+
+    # Reorder to (x, y, z) before applying the transform
+    verts_idx = verts_idx[:, [2, 1, 0]]
 
     if transform is not None:
         homog = np.c_[verts_idx, np.ones(len(verts_idx))]
         verts_world = (transform @ homog.T).T[:, :3]
     else:
-        # Fallback: origin + spacing (not recommended)
         s = grid["spacing"][0]
         origin = np.array(grid["origin"])
-        # marching_cubes index order is (z,y,x); map to xyz crudely
-        verts_world = origin + s * verts_idx[:, ::-1]
+        verts_world = origin + s * verts_idx
 
     X, Y, Z = apply_axis_map(verts_world, (0, 0, 0), mc_map)
     i, j, k = faces.T
@@ -223,12 +261,16 @@ def mask_to_trace(mask_u8, grid, name, color, opacity, mc_map, transform=None):
         flatshading=True, showscale=False
     )
 
-def mesh_to_trace(mesh: trimesh.Trimesh, name="mesh", color="#AB1616", opacity=0.15):
+
+def mesh_to_trace(mesh: trimesh.Trimesh, name="mesh", color="#AB1616", opacity=0.15, mc_map="xyz"):
     if mesh is None or mesh.vertices.size == 0:
         return None
-    v, f = mesh.vertices, mesh.faces
+    v = mesh.vertices
+    # Apply the same axis mapping used for masks so mesh & masks align 1:1
+    X, Y, Z = apply_axis_map(v, (0, 0, 0), mc_map)
+    f = mesh.faces
     return go.Mesh3d(
-        x=v[:,0], y=v[:,1], z=v[:,2],
+        x=X, y=Y, z=Z,
         i=f[:,0], j=f[:,1], k=f[:,2],
         name=name, color=color, opacity=opacity, showscale=False
     )
@@ -242,7 +284,7 @@ def show_viewer_html(*, mesh, inside_u8, on_u8, out_u8, grid, voxel_transform,
     color_map = {"mesh":"#AB1616", "inside":"#3B82F6", "on":"#22C55E", "out":"#F59E0B"}
 
     traces = [
-        mesh_to_trace(mesh, name="mesh", color=color_map["mesh"], opacity=0.15),
+        mesh_to_trace(mesh, name="mesh", color=color_map["mesh"], opacity=0.15, mc_map=mc_map),
         mask_to_trace(inside_u8, grid, "inside", color_map["inside"], 0.35, mc_map, transform=voxel_transform),
         mask_to_trace(on_u8, grid, "on", color_map["on"], 0.55, mc_map, transform=voxel_transform),
         mask_to_trace(out_u8, grid, "out", color_map["out"], 0.08, mc_map, transform=voxel_transform),
@@ -250,13 +292,16 @@ def show_viewer_html(*, mesh, inside_u8, on_u8, out_u8, grid, voxel_transform,
     traces = [t for t in traces if t]
 
     fig = go.Figure(data=traces)
+    extents_xyz = _grid_extents_display(grid, mc_map)
+    aspectratio = _aspectratio_from_extents(extents_xyz)
     fig.update_layout(
         title="Mesh + in/on/out masks (3-D)",
         scene=dict(
             xaxis=dict(title="X (mm)"),
             yaxis=dict(title="Y (mm)"),
             zaxis=dict(title="Z (mm)"),
-            aspectmode="cube"
+            aspectmode="data",
+            #aspectratio=aspectratio
         ),
         legend=dict(itemsizing="constant"),
         margin=dict(l=0, r=0, t=40, b=0),
@@ -287,9 +332,12 @@ def _binary_colorscale():
     # 0 -> black, 1 -> white
     return [[0.0, "black"], [1.0, "white"]]
 
-def _slice_fig(z2d: np.ndarray, title: str):
-    # z2d is 2D binary array
-    return go.Figure(
+def _slice_fig(z2d: np.ndarray, title: str,
+               border_color: str = "#ffffff", border_width: int = 4):
+    """
+    Draw a 2-D binary slice with a colored border to indicate its axis.
+    """
+    fig = go.Figure(
         data=[go.Heatmap(
             z=z2d, zmin=0, zmax=1,
             colorscale=_binary_colorscale(),
@@ -297,11 +345,25 @@ def _slice_fig(z2d: np.ndarray, title: str):
         )],
         layout=go.Layout(
             title=title,
-            margin=dict(l=10, r=10, t=30, b=10),
+            margin=dict(l=border_width, r=border_width,
+                        t=30, b=border_width),
             xaxis=dict(showticklabels=False),
-            yaxis=dict(autorange="reversed", showticklabels=False)
+            yaxis=dict(autorange="reversed", showticklabels=False),
+            plot_bgcolor="black",
+            paper_bgcolor="black"
         )
     )
+
+    # add border rectangle with colored lines
+    fig.add_shape(
+        type="rect",
+        x0=0, y0=0, x1=1, y1=1,
+        xref="paper", yref="paper",
+        line=dict(color=border_color, width=border_width),
+        fillcolor="rgba(0,0,0,0)"
+    )
+
+    return fig
 
 def _compose_slice(masks: List[np.ndarray], axis: str, idx: int) -> np.ndarray:
     """
@@ -341,29 +403,53 @@ def show_viewer_dash(*, mesh, inside_u8, on_u8, out_u8, grid, voxel_transform, m
     i_mid, j_mid, k_mid = Nx // 2, Ny // 2, Nz // 2
 
     # Precompute static 3-D traces (we'll toggle visibility via callbacks)
-    mesh_trace = mesh_to_trace(mesh, name="mesh", color="#AB1616", opacity=0.15)
+    mesh_trace = mesh_to_trace(mesh, name="mesh", color="#AB1616", opacity=0.15, mc_map=mc_map)
     inside_3d = mask_to_trace(inside_u8, grid, "inside", "#3B82F6", 0.35, mc_map, transform=voxel_transform)
     on_3d     = mask_to_trace(on_u8,     grid, "on",     "#22C55E", 0.55, mc_map, transform=voxel_transform)
     out_3d    = mask_to_trace(out_u8,    grid, "out",    "#F59E0B", 0.08, mc_map, transform=voxel_transform)
 
     def make_3d_fig(show_inside=True, show_on=True, show_out=True):
         traces = [t for t in [mesh_trace,
-                              inside_3d if show_inside else None,
-                              on_3d     if show_on else None,
-                              out_3d    if show_out else None] if t is not None]
+                            inside_3d if show_inside else None,
+                            on_3d     if show_on else None,
+                            out_3d    if show_out else None] if t is not None]
         fig = go.Figure(data=traces)
+
+        extents_xyz = _grid_extents_display(grid, mc_map)      # displayed-axis extents
+        aspectratio = _aspectratio_from_extents(extents_xyz)
+
         fig.update_layout(
             margin=dict(l=0, r=0, t=30, b=10),
             scene=dict(
-                xaxis=dict(title="X (mm)"),
-                yaxis=dict(title="Y (mm)"),
-                zaxis=dict(title="Z (mm)"),
-                aspectmode="cube"
-            ),
+                bgcolor="#000000",  # full black background
+                xaxis=dict(
+                    title="X (mm)",
+                    showgrid=False,
+                    zeroline=False,
+                    showticklabels=False,
+                    backgroundcolor="#000000"
+                ),
+                yaxis=dict(
+                    title="Y (mm)",
+                    showgrid=False,
+                    zeroline=False,
+                    showticklabels=False,
+                    backgroundcolor="#000000"
+                ),
+                zaxis=dict(
+                    title="Z (mm)",
+                    showgrid=False,
+                    zeroline=False,
+                    showticklabels=False,
+                    backgroundcolor="#000000"
+                ),
+                aspectmode="data"
+            )
+,
             showlegend=False
         )
         return fig
-
+    
     app = dash.Dash(__name__)
 
     app.layout = html.Div(
@@ -426,6 +512,67 @@ def show_viewer_dash(*, mesh, inside_u8, on_u8, out_u8, grid, voxel_transform, m
     )
 
     # --- Callbacks ---
+    def _slice_frames(grid, i_idx, j_idx, k_idx, mc_map,
+                  color_map=None, line_width=4):
+        """
+        Draw wireframe rectangles showing slice locations
+        (i: X-slice/Z direction, j: Y-slice, k: Z-slice/X direction).
+        Colors correspond to i/j/k sliders.
+        """
+        Nz, Ny, Nx = grid["shape"]
+        sz, sy, sx = grid["spacing"]
+        ox, oy, oz = grid["origin"]
+        color_map = color_map or {"i": "#3B82F6", "j": "#22C55E", "k": "#F59E0B"}
+
+        # Convert voxel indices → physical coordinates (remember: array order z,y,x)
+        Xpos = oz + k_idx * sz   # k-slider → X
+        Ypos = oy + j_idx * sy   # j-slider → Y
+        Zpos = ox + i_idx * sx   # i-slider → Z
+
+        frames = []
+
+        def rect(x, y, z, color, name):
+            return go.Scatter3d(
+                x=x + [x[0]],
+                y=y + [y[0]],
+                z=z + [z[0]],
+                mode="lines",
+                line=dict(color=color, width=line_width),
+                name=name,
+                showlegend=False
+            )
+
+        # Physical extents of each axis
+        Xr = [oz, oz + Nz * sz]
+        Yr = [oy, oy + Ny * sy]
+        Zr = [ox, ox + Nx * sx]
+
+        # --- I-slice (constant Zpos) spans X–Y plane ---
+        frames.append(rect(
+            x=[Xr[0], Xr[1], Xr[1], Xr[0]],
+            y=[Yr[0], Yr[0], Yr[1], Yr[1]],
+            z=[Zpos]*4,
+            color=color_map["i"], name="i-frame"
+        ))
+
+        # --- J-slice (constant Ypos) spans X–Z plane ---
+        frames.append(rect(
+            x=[Xr[0], Xr[1], Xr[1], Xr[0]],
+            y=[Ypos]*4,
+            z=[Zr[0], Zr[0], Zr[1], Zr[1]],
+            color=color_map["j"], name="j-frame"
+        ))
+
+        # --- K-slice (constant Xpos) spans Y–Z plane (✅ fixed) ---
+        frames.append(rect(
+            x=[Xpos]*4,
+            y=[Yr[0], Yr[0], Yr[1], Yr[1]],
+            z=[Zr[0], Zr[1], Zr[1], Zr[0]],
+            color=color_map["k"], name="k-frame"
+        ))
+
+        return frames
+
     @app.callback(
         Output("i-graph","figure"),
         Output("j-graph","figure"),
@@ -462,12 +609,17 @@ def show_viewer_dash(*, mesh, inside_u8, on_u8, out_u8, grid, voxel_transform, m
         j_slice = _compose_slice(active_masks, 'j', j_idx) if active_masks else np.zeros((inside_u8.shape[0], inside_u8.shape[2]), dtype=np.uint8)
         k_slice = _compose_slice(active_masks, 'k', k_idx) if active_masks else np.zeros((inside_u8.shape[1], inside_u8.shape[2]), dtype=np.uint8)
 
-        i_fig = _slice_fig(i_slice, f"I-slice (x={i_idx})")
-        j_fig = _slice_fig(j_slice, f"J-slice (y={j_idx})")
-        k_fig = _slice_fig(k_slice, f"K-slice (z={k_idx})")
+        i_fig = _slice_fig(i_slice, f"I-slice (x={i_idx})", border_color="#3B82F6")
+        j_fig = _slice_fig(j_slice, f"J-slice (y={j_idx})", border_color="#22C55E")
+        k_fig = _slice_fig(k_slice, f"K-slice (z={k_idx})", border_color="#F59E0B")
+
 
         # 3-D fig with visibility tied to mask toggles
         threeD_fig = make_3d_fig(show_inside=show_inside, show_on=show_on, show_out=show_out)
+
+        # Add dynamic slice planes
+        for frame in _slice_frames(grid, i_idx, j_idx, k_idx, mc_map):
+            threeD_fig.add_trace(frame)
 
         status = f"Active masks: {', '.join(mask_values) or 'none'} | i={i_idx}, j={j_idx}, k={k_idx}"
         return i_fig, j_fig, k_fig, threeD_fig, status
@@ -557,7 +709,7 @@ def main():
                     help="Grid exponent (2^n per side). Used if --spacing is None. If both are given, spacing takes precedence.")
     ap.add_argument("--margin", type=float, default=0.25,
                     help="Extra margin fraction around the mesh AABB (default 0.10 = 10%)")
-    ap.add_argument("--mc-map", type=str, default="xyz",
+    ap.add_argument("--mc-map", type=str, default="zyx",
                     choices=["zyx", "xyz", "xzy", "yxz", "yzx", "zxy"],
                     help="Axis mapping from marching-cubes (z,y,x) → (X,Y,Z).")
     ap.add_argument("--out", default="outputs/masks_demo.npz",
