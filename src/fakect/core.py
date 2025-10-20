@@ -9,7 +9,6 @@ import os
 import argparse
 import numpy as np
 import trimesh
-from scipy.ndimage import binary_erosion
 from skimage import measure
 import plotly.graph_objects as go
 import plotly.io as pio
@@ -17,6 +16,7 @@ import webbrowser
 from typing import Tuple, List
 from pathlib import Path
 from fakect.fill_parity import classify_by_parity_multi, classify_by_winding
+from scipy.ndimage import binary_dilation, binary_erosion, binary_fill_holes
 
 # ---------------------------
 # Utilities
@@ -204,6 +204,27 @@ def classify_in_on_out(inside_bool: np.ndarray):
 
     return inside_u8, on_u8, out_u8
 
+
+# ---------------------------
+# Stenosis
+# ---------------------------
+def apply_stenosis(
+    inside_u8: np.ndarray,
+    operation: str = "shrink",
+    kernel: str = "sphere",
+    radius: int = 2,
+    iterations: int = 1,
+    center: tuple[int,int,int] | None = None
+) -> np.ndarray:
+    """Apply local morphological expand/shrink operation."""
+    from stenosis import make_kernel, make_roi_mask, apply_operation
+
+    mask = inside_u8.astype(bool)
+    kern = make_kernel(kernel, radius)
+    roi = make_roi_mask(mask.shape, center=center, radius=radius if center else None)
+    updated = apply_operation(mask, operation, kern, iterations, roi)
+    return updated
+
 # ---------------------------
 # Axis mapping (world z,y,x -> Plotly X,Y,Z)
 # ---------------------------
@@ -259,7 +280,6 @@ def mask_to_trace(mask_u8, grid, name, color, opacity, mc_map, transform=None):
         flatshading=True, showscale=False
     )
 
-
 def mesh_to_trace(mesh: trimesh.Trimesh, name="mesh", color="#AB1616", opacity=0.15, mc_map="xyz"):
     if mesh is None or mesh.vertices.size == 0:
         return None
@@ -278,7 +298,7 @@ def mesh_to_trace(mesh: trimesh.Trimesh, name="mesh", color="#AB1616", opacity=0
 # ---------------------------
 def show_viewer_html(*, mesh, inside_u8, on_u8, out_u8, grid, voxel_transform,
                      html_path="outputs/viewer.html", mc_map="xyz"):
-    os.makedirs(os.path.dirname(html_path) or ".", exist_ok=True)
+    Path(html_path).parent.mkdir(parents=True, exist_ok=True)
     color_map = {"mesh":"#AB1616", "inside":"#3B82F6", "on":"#22C55E", "out":"#F59E0B"}
 
     traces = [
@@ -680,7 +700,7 @@ def run_pipeline(
     inside_u8, on_u8, out_u8 = classify_by_winding(mesh, grid)
 
     # Save masks
-    os.makedirs(os.path.dirname(out_npz) or ".", exist_ok=True)
+    Path(out_npz).parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out_npz, inside=inside_u8, on=on_u8, out=out_u8,
                         spacing=np.array(grid["spacing"]), origin=np.array(grid["origin"]))
     print(f"Masks saved (uint8) → {out_npz}")

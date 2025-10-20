@@ -1,6 +1,8 @@
 # src/fakect/cli.py
 import click
 import subprocess
+import sys
+import shutil
 from pathlib import Path
 from .core import run_pipeline
 
@@ -29,8 +31,31 @@ def example(name):
         avail = sorted(p.stem for p in examples_dir.glob("*.sh"))
         raise click.ClickException(f"Example not found: {script_name}\nAvailable: {', '.join(avail)}")
 
-    click.echo(f"Running example script: {script_path}")
-    try:
-        subprocess.run(["/bin/bash", str(script_path)], check=True)
-    except subprocess.CalledProcessError as e:
-        raise click.ClickException(f"Example script failed with exit code {e.returncode}")
+    # Prefer Python example scripts for cross-platform compatibility
+    py_script = script_path.with_suffix('.py')
+    if py_script.exists():
+        click.echo(f"Running Python example: {py_script}")
+        try:
+            subprocess.run([sys.executable, str(py_script)], check=True)
+        except subprocess.CalledProcessError as e:
+            raise click.ClickException(f"Example script failed with exit code {e.returncode}")
+        return
+
+    # Fall back to shell script if present; locate a bash executable
+    bash_exe = shutil.which("bash")
+    if bash_exe and script_path.suffix == ".sh":
+        click.echo(f"Running shell example with: {bash_exe} {script_path}")
+        try:
+            subprocess.run([bash_exe, str(script_path)], check=True)
+        except subprocess.CalledProcessError as e:
+            raise click.ClickException(f"Example script failed with exit code {e.returncode}")
+        return
+
+    # No runnable example found for this platform
+    if script_path.suffix == ".sh":
+        raise click.ClickException(
+            f"Shell example found ({script_path}) but no POSIX 'bash' is available on this system.\n"
+            "On Windows you can run the script with Git Bash, WSL, or run the Python example if available (examples/<name>.py)."
+        )
+    else:
+        raise click.ClickException(f"No runnable example found for: {script_path}")
