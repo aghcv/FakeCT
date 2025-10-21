@@ -55,7 +55,7 @@ Before following the quick start, make sure you have these tools installed. The 
 
 	Quick start
 	-----------
-	The canonical quick start lives in the header of `outputs/stand-alone/fakect.py` —
+	The canonical quick start lives in the header of `fakect.py` —
 	that file contains usage examples and platform-specific install notes (conda vs pip).
 
 	Minimal example (conda recommended):
@@ -65,8 +65,7 @@ Before following the quick start, make sure you have these tools installed. The 
 	conda activate fakect
 	conda install -c conda-forge python-igl trimesh scipy scikit-image plotly dash -y
 
-	python outputs/stand-alone/fakect.py --in data/carotid.stl --n 7 --margin 0.10 \
-		--mc-map zyx --out examples/outputs/carotid_masks.npz --no-show
+	python fakect.py --in data/carotid.stl --n 7 --out outputs/carotid_masks.npz
 	```
 
 	Notes
@@ -81,5 +80,4 @@ Before following the quick start, make sure you have these tools installed. The 
 	Douglass, M. J. J., et al. (2025). “An open-source tool for converting 3D mesh volumes into
 	synthetic DICOM CT images for medical physics research.” https://doi.org/10.1007/s13246-025-01599-x
 
-	If you want, I can add a short `environment.yml` and `requirements.txt` to the repo.
 
