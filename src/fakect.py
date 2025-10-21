@@ -4,8 +4,8 @@
 # Produces winding-based in/on/out masks and (optionally) launches a Dash viewer.
 #
 # Usage examples:
-#   python fakect.py --in cube.stl --n 8 --out cube_masks.npz
-#   python fakect.py --in carotid.stl --n 9 --margin 0.10 --out examples/outputs/carotid_masks.npz
+#   python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz
+#   python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs/carotid_masks.npz
 #
 # Requirements & installation
 #  Recommended (conda - easiest, includes python-igl):

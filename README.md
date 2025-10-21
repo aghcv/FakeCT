@@ -65,7 +65,7 @@ Before following the quick start, make sure you have these tools installed. The 
 	conda activate fakect
 	conda install -c conda-forge python-igl trimesh scipy scikit-image plotly dash -y
 
-	python fakect.py --in data/carotid.stl --n 7 --out outputs/carotid_masks.npz
+	python src/fakect.py --in data/carotid.stl --n 7 --out outputs/carotid_masks.npz
 	```
 
 	Notes
