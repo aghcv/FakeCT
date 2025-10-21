@@ -26,6 +26,7 @@ env/
 
 # ---- Outputs & Artifacts ----
 outputs/
+data/
 demos/outputs/
 *.nii
 *.nii.gz
