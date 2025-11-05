@@ -181,7 +181,7 @@ def classify_by_winding(mesh: trimesh.Trimesh, grid: dict, band: float = 0.6
     V = mesh.vertices.copy()
     F = mesh.faces.copy()
 
-    WN = igl.fast_winding_number_for_meshes(V, F, Q)  # (N^3,)
+    WN = igl.fast_winding_number_for_meshes(V, F, Q)  # type:ignore
     WN = np.asarray(WN).reshape((N, N, N))  # (k, j, i) == (Z,Y,X)
 
     # Inside = WN > 0.5
@@ -252,6 +252,96 @@ def _slice_frames(grid, i_idx, j_idx, k_idx, color_map=None, line_width=4):
         color=color_map["z"], name="z-slice"
     ))
     return frames
+
+def _roi_frame(
+    grid,
+    i_idx: int,
+    j_idx: int,
+    k_idx: int,
+    r_vox: int,
+    *,
+    n_lat: int = 12,
+    n_lon: int = 12,
+    color: str = "#E11D48",
+    line_width: int = 1,
+):
+    """
+    Build a spherical ROI wireframe centered at voxel indices (i,j,k)
+    with radius specified in voxels (r_vox). Returns a list of Scatter3d traces
+    similar to _slice_frames(), intended to be directly added to the 3D figure.
+
+    Notes:
+    - Indices (i,j,k) are interpreted consistently with _slice_frames: position
+      = origin + index * spacing (voxel-aligned). This mirrors the slice planes.
+    - Radius is converted to millimeters using grid spacing.
+    - The wireframe consists of latitude and longitude rings for clarity and speed.
+    """
+    if r_vox is None or r_vox <= 0:
+        return []
+
+    Nz, Ny, Nx = grid["shape"]
+    sz, sy, sx = grid["spacing"]
+    ox, oy, oz = grid["origin"]
+
+    # Center in world coordinates (voxel-aligned like slice frames)
+    Xc = ox + i_idx * sx
+    Yc = oy + j_idx * sy
+    Zc = oz + k_idx * sz
+
+    # Radius in mm (use isotropic spacing assumption in this grid)
+    s = sx  # == sy == sz
+    r = float(r_vox) * s
+    if r <= 0:
+        return []
+
+    # Sampling resolution for wireframe rings
+    n_lat = max(3, int(n_lat))   # latitude (phi in [0, pi])
+    n_lon = max(4, int(n_lon))   # longitude (theta in [0, 2pi))
+    n_circle_pts = 60            # points per ring
+
+    traces = []
+
+    # Latitude rings (parallel to XY planes): phi from epsilon..pi-epsilon to avoid degeneracy
+    phis = np.linspace(1e-6, np.pi - 1e-6, n_lat)
+    thetas_ring = np.linspace(0, 2 * np.pi, n_circle_pts)
+    for phi in phis:
+        sinp = np.sin(phi)
+        cosp = np.cos(phi)
+        xs = Xc + r * sinp * np.cos(thetas_ring)
+        ys = Yc + r * sinp * np.sin(thetas_ring)
+        zs = Zc + r * np.full_like(thetas_ring, cosp)
+        traces.append(
+            go.Scatter3d(
+                x=np.r_[xs, xs[0]], y=np.r_[ys, ys[0]], z=np.r_[zs, zs[0]],
+                mode="lines",
+                line=dict(color=color, width=line_width),
+                name="roi-sphere-lat",
+                showlegend=False,
+            )
+        )
+
+    # Longitude rings (half-meridians closing into lines): theta grid
+    thetas = np.linspace(0, 2 * np.pi, n_lon, endpoint=False)
+    phis_mer = np.linspace(0, np.pi, n_circle_pts)
+    for th in thetas:
+        cost = np.cos(th)
+        sint = np.sin(th)
+        sinp = np.sin(phis_mer)
+        cosp = np.cos(phis_mer)
+        xs = Xc + r * sinp * cost
+        ys = Yc + r * sinp * sint
+        zs = Zc + r * cosp
+        traces.append(
+            go.Scatter3d(
+                x=xs, y=ys, z=zs,
+                mode="lines",
+                line=dict(color=color, width=line_width),
+                name="roi-sphere-lon",
+                showlegend=False,
+            )
+        )
+
+    return traces
 
 def mask_to_trace(mask_u8, grid, color, name, opacity=0.4):
     total = int(np.sum(mask_u8))
@@ -359,6 +449,17 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                     dcc.Slider(id="y-slider", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
                     html.Label("Z-slice (k)"),
                     dcc.Slider(id="z-slider", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
+                    html.Hr(),
+                    html.Div("ROI (sphere)", style={"fontWeight": 600, "opacity": 0.9}),
+                    html.Label("ROI X (i)"),
+                    dcc.Slider(id="roi-x", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
+                    html.Label("ROI Y (j)"),
+                    dcc.Slider(id="roi-y", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
+                    html.Label("ROI Z (k)"),
+                    dcc.Slider(id="roi-z", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
+                    html.Label("ROI Radius (voxels)"),
+                    dcc.Slider(id="roi-r", min=0, max=int(max(Nx, Ny, Nz)//2), step=1, value=1, updatemode="drag",
+                               tooltip={"always_visible": False, "placement": "bottom"}),
                     html.Button("Reset", id="reset-btn",
                                 style={"background": "#2563EB", "color": "white",
                                        "border": "none", "padding": "6px 10px",
@@ -387,14 +488,19 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         Input("x-slider", "value"),
         Input("y-slider", "value"),
         Input("z-slider", "value"),
+        Input("roi-x", "value"),
+        Input("roi-y", "value"),
+        Input("roi-z", "value"),
+        Input("roi-r", "value"),
         Input("reset-btn", "n_clicks"),
         prevent_initial_call=False
     )
-    def update(mask_values, x_idx, y_idx, z_idx, n_clicks):
+    def update(mask_values, x_idx, y_idx, z_idx, roi_x, roi_y, roi_z, roi_r, n_clicks):
         triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
         if "reset-btn.n_clicks" in triggered:
             mask_values = ["inside", "on", "out"]
             x_idx, y_idx, z_idx = x_mid, y_mid, z_mid
+            roi_x, roi_y, roi_z, roi_r = x_mid, y_mid, z_mid, 1
 
         active = []
         show_inside = "inside" in mask_values
@@ -418,6 +524,12 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         fig3d = go.Figure(data=valid_traces)
         for frame in _slice_frames(grid, x_idx, y_idx, z_idx):
             fig3d.add_trace(frame)
+
+        # ROI sphere (wireframe)
+        roi_traces = _roi_frame(grid, roi_x, roi_y, roi_z, roi_r,
+                                n_lat=6, n_lon=8, color="#E11D48", line_width=3)
+        for t in roi_traces:
+            fig3d.add_trace(t)
         fig3d.update_layout(
             margin=dict(l=0, r=0, b=0, t=0),
             scene=dict(
@@ -430,7 +542,10 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
             )
         )
 
-        status = f"Active masks: {', '.join(mask_values)} | X={x_idx}, Y={y_idx}, Z={z_idx}"
+        status = (
+            f"Active masks: {', '.join(mask_values)} | X={x_idx}, Y={y_idx}, Z={z_idx} "
+            f"| ROI: (i,j,k)=({roi_x},{roi_y},{roi_z}), r={roi_r} vox"
+        )
         return x_fig, y_fig, z_fig, fig3d, status
 
     # Open browser on a fresh port each run to avoid caching
@@ -462,7 +577,7 @@ def run_pipeline(
     info(f"Loaded mesh: {mesh_path.name} | watertight={getattr(mesh, 'is_watertight', 'unknown')}")
 
     # Center mesh at origin
-    mesh = center_mesh(mesh)
+    mesh = center_mesh(mesh) # type: ignore
 
     # Grid (power-of-two cubic grid)
     grid = make_cube_grid_from_mesh(mesh, spacing=spacing, n=n, margin_frac=margin_frac)
