@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 # ---------------------------------------------------------------------
 # fakect.py
-# Produces in/on/out masks (winding via python-igl when available) and optionally launches a Dash viewer.
+# Produces winding-based in/on/out masks and (optionally) launches a Dash viewer.
 #
 # Usage examples:
 #   python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz
 #   python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs/carotid_masks.npz
 #
 # Requirements & installation
-#  Recommended (conda - easiest, python-igl optional):
+#  Recommended (conda - easiest, includes python-igl):
 #    conda create -n fakect python=3.10 -y
 #    conda activate fakect
-#    conda install -c conda-forge trimesh scipy scikit-image plotly dash -y
-#    # Optional, if available on your platform:
-#    conda install -c conda-forge python-igl -y
+#    conda install -c conda-forge python-igl trimesh scipy scikit-image plotly dash -y
 #
 #  Pip-only (virtualenv): python-igl often requires conda; use pip for the pure-Python deps
 #    python -m venv .venv
@@ -194,52 +192,6 @@ def classify_by_winding(mesh: trimesh.Trimesh, grid: dict, band: float = 0.6
     boundary = dil ^ inside
     on = boundary & ~inside
 
-    out = ~(inside | on)
-
-    return inside.astype(np.uint8), on.astype(np.uint8), out.astype(np.uint8)
-
-def classify_by_trimesh_contains(
-    mesh: trimesh.Trimesh,
-    grid: dict,
-    batch_size: int = 200_000
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Use trimesh.contains (ray parity) to classify inside / on / out.
-    Slower than winding but avoids python-igl.
-    """
-    N = grid["shape"][0]
-    s = grid["spacing"][0]
-    ox, oy, oz = grid["origin"]
-
-    total = N * N * N
-    inside_flat = np.zeros(total, dtype=bool)
-
-    for start in range(0, total, batch_size):
-        end = min(start + batch_size, total)
-        idx = np.arange(start, end, dtype=np.int64)
-
-        k = idx // (N * N)
-        rem = idx % (N * N)
-        j = rem // N
-        i = rem % N
-
-        xs = ox + (i + 0.5) * s
-        ys = oy + (j + 0.5) * s
-        zs = oz + (k + 0.5) * s
-        Q = np.stack((xs, ys, zs), axis=1)
-
-        try:
-            inside_flat[start:end] = mesh.contains(Q)
-        except Exception as exc:
-            raise RuntimeError(
-                "trimesh.contains failed; consider installing python-igl or using a different mesh"
-            ) from exc
-
-    inside = inside_flat.reshape((N, N, N))
-
-    dil = binary_dilation(inside, structure=np.ones((3, 3, 3), dtype=bool))
-    boundary = dil ^ inside
-    on = boundary & ~inside
     out = ~(inside | on)
 
     return inside.astype(np.uint8), on.astype(np.uint8), out.astype(np.uint8)
@@ -642,57 +594,117 @@ def apply_roi_morphology(
     
     return new_inside
 
-def _sigmoid_iteration_schedule(num_steps: int, total_iters: int) -> np.ndarray:
+def apply_iterative_stenosis(
+    inside_u8: np.ndarray,
+    i_idx: int,
+    j_idx: int,
+    k_idx: int,
+    r_vox: int,
+    stenosis_percent: float = 50.0,
+) -> np.ndarray:
     """
-    Distribute `total_iters` across `num_steps` with a slow-fast-slow profile.
-    Uses a Hann window to produce low weights at the ends and high in the middle.
+    Iteratively apply stenosis (narrowing) within a spherical ROI by eroding
+    the cross-sectional area progressively until reaching the target stenosis percentage.
 
-    Returns an int array of length `num_steps` with at least 1 per step
-    and approximately summing to `total_iters`.
+    The stenosis percentage represents how much of the ROI's cross-sectional area
+    is occupied by the ROI sphere itself:
+    - 0%:   No stenosis (full lumen preserved)
+    - 50%:  Half the lumen area is occupied
+    - 100%: Complete occlusion (entire cross-section occupied by ROI sphere)
+
+    Strategy
+    1. Extract the inside mask within the ROI sphere
+    2. Compute the initial cross-sectional area (count of inside voxels in ROI)
+    3. Iteratively erode the ROI portion until the remaining area matches target
+    4. Recombine with outside-ROI portion to form the stenosed global mask
+
+    Parameters
+    - inside_u8: uint8 global inside mask (Z,Y,X)
+    - i_idx, j_idx, k_idx: center of ROI in voxel indices (i=X, j=Y, k=Z)
+    - r_vox: radius of the stenosis ROI sphere in voxels
+    - stenosis_percent: stenosis severity (0-100%)
+      * 0 = no stenosis (preserve full lumen)
+      * 100 = complete occlusion (remove all lumen in ROI)
+
+    Returns
+    - uint8 global inside mask with stenosis applied locally within ROI.
+
+    Notes
+    - Stenosis is applied via iterative erosion (shrinking) of the lumen in the ROI
+    - The erosion continues until the remaining voxel count reaches approximately
+      the target percentage of the original ROI area
+    - Changes are confined to the spherical ROI; outside geometry remains unchanged
     """
-    if num_steps <= 0 or total_iters <= 0:
-        return np.array([], dtype=int)
+    if r_vox is None or r_vox <= 0:
+        warn("ROI radius <= 0; no stenosis applied")
+        return inside_u8.copy()
 
-    t = np.linspace(0.0, 1.0, num_steps)
-    weights = 0.5 - 0.5 * np.cos(2.0 * np.pi * t)  # Hann window: 0 at ends, peak mid
-    weights = weights + 1e-6  # avoid exact zeros
-    weights = weights / np.sum(weights) * float(total_iters)
+    # Clamp stenosis_percent to valid range [0, 100]
+    stenosis_percent = max(0.0, min(100.0, float(stenosis_percent)))
 
-    iters = np.maximum(1, np.round(weights).astype(int))
-    diff = int(total_iters - int(np.sum(iters)))
-    if diff != 0:
-        # Adjust to match total_iters by tweaking largest/smallest weights
-        order = np.argsort(-weights) if diff > 0 else np.argsort(weights)
-        for idx in order[:abs(diff)]:
-            iters[idx] += 1 if diff > 0 else -1
-            if iters[idx] < 1:
-                iters[idx] = 1
-    return iters
+    # Extract inside voxels within the ROI
+    roi_inside_u8, outside_roi_inside_u8 = filter_inside_by_roi(inside_u8, i_idx, j_idx, k_idx, r_vox)
 
-def _sigmoid_sparse_apply_schedule(total_ticks: int, num_applies: int) -> np.ndarray:
-    """
-    Build a boolean schedule of length `total_ticks` marking which ticks should
-    apply a single-iteration morphology step. The placement follows a
-    slow–fast–slow (sigmoidal) density using a Hann window: denser in the
-    middle, sparser at the ends. Ensures exactly `num_applies` True entries
-    (clamped to `total_ticks`).
+    # Build the spherical ROI boundary for clamping
+    Nz, Ny, Nx = inside_u8.shape
+    ii = np.arange(Nx) - int(i_idx)
+    jj = np.arange(Ny) - int(j_idx)
+    kk = np.arange(Nz) - int(k_idx)
+    rr2 = (ii * ii)[None, None, :] + (jj * jj)[None, :, None] + (kk * kk)[:, None, None]
+    roi_bool = rr2 <= (int(r_vox) * int(r_vox))
 
-    This keeps each morphology change to a single-voxel iteration so
-    `proximity_bridge` can reliably handle gaps.
-    """
-    if total_ticks <= 0 or num_applies <= 0:
-        return np.zeros(max(0, total_ticks), dtype=bool)
-    num_applies = min(num_applies, total_ticks)
+    # Calculate initial lumen area (voxel count) within ROI
+    roi_lumen_bool = (roi_inside_u8 > 0)
+    initial_area = int(np.sum(roi_lumen_bool))
 
-    # Hann window weights across ticks (exclude endpoint to avoid duplicate zero)
-    t = np.linspace(0.0, 1.0, total_ticks, endpoint=False)
-    weights = 0.5 - 0.5 * np.cos(2.0 * np.pi * t)
+    # Calculate target area based on stenosis percentage
+    # stenosis_percent = 0 → preserve 100% of lumen
+    # stenosis_percent = 100 → preserve 0% of lumen (complete occlusion)
+    target_area = int(initial_area * (1.0 - stenosis_percent / 100.0))
 
-    order = np.argsort(-weights)  # descending by weight (middle first)
-    chosen = order[:num_applies]
-    schedule = np.zeros(total_ticks, dtype=bool)
-    schedule[chosen] = True
-    return schedule
+    if initial_area == 0:
+        warn("No lumen detected within ROI; stenosis not applied")
+        return inside_u8.copy()
+
+    if target_area < 0:
+        target_area = 0
+
+    info(f"[STENOSIS] Initial lumen area in ROI: {initial_area} voxels")
+    info(f"[STENOSIS] Target area ({stenosis_percent:.1f}% stenosis): {target_area} voxels")
+
+    # Iteratively erode until reaching target area
+    work = roi_lumen_bool.copy()
+    iteration = 0
+    max_iterations = max(initial_area, 100)  # safety limit
+
+    while np.sum(work) > target_area and iteration < max_iterations:
+        # Single erosion step confined to ROI
+        work = _bitwise_erode6(work)
+        work = work & roi_bool
+
+        current_area = int(np.sum(work))
+        iteration += 1
+
+        # Log progress every 5 iterations or when near target
+        if iteration % 5 == 0 or current_area <= target_area + 5:
+            info(f"[STENOSIS] Iteration {iteration}: {current_area} voxels (target: {target_area})")
+
+        if current_area == 0:
+            break
+
+    final_area = int(np.sum(work))
+    actual_stenosis = (1.0 - final_area / initial_area) * 100.0 if initial_area > 0 else 100.0
+    ok(f"[STENOSIS] Applied {actual_stenosis:.1f}% stenosis in {iteration} iterations "
+       f"({initial_area} → {final_area} voxels)")
+
+    # Recompose: updated ROI portion + untouched outside-ROI portion
+    updated_roi_u8 = work.astype(np.uint8)
+    new_inside = ((outside_roi_inside_u8 > 0) | (updated_roi_u8 > 0)).astype(np.uint8)
+
+    # Bridge any disconnected components near the ROI boundary
+    new_inside = proximity_bridge(new_inside, max_dist=2)
+
+    return new_inside
 
 def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
     """Interactive viewer: X/Y/Z slices + 3-D, with mask toggles."""
@@ -721,34 +733,73 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         children=[
             html.Div(
                 style={"backgroundColor": "#151922", "borderRadius": "10px",
-                       "padding": "12px", "display": "flex", "flexDirection": "column", "gap": "10px"},
+                       "padding": "12px", "display": "flex", "flexDirection": "column", "gap": "10px", "overflowY": "auto"},
                 children=[
                     html.H3("Tools", style={"margin": "0 0 6px 0"}),
-                    dcc.Checklist(
-                        id="mask-check",
-                        options=[
-                            {"label": " Inside", "value": "inside"},
-                            {"label": " On", "value": "on"},
-                            {"label": " Out", "value": "out"},
-                        ],
-                        value=["inside", "on", "out"],
-                        inputStyle={"marginRight": "6px"},
-                        labelStyle={"display": "block", "marginBottom": "4px"}
-                    ),
-                    html.Hr(),
-                    dcc.Tabs(id="tools-tabs", value="roi", children=[
-                        dcc.Tab(label="ROI", value="roi", children=[
-                            html.Div([
-                                html.Label("X-slice (i)"),
-                                dcc.Slider(id="x-slider", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
-                                html.Label("Y-slice (j)"),
-                                dcc.Slider(id="y-slider", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
-                                html.Label("Z-slice (k)"),
-                                dcc.Slider(id="z-slider", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
-                                html.Hr(),
-                                html.Div("ROI (sphere)", style={"fontWeight": 600, "opacity": 0.9}),
-                                dcc.Tabs(id="roi-mode-tabs", value="center", children=[
-                                    dcc.Tab(label="Center + Radius", value="center", children=[
+                    dcc.Tabs(
+                        id="control-tabs",
+                        value="view-tab",
+                        style={
+                            "borderBottom": "2px solid #2a2f3a"
+                        },
+                        parent_style={},
+                        children=[
+                            dcc.Tab(
+                                label="View & ROI",
+                                value="view-tab",
+                                style={
+                                    "padding": "10px",
+                                    "backgroundColor": "#0f1115",
+                                    "color": "#a0aec0",
+                                    "fontWeight": "normal",
+                                    "borderRadius": "6px 6px 0 0",
+                                    "border": "1px solid transparent"
+                                },
+                                selected_style={
+                                    "padding": "10px",
+                                    "backgroundColor": "#151922",
+                                    "color": "#e6e6e6",
+                                    "fontWeight": "bold",
+                                    "borderRadius": "6px 6px 0 0",
+                                    "border": "2px solid #3b82f6",
+                                    "borderBottom": "none"
+                                },
+                                children=[
+                                    html.Div(style={"display": "flex", "flexDirection": "column", "gap": "10px"}, children=[
+                                        html.Div("Mask Display", style={"fontWeight": 600, "opacity": 0.9}),
+                                        dcc.Checklist(
+                                            id="mask-check",
+                                            options=[
+                                                {"label": " Inside", "value": "inside"},
+                                                {"label": " On", "value": "on"},
+                                                {"label": " Out", "value": "out"},
+                                            ],
+                                            value=["inside", "on", "out"],
+                                            inputStyle={"marginRight": "6px"},
+                                            labelStyle={"display": "block", "marginBottom": "4px"}
+                                        ),
+                                        html.Hr(),
+                                        html.Div("Slice Planes", style={"fontWeight": 600, "opacity": 0.9}),
+                                        html.Label("X-slice (i)"),
+                                        dcc.Slider(id="x-slider", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
+                                        html.Label("Y-slice (j)"),
+                                        dcc.Slider(id="y-slider", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
+                                        html.Label("Z-slice (k)"),
+                                        dcc.Slider(id="z-slider", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
+                                        html.Hr(),
+                                        html.Div("ROI (sphere)", style={"fontWeight": 600, "opacity": 0.9}),
+                                        html.Label("ROI X (mm)"),
+                                        dcc.Input(id="roi-x-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Label("ROI Y (mm)"),
+                                        dcc.Input(id="roi-y-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Label("ROI Z (mm)"),
+                                        dcc.Input(id="roi-z-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
                                         html.Label("ROI X (i)"),
                                         dcc.Slider(id="roi-x", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
                                         html.Label("ROI Y (j)"),
@@ -758,77 +809,98 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                         html.Label("ROI Radius (voxels)"),
                                         dcc.Slider(id="roi-r", min=0, max=int(max(Nx, Ny, Nz)//2), step=1, value=1, updatemode="drag",
                                                    tooltip={"always_visible": False, "placement": "bottom"}),
-                                    ]),
-                                    dcc.Tab(label="Two Points", value="twopoints", children=[
-                                        html.Div("Point A", style={"fontWeight": 600, "opacity": 0.9, "marginTop": "6px"}),
-                                        html.Label("A: i"),
-                                        dcc.Slider(id="pA-i", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
-                                        html.Label("A: j"),
-                                        dcc.Slider(id="pA-j", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
-                                        html.Label("A: k"),
-                                        dcc.Slider(id="pA-k", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
-                                        html.Div("Point B", style={"fontWeight": 600, "opacity": 0.9, "marginTop": "6px"}),
-                                        html.Label("B: i"),
-                                        dcc.Slider(id="pB-i", min=0, max=Nx-1, step=1, value=x_mid+1 if x_mid+1 < Nx else x_mid, updatemode="drag"),
-                                        html.Label("B: j"),
-                                        dcc.Slider(id="pB-j", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
-                                        html.Label("B: k"),
-                                        dcc.Slider(id="pB-k", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
-                                        html.Div("Note: Sphere center = midpoint(A,B); radius = half distance(A,B)",
-                                                 style={"fontSize": "12px", "opacity": 0.8, "marginTop": "6px"}),
+                                        html.Label("ROI Radius (mm)"),
+                                        dcc.Input(id="roi-r-mm", type="text", placeholder="mm", value="",
+                                                  style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                         "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Label("ROI Radius (voxels)"),
+                                        dcc.Input(id="roi-r-vox", type="text", placeholder="voxels", value="",
+                                                  style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                         "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Hr(),
+                                        html.Button("Reset", id="reset-btn-view",
+                                                    style={"background": "#2563EB", "color": "white",
+                                                           "border": "none", "padding": "6px 10px",
+                                                           "borderRadius": "6px", "width": "100%"}),
                                     ])
-                                ])
-                            ], style={"padding": "6px"})
-                        ]),
-                        dcc.Tab(label="Operations", value="ops", children=[
-                            html.Div([
-                                html.Div("Morphology Mode", style={"fontWeight": 600, "opacity": 0.9}),
-                                dcc.RadioItems(
-                                    id="morph-ui-mode",
-                                    options=[
-                                        {"label": " Manual", "value": "manual"},
-                                        {"label": " Automated (percent diameter stenosis)", "value": "auto"},
-                                    ],
-                                    value="manual",
-                                    labelStyle={"display": "block", "marginBottom": "4px"}
-                                ),
-                                html.Div(id="ops-manual", children=[
-                                    dcc.RadioItems(
-                                        id="morph-mode",
-                                        options=[
-                                            {"label": " Dilate", "value": "dilate"},
-                                            {"label": " Erode (shrink)", "value": "shrink"},
-                                        ],
-                                        value="dilate",
-                                        labelStyle={"display": "block", "marginBottom": "4px"}
-                                    ),
-                                    html.Label("Iterations"),
-                                    dcc.Input(id="morph-iters", type="number", min=1, step=1, value=1,
-                                              style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                     "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
-                                    html.Button("Apply Morphology", id="apply-morph",
-                                                style={"background": "#16A34A", "color": "white",
-                                                       "border": "none", "padding": "6px 10px",
-                                                       "borderRadius": "6px", "marginTop": "6px"}),
-                                ], style={"marginTop": "8px"}),
-                                html.Div(id="ops-auto", children=[
-                                    html.Label("Percent Diameter Stenosis (%)"),
-                                    dcc.Input(id="stenosis-pct", type="number", min=1, max=99, step=1, value=50,
-                                              style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                     "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
-                                    html.Button("Run Automated Stenosis", id="apply-auto",
-                                                style={"background": "#F59E0B", "color": "black",
-                                                       "border": "none", "padding": "6px 10px",
-                                                       "borderRadius": "6px", "marginTop": "6px"}),
-                                ], style={"marginTop": "8px"}),
-                            ], style={"padding": "6px"})
-                        ]),
-                    ]),
-                    html.Button("Reset", id="reset-btn",
-                                style={"background": "#2563EB", "color": "white",
-                                       "border": "none", "padding": "6px 10px",
-                                       "borderRadius": "6px", "marginTop": "8px"}),
-                    html.Div(id="status", style={"fontSize": "12px", "marginTop": "8px"})
+                                ]
+                            ),
+                            dcc.Tab(
+                                label="Operations",
+                                value="ops-tab",
+                                style={
+                                    "padding": "10px",
+                                    "backgroundColor": "#0f1115",
+                                    "color": "#a0aec0",
+                                    "fontWeight": "normal",
+                                    "borderRadius": "6px 6px 0 0",
+                                    "border": "1px solid transparent"
+                                },
+                                selected_style={
+                                    "padding": "10px",
+                                    "backgroundColor": "#151922",
+                                    "color": "#e6e6e6",
+                                    "fontWeight": "bold",
+                                    "borderRadius": "6px 6px 0 0",
+                                    "border": "2px solid #3b82f6",
+                                    "borderBottom": "none"
+                                },
+                                children=[
+                                    html.Div(style={"display": "flex", "flexDirection": "column", "gap": "10px"}, children=[
+                                        html.Div("Mask Display (for reference)", style={"fontWeight": 600, "opacity": 0.9}),
+                                        dcc.Checklist(
+                                            id="mask-check-ops",
+                                            options=[
+                                                {"label": " Inside", "value": "inside"},
+                                                {"label": " On", "value": "on"},
+                                                {"label": " Out", "value": "out"},
+                                            ],
+                                            value=["inside", "on", "out"],
+                                            inputStyle={"marginRight": "6px"},
+                                            labelStyle={"display": "block", "marginBottom": "4px"}
+                                        ),
+                                        html.Hr(),
+                                        html.Div("Morphology", style={"fontWeight": 600, "opacity": 0.9}),
+                                        dcc.RadioItems(
+                                            id="morph-mode",
+                                            options=[
+                                                {"label": " Dilate", "value": "dilate"},
+                                                {"label": " Erode (shrink)", "value": "shrink"},
+                                            ],
+                                            value="dilate",
+                                            labelStyle={"display": "block", "marginBottom": "4px"}
+                                        ),
+                                        html.Label("Iterations"),
+                                        dcc.Input(id="morph-iters", type="number", min=1, step=1, value=1,
+                                                  style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                         "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Button("Apply Morphology", id="apply-morph",
+                                                    style={"background": "#16A34A", "color": "white",
+                                                           "border": "none", "padding": "6px 10px",
+                                                           "borderRadius": "6px", "marginTop": "6px", "width": "100%"}),
+                                        html.Hr(),
+                                        html.Div("Stenosis", style={"fontWeight": 600, "opacity": 0.9}),
+                                        html.Label("Stenosis Percentage (0-100%)"),
+                                        dcc.Input(id="stenosis-percent", type="number", min=0, max=100, step=0.5, value=0,
+                                                  style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                         "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Small("0% = no stenosis | 100% = complete occlusion",
+                                                  style={"fontSize": "11px", "opacity": 0.7, "marginTop": "4px", "display": "block"}),
+                                        html.Button("Apply Stenosis", id="apply-stenosis",
+                                                    style={"background": "#DC2626", "color": "white",
+                                                           "border": "none", "padding": "6px 10px",
+                                                           "borderRadius": "6px", "marginTop": "6px", "width": "100%"}),
+                                        html.Hr(),
+                                        html.Button("Reset", id="reset-btn",
+                                                    style={"background": "#2563EB", "color": "white",
+                                                           "border": "none", "padding": "6px 10px",
+                                                           "borderRadius": "6px", "marginTop": "8px", "width": "100%"}),
+                                        html.Div(id="status", style={"fontSize": "12px", "marginTop": "8px"})
+                                    ])
+                                ]
+                            ),
+                        ]
+                    )
                 ]
             ),
             html.Div(
@@ -842,6 +914,151 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         ]
     )
 
+    # Helper function to convert mm to voxel index
+    def mm_to_idx(val_mm, origin, spacing, limit):
+        if val_mm is None:
+            return None
+        if isinstance(val_mm, str) and val_mm.strip() == "":
+            return None
+        try:
+            v = float(val_mm)
+        except Exception:
+            return None
+        idx = int(round((v - origin) / spacing))
+        idx = max(0, min(limit - 1, idx))
+        return idx
+
+    # Callback to update ROI sliders when mm coordinates are entered
+    @app.callback(
+        Output("roi-x", "value"),
+        Output("roi-y", "value"),
+        Output("roi-z", "value"),
+        Input("roi-x-mm", "value"),
+        Input("roi-y-mm", "value"),
+        Input("roi-z-mm", "value"),
+        prevent_initial_call=True
+    )
+    def update_roi_from_mm(roi_x_mm, roi_y_mm, roi_z_mm):
+        triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
+        s = grid["spacing"][0]
+        ox, oy, oz = grid["origin"]
+        Nz, Ny, Nx = grid["shape"]
+        
+        # Get current slider values (from State would be better, but using defaults)
+        current_roi_x = x_mid
+        current_roi_y = y_mid
+        current_roi_z = z_mid
+        
+        new_roi_x = current_roi_x
+        new_roi_y = current_roi_y
+        new_roi_z = current_roi_z
+        
+        # Only update if a mm input was triggered and has a valid value
+        if "roi-x-mm.value" in triggered:
+            ix = mm_to_idx(roi_x_mm, ox, s, Nx)
+            if ix is not None:
+                new_roi_x = ix
+        
+        if "roi-y-mm.value" in triggered:
+            iy = mm_to_idx(roi_y_mm, oy, s, Ny)
+            if iy is not None:
+                new_roi_y = iy
+        
+        if "roi-z-mm.value" in triggered:
+            iz = mm_to_idx(roi_z_mm, oz, s, Nz)
+            if iz is not None:
+                new_roi_z = iz
+        
+        return new_roi_x, new_roi_y, new_roi_z
+
+    # Callback to update mm coordinates when ROI sliders are moved
+    @app.callback(
+        Output("roi-x-mm", "value"),
+        Output("roi-y-mm", "value"),
+        Output("roi-z-mm", "value"),
+        Input("roi-x", "value"),
+        Input("roi-y", "value"),
+        Input("roi-z", "value"),
+        prevent_initial_call=True
+    )
+    def update_mm_from_roi(roi_x, roi_y, roi_z):
+        s = grid["spacing"][0]
+        ox, oy, oz = grid["origin"]
+        
+        # Convert voxel indices to mm coordinates
+        roi_x_mm_val = ox + roi_x * s
+        roi_y_mm_val = oy + roi_y * s
+        roi_z_mm_val = oz + roi_z * s
+        
+        return f"{roi_x_mm_val:.2f}", f"{roi_y_mm_val:.2f}", f"{roi_z_mm_val:.2f}"
+
+    # Callback to update ROI radius slider from mm or voxel inputs
+    @app.callback(
+        Output("roi-r", "value"),
+        Input("roi-r-mm", "value"),
+        Input("roi-r-vox", "value"),
+        prevent_initial_call=True
+    )
+    def update_radius_from_inputs(roi_r_mm, roi_r_vox):
+        triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
+        s = grid["spacing"][0]
+        
+        # If mm input was triggered and has a valid value
+        if "roi-r-mm.value" in triggered and roi_r_mm is not None and isinstance(roi_r_mm, str) and roi_r_mm.strip():
+            try:
+                r_mm = float(roi_r_mm)
+                r_vox = int(round(r_mm / s))
+                r_vox = max(0, min(int(max(Nx, Ny, Nz)//2), r_vox))
+                return r_vox
+            except Exception:
+                pass
+        
+        # If voxel input was triggered and has a valid value
+        if "roi-r-vox.value" in triggered and roi_r_vox is not None and isinstance(roi_r_vox, str) and roi_r_vox.strip():
+            try:
+                r_vox = int(roi_r_vox)
+                r_vox = max(0, min(int(max(Nx, Ny, Nz)//2), r_vox))
+                return r_vox
+            except Exception:
+                pass
+        
+        # Return current slider value if no valid input
+        return 1
+
+    # Callback to update radius display values when slider changes
+    @app.callback(
+        Output("roi-r-mm", "value"),
+        Output("roi-r-vox", "value"),
+        Input("roi-r", "value"),
+        prevent_initial_call=True
+    )
+    def update_radius_displays(roi_r):
+        s = grid["spacing"][0]
+        
+        if roi_r is not None:
+            r_mm = roi_r * s
+            return f"{r_mm:.2f}", f"{roi_r}"
+        
+        return "", ""
+
+    # Callback to sync mask-check to mask-check-ops
+    @app.callback(
+        Output("mask-check-ops", "value"),
+        Input("mask-check", "value"),
+        prevent_initial_call=True
+    )
+    def sync_masks_to_ops(mask_check_value):
+        return mask_check_value
+
+    # Callback to sync mask-check-ops to mask-check
+    @app.callback(
+        Output("mask-check", "value"),
+        Input("mask-check-ops", "value"),
+        prevent_initial_call=True
+    )
+    def sync_masks_from_ops(mask_check_ops_value):
+        return mask_check_ops_value
+
     @app.callback(
         Output("x-view", "figure"),
         Output("y-view", "figure"),
@@ -849,135 +1066,71 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         Output("threeD-view", "figure"),
         Output("status", "children"),
         Input("mask-check", "value"),
+        Input("mask-check-ops", "value"),
         Input("x-slider", "value"),
         Input("y-slider", "value"),
         Input("z-slider", "value"),
-        Input("roi-mode-tabs", "value"),
         Input("roi-x", "value"),
         Input("roi-y", "value"),
         Input("roi-z", "value"),
         Input("roi-r", "value"),
-        Input("pA-i", "value"),
-        Input("pA-j", "value"),
-        Input("pA-k", "value"),
-        Input("pB-i", "value"),
-        Input("pB-j", "value"),
-        Input("pB-k", "value"),
-        Input("tools-tabs", "value"),
-        Input("morph-ui-mode", "value"),
         Input("morph-mode", "value"),
         Input("morph-iters", "value"),
         Input("apply-morph", "n_clicks"),
-        Input("stenosis-pct", "value"),
-        Input("apply-auto", "n_clicks"),
+        Input("stenosis-percent", "value"),
+        Input("apply-stenosis", "n_clicks"),
         Input("reset-btn", "n_clicks"),
+        Input("reset-btn-view", "n_clicks"),
         prevent_initial_call=False
     )
-    def update(mask_values, x_idx, y_idx, z_idx, roi_mode,
+    def update(mask_values, mask_values_ops, x_idx, y_idx, z_idx,
                roi_x, roi_y, roi_z, roi_r,
-               pA_i, pA_j, pA_k, pB_i, pB_j, pB_k,
-               tabs_value, ui_mode, morph_mode, morph_iters, apply_clicks,
-               stenosis_pct, apply_auto_clicks, n_clicks):
+               morph_mode, morph_iters, apply_clicks, 
+               stenosis_percent, apply_stenosis_clicks, n_clicks, n_clicks_view):
         triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
-        if "reset-btn.n_clicks" in triggered:
-            mask_values = ["inside", "on", "out"]
+        
+        # Since mask-check and mask-check-ops are synced, use mask_values
+        # (they will always be the same value)
+        active_masks = mask_values if mask_values is not None else ["inside", "on", "out"]
+        
+        if "reset-btn.n_clicks" in triggered or "reset-btn-view.n_clicks" in triggered:
+            active_masks = ["inside", "on", "out"]
             x_idx, y_idx, z_idx = x_mid, y_mid, z_mid
             roi_x, roi_y, roi_z, roi_r = x_mid, y_mid, z_mid, 1
-            pA_i, pA_j, pA_k = x_mid, y_mid, z_mid
-            pB_i, pB_j, pB_k = min(x_mid+1, Nx-1), y_mid, z_mid
+            stenosis_percent = 0
+            # clear mm inputs on reset (visual clearing would require Outputs; keep placeholders)
             # Reset the working inside mask
             inside_state["inside"] = inside_state["original"].copy()
 
         # Apply morphology when requested
-        if "apply-morph.n_clicks" in triggered and (ui_mode == "manual"):
+        if "apply-morph.n_clicks" in triggered:
             try:
                 iters = int(morph_iters) if morph_iters is not None else 1
                 iters = max(1, iters)
             except Exception:
                 iters = 1
             mode = morph_mode if morph_mode in ("dilate", "shrink") else "dilate"
-            # Update only the inside portion within ROI, keep others untouched, then recombine
+
             inside_state["inside"] = apply_roi_morphology(
                 inside_state["inside"], roi_x, roi_y, roi_z, roi_r, iterations=iters, mode=mode
             )
 
-        # Determine effective ROI center+radius depending on ROI mode
-        if roi_mode == "twopoints":
-            # Midpoint center and half-distance radius (in voxels)
-            cx = int(np.round((int(pA_i) + int(pB_i)) / 2))
-            cy = int(np.round((int(pA_j) + int(pB_j)) / 2))
-            cz = int(np.round((int(pA_k) + int(pB_k)) / 2))
-            dx = int(pA_i) - int(pB_i)
-            dy = int(pA_j) - int(pB_j)
-            dz = int(pA_k) - int(pB_k)
-            dist = int(np.round(np.sqrt(dx*dx + dy*dy + dz*dz)))
-            eff_roi_x, eff_roi_y, eff_roi_z = cx, cy, cz
-            eff_roi_r = max(1, dist // 2)
-        else:
-            eff_roi_x, eff_roi_y, eff_roi_z, eff_roi_r = int(roi_x), int(roi_y), int(roi_z), int(roi_r)
-
-        # Automated stenosis: shrink ROI radius using a sparse sigmoidal tick schedule
-        if "apply-auto.n_clicks" in triggered and (ui_mode == "auto"):
+        # Apply stenosis when requested
+        if "apply-stenosis.n_clicks" in triggered:
             try:
-                pct = float(stenosis_pct)
+                stenosis_pct = float(stenosis_percent) if stenosis_percent is not None else 0
+                stenosis_pct = max(0.0, min(100.0, stenosis_pct))
             except Exception:
-                pct = 50.0
-            pct = max(1.0, min(99.0, pct))
+                stenosis_pct = 0
 
-            target_r = int(max(0, np.floor(eff_roi_r * (pct / 100.0))))
-            start_r  = int(eff_roi_r)
-            steps = max(0, start_r - target_r)  # number of single-iteration erosions needed
-            auto_status = ""
-            # Safety threshold: do not erode below 10% of the initial in-ROI voxels
-            safety_frac = 0.10
-            base_roi_u8, _ = filter_inside_by_roi(inside_state["inside"], eff_roi_x, eff_roi_y, eff_roi_z, start_r)
-            base_count = int(np.sum(base_roi_u8))
-            safe_min = max(1, int(np.floor(safety_frac * base_count)))
-
-            if steps > 0:
-                # Total time ticks: default to 2×steps (keeps overall duration similar)
-                total_ticks = 2 * steps
-                if total_ticks < steps:
-                    total_ticks = steps
-                apply_ticks = _sigmoid_sparse_apply_schedule(total_ticks, steps)
-
-                current_r = start_r
-                safety_triggered = False
-                applied = 0
-                for tick in range(total_ticks):
-                    if current_r <= target_r:
-                        break
-                    if not apply_ticks[tick]:
-                        continue  # skip this tick to throttle rate (no morphology this tick)
-
-                    # Apply a single-iteration shrink confined to current ROI radius
-                    inside_state["inside"] = apply_roi_morphology(
-                        inside_state["inside"], eff_roi_x, eff_roi_y, eff_roi_z, current_r,
-                        iterations=1, mode="shrink"
-                    )
-                    applied += 1
-
-                    # Safety check: count current in-ROI voxels at this radius
-                    cur_roi_u8, _ = filter_inside_by_roi(inside_state["inside"], eff_roi_x, eff_roi_y, eff_roi_z, current_r)
-                    cur_count = int(np.sum(cur_roi_u8))
-                    if cur_count < safe_min:
-                        safety_triggered = True
-                        auto_status = (
-                            f" | Auto stopped early: r={current_r}, vox={cur_count} < {safe_min}, "
-                            f"applied={applied}/{steps}, ticks={total_ticks}"
-                        )
-                        break
-
-                    current_r -= 1
-
-                if not safety_triggered:
-                    auto_status = f" | Auto done: steps={applied}/{steps}, ticks={total_ticks}"
-            # UI slider for roi-r remains user-controlled; internal loop uses shrinking radii
+            inside_state["inside"] = apply_iterative_stenosis(
+                inside_state["inside"], roi_x, roi_y, roi_z, roi_r, stenosis_percent=stenosis_pct
+            )
 
         active = []
-        show_inside = "inside" in mask_values
-        show_on     = "on"     in mask_values
-        show_out    = "out"    in mask_values
+        show_inside = "inside" in active_masks
+        show_on     = "on"     in active_masks
+        show_out    = "out"    in active_masks
         if show_inside:
             active.append(inside_state["inside"])
         if show_on:
@@ -1004,7 +1157,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
             fig3d.add_trace(frame)
 
         # ROI sphere (wireframe)
-        roi_traces = _roi_frame(grid, eff_roi_x, eff_roi_y, eff_roi_z, eff_roi_r,
+        roi_traces = _roi_frame(grid, roi_x, roi_y, roi_z, roi_r,
                                 n_lat=6, n_lon=8, color="#E11D48", line_width=3)
         for t in roi_traces:
             fig3d.add_trace(t)
@@ -1020,15 +1173,21 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
             )
         )
 
-        status = (
-            f"Active masks: {', '.join(mask_values)} | X={x_idx}, Y={y_idx}, Z={z_idx} "
-            f"| ROI: (i,j,k)=({eff_roi_x},{eff_roi_y},{eff_roi_z}), r={eff_roi_r} vox"
-        )
+        # Compute world-space ROI center (mm) from indices for display
         try:
-            if auto_status:
-                status += auto_status
+            s = grid["spacing"][0]
+            ox, oy, oz = grid["origin"]
+            roi_x_mm_display = ox + roi_x * s
+            roi_y_mm_display = oy + roi_y * s
+            roi_z_mm_display = oz + roi_z * s
+            roi_mm_str = f"({roi_x_mm_display:.2f} mm, {roi_y_mm_display:.2f} mm, {roi_z_mm_display:.2f} mm)"
         except Exception:
-            pass
+            roi_mm_str = "(n/a)"
+
+        status = (
+            f"Active masks: {', '.join(active_masks)} | X={x_idx}, Y={y_idx}, Z={z_idx} "
+            f"| ROI idx=(i,j,k)=({roi_x},{roi_y},{roi_z}), r={roi_r} vox | ROI mm={roi_mm_str}"
+        )
         return x_fig, y_fig, z_fig, fig3d, status
 
     # Open browser on a fresh port each run to avoid caching
@@ -1049,8 +1208,7 @@ def run_pipeline(
     show: bool = True,
     mc_map: str = "xyz",
     viewer: str = "dash",
-    port: int = 8050,
-    method: str = "auto"
+    port: int = 8050
 ):
     mesh_path = Path(in_mesh_path).resolve()
     if not mesh_path.exists():
@@ -1066,21 +1224,8 @@ def run_pipeline(
     # Grid (power-of-two cubic grid)
     grid = make_cube_grid_from_mesh(mesh, spacing=spacing, n=n, margin_frac=margin_frac)
 
-    # In/on/out masks
-    if method == "auto":
-        if igl is not None:
-            inside_u8, on_u8, out_u8 = classify_by_winding(mesh, grid, band=0.6)
-        else:
-            warn("python-igl not available; falling back to trimesh.contains (slower).")
-            inside_u8, on_u8, out_u8 = classify_by_trimesh_contains(mesh, grid)
-    elif method == "winding":
-        if igl is None:
-            raise RuntimeError("python-igl is required for method='winding'.")
-        inside_u8, on_u8, out_u8 = classify_by_winding(mesh, grid, band=0.6)
-    elif method == "trimesh":
-        inside_u8, on_u8, out_u8 = classify_by_trimesh_contains(mesh, grid)
-    else:
-        raise ValueError(f"Unknown method: {method}")
+    # Winding-based masks
+    inside_u8, on_u8, out_u8 = classify_by_winding(mesh, grid, band=0.6)
 
     # Save masks in a single compressed NPZ with spacing/origin like core.run_pipeline
     Path(out_npz).parent.mkdir(parents=True, exist_ok=True)
@@ -1102,7 +1247,7 @@ def run_pipeline(
 def main():
     import argparse
 
-    ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline (winding or trimesh)")
+    ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline (winding-based)")
     ap.add_argument("--in", dest="in_mesh", required=True,
                     help="Input mesh (.stl/.obj/.ply)")
     ap.add_argument("--spacing", type=float, default=None,
@@ -1116,8 +1261,6 @@ def main():
                     help="Axis mapping from marching-cubes (z,y,x) → (X,Y,Z).")
     ap.add_argument("--out", default="outputs/masks_demo.npz",
                     help="Output compressed npz file")
-    ap.add_argument("--method", choices=["auto", "winding", "trimesh"], default="auto",
-                    help="Inside/outside method: auto (default), winding (python-igl), or trimesh")
     ap.add_argument("--no-show", action="store_true",
                     help="Do not open viewer")
     ap.add_argument("--viewer", choices=["dash","html"], default="dash",
@@ -1127,8 +1270,8 @@ def main():
 
     args = ap.parse_args()
 
-    if args.method == "winding" and igl is None:
-        err("python-igl is required for --method winding. Install via conda-forge:\n"
+    if igl is None:
+        err("python-igl is required (fast winding number). Install via conda-forge:\n"
             "  conda install -c conda-forge python-igl\n"
             "or pip:\n"
             "  pip install igl")
@@ -1145,8 +1288,7 @@ def main():
         show=not args.no_show,
         mc_map=args.mc_map,
         viewer=args.viewer,
-        port=args.port,
-        method=args.method
+        port=args.port
     )
 
 if __name__ == "__main__":

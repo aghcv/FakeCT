@@ -737,7 +737,10 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                     ),
                     html.Hr(),
                     dcc.Tabs(id="tools-tabs", value="roi", children=[
-                        dcc.Tab(label="ROI", value="roi", children=[
+                        dcc.Tab(label="ROI", value="roi", 
+                                style={'backgroundColor': 'black', 'color': 'white'},
+                                selected_style={'backgroundColor': 'black', 'color': 'white', 'border': '2px solid blue', 'fontWeight': 'bold'},
+                                children=[
                             html.Div([
                                 html.Label("X-slice (i)"),
                                 dcc.Slider(id="x-slider", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
@@ -748,7 +751,22 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                 html.Hr(),
                                 html.Div("ROI (sphere)", style={"fontWeight": 600, "opacity": 0.9}),
                                 dcc.Tabs(id="roi-mode-tabs", value="center", children=[
-                                    dcc.Tab(label="Center + Radius", value="center", children=[
+                                    dcc.Tab(label="Center + Radius", value="center", 
+                                            style={'backgroundColor': 'black', 'color': 'white'},
+                                            selected_style={'backgroundColor': 'black', 'color': 'white', 'border': '2px solid blue', 'fontWeight': 'bold'},
+                                            children=[
+                                        html.Label("ROI X (mm)"),
+                                        dcc.Input(id="roi-x-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Label("ROI Y (mm)"),
+                                        dcc.Input(id="roi-y-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Label("ROI Z (mm)"),
+                                        dcc.Input(id="roi-z-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
                                         html.Label("ROI X (i)"),
                                         dcc.Slider(id="roi-x", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
                                         html.Label("ROI Y (j)"),
@@ -758,8 +776,15 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                         html.Label("ROI Radius (voxels)"),
                                         dcc.Slider(id="roi-r", min=0, max=int(max(Nx, Ny, Nz)//2), step=1, value=1, updatemode="drag",
                                                    tooltip={"always_visible": False, "placement": "bottom"}),
+                                        html.Label("ROI Radius (mm)"),
+                                        dcc.Input(id="roi-r-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
                                     ]),
-                                    dcc.Tab(label="Two Points", value="twopoints", children=[
+                                    dcc.Tab(label="Two Points", value="twopoints", 
+                                            style={'backgroundColor': 'black', 'color': 'white'},
+                                            selected_style={'backgroundColor': 'black', 'color': 'white', 'border': '2px solid blue', 'fontWeight': 'bold'},
+                                            children=[
                                         html.Div("Point A", style={"fontWeight": 600, "opacity": 0.9, "marginTop": "6px"}),
                                         html.Label("A: i"),
                                         dcc.Slider(id="pA-i", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
@@ -780,7 +805,10 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                 ])
                             ], style={"padding": "6px"})
                         ]),
-                        dcc.Tab(label="Operations", value="ops", children=[
+                        dcc.Tab(label="Operations", value="ops", 
+                                style={'backgroundColor': 'black', 'color': 'white'},
+                                selected_style={'backgroundColor': 'black', 'color': 'white', 'border': '2px solid blue', 'fontWeight': 'bold'},
+                                children=[
                             html.Div([
                                 html.Div("Morphology Mode", style={"fontWeight": 600, "opacity": 0.9}),
                                 dcc.RadioItems(
@@ -841,6 +869,122 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
             )
         ]
     )
+
+    # Helper function to convert mm to voxel index
+    def mm_to_idx(val_mm, origin, spacing, limit):
+        if val_mm is None:
+            return None
+        if isinstance(val_mm, str) and val_mm.strip() == "":
+            return None
+        try:
+            v = float(val_mm)
+        except Exception:
+            return None
+        idx = int(round((v - origin) / spacing))
+        idx = max(0, min(limit - 1, idx))
+        return idx
+
+    # Callback to update ROI sliders when mm coordinates are entered
+    @app.callback(
+        Output("roi-x", "value"),
+        Output("roi-y", "value"),
+        Output("roi-z", "value"),
+        Input("roi-x-mm", "value"),
+        Input("roi-y-mm", "value"),
+        Input("roi-z-mm", "value"),
+        prevent_initial_call=True
+    )
+    def update_roi_from_mm(roi_x_mm, roi_y_mm, roi_z_mm):
+        triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
+        s = grid["spacing"][0]
+        ox, oy, oz = grid["origin"]
+        Nz, Ny, Nx = grid["shape"]
+        
+        # Get current slider values (from State would be better, but using defaults)
+        current_roi_x = x_mid
+        current_roi_y = y_mid
+        current_roi_z = z_mid
+        
+        new_roi_x = current_roi_x
+        new_roi_y = current_roi_y
+        new_roi_z = current_roi_z
+        
+        # Only update if a mm input was triggered and has a valid value
+        if "roi-x-mm.value" in triggered:
+            ix = mm_to_idx(roi_x_mm, ox, s, Nx)
+            if ix is not None:
+                new_roi_x = ix
+        
+        if "roi-y-mm.value" in triggered:
+            iy = mm_to_idx(roi_y_mm, oy, s, Ny)
+            if iy is not None:
+                new_roi_y = iy
+        
+        if "roi-z-mm.value" in triggered:
+            iz = mm_to_idx(roi_z_mm, oz, s, Nz)
+            if iz is not None:
+                new_roi_z = iz
+        
+        return new_roi_x, new_roi_y, new_roi_z
+
+    # Callback to update mm coordinates when ROI sliders are moved
+    @app.callback(
+        Output("roi-x-mm", "value"),
+        Output("roi-y-mm", "value"),
+        Output("roi-z-mm", "value"),
+        Input("roi-x", "value"),
+        Input("roi-y", "value"),
+        Input("roi-z", "value"),
+        prevent_initial_call=True
+    )
+    def update_mm_from_roi(roi_x, roi_y, roi_z):
+        s = grid["spacing"][0]
+        ox, oy, oz = grid["origin"]
+        
+        # Convert voxel indices to mm coordinates
+        roi_x_mm_val = ox + roi_x * s
+        roi_y_mm_val = oy + roi_y * s
+        roi_z_mm_val = oz + roi_z * s
+        
+        return f"{roi_x_mm_val:.2f}", f"{roi_y_mm_val:.2f}", f"{roi_z_mm_val:.2f}"
+
+    # Callback to update ROI radius slider from mm input
+    @app.callback(
+        Output("roi-r", "value"),
+        Input("roi-r-mm", "value"),
+        prevent_initial_call=True
+    )
+    def update_radius_from_mm(roi_r_mm):
+        triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
+        s = grid["spacing"][0]
+        
+        # If mm input was triggered and has a valid value
+        if "roi-r-mm.value" in triggered and roi_r_mm is not None and isinstance(roi_r_mm, str) and roi_r_mm.strip():
+            try:
+                r_mm = float(roi_r_mm)
+                r_vox = int(round(r_mm / s))
+                r_vox = max(0, min(int(max(Nx, Ny, Nz)//2), r_vox))
+                return r_vox
+            except Exception:
+                pass
+        
+        # Return current slider value if no valid input
+        return 1
+
+    # Callback to update mm radius display when slider changes
+    @app.callback(
+        Output("roi-r-mm", "value"),
+        Input("roi-r", "value"),
+        prevent_initial_call=True
+    )
+    def update_radius_mm_display(roi_r):
+        s = grid["spacing"][0]
+        
+        if roi_r is not None:
+            r_mm = roi_r * s
+            return f"{r_mm:.2f}"
+        
+        return ""
 
     @app.callback(
         Output("x-view", "figure"),

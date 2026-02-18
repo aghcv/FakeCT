@@ -63,17 +63,21 @@ Before following the quick start, make sure you have these tools installed. The 
 	```bash
 	conda create -n fakect python=3.10 -y
 	conda activate fakect
-	conda install -c conda-forge python-igl trimesh scipy scikit-image plotly dash -y
+	conda install -c conda-forge trimesh scipy scikit-image plotly dash -y
+	# Optional, if available on your platform:
+	conda install -c conda-forge python-igl -y
 
 	python src/fakect.py --in data/carotid.stl --n 7 --out outputs/carotid_masks.npz
 	```
 
+
+
 	Notes
 	-----
-	- `python-igl` is recommended to be installed from `conda-forge` (best cross-platform)
-	  — pip installs of `igl` often fail on many systems. If `igl` is not available the
-	  stand-alone script will currently exit with an error; I can add an automatic
-	  fallback to the parity-based classifier if you prefer.
+	- `python-igl` is recommended from `conda-forge` when available; pip installs of `igl`
+	  often fail on many systems. On macOS x86_64, conda-forge does not provide a build,
+	  so the CLI falls back to a slower `trimesh.contains` method by default.
+	- To force a method, use `--method winding` (requires python-igl) or `--method trimesh`.
 
 	Relevant paper
 	--------------
