@@ -80,7 +80,7 @@ ROI_DEFAULTS = {
     "p1_opacity": 0.9,
     "p2_opacity": 0.9,
     "line_opacity": 0.8,
-    "sphere_opacity": 0.2
+    "sphere_opacity": 0.05
 }
 
 # ---------------------------------------------------------------------
@@ -299,8 +299,8 @@ def _hex_to_rgba(hex_color: str, alpha: float) -> str:
     b = int(hex_color[4:6], 16)
     return f"rgba({r},{g},{b},{alpha})"
 
-def _slice_colorscale(mask_color: str, roi_color: str) -> list:
-    return [[0.0, "black"], [0.5, mask_color], [1.0, roi_color]]
+def _slice_colorscale(mask_color: str) -> list:
+    return [[0.0, "black"], [1.0, mask_color]]
 
 def _slice_plane_colorscale(mask_color: str, roi_color: str, alpha: float) -> list:
     return [
@@ -308,6 +308,18 @@ def _slice_plane_colorscale(mask_color: str, roi_color: str, alpha: float) -> li
         [0.5, _hex_to_rgba(mask_color, alpha)],
         [1.0, _hex_to_rgba(roi_color, alpha)]
     ]
+
+def _roi_overlay_trace(roi_mask: np.ndarray, color: str, opacity: float) -> go.Heatmap:
+    z = np.where(roi_mask > 0, 1.0, np.nan)
+    return go.Heatmap(
+        z=z,
+        zmin=0,
+        zmax=1,
+        colorscale=[[0.0, color], [1.0, color]],
+        showscale=False,
+        hoverinfo="skip",
+        opacity=max(0.0, min(1.0, float(opacity)))
+    )
 
 def _voxel_center(grid, i_idx, j_idx, k_idx):
     sx, sy, sz = grid["spacing"]
@@ -507,6 +519,55 @@ def compose_slice(masks, axis, idx):
         out |= (s > 0).astype(np.uint8)
     return out
 
+def _scale_to_pos(scale_val: float) -> float:
+    """Map scale value in [0.001, 99.999] to slider position in [0, 1] with 1.0 at 0.5."""
+    v = max(0.001, min(99.999, float(scale_val)))
+    if v <= 1.0:
+        return 0.5 * (np.log10(v) - np.log10(0.001)) / (np.log10(1.0) - np.log10(0.001))
+    return 0.5 + 0.5 * (np.log10(v) - np.log10(1.0)) / (np.log10(99.999) - np.log10(1.0))
+
+def _pos_to_scale(pos: float) -> float:
+    """Map slider position in [0, 1] to scale value in [0.001, 99.999] with 1.0 at 0.5."""
+    p = max(0.0, min(1.0, float(pos)))
+    if p <= 0.5:
+        t = p / 0.5
+        return float(10 ** (np.log10(0.001) + t * (np.log10(1.0) - np.log10(0.001))))
+    t = (p - 0.5) / 0.5
+    return float(10 ** (np.log10(1.0) + t * (np.log10(99.999) - np.log10(1.0))))
+
+def _linspace_safe(vmin: float, vmax: float, count: int) -> list:
+    """Generate a safe list of values for batch export (count >= 1)."""
+    try:
+        vmin = float(vmin)
+        vmax = float(vmax)
+    except (TypeError, ValueError):
+        return [1.0]
+    try:
+        count = int(count)
+    except (TypeError, ValueError):
+        count = 1
+    count = max(1, count)
+    if count == 1:
+        return [vmin]
+    return list(np.linspace(vmin, vmax, count))
+
+def _fmt_param(val: float, decimals: int = 3) -> str:
+    """Format a float for filenames (avoid dots)."""
+    try:
+        v = float(val)
+    except (TypeError, ValueError):
+        v = 0.0
+    return f"{v:.{decimals}f}".replace(".", "p")
+
+def _gaussian_shape(x: float, k: float) -> float:
+    """Normalized Gaussian shape with S(0)=0, S(0.5)=1, S(1)=0."""
+    k = max(1e-6, float(k))
+    s = np.exp(-k * (x - 0.5) ** 2)
+    s0 = np.exp(-k * 0.25)
+    denom = max(1e-8, 1.0 - s0)
+    val = (s - s0) / denom
+    return float(max(0.0, min(1.0, val)))
+
 def _roi_mask_vox(shape_zyx, center_ijk, r_vox):
     """Return a boolean spherical ROI mask in voxel index space."""
     if r_vox is None or r_vox <= 0:
@@ -539,7 +600,7 @@ def _bitwise_erode6(mask_bool: np.ndarray) -> np.ndarray:
     xneg = np.pad(mask_bool[:, :, 1:], ((0, 0), (0, 0), (0, 1)), mode="constant", constant_values=False)
     return mask_bool & zpos & zneg & ypos & yneg & xpos & xneg
 
-def proximity_bridge(mask_u8: np.ndarray, max_dist: int = 2) -> np.ndarray:
+def proximity_bridge(mask_u8: np.ndarray, max_dist: int = 8) -> np.ndarray:
     """Bridge disconnected components within a small Chebyshev distance."""
     mask = (mask_u8 > 0)
     if max_dist <= 0:
@@ -583,6 +644,8 @@ def apply_roi_scale(
     r_vox: int,
     scale_factor: float,
     bridge_dist: int = 2,
+    shape_k: float = 10.0,
+    shape_window: tuple[float, float] = (0.25, 0.75),
 ) -> np.ndarray:
     """Scale vessel diameter within a spherical ROI using bitwise morphology."""
     if inside_u8 is None:
@@ -596,36 +659,88 @@ def apply_roi_scale(
     if r0 <= 0 or sf == 1.0:
         return inside_u8
 
-    r1 = int(round(r0 * sf))
+    # Convert scale factor to voxel diameter space for 1-voxel iterations.
+    base_diam = max(1, int(round(2 * r0)))
+    target_diam = max(0, int(round(base_diam * sf)))
+    r1 = int(round(target_diam / 2.0))
     if r1 == r0:
         return inside_u8
 
-    roi_base = _roi_mask_vox(inside_u8.shape, center_ijk, r0)
     inside_bool = (inside_u8 > 0)
-    inside_in_roi = inside_bool & roi_base
-
     if r1 <= 0:
-        new_inside = inside_bool & (~roi_base)
-        return new_inside.astype(np.uint8)
+        r1 = 1
 
+    # Ensure target ROI contains at least one voxel of volume.
     roi_target = _roi_mask_vox(inside_u8.shape, center_ijk, r1)
-    iterations = abs(r1 - r0)
+    if np.sum(roi_target) < 1:
+        r1 = 1
+        roi_target = _roi_mask_vox(inside_u8.shape, center_ijk, r1)
+
+    # Step ROI size toward target, applying one morphology iteration per step.
     mode = "dilate" if r1 > r0 else "erode"
+    step = 1 if r1 > r0 else -1
+    r_current = r0
+    current_inside = inside_bool.copy()
+    last_valid_inside = current_inside.copy()
+    min_roi_fraction = 0.05
+    initial_roi = _roi_mask_vox(current_inside.shape, center_ijk, r_current)
+    initial_count = int(np.sum(current_inside & initial_roi))
+    min_inside = max(1, int(round(initial_count * min_roi_fraction)))
+    total_steps = abs(r1 - r0)
+    step_idx = 0
+    accum = 0.0
 
-    work = inside_in_roi.copy()
-    for _ in range(iterations):
-        if mode == "dilate":
-            work = _bitwise_dilate6(work)
+    while r_current != r1:
+        roi_current = _roi_mask_vox(current_inside.shape, center_ijk, r_current)
+        inside_in_roi = current_inside & roi_current
+        outside = current_inside & (~roi_current)
+
+        x = 0.5
+        if total_steps > 1:
+            x = step_idx / float(total_steps - 1)
+
+        w0, w1 = shape_window
+        w0 = max(0.0, min(1.0, float(w0)))
+        w1 = max(0.0, min(1.0, float(w1)))
+        if w1 <= w0:
+            w0, w1 = 0.25, 0.75
+        if x < w0 or x > w1:
+            s = 0.0
         else:
-            work = _bitwise_erode6(work)
-        work = work & roi_target
+            x = (x - w0) / (w1 - w0)
+            s = _gaussian_shape(x, shape_k)
 
-    outside = inside_bool & (~roi_base)
-    new_inside = outside | work
-    out = new_inside.astype(np.uint8)
-    if bridge_dist and bridge_dist > 0:
-        out = proximity_bridge(out, max_dist=bridge_dist)
-    return out
+        accum += s
+        apply_step = accum >= 1.0
+        if apply_step:
+            accum -= 1.0
+
+        work = inside_in_roi
+        if apply_step:
+            if mode == "dilate":
+                work = _bitwise_dilate6(inside_in_roi)
+            else:
+                work = _bitwise_erode6(inside_in_roi)
+
+        # Clamp to current ROI for this iteration.
+        work = work & roi_current
+        merged = (outside | work).astype(np.uint8)
+        if bridge_dist and bridge_dist > 0:
+            merged = proximity_bridge(merged, max_dist=bridge_dist)
+        current_inside = (merged > 0)
+
+        # Safety: never erase the ROI completely during erosion.
+        if mode == "erode":
+            roi_after = _roi_mask_vox(current_inside.shape, center_ijk, r_current)
+            if int(np.sum(current_inside & roi_after)) < min_inside:
+                current_inside = last_valid_inside
+                break
+            last_valid_inside = current_inside.copy()
+
+        r_current += step
+        step_idx += 1
+
+    return current_inside.astype(np.uint8)
 
 def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
     """Interactive viewer: X/Y/Z slices + 3-D, with mask toggles."""
@@ -904,11 +1019,11 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                                     html.Div("Scale factor (diameter)", style={"fontSize": "12px", "opacity": "0.85"}),
                                                     html.Div(id="roi-scale-display", style={"fontSize": "12px", "opacity": "0.85"}),
                                                     dcc.Slider(
-                                                        id="roi-scale",
-                                                        min=0.01,
-                                                        max=100.0,
-                                                        step=0.01,
-                                                        value=1.0,
+                                                        id="roi-scale-pos",
+                                                        min=0.0,
+                                                        max=1.0,
+                                                        step=0.001,
+                                                        value=0.5,
                                                         updatemode="drag",
                                                         marks=None
                                                     ),
@@ -916,18 +1031,121 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                                         id="roi-scale-input",
                                                         type="number",
                                                         min=0.001,
-                                                        max=0.999,
+                                                        max=99.999,
                                                         step=0.001,
-                                                        value=0.990,
+                                                        value=1.000,
                                                         style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
                                                                "border": "1px solid #2a2f3a", "borderRadius": "6px",
                                                                "padding": "4px 6px"}
+                                                    ),
+                                                    html.Div("Gaussian profile", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    html.Div(
+                                                        style={"display": "flex", "flexDirection": "column", "gap": "6px"},
+                                                        children=[
+                                                            html.Div(
+                                                                style={"display": "flex", "alignItems": "center", "gap": "6px"},
+                                                                children=[
+                                                                    html.Div("Steepness k", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                                    html.Span("i", title="Steepness for Gaussian profile (larger k = sharper).",
+                                                                              style={"fontSize": "11px", "opacity": "0.7", "cursor": "help"})
+                                                                ]
+                                                            ),
+                                                            dcc.Input(
+                                                                id="shape-k",
+                                                                type="number",
+                                                                min=0.1,
+                                                                max=100.0,
+                                                                step=0.1,
+                                                                value=10.0,
+                                                                style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                                       "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                                       "padding": "4px 6px"}
+                                                            )
+                                                        ]
+                                                    ),
+                                                    html.Div("Transition window", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    dcc.RangeSlider(
+                                                        id="shape-window",
+                                                        min=0.0,
+                                                        max=1.0,
+                                                        step=0.01,
+                                                        value=[0.25, 0.75],
+                                                        allowCross=False,
+                                                        marks=None
+                                                    ),
+                                                    dcc.Checklist(
+                                                        id="shape-symmetric",
+                                                        options=[{"label": " Symmetric window", "value": "on"}],
+                                                        value=["on"],
+                                                        inputStyle={"marginRight": "6px"}
                                                     ),
                                                     html.Div("< 1 erosion, > 1 dilation", style={"fontSize": "11px", "opacity": "0.7"}),
                                                     html.Button("Apply", id="roi-scale-apply",
                                                                 style={"background": "#16A34A", "color": "white",
                                                                        "border": "none", "borderRadius": "6px",
                                                                        **button_compact})
+                                                    ,
+                                                    html.Div("Batch export", style={"fontWeight": "600", "marginTop": "8px"}),
+                                                    html.Div("Output folder", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    dcc.Input(
+                                                        id="roi-batch-out-dir",
+                                                        type="text",
+                                                        value="outputs/stenosis_batch",
+                                                        style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                               "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                               "padding": "4px 6px"}
+                                                    ),
+                                                    html.Div("Scale factor range", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    html.Div(
+                                                        style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "6px",
+                                                               "fontSize": "11px", "opacity": "0.7"},
+                                                        children=["min", "max", "count"]
+                                                    ),
+                                                    html.Div(
+                                                        style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "6px"},
+                                                        children=[
+                                                            dcc.Input(id="roi-batch-scale-min", type="number", value=0.8, step=0.01,
+                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                                             "padding": "4px 6px"}),
+                                                            dcc.Input(id="roi-batch-scale-max", type="number", value=1.2, step=0.01,
+                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                                             "padding": "4px 6px"}),
+                                                            dcc.Input(id="roi-batch-scale-count", type="number", value=5, step=1,
+                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                                             "padding": "4px 6px"})
+                                                        ]
+                                                    ),
+                                                    html.Div("Gaussian k range", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    html.Div(
+                                                        style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "6px",
+                                                               "fontSize": "11px", "opacity": "0.7"},
+                                                        children=["min", "max", "count"]
+                                                    ),
+                                                    html.Div(
+                                                        style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "6px"},
+                                                        children=[
+                                                            dcc.Input(id="roi-batch-k-min", type="number", value=6.0, step=0.1,
+                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                                             "padding": "4px 6px"}),
+                                                            dcc.Input(id="roi-batch-k-max", type="number", value=14.0, step=0.1,
+                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                                             "padding": "4px 6px"}),
+                                                            dcc.Input(id="roi-batch-k-count", type="number", value=5, step=1,
+                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                                             "padding": "4px 6px"})
+                                                        ]
+                                                    ),
+                                                    html.Button("Export batch", id="roi-batch-export",
+                                                                style={"background": "#0EA5E9", "color": "white",
+                                                                       "border": "none", "borderRadius": "6px",
+                                                                       **button_compact}),
+                                                    html.Div(id="roi-batch-status", style={"fontSize": "12px", "opacity": "0.85"})
                                                 ]
                                             )
                                         ]
@@ -987,14 +1205,14 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         return x_idx, y_idx, z_idx
 
     @app.callback(
-        Output("roi-scale", "value"),
+        Output("roi-scale-pos", "value"),
         Output("roi-scale-input", "value"),
         Output("roi-scale-display", "children"),
-        Input("roi-scale", "value"),
+        Input("roi-scale-pos", "value"),
         Input("roi-scale-input", "value"),
         prevent_initial_call=False
     )
-    def sync_roi_scale(scale_slider, scale_input):
+    def sync_roi_scale(scale_pos, scale_input):
         triggered = callback_context.triggered or []
         if not triggered:
             raise PreventUpdate
@@ -1004,17 +1222,124 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
             try:
                 val = float(scale_input)
             except (TypeError, ValueError):
-                val = scale_slider
-            val = max(0.001, min(0.999, val))
+                val = _pos_to_scale(scale_pos if scale_pos is not None else 0.5)
+            val = max(0.001, min(99.999, val))
             display_val = val
-            return float(val), float(val), f"Current: {display_val:.3f}"
+            return float(_scale_to_pos(val)), float(val), f"Current: {display_val:.3f}"
 
-        val = scale_slider if scale_slider is not None else 1.0
-        try:
-            display_val = float(val)
-        except (TypeError, ValueError):
-            display_val = 1.0
-        return float(val), float(min(0.999, max(0.001, display_val))), f"Current: {display_val:.3f}"
+        pos = scale_pos if scale_pos is not None else 0.5
+        display_val = _pos_to_scale(pos)
+        return float(pos), float(min(99.999, max(0.001, display_val))), f"Current: {display_val:.3f}"
+
+    @app.callback(
+        Output("shape-window", "value"),
+        Input("shape-window", "value"),
+        Input("shape-symmetric", "value"),
+        prevent_initial_call=True
+    )
+    def enforce_symmetric_window(window_vals, symmetric_vals):
+        if not window_vals or len(window_vals) != 2:
+            raise PreventUpdate
+        symmetric = "on" in (symmetric_vals or [])
+        if not symmetric:
+            return window_vals
+        left, right = window_vals
+        left = max(0.0, min(1.0, float(left)))
+        right = max(0.0, min(1.0, float(right)))
+        half_width = abs(0.5 - left)
+        new_left = max(0.0, 0.5 - half_width)
+        new_right = min(1.0, 0.5 + half_width)
+        return [new_left, new_right]
+
+    @app.callback(
+        Output("roi-batch-status", "children"),
+        Input("roi-batch-export", "n_clicks"),
+        State("p1-x", "value"),
+        State("p1-y", "value"),
+        State("p1-z", "value"),
+        State("p2-x", "value"),
+        State("p2-y", "value"),
+        State("p2-z", "value"),
+        State("roi-batch-scale-min", "value"),
+        State("roi-batch-scale-max", "value"),
+        State("roi-batch-scale-count", "value"),
+        State("roi-batch-k-min", "value"),
+        State("roi-batch-k-max", "value"),
+        State("roi-batch-k-count", "value"),
+        State("shape-window", "value"),
+        State("roi-batch-out-dir", "value"),
+        prevent_initial_call=True
+    )
+    def export_batch_masks(n_clicks,
+                           p1_x, p1_y, p1_z,
+                           p2_x, p2_y, p2_z,
+                           scale_min, scale_max, scale_count,
+                           k_min, k_max, k_count,
+                           shape_window, out_dir):
+        if not n_clicks:
+            raise PreventUpdate
+
+        center_idx = (
+            int(np.clip(round((p1_x + p2_x) / 2.0), 0, Nx - 1)),
+            int(np.clip(round((p1_y + p2_y) / 2.0), 0, Ny - 1)),
+            int(np.clip(round((p1_z + p2_z) / 2.0), 0, Nz - 1))
+        )
+        radius_vox = int(round(0.5 * float(np.linalg.norm(
+            np.array([p2_x - p1_x, p2_y - p1_y, p2_z - p1_z], dtype=float)
+        ))))
+
+        scales = _linspace_safe(scale_min, scale_max, scale_count)
+        ks = _linspace_safe(k_min, k_max, k_count)
+        w0, w1 = (0.25, 0.75)
+        if shape_window and len(shape_window) == 2:
+            try:
+                w0, w1 = float(shape_window[0]), float(shape_window[1])
+            except (TypeError, ValueError):
+                w0, w1 = (0.25, 0.75)
+        w0 = max(0.0, min(1.0, w0))
+        w1 = max(0.0, min(1.0, w1))
+        if w1 <= w0:
+            w0, w1 = (0.25, 0.75)
+
+        out_dir = out_dir or "outputs/stenosis_batch"
+        out_path = Path(out_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        total = 0
+        base_inside = inside_state["original"]
+        for sf in scales:
+            sf = max(0.001, min(99.999, float(sf)))
+            for k in ks:
+                k = max(0.1, float(k))
+                mask = apply_roi_scale(
+                    base_inside,
+                    center_idx,
+                    radius_vox,
+                    sf,
+                    shape_k=k,
+                    shape_window=(w0, w1)
+                )
+                fname = (
+                    f"inside_sf{_fmt_param(sf)}_k{_fmt_param(k)}"
+                    f"_w{_fmt_param(w0, 2)}-{_fmt_param(w1, 2)}.npz"
+                )
+                np.savez_compressed(
+                    out_path / fname,
+                    inside=mask.astype(np.uint8),
+                    spacing=np.array(grid["spacing"]),
+                    origin=np.array(grid["origin"]),
+                    scale_factor=np.array(sf),
+                    shape_k=np.array(k),
+                    shape_window=np.array([w0, w1]),
+                    roi_center_ijk=np.array(center_idx),
+                    roi_radius_vox=np.array(radius_vox)
+                )
+                total += 1
+
+        return (
+            f"Export done. Wrote {total} masks to {out_path} "
+            f"(scales={len(scales)}, k={len(ks)})."
+        )
 
     @app.callback(
         Output("x-view", "figure"),
@@ -1040,8 +1365,10 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         Input("roi-line-opacity", "value"),
          Input("roi-sphere-color", "value"),
          Input("roi-sphere-opacity", "value"),
-        Input("roi-scale", "value"),
+        Input("roi-scale-pos", "value"),
         Input("roi-scale-apply", "n_clicks"),
+        Input("shape-k", "value"),
+        Input("shape-window", "value"),
         Input("threeD-view", "relayoutData"),
         Input("reset-btn", "n_clicks"),
         prevent_initial_call=False
@@ -1053,12 +1380,21 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                p1_opacity, p2_opacity,
                line_color, line_opacity,
              sphere_color, sphere_opacity,
-             scale_factor, scale_apply_clicks,
+             scale_pos, scale_apply_clicks,
+             shape_k,
+             shape_window,
              relayout_data, n_clicks):
         triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
-        if "reset-btn.n_clicks" in triggered:
+        reset_triggered = "reset-btn.n_clicks" in triggered
+        if reset_triggered:
             inside_state["current"] = inside_state["original"].copy()
-            inside_state["trace"] = inside_trace
+            inside_state["trace"] = mask_to_trace(
+                inside_state["current"],
+                grid,
+                COLOR_SCHEME["inside"],
+                "inside",
+                OPACITY_LEVELS["mid"]
+            )
 
         center_idx = (
             int(np.clip(round((p1_x + p2_x) / 2.0), 0, Nx - 1)),
@@ -1069,14 +1405,16 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
             np.array([p2_x - p1_x, p2_y - p1_y, p2_z - p1_z], dtype=float)
         ))))
 
-        if "roi-scale-apply.n_clicks" in triggered:
-            sf = 1.0 if scale_factor is None else float(scale_factor)
-            sf = max(0.01, min(100.0, sf))
+        if (not reset_triggered) and ("roi-scale-apply.n_clicks" in triggered):
+            sf = _pos_to_scale(scale_pos if scale_pos is not None else 0.5)
+            sf = max(0.001, min(99.999, sf))
             inside_state["current"] = apply_roi_scale(
                 inside_state["current"],
                 center_idx,
                 radius_vox,
-                sf
+                sf,
+                shape_k=10.0 if shape_k is None else float(shape_k),
+                shape_window=(shape_window[0], shape_window[1]) if shape_window else (0.25, 0.75)
             )
             inside_state["trace"] = mask_to_trace(
                 inside_state["current"],
@@ -1112,34 +1450,31 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         roi_y = _roi_slice_mask(grid, "y", y_idx, center, radius)
         roi_z = _roi_slice_mask(grid, "z", z_idx, center, radius)
 
-        x_slice = x_slice.copy()
-        y_slice = y_slice.copy()
-        z_slice = z_slice.copy()
-        x_slice[roi_x > 0] = 2
-        y_slice[roi_y > 0] = 2
-        z_slice[roi_z > 0] = 2
-
         x_fig = _slice_fig(
             x_slice,
             f"X-slice (i={x_idx})",
             COLOR_SCHEME["slice_x"],
-            colorscale=_slice_colorscale(COLOR_SCHEME["slice_x"], sphere_color),
-            zmax=2
+            colorscale=_slice_colorscale(COLOR_SCHEME["slice_x"]),
+            zmax=1
         )
         y_fig = _slice_fig(
             y_slice,
             f"Y-slice (j={y_idx})",
             COLOR_SCHEME["slice_y"],
-            colorscale=_slice_colorscale(COLOR_SCHEME["slice_y"], sphere_color),
-            zmax=2
+            colorscale=_slice_colorscale(COLOR_SCHEME["slice_y"]),
+            zmax=1
         )
         z_fig = _slice_fig(
             z_slice,
             f"Z-slice (k={z_idx})",
             COLOR_SCHEME["slice_z"],
-            colorscale=_slice_colorscale(COLOR_SCHEME["slice_z"], sphere_color),
-            zmax=2
+            colorscale=_slice_colorscale(COLOR_SCHEME["slice_z"]),
+            zmax=1
         )
+
+        x_fig.add_trace(_roi_overlay_trace(roi_x, sphere_color, sphere_opacity))
+        y_fig.add_trace(_roi_overlay_trace(roi_y, sphere_color, sphere_opacity))
+        z_fig.add_trace(_roi_overlay_trace(roi_z, sphere_color, sphere_opacity))
 
         valid_traces = [t for t in [mesh_trace,
                         inside_state["trace"] if show_inside else None,
