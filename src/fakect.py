@@ -426,6 +426,34 @@ def mask_to_trace(mask_u8, grid, color, name, opacity=OPACITY_LEVELS["high"]):
         flatshading=True, showscale=False
     )
 
+def mask_to_trimesh(mask_u8: np.ndarray, grid: dict, name: str | None = None) -> trimesh.Trimesh | None:
+    """Convert a binary mask to a surface mesh using marching cubes."""
+    if mask_u8 is None or int(np.sum(mask_u8)) == 0:
+        return None
+    try:
+        verts, faces, _, _ = measure.marching_cubes(mask_u8, level=0.5)
+    except Exception as e:
+        err(f"[{name or 'mask'}] marching cubes failed: {e}")
+        return None
+
+    s = grid["spacing"][0]
+    origin = np.array(grid["origin"])
+    coords = origin + s * verts[:, [2, 1, 0]]
+    return trimesh.Trimesh(vertices=coords, faces=faces, process=False)
+
+def save_mask_stl(mask_u8: np.ndarray, grid: dict, out_path: Path, name: str) -> bool:
+    """Save a binary mask as STL (returns True when written)."""
+    mesh = mask_to_trimesh(mask_u8, grid, name=name)
+    if mesh is None:
+        return False
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        mesh.export(out_path)
+    except Exception as e:
+        err(f"[{name}] STL export failed: {e}")
+        return False
+    return True
+
 def _binary_colorscale(on_color="#ffffff"):
     return [[0.0, "black"], [1.0, on_color]]
 
@@ -1145,6 +1173,12 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                                                 style={"background": "#0EA5E9", "color": "white",
                                                                        "border": "none", "borderRadius": "6px",
                                                                        **button_compact}),
+                                                    dcc.Checklist(
+                                                        id="roi-batch-stl",
+                                                        options=[{"label": " Export STL", "value": "on"}],
+                                                        value=["on"],
+                                                        inputStyle={"marginRight": "6px"}
+                                                    ),
                                                     html.Div(id="roi-batch-status", style={"fontSize": "12px", "opacity": "0.85"})
                                                 ]
                                             )
@@ -1268,6 +1302,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         State("roi-batch-k-count", "value"),
         State("shape-window", "value"),
         State("roi-batch-out-dir", "value"),
+        State("roi-batch-stl", "value"),
         prevent_initial_call=True
     )
     def export_batch_masks(n_clicks,
@@ -1275,7 +1310,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                            p2_x, p2_y, p2_z,
                            scale_min, scale_max, scale_count,
                            k_min, k_max, k_count,
-                           shape_window, out_dir):
+                           shape_window, out_dir, export_stl_flags):
         if not n_clicks:
             raise PreventUpdate
 
@@ -1306,6 +1341,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         out_path.mkdir(parents=True, exist_ok=True)
 
         total = 0
+        stl_total = 0
         base_inside = inside_state["original"]
         for sf in scales:
             sf = max(0.001, min(99.999, float(sf)))
@@ -1319,12 +1355,12 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                     shape_k=k,
                     shape_window=(w0, w1)
                 )
-                fname = (
+                base_name = (
                     f"inside_sf{_fmt_param(sf)}_k{_fmt_param(k)}"
                     f"_w{_fmt_param(w0, 2)}-{_fmt_param(w1, 2)}.npz"
                 )
                 np.savez_compressed(
-                    out_path / fname,
+                    out_path / base_name,
                     inside=mask.astype(np.uint8),
                     spacing=np.array(grid["spacing"]),
                     origin=np.array(grid["origin"]),
@@ -1334,8 +1370,18 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                     roi_center_ijk=np.array(center_idx),
                     roi_radius_vox=np.array(radius_vox)
                 )
+                export_stl = "on" in (export_stl_flags or [])
+                if export_stl:
+                    stl_name = base_name.replace(".npz", ".stl")
+                    if save_mask_stl(mask, grid, out_path / stl_name, name="inside"):
+                        stl_total += 1
                 total += 1
 
+        if stl_total > 0:
+            return (
+                f"Export done. Wrote {total} masks and {stl_total} STL files to {out_path} "
+                f"(scales={len(scales)}, k={len(ks)})."
+            )
         return (
             f"Export done. Wrote {total} masks to {out_path} "
             f"(scales={len(scales)}, k={len(ks)})."
@@ -1763,7 +1809,9 @@ def run_pipeline(
     show: bool = True,
     mc_map: str = "xyz",
     viewer: str = "dash",
-    port: int = 8050
+    port: int = 8050,
+    export_stl: bool = False,
+    stl_dir: str | None = None
 ):
     mesh_path = Path(in_mesh_path).resolve()
     if not mesh_path.exists():
@@ -1787,6 +1835,14 @@ def run_pipeline(
     np.savez_compressed(out_npz, inside=inside_u8, on=on_u8, out=out_u8,
                         spacing=np.array(grid["spacing"]), origin=np.array(grid["origin"]))
     ok(f"Masks saved (uint8) → {out_npz}")
+
+    if export_stl:
+        stl_root = Path(stl_dir) if stl_dir else Path(out_npz).parent
+        stl_root.mkdir(parents=True, exist_ok=True)
+        save_mask_stl(inside_u8, grid, stl_root / "inside.stl", name="inside")
+        save_mask_stl(on_u8, grid, stl_root / "on.stl", name="on")
+        save_mask_stl(out_u8, grid, stl_root / "out.stl", name="out")
+        ok(f"STL export complete → {stl_root}")
 
     # Viewer
     if show:
@@ -1822,6 +1878,10 @@ def main():
                     help="Viewer type: 'dash' or 'html'.")
     ap.add_argument("--port", type=int, default=8050,
                     help="Port for Dash viewer (default 8050).")
+    ap.add_argument("--export-stl", action="store_true",
+                    help="Export inside/on/out masks as STL files.")
+    ap.add_argument("--stl-dir", default=None,
+                    help="Directory for STL export (defaults to --out folder).")
 
     args = ap.parse_args()
 
@@ -1843,7 +1903,9 @@ def main():
         show=not args.no_show,
         mc_map=args.mc_map,
         viewer=args.viewer,
-        port=args.port
+        port=args.port,
+        export_stl=bool(args.export_stl),
+        stl_dir=args.stl_dir
     )
 
 if __name__ == "__main__":
