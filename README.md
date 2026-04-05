@@ -113,6 +113,58 @@ python scripts/generate_demo_meshes.py
 By default the demo will pop up a small matplotlib-based viewer showing three orthogonal
 slices and a sparse 3D proxy of boundary voxels.
 
+## Script usage examples
+
+### fakect.py (winding-based masks + viewer)
+
+Run the pipeline directly (from repo root):
+
+```bash
+python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz
+```
+
+Run without opening the viewer (headless):
+
+```bash
+python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs/carotid_masks.npz --no-show
+```
+
+### fakenoise.py (NRRD viewer + paired dataset CSV)
+
+Open a web-based viewer for a single NRRD volume:
+
+```bash
+python src/fakenoise.py --mode viewer --in /path/to/volume.nrrd
+```
+
+Generate a CSV that pairs grayscale volumes with their `.seg.nrrd` masks
+and uses the sagittal (X) slice index for training:
+
+```bash
+python src/fakenoise.py --mode pair --dataset-dir /path/to/dataset_root
+```
+
+This writes `paired_datasets/pairs.csv` under the dataset root and saves one
+example PNG preview (gray left, mask right) in the same folder.
+
+Train a mask-to-gray model using single-slice masks:
+
+```bash
+python src/fakenoise.py --mode train --csv /path/to/dataset_root/paired_datasets/pairs.csv
+```
+
+Train with context slices (stack neighbor masks as extra channels):
+
+```bash
+python src/fakenoise.py --mode train --csv /path/to/dataset_root/paired_datasets/pairs.csv --context 4
+```
+
+Train with context + stride (skip slices between neighbors):
+
+```bash
+python src/fakenoise.py --mode train --csv /path/to/dataset_root/paired_datasets/pairs.csv --context 4 --context-step 3
+```
+
 ## Developer instructions (make changes & run tests)
 
 1. Make code changes in `src/fakect/` using your editor of choice.
