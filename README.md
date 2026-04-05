@@ -6,12 +6,13 @@ create in/on/out masks and inspect the result with a simple viewer.
 This README includes instructions for installing prerequisites (VS Code, Git, Conda),
 cloning the repo, creating an environment, installing the package (editable), and running the demo.
 
+<!--
 ## Current Version
 <img width="1899" height="991" alt="Screenshot 2025-10-13 at 13 20 37" src="https://github.com/user-attachments/assets/5df4d975-da4d-40c0-a29c-85d6af4d81eb" />
 
-
 ## Next Version - Stenosis Tool
 <img width="3095" height="1615" alt="image" src="https://github.com/user-attachments/assets/7513c9f2-93ba-4769-968e-10bfc146692f" />
+-->
 
 
 ## fakect.py ROI workflow (interactive masks)
