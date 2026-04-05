@@ -14,6 +14,27 @@ cloning the repo, creating an environment, installing the package (editable), an
 <img width="3095" height="1615" alt="image" src="https://github.com/user-attachments/assets/7513c9f2-93ba-4769-968e-10bfc146692f" />
 
 
+## fakect.py ROI workflow (interactive masks)
+These examples show how `fakect.py` supports ROI creation for bitwise morphology manipulation.
+
+![ROI creation for interactive mask editing](images/ROI.png)
+
+![Stenosis ROI example](images/stenosis.png)
+
+
+## fakenoise.py training previews (context + context step)
+These previews show how `fakenoise.py` trains across context settings to generate grayscale images from a slice neighborhood around the target mask.
+
+Default context (single target mask slice):
+![Training preview default context](images/train_preview_1_na.png)
+
+`--context 4 --context_step 1`:
+![Training preview context 4 step 1](images/train_preview_4_1.png)
+
+`--context 4 --context_step 10`:
+![Training preview context 4 step 10](images/train_preview_4_10.png)
+
+
 
 ## Your Tasks:
 ```bash
