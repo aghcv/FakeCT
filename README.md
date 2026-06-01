@@ -187,6 +187,33 @@ Train with context + stride (skip slices between neighbors):
 python src/fakenoise.py --mode train --csv /path/to/dataset_root/paired_datasets/pairs.csv --context 4 --context-step 3
 ```
 
+### XCAT phantom jobs (SLURM)
+
+These scripts assume the XCAT binary and parameter template live under `./outputs/xcat` by default.
+See [scripts/xcat_job.sh](scripts/xcat_job.sh) and [scripts/xcat_pool.sh](scripts/xcat_pool.sh).
+
+Single job (runs XCAT and converts any `.raw` files to OBJ):
+
+```bash
+sbatch scripts/xcat_job.sh --phantom_id phantom_A \
+	--set organ_file=vmale50.nrb \
+	--set heart_base=vmale50_heart.nrb
+```
+
+Parameter sweep (creates the full Cartesian product):
+
+```bash
+scripts/xcat_pool.sh --phantom_id phantom_A \
+	--set organ_file=vmale50.nrb,vfemale50.nrb \
+	--set heart_base=vmale50_heart.nrb,vfemale50_heart.nrb
+```
+
+Disable OBJ conversion if you only want raw outputs:
+
+```bash
+sbatch scripts/xcat_job.sh --phantom_id phantom_A --convert_raw 0
+```
+
 ## Developer instructions (make changes & run tests)
 
 1. Make code changes in `src/fakect/` using your editor of choice.
