@@ -6,12 +6,34 @@ create in/on/out masks and inspect the result with a simple viewer.
 This README includes instructions for installing prerequisites (VS Code, Git, Conda),
 cloning the repo, creating an environment, installing the package (editable), and running the demo.
 
+<!--
 ## Current Version
 <img width="1899" height="991" alt="Screenshot 2025-10-13 at 13 20 37" src="https://github.com/user-attachments/assets/5df4d975-da4d-40c0-a29c-85d6af4d81eb" />
 
-
 ## Next Version - Stenosis Tool
 <img width="3095" height="1615" alt="image" src="https://github.com/user-attachments/assets/7513c9f2-93ba-4769-968e-10bfc146692f" />
+-->
+
+
+## fakect.py ROI workflow (interactive masks)
+These examples show how `fakect.py` supports ROI creation for bitwise morphology manipulation.
+
+![ROI creation for interactive mask editing](images/ROI.png)
+
+![Stenosis ROI example](images/stenosis.png)
+
+
+## fakenoise.py training previews (context + context step)
+These previews show how `fakenoise.py` trains across context settings to generate grayscale images from a slice neighborhood around the target mask.
+
+Default context (single target mask slice):
+![Training preview default context](images/train_preview_1_na.png)
+
+`--context 4 --context_step 1`:
+![Training preview context 4 step 1](images/train_preview_4_1.png)
+
+`--context 4 --context_step 10`:
+![Training preview context 4 step 10](images/train_preview_4_10.png)
 
 
 
@@ -67,8 +89,127 @@ Before following the quick start, make sure you have these tools installed. The 
 	# Optional, if available on your platform:
 	conda install -c conda-forge python-igl -y
 
-	python src/fakect.py --in data/carotid.stl --n 7 --out outputs/carotid_masks.npz
-	```
+```bash
+bash examples/demo_cube.sh
+```
+
+Note on demo meshes:
+
+Example scripts expect demo geometry to live in the repository-global `data/` folder
+at the repository root. To populate that folder with small demo meshes, run:
+
+```bash
+# from repo root
+python scripts/generate_demo_meshes.py
+# This writes: data/cube.stl, data/sphere.stl, data/carotid.stl
+```
+
+By default the demo will pop up a small matplotlib-based viewer showing three orthogonal
+slices and a sparse 3D proxy of boundary voxels.
+
+## Script usage examples
+
+### fakect.py (winding-based masks + viewer)
+
+Run the pipeline directly (from repo root):
+
+```bash
+python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz
+```
+
+Run without opening the viewer (headless):
+
+```bash
+python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs/carotid_masks.npz --no-show
+```
+
+### fakenoise.py (NRRD viewer + paired dataset CSV)
+
+Open a web-based viewer for a single NRRD volume:
+
+```bash
+python src/fakenoise.py --mode viewer --in /path/to/volume.nrrd
+```
+
+Generate a CSV that pairs grayscale volumes with their `.seg.nrrd` masks
+and uses the sagittal (X) slice index for training:
+
+```bash
+python src/fakenoise.py --mode pair --dataset-dir /path/to/dataset_root
+```
+
+This writes `paired_datasets/pairs.csv` under the dataset root and saves one
+example PNG preview (gray left, mask right) in the same folder.
+
+Train a mask-to-gray model using single-slice masks:
+
+```bash
+python src/fakenoise.py --mode train --csv /path/to/dataset_root/paired_datasets/pairs.csv
+```
+
+Train with context slices (stack neighbor masks as extra channels):
+
+```bash
+python src/fakenoise.py --mode train --csv /path/to/dataset_root/paired_datasets/pairs.csv --context 4
+```
+
+Train with context + stride (skip slices between neighbors):
+
+```bash
+python src/fakenoise.py --mode train --csv /path/to/dataset_root/paired_datasets/pairs.csv --context 4 --context-step 3
+```
+
+### XCAT phantom jobs (SLURM)
+
+These scripts assume the XCAT binary and parameter template live under `./outputs/xcat` by default.
+See [scripts/xcat_job.sh](scripts/xcat_job.sh) and [scripts/xcat_pool.sh](scripts/xcat_pool.sh).
+
+Single job (runs XCAT and converts any `.raw` files to OBJ):
+
+```bash
+sbatch scripts/xcat_job.sh --phantom_id phantom_A \
+	--set organ_file=vmale50.nrb \
+	--set heart_base=vmale50_heart.nrb
+```
+
+Parameter sweep (creates the full Cartesian product):
+
+```bash
+scripts/xcat_pool.sh --phantom_id phantom_A \
+	--set organ_file=vmale50.nrb,vfemale50.nrb \
+	--set heart_base=vmale50_heart.nrb,vfemale50_heart.nrb
+```
+
+Disable OBJ conversion if you only want raw outputs:
+
+```bash
+sbatch scripts/xcat_job.sh --phantom_id phantom_A --convert_raw 0
+```
+
+## Developer instructions (make changes & run tests)
+
+1. Make code changes in `src/fakect/` using your editor of choice.
+
+2. Run the unit tests with pytest. The project includes a small placeholder test so you can
+	 validate the test/CI pipeline:
+
+```bash
+# from the repo root, with the venv activated
+pytest
+```
+
+3. If you change package metadata or dependencies, update `pyproject.toml`.
+
+4. To try your changes interactively, install the package in editable mode (step 3 above)
+	 so that imports pick up the local source without reinstalling.
+
+5. Linting and formatting (recommended):
+
+```bash
+black src tests
+flake8
+isort src tests
+```
 
 
 
