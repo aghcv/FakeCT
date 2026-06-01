@@ -69,53 +69,25 @@ Before following the quick start, make sure you have these tools installed. The 
 		```
 
 - Conda (Miniconda recommended) — environment and package manager
-	- Miniconda: https://docs.conda.io/en/latest/miniconda.html
-	- macOS (Homebrew) one-liner:
+	# FakeCT — Minimal synthetic CT / voxelization toolkit
 
-		```bash
-		brew install --cask miniconda
-		# initialize conda for zsh and reload your shell
-		conda init zsh
-		exec $SHELL
-		```
+	This repository provides a small educational pipeline to convert a surface mesh
+	into voxelized "inside / on / out" masks and optionally inspect results with a
+	Dash viewer.
 
-	If you prefer Anaconda, use the Anaconda installer instead. Follow the official installer pages for platform-specific guidance.
+	Quick start
+	-----------
+	The canonical quick start lives in the header of `fakect.py` —
+	that file contains usage examples and platform-specific install notes (conda vs pip).
 
-## Quick start
+	Minimal example (conda recommended):
 
-1. Clone the repository:
-
-```bash
-git clone https://github.com/aghcv/FakeCT.git
-cd FakeCT
-```
-
-2. Create and activate the Conda environment (uses `environment.yml`):
-
-```bash
-conda env create -f environment.yml
-conda activate fakect
-```
-
-3. Install the package in editable/development mode and the minimal runtime deps:
-
-```bash
-pip install -e .
-```
-
-This installs the project as the `fakect` package and the `fakect` command-line entrypoint.
-
-
-4. Run the demo:
-
-```bash
-# run the demo_cube script (runs the pipeline with predefined args)
-fakect example demo_cube
-
-# list of example scripts is in the `examples/` folder (demo_cube, demo_carotid, demo_sphere)
-```
-
-If you prefer to run the script directly from shell:
+	```bash
+	conda create -n fakect python=3.10 -y
+	conda activate fakect
+	conda install -c conda-forge trimesh scipy scikit-image plotly dash -y
+	# Optional, if available on your platform:
+	conda install -c conda-forge python-igl -y
 
 ```bash
 bash examples/demo_cube.sh
@@ -239,22 +211,18 @@ flake8
 isort src tests
 ```
 
-## Continuous integration (notes for maintainers)
 
-- The `tests/` directory contains the unit tests. The placeholder test ensures the CI pipeline
-	can run; expand the tests as you add features.
-- Recommended CI steps:
-	- Set up a Python 3.10 runner
-	- Create a virtual environment and install `pip install -e .[dev]`
-	- Run `pytest` and optionally `pytest --cov` for coverage
-	- Run linters (black/flake8/isort)
 
-## Contact / contributing
+	Notes
+	-----
+	- `python-igl` is recommended from `conda-forge` when available; pip installs of `igl`
+	  often fail on many systems. On macOS x86_64, conda-forge does not provide a build,
+	  so the CLI falls back to a slower `trimesh.contains` method by default.
+	- To force a method, use `--method winding` (requires python-igl) or `--method trimesh`.
 
-Open an issue or submit a pull request. Keep changes small and add tests for new behavior.
+	Relevant paper
+	--------------
+	Douglass, M. J. J., et al. (2025). “An open-source tool for converting 3D mesh volumes into
+	synthetic DICOM CT images for medical physics research.” https://doi.org/10.1007/s13246-025-01599-x
 
----
-Small, clear, and focused so students can follow the flow from clone → run → edit → test.
 
-# Relevant Papers 
-Douglass, M. J. J., et al. (2025). “An open-source tool for converting 3D mesh volumes into synthetic DICOM CT images for medical physics research.” (LINK:https://doi.org/10.1007/s13246-025-01599-x)

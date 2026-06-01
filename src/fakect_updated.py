@@ -28,7 +28,6 @@
 # ---------------------------------------------------------------------
 
 import sys
-import time
 import numpy as np
 import trimesh
 from pathlib import Path
@@ -37,8 +36,7 @@ from scipy.ndimage import binary_dilation
 from skimage import measure
 import plotly.graph_objects as go
 import dash
-from dash import dcc, html, Output, Input, State, callback_context
-from dash.exceptions import PreventUpdate
+from dash import dcc, html, Output, Input, callback_context
 
 # libigl for fast winding number
 try:
@@ -53,38 +51,6 @@ def info(msg): print(f"\033[94m[INFO]\033[0m {msg}")
 def ok(msg):   print(f"\033[92m[DONE]\033[0m {msg}")
 def warn(msg): print(f"\033[93m[WARN]\033[0m {msg}")
 def err(msg):  print(f"\033[91m[ERROR]\033[0m {msg}")
-
-# ---------------------------------------------------------------------
-# Visualization defaults
-# ---------------------------------------------------------------------
-OPACITY_LEVELS = {
-    "low": 0.01,
-    "mid": 0.12,
-    "high": 0.24
-}
-
-SLICE_BORDER_WIDTH = 6
-
-COLOR_SCHEME = {
-    "slice_x": "#3B82F6",
-    "slice_y": "#22C55E",
-    "slice_z": "#F59E0B",
-    "inside": "#E11D48",
-    "on": "#22C55E",
-    "out": "#F59E0B",
-    "mesh": "#E11D48",
-    "roi_p1": "#60A5FA",
-    "roi_p2": "#F472B6",
-    "roi_line": "#E5E7EB",
-    "roi_sphere": "#A855F7"
-}
-
-ROI_DEFAULTS = {
-    "p1_opacity": 0.9,
-    "p2_opacity": 0.9,
-    "line_opacity": 0.8,
-    "sphere_opacity": 0.05
-}
 
 # ---------------------------------------------------------------------
 # Grid + (optional) voxelization
@@ -281,7 +247,7 @@ def classify_by_trimesh_contains(
 # ---------------------------------------------------------------------
 # Viewer utilities
 # ---------------------------------------------------------------------
-def _slice_frames(grid, i_idx, j_idx, k_idx, color_map=None, line_width=SLICE_BORDER_WIDTH):
+def _slice_frames(grid, i_idx, j_idx, k_idx, color_map=None, line_width=4):
     """
     Draw wireframe rectangles showing slice locations (X/Y/Z).
     Colors correspond to sliders: X=blue, Y=green, Z=orange.
@@ -289,11 +255,7 @@ def _slice_frames(grid, i_idx, j_idx, k_idx, color_map=None, line_width=SLICE_BO
     Nz, Ny, Nx = grid["shape"]
     sz, sy, sx = grid["spacing"]
     ox, oy, oz = grid["origin"]
-    color_map = color_map or {
-        "x": COLOR_SCHEME["slice_x"],
-        "y": COLOR_SCHEME["slice_y"],
-        "z": COLOR_SCHEME["slice_z"]
-    }
+    color_map = color_map or {"x": "#3B82F6", "y": "#22C55E", "z": "#F59E0B"}
 
     extent_x = Nx * sx
     extent_y = Ny * sy
@@ -303,10 +265,10 @@ def _slice_frames(grid, i_idx, j_idx, k_idx, color_map=None, line_width=SLICE_BO
     Yr = [oy, oy + extent_y]
     Zr = [oz, oz + extent_z]
 
-    # convert index → voxel center position
-    Xpos = ox + (i_idx + 0.5) * sx
-    Ypos = oy + (j_idx + 0.5) * sy
-    Zpos = oz + (k_idx + 0.5) * sz
+    # convert index → position
+    Xpos = ox + i_idx * sx
+    Ypos = oy + j_idx * sy
+    Zpos = oz + k_idx * sz
 
     def rect(x, y, z, color, name):
         return go.Scatter3d(
@@ -454,56 +416,14 @@ def mask_to_trace(mask_u8, grid, color, name, opacity=0.4):
         flatshading=True, showscale=False
     )
 
-def mask_to_trimesh(mask_u8: np.ndarray, grid: dict, name: str | None = None) -> trimesh.Trimesh | None:
-    """Convert a binary mask to a surface mesh using marching cubes."""
-    if mask_u8 is None or int(np.sum(mask_u8)) == 0:
-        return None
-    try:
-        verts, faces, _, _ = measure.marching_cubes(mask_u8, level=0.5)
-    except Exception as e:
-        err(f"[{name or 'mask'}] marching cubes failed: {e}")
-        return None
+def _binary_colorscale():
+    return [[0.0, "black"], [1.0, "white"]]
 
-    s = grid["spacing"][0]
-    origin = np.array(grid["origin"])
-    coords = origin + s * verts[:, [2, 1, 0]]
-    return trimesh.Trimesh(vertices=coords, faces=faces, process=False)
-
-def save_mask_stl(mask_u8: np.ndarray, grid: dict, out_path: Path, name: str) -> bool:
-    """Save a binary mask as STL (returns True when written)."""
-    mesh = mask_to_trimesh(mask_u8, grid, name=name)
-    if mesh is None:
-        return False
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        mesh.export(out_path)
-    except Exception as e:
-        err(f"[{name}] STL export failed: {e}")
-        return False
-    return True
-
-def _binary_colorscale(on_color="#ffffff"):
-    return [[0.0, "black"], [1.0, on_color]]
-
-def _slice_fig(z2d, title, border_color="#ffffff", colorscale=None, zmax=1):
-    if colorscale is None:
-        colorscale = _binary_colorscale(border_color)
-    x_vals = np.arange(z2d.shape[1])
-    y_vals = np.arange(z2d.shape[0])
+def _slice_fig(z2d, title, border_color="#ffffff"):
     fig = go.Figure(
-        data=[go.Heatmap(
-            z=z2d,
-            x=x_vals,
-            y=y_vals,
-            zmin=0,
-            zmax=zmax,
-            colorscale=colorscale,
-            showscale=False,
-            hovertemplate="x=%{x}<br>y=%{y}<br>value=%{z}<extra></extra>"
-        )],
+        data=[go.Heatmap(z=z2d, zmin=0, zmax=1, colorscale=_binary_colorscale(), showscale=False)],
         layout=go.Layout(
-            title=dict(text=title, font=dict(color=border_color, size=14)),
-            margin=dict(l=2, r=2, t=28, b=2),
+            title=title, margin=dict(l=2, r=2, t=28, b=2),
             xaxis=dict(showticklabels=False), yaxis=dict(autorange="reversed", showticklabels=False),
             plot_bgcolor="black", paper_bgcolor="black"
         )
@@ -515,48 +435,6 @@ def _slice_fig(z2d, title, border_color="#ffffff", colorscale=None, zmax=1):
         fillcolor="rgba(0,0,0,0)"
     )
     return fig
-
-def _empty_slice(grid, axis):
-    Nz, Ny, Nx = grid["shape"]
-    if axis == "x":
-        return np.zeros((Nz, Ny), dtype=np.uint8)
-    if axis == "y":
-        return np.zeros((Nz, Nx), dtype=np.uint8)
-    if axis == "z":
-        return np.zeros((Ny, Nx), dtype=np.uint8)
-    raise ValueError("axis must be 'x', 'y', or 'z'")
-
-def _roi_slice_mask(grid, axis, idx, center, radius):
-    if radius <= 0:
-        return _empty_slice(grid, axis)
-
-    Nz, Ny, Nx = grid["shape"]
-    sz, sy, sx = grid["spacing"]
-    ox, oy, oz = grid["origin"]
-
-    x_coords = ox + (np.arange(Nx) + 0.5) * sx
-    y_coords = oy + (np.arange(Ny) + 0.5) * sy
-    z_coords = oz + (np.arange(Nz) + 0.5) * sz
-    cx, cy, cz = center
-    r2 = radius * radius
-
-    if axis == "x":
-        x = ox + (idx + 0.5) * sx
-        Y, Z = np.meshgrid(y_coords, z_coords)
-        dist2 = (x - cx) ** 2 + (Y - cy) ** 2 + (Z - cz) ** 2
-        return (dist2 <= r2).astype(np.uint8)
-    if axis == "y":
-        y = oy + (idx + 0.5) * sy
-        X, Z = np.meshgrid(x_coords, z_coords)
-        dist2 = (X - cx) ** 2 + (y - cy) ** 2 + (Z - cz) ** 2
-        return (dist2 <= r2).astype(np.uint8)
-    if axis == "z":
-        z = oz + (idx + 0.5) * sz
-        X, Y = np.meshgrid(x_coords, y_coords)
-        dist2 = (X - cx) ** 2 + (Y - cy) ** 2 + (z - cz) ** 2
-        return (dist2 <= r2).astype(np.uint8)
-    raise ValueError("axis must be 'x', 'y', or 'z'")
-
 
 def compose_slice(masks, axis, idx):
     """Combine active masks along a slice (arrays are (Z,Y,X))."""
@@ -825,7 +703,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
     mesh_trace = go.Mesh3d(
         x=mesh.vertices[:, 0], y=mesh.vertices[:, 1], z=mesh.vertices[:, 2],
         i=mesh.faces[:, 0], j=mesh.faces[:, 1], k=mesh.faces[:, 2],
-        name="mesh", color=COLOR_SCHEME["mesh"], opacity=OPACITY_LEVELS["low"]
+        name="mesh", color="#AB1616", opacity=0.15
     )
     # We will recompute the inside trace dynamically to reflect morphology changes
     # inside_trace = mask_to_trace(inside_u8, grid, "#3B82F6", "inside", 0.35)
@@ -836,114 +714,6 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
     inside_state = {"inside": inside_u8.copy(), "original": inside_u8.copy()}
 
     app = dash.Dash(__name__)
-    panel_card = {
-        "backgroundColor": "#0f131a",
-        "border": "1px solid #232838",
-        "borderRadius": "8px",
-        "padding": "10px",
-        "display": "flex",
-        "flexDirection": "column",
-        "gap": "8px"
-    }
-    control_row = {
-        "display": "flex",
-        "alignItems": "center",
-        "gap": "8px"
-    }
-    color_chip = {
-        "width": "32px",
-        "height": "24px",
-        "padding": "0",
-        "border": "1px solid #2b3347",
-        "borderRadius": "4px",
-        "background": "#111522"
-    }
-    slider_compact = {
-        "flex": "1 1 auto",
-        "minWidth": "140px"
-    }
-    dropdown_compact = {
-        "minHeight": "34px",
-        "fontSize": "12px"
-    }
-    button_compact = {
-        "height": "30px",
-        "padding": "4px 10px",
-        "fontSize": "12px"
-    }
-    slider_css = f"""
-    .slider-x .rc-slider-rail {{ background-color: #1f2937; }}
-    .slider-y .rc-slider-rail {{ background-color: #1f2937; }}
-    .slider-z .rc-slider-rail {{ background-color: #1f2937; }}
-
-    .slider-x .rc-slider-track {{ background-color: {COLOR_SCHEME['slice_x']}; }}
-    .slider-y .rc-slider-track {{ background-color: {COLOR_SCHEME['slice_y']}; }}
-    .slider-z .rc-slider-track {{ background-color: {COLOR_SCHEME['slice_z']}; }}
-
-    .slider-x .rc-slider-handle {{ border-color: {COLOR_SCHEME['slice_x']}; background-color: {COLOR_SCHEME['slice_x']}; }}
-    .slider-y .rc-slider-handle {{ border-color: {COLOR_SCHEME['slice_y']}; background-color: {COLOR_SCHEME['slice_y']}; }}
-    .slider-z .rc-slider-handle {{ border-color: {COLOR_SCHEME['slice_z']}; background-color: {COLOR_SCHEME['slice_z']}; }}
-
-    .slider-x .rc-slider-handle:focus,
-    .slider-x .rc-slider-handle:hover,
-    .slider-x .rc-slider-handle:active {{ box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35); }}
-
-    .slider-y .rc-slider-handle:focus,
-    .slider-y .rc-slider-handle:hover,
-    .slider-y .rc-slider-handle:active {{ box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35); }}
-
-    .slider-z .rc-slider-handle:focus,
-    .slider-z .rc-slider-handle:hover,
-    .slider-z .rc-slider-handle:active {{ box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35); }}
-    """
-    wheel_js = """
-    (function() {
-        function attachWheel(id, axis) {
-            var el = document.getElementById(id);
-            if (!el || el.__wheelBound) return;
-            el.__wheelBound = true;
-            el.addEventListener("wheel", function(e) {
-                if (!window.dash_clientside || !window.dash_clientside.set_props) return;
-                e.preventDefault();
-                var delta = e.deltaY > 0 ? 1 : -1;
-                window.dash_clientside.set_props("wheel-store", {data: {axis: axis, delta: delta, ts: Date.now()}});
-            }, {passive: false});
-        }
-        function init() {
-            attachWheel("x-view", "x");
-            attachWheel("y-view", "y");
-            attachWheel("z-view", "z");
-        }
-        document.addEventListener("DOMContentLoaded", init);
-        setInterval(init, 1000);
-    })();
-    """
-    app.index_string = f"""
-    <!DOCTYPE html>
-    <html>
-        <head>
-            {{%metas%}}
-            <title>{{%title%}}</title>
-            {{%favicon%}}
-            {{%css%}}
-            <style>
-            {slider_css}
-            </style>
-        </head>
-        <body>
-            {{%app_entry%}}
-            <footer>
-                {{%config%}}
-                {{%scripts%}}
-                {{%renderer%}}
-                <script>
-                {wheel_js}
-                </script>
-            </footer>
-        </body>
-    </html>
-    """
-
     app.layout = html.Div(
         style={"display": "grid", "gridTemplateColumns": "300px 1fr", "gap": "10px",
                "height": "100vh", "backgroundColor": "#0f1115", "color": "#e6e6e6",
@@ -953,45 +723,24 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                 style={"backgroundColor": "#151922", "borderRadius": "10px",
                        "padding": "12px", "display": "flex", "flexDirection": "column", "gap": "10px"},
                 children=[
-                    html.H3("Selection Panel", style={"margin": "0 0 6px 0"}),
-                    html.Div(
-                        style=panel_card,
-                        children=[
-                            html.Div("Mask", style={"fontWeight": "600"}),
-                            dcc.Dropdown(
-                                id="mask-check",
-                                options=[
-                                    {"label": "Inside", "value": "inside"},
-                                    {"label": "On", "value": "on"},
-                                    {"label": "Out", "value": "out"},
-                                ],
-                                value=["inside"],
-                                multi=True,
-                                placeholder="Select masks",
-                                clearable=False,
-                                style=dropdown_compact
-                            ),
-                            html.Button("Reset", id="reset-btn",
-                                        style={"background": "#2563EB", "color": "white",
-                                               "border": "none", "borderRadius": "6px",
-                                               **button_compact}),
-                        ]
-                    ),
-                    html.Div(
-                        style=panel_card,
-                        children=[
-                            html.Div("Slices", style={"fontWeight": "600"}),
-                            html.Label("X-slice (i)"),
-                            dcc.Slider(id="x-slider", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag", marks=None, className="slider-x"),
-                            html.Label("Y-slice (j)"),
-                            dcc.Slider(id="y-slider", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag", marks=None, className="slider-y"),
-                            html.Label("Z-slice (k)"),
-                            dcc.Slider(id="z-slider", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag", marks=None, className="slider-z"),
-                        ]
+                    html.H3("Tools", style={"margin": "0 0 6px 0"}),
+                    dcc.Checklist(
+                        id="mask-check",
+                        options=[
+                            {"label": " Inside", "value": "inside"},
+                            {"label": " On", "value": "on"},
+                            {"label": " Out", "value": "out"},
+                        ],
+                        value=["inside", "on", "out"],
+                        inputStyle={"marginRight": "6px"},
+                        labelStyle={"display": "block", "marginBottom": "4px"}
                     ),
                     html.Hr(),
                     dcc.Tabs(id="tools-tabs", value="roi", children=[
-                        dcc.Tab(label="ROI", value="roi", children=[
+                        dcc.Tab(label="ROI", value="roi", 
+                                style={'backgroundColor': 'black', 'color': 'white'},
+                                selected_style={'backgroundColor': 'black', 'color': 'white', 'border': '2px solid blue', 'fontWeight': 'bold'},
+                                children=[
                             html.Div([
                                 html.Label("X-slice (i)"),
                                 dcc.Slider(id="x-slider", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
@@ -1002,7 +751,22 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                 html.Hr(),
                                 html.Div("ROI (sphere)", style={"fontWeight": 600, "opacity": 0.9}),
                                 dcc.Tabs(id="roi-mode-tabs", value="center", children=[
-                                    dcc.Tab(label="Center + Radius", value="center", children=[
+                                    dcc.Tab(label="Center + Radius", value="center", 
+                                            style={'backgroundColor': 'black', 'color': 'white'},
+                                            selected_style={'backgroundColor': 'black', 'color': 'white', 'border': '2px solid blue', 'fontWeight': 'bold'},
+                                            children=[
+                                        html.Label("ROI X (mm)"),
+                                        dcc.Input(id="roi-x-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Label("ROI Y (mm)"),
+                                        dcc.Input(id="roi-y-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                        html.Label("ROI Z (mm)"),
+                                        dcc.Input(id="roi-z-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
                                         html.Label("ROI X (i)"),
                                         dcc.Slider(id="roi-x", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
                                         html.Label("ROI Y (j)"),
@@ -1012,8 +776,15 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                         html.Label("ROI Radius (voxels)"),
                                         dcc.Slider(id="roi-r", min=0, max=int(max(Nx, Ny, Nz)//2), step=1, value=1, updatemode="drag",
                                                    tooltip={"always_visible": False, "placement": "bottom"}),
+                                        html.Label("ROI Radius (mm)"),
+                                        dcc.Input(id="roi-r-mm", type="text", placeholder="mm", value="",
+                                            style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
                                     ]),
-                                    dcc.Tab(label="Two Points", value="twopoints", children=[
+                                    dcc.Tab(label="Two Points", value="twopoints", 
+                                            style={'backgroundColor': 'black', 'color': 'white'},
+                                            selected_style={'backgroundColor': 'black', 'color': 'white', 'border': '2px solid blue', 'fontWeight': 'bold'},
+                                            children=[
                                         html.Div("Point A", style={"fontWeight": 600, "opacity": 0.9, "marginTop": "6px"}),
                                         html.Label("A: i"),
                                         dcc.Slider(id="pA-i", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
@@ -1034,7 +805,10 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                 ])
                             ], style={"padding": "6px"})
                         ]),
-                        dcc.Tab(label="Operations", value="ops", children=[
+                        dcc.Tab(label="Operations", value="ops", 
+                                style={'backgroundColor': 'black', 'color': 'white'},
+                                selected_style={'backgroundColor': 'black', 'color': 'white', 'border': '2px solid blue', 'fontWeight': 'bold'},
+                                children=[
                             html.Div([
                                 html.Div("Morphology Mode", style={"fontWeight": 600, "opacity": 0.9}),
                                 dcc.RadioItems(
@@ -1090,271 +864,134 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                        "gridTemplateRows": "1fr 1fr", "gap": "10px"},
                 children=[
                     dcc.Graph(id="x-view"), dcc.Graph(id="y-view"),
-                    dcc.Graph(id="z-view"), dcc.Graph(id="threeD-view"),
-                    dcc.Store(id="camera-store"),
-                    dcc.Store(id="wheel-store"),
-                    dcc.Store(id="hover-store"),
-                    dcc.Store(id="catch-store"),
-                    dcc.Store(id="fakect-store")
+                    dcc.Graph(id="z-view"), dcc.Graph(id="threeD-view")
                 ]
             )
         ]
     )
 
-    @app.callback(
-        Output("x-slider", "value"),
-        Output("y-slider", "value"),
-        Output("z-slider", "value"),
-        Input("wheel-store", "data"),
-        State("x-slider", "value"),
-        State("y-slider", "value"),
-        State("z-slider", "value"),
-        prevent_initial_call=True
-    )
-    def update_sliders_from_wheel(data, x_idx, y_idx, z_idx):
-        if not data:
-            raise PreventUpdate
-        axis = data.get("axis")
+    # Helper function to convert mm to voxel index
+    def mm_to_idx(val_mm, origin, spacing, limit):
+        if val_mm is None:
+            return None
+        if isinstance(val_mm, str) and val_mm.strip() == "":
+            return None
         try:
-            delta = int(data.get("delta", 0))
-        except (TypeError, ValueError):
-            raise PreventUpdate
-        if delta == 0:
-            raise PreventUpdate
-
-        if axis == "x":
-            x_idx = int(np.clip(x_idx + delta, 0, Nx - 1))
-        elif axis == "y":
-            y_idx = int(np.clip(y_idx + delta, 0, Ny - 1))
-        elif axis == "z":
-            z_idx = int(np.clip(z_idx + delta, 0, Nz - 1))
-        else:
-            raise PreventUpdate
-
-        return x_idx, y_idx, z_idx
-
-    @app.callback(
-        Output("roi-scale-pos", "value"),
-        Output("roi-scale-input", "value"),
-        Output("roi-scale-display", "children"),
-        Input("roi-scale-pos", "value"),
-        Input("roi-scale-input", "value"),
-        prevent_initial_call=False
-    )
-    def sync_roi_scale(scale_pos, scale_input):
-        triggered = callback_context.triggered or []
-        if not triggered:
-            raise PreventUpdate
-        src = triggered[0]["prop_id"].split(".")[0]
-
-        if src == "roi-scale-input":
-            try:
-                val = float(scale_input)
-            except (TypeError, ValueError):
-                val = _pos_to_scale(scale_pos if scale_pos is not None else 0.5)
-            val = max(0.001, min(99.999, val))
-            display_val = val
-            return float(_scale_to_pos(val)), float(val), f"Current: {display_val:.3f}"
-
-        pos = scale_pos if scale_pos is not None else 0.5
-        display_val = _pos_to_scale(pos)
-        return float(pos), float(min(99.999, max(0.001, display_val))), f"Current: {display_val:.3f}"
-
-    @app.callback(
-        Output("shape-window", "value"),
-        Input("shape-window", "value"),
-        Input("shape-symmetric", "value"),
-        prevent_initial_call=True
-    )
-    def enforce_symmetric_window(window_vals, symmetric_vals):
-        if not window_vals or len(window_vals) != 2:
-            raise PreventUpdate
-        symmetric = "on" in (symmetric_vals or [])
-        if not symmetric:
-            return window_vals
-        left, right = window_vals
-        left = max(0.0, min(1.0, float(left)))
-        right = max(0.0, min(1.0, float(right)))
-        half_width = abs(0.5 - left)
-        new_left = max(0.0, 0.5 - half_width)
-        new_right = min(1.0, 0.5 + half_width)
-        return [new_left, new_right]
-
-    @app.callback(
-        Output("roi-batch-status", "children"),
-        Input("roi-batch-export", "n_clicks"),
-        State("p1-x", "value"),
-        State("p1-y", "value"),
-        State("p1-z", "value"),
-        State("p2-x", "value"),
-        State("p2-y", "value"),
-        State("p2-z", "value"),
-        State("roi-batch-scale-min", "value"),
-        State("roi-batch-scale-max", "value"),
-        State("roi-batch-scale-count", "value"),
-        State("roi-batch-k-min", "value"),
-        State("roi-batch-k-max", "value"),
-        State("roi-batch-k-count", "value"),
-        State("shape-window", "value"),
-        State("roi-batch-out-dir", "value"),
-        State("roi-batch-stl", "value"),
-        prevent_initial_call=True
-    )
-    def export_batch_masks(n_clicks,
-                           p1_x, p1_y, p1_z,
-                           p2_x, p2_y, p2_z,
-                           scale_min, scale_max, scale_count,
-                           k_min, k_max, k_count,
-                           shape_window, out_dir, export_stl_flags):
-        if not n_clicks:
-            raise PreventUpdate
-
-        center_idx = (
-            int(np.clip(round((p1_x + p2_x) / 2.0), 0, Nx - 1)),
-            int(np.clip(round((p1_y + p2_y) / 2.0), 0, Ny - 1)),
-            int(np.clip(round((p1_z + p2_z) / 2.0), 0, Nz - 1))
-        )
-        radius_vox = int(round(0.5 * float(np.linalg.norm(
-            np.array([p2_x - p1_x, p2_y - p1_y, p2_z - p1_z], dtype=float)
-        ))))
-
-        scales = _linspace_safe(scale_min, scale_max, scale_count)
-        ks = _linspace_safe(k_min, k_max, k_count)
-        w0, w1 = (0.25, 0.75)
-        if shape_window and len(shape_window) == 2:
-            try:
-                w0, w1 = float(shape_window[0]), float(shape_window[1])
-            except (TypeError, ValueError):
-                w0, w1 = (0.25, 0.75)
-        w0 = max(0.0, min(1.0, w0))
-        w1 = max(0.0, min(1.0, w1))
-        if w1 <= w0:
-            w0, w1 = (0.25, 0.75)
-
-        out_dir = out_dir or "outputs/stenosis_batch"
-        out_path = Path(out_dir)
-        out_path.mkdir(parents=True, exist_ok=True)
-
-        total = 0
-        stl_total = 0
-        base_inside = inside_state["original"]
-        for sf in scales:
-            sf = max(0.001, min(99.999, float(sf)))
-            for k in ks:
-                k = max(0.1, float(k))
-                mask = apply_roi_scale(
-                    base_inside,
-                    center_idx,
-                    radius_vox,
-                    sf,
-                    shape_k=k,
-                    shape_window=(w0, w1)
-                )
-                base_name = (
-                    f"inside_sf{_fmt_param(sf)}_k{_fmt_param(k)}"
-                    f"_w{_fmt_param(w0, 2)}-{_fmt_param(w1, 2)}.npz"
-                )
-                np.savez_compressed(
-                    out_path / base_name,
-                    inside=mask.astype(np.uint8),
-                    spacing=np.array(grid["spacing"]),
-                    origin=np.array(grid["origin"]),
-                    scale_factor=np.array(sf),
-                    shape_k=np.array(k),
-                    shape_window=np.array([w0, w1]),
-                    roi_center_ijk=np.array(center_idx),
-                    roi_radius_vox=np.array(radius_vox)
-                )
-                export_stl = "on" in (export_stl_flags or [])
-                if export_stl:
-                    stl_name = base_name.replace(".npz", ".stl")
-                    if save_mask_stl(mask, grid, out_path / stl_name, name="inside"):
-                        stl_total += 1
-                total += 1
-
-        if stl_total > 0:
-            return (
-                f"Export done. Wrote {total} masks and {stl_total} STL files to {out_path} "
-                f"(scales={len(scales)}, k={len(ks)})."
-            )
-        return (
-            f"Export done. Wrote {total} masks to {out_path} "
-            f"(scales={len(scales)}, k={len(ks)})."
-        )
-
-    @app.callback(
-        Output("fakect-status", "children"),
-        Output("fakect-store", "data"),
-        Input("fakect-apply", "n_clicks"),
-        State("fakect-model", "value"),
-        State("fakect-model-path", "value"),
-        State("fakect-mask-source", "value"),
-        State("fakect-axis", "value"),
-        State("fakect-context-step", "value"),
-        prevent_initial_call=True
-    )
-    def apply_fakect(n_clicks, model_dropdown, model_path, mask_source, axis, context_step):
-        if not n_clicks:
-            raise PreventUpdate
-
-        model_path = (model_path or "").strip() or (model_dropdown or "").strip()
-        if not model_path:
-            return "Select a fakenoise model path.", None
-
-        path = Path(model_path).expanduser().resolve()
-        if not path.exists():
-            return f"Model not found: {path}", None
-
-        try:
-            import tensorflow as tf
+            v = float(val_mm)
         except Exception:
-            return "TensorFlow is not available. Install tensorflow to run FakeCT.", None
+            return None
+        idx = int(round((v - origin) / spacing))
+        idx = max(0, min(limit - 1, idx))
+        return idx
 
-        try:
-            if fakect_state["model_path"] != str(path):
-                fakect_state["model"] = tf.keras.models.load_model(str(path))
-                fakect_state["model_path"] = str(path)
-            model = fakect_state["model"]
-            th, tw, c = _infer_keras_input(model)
-        except Exception as e:
-            return f"Failed to load model: {e}", None
+    # Callback to update ROI sliders when mm coordinates are entered
+    @app.callback(
+        Output("roi-x", "value"),
+        Output("roi-y", "value"),
+        Output("roi-z", "value"),
+        Input("roi-x-mm", "value"),
+        Input("roi-y-mm", "value"),
+        Input("roi-z-mm", "value"),
+        prevent_initial_call=True
+    )
+    def update_roi_from_mm(roi_x_mm, roi_y_mm, roi_z_mm):
+        triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
+        s = grid["spacing"][0]
+        ox, oy, oz = grid["origin"]
+        Nz, Ny, Nx = grid["shape"]
+        
+        # Get current slider values (from State would be better, but using defaults)
+        current_roi_x = x_mid
+        current_roi_y = y_mid
+        current_roi_z = z_mid
+        
+        new_roi_x = current_roi_x
+        new_roi_y = current_roi_y
+        new_roi_z = current_roi_z
+        
+        # Only update if a mm input was triggered and has a valid value
+        if "roi-x-mm.value" in triggered:
+            ix = mm_to_idx(roi_x_mm, ox, s, Nx)
+            if ix is not None:
+                new_roi_x = ix
+        
+        if "roi-y-mm.value" in triggered:
+            iy = mm_to_idx(roi_y_mm, oy, s, Ny)
+            if iy is not None:
+                new_roi_y = iy
+        
+        if "roi-z-mm.value" in triggered:
+            iz = mm_to_idx(roi_z_mm, oz, s, Nz)
+            if iz is not None:
+                new_roi_z = iz
+        
+        return new_roi_x, new_roi_y, new_roi_z
 
-        if mask_source == "on":
-            mask_vol = on_u8
-        elif mask_source == "out":
-            mask_vol = out_u8
-        else:
-            mask_vol = inside_state["current"]
+    # Callback to update mm coordinates when ROI sliders are moved
+    @app.callback(
+        Output("roi-x-mm", "value"),
+        Output("roi-y-mm", "value"),
+        Output("roi-z-mm", "value"),
+        Input("roi-x", "value"),
+        Input("roi-y", "value"),
+        Input("roi-z", "value"),
+        prevent_initial_call=True
+    )
+    def update_mm_from_roi(roi_x, roi_y, roi_z):
+        s = grid["spacing"][0]
+        ox, oy, oz = grid["origin"]
+        
+        # Convert voxel indices to mm coordinates
+        roi_x_mm_val = ox + roi_x * s
+        roi_y_mm_val = oy + roi_y * s
+        roi_z_mm_val = oz + roi_z * s
+        
+        return f"{roi_x_mm_val:.2f}", f"{roi_y_mm_val:.2f}", f"{roi_z_mm_val:.2f}"
 
-        try:
-            fakect_state["target_hw"] = (th, tw)
-            fakect_state["input_channels"] = c
-            fakect_state["context_step"] = int(context_step or 1)
-            fakect_state["mask_source"] = mask_source or "inside"
-            fakect_state["volume"] = _predict_fake_volume(
-                mask_vol,
-                model,
-                (th, tw),
-                c,
-                axis=axis or "i",
-                context_step=fakect_state["context_step"]
-            )
-        except Exception as e:
-            return f"FakeCT inference failed: {e}", None
+    # Callback to update ROI radius slider from mm input
+    @app.callback(
+        Output("roi-r", "value"),
+        Input("roi-r-mm", "value"),
+        prevent_initial_call=True
+    )
+    def update_radius_from_mm(roi_r_mm):
+        triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
+        s = grid["spacing"][0]
+        
+        # If mm input was triggered and has a valid value
+        if "roi-r-mm.value" in triggered and roi_r_mm is not None and isinstance(roi_r_mm, str) and roi_r_mm.strip():
+            try:
+                r_mm = float(roi_r_mm)
+                r_vox = int(round(r_mm / s))
+                r_vox = max(0, min(int(max(Nx, Ny, Nz)//2), r_vox))
+                return r_vox
+            except Exception:
+                pass
+        
+        # Return current slider value if no valid input
+        return 1
 
-        channel_note = ""
-        if c > 1 and (c - 1) % 2 != 0:
-            channel_note = " (non-symmetric channel count)"
-        axis_label = (axis or "i").lower()
-        msg = f"FakeCT ready: {path.name} | axis={axis_label} | input={th}x{tw}x{c}{channel_note}"
-        return msg, {"ts": time.time()}
+    # Callback to update mm radius display when slider changes
+    @app.callback(
+        Output("roi-r-mm", "value"),
+        Input("roi-r", "value"),
+        prevent_initial_call=True
+    )
+    def update_radius_mm_display(roi_r):
+        s = grid["spacing"][0]
+        
+        if roi_r is not None:
+            r_mm = roi_r * s
+            return f"{r_mm:.2f}"
+        
+        return ""
 
     @app.callback(
         Output("x-view", "figure"),
         Output("y-view", "figure"),
         Output("z-view", "figure"),
         Output("threeD-view", "figure"),
-        Output("camera-store", "data"),
+        Output("status", "children"),
         Input("mask-check", "value"),
         Input("x-slider", "value"),
         Input("y-slider", "value"),
@@ -1492,61 +1129,9 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         if show_out:
             active.append(out_u8)
 
-        p1 = _voxel_center(grid, p1_x, p1_y, p1_z)
-        p2 = _voxel_center(grid, p2_x, p2_y, p2_z)
-        center = ((p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2.0, (p1[2] + p2[2]) / 2.0)
-        radius = 0.5 * float(np.linalg.norm(np.array(p2) - np.array(p1)))
-
-        if len(active) > 0:
-            x_slice = compose_slice(active, "x", x_idx)
-            y_slice = compose_slice(active, "y", y_idx)
-            z_slice = compose_slice(active, "z", z_idx)
-        else:
-            x_slice = _empty_slice(grid, "x")
-            y_slice = _empty_slice(grid, "y")
-            z_slice = _empty_slice(grid, "z")
-
-        roi_x = _roi_slice_mask(grid, "x", x_idx, center, radius)
-        roi_y = _roi_slice_mask(grid, "y", y_idx, center, radius)
-        roi_z = _roi_slice_mask(grid, "z", z_idx, center, radius)
-
-        x_fig = _slice_fig(
-            x_slice,
-            f"X-slice (i={x_idx})",
-            COLOR_SCHEME["slice_x"],
-            colorscale=_slice_colorscale(COLOR_SCHEME["slice_x"]),
-            zmax=1
-        )
-        y_fig = _slice_fig(
-            y_slice,
-            f"Y-slice (j={y_idx})",
-            COLOR_SCHEME["slice_y"],
-            colorscale=_slice_colorscale(COLOR_SCHEME["slice_y"]),
-            zmax=1
-        )
-        z_fig = _slice_fig(
-            z_slice,
-            f"Z-slice (k={z_idx})",
-            COLOR_SCHEME["slice_z"],
-            colorscale=_slice_colorscale(COLOR_SCHEME["slice_z"]),
-            zmax=1
-        )
-
-        show_fakect = "on" in (fakect_show or [])
-        fake_vol = fakect_state.get("volume")
-        if show_fakect and isinstance(fake_vol, np.ndarray) and fake_vol.shape == inside_state["current"].shape:
-            alpha = max(0.0, min(1.0, float(fakect_alpha if fakect_alpha is not None else 0.6)))
-            fake_x = fake_vol[:, :, x_idx]
-            fake_y = fake_vol[:, y_idx, :]
-            fake_z = fake_vol[z_idx, :, :]
-            overlay = dict(colorscale=_binary_colorscale("#ffffff"), showscale=False, opacity=alpha, zmin=0, zmax=1, hoverinfo="skip")
-            x_fig.add_trace(go.Heatmap(z=fake_x, **overlay))
-            y_fig.add_trace(go.Heatmap(z=fake_y, **overlay))
-            z_fig.add_trace(go.Heatmap(z=fake_z, **overlay))
-
-        x_fig.add_trace(_roi_overlay_trace(roi_x, sphere_color, sphere_opacity))
-        y_fig.add_trace(_roi_overlay_trace(roi_y, sphere_color, sphere_opacity))
-        z_fig.add_trace(_roi_overlay_trace(roi_z, sphere_color, sphere_opacity))
+        x_fig = _slice_fig(compose_slice(active, "x", x_idx), f"X-slice (i={x_idx})", "#3B82F6")
+        y_fig = _slice_fig(compose_slice(active, "y", y_idx), f"Y-slice (j={y_idx})", "#22C55E")
+        z_fig = _slice_fig(compose_slice(active, "z", z_idx), f"Z-slice (k={z_idx})", "#F59E0B")
 
         # Rebuild inside surface dynamically from current inside state
         dyn_inside_trace = mask_to_trace(inside_state["inside"], grid, "#3B82F6", "inside", 0.35) if show_inside else None
@@ -1559,38 +1144,6 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         aspectratio = _aspectratio_from_extents((extent_x, extent_y, extent_z))
 
         fig3d = go.Figure(data=valid_traces)
-        plane_traces = [
-            _slice_plane_surface(
-                x_slice,
-                grid,
-                "x",
-                x_idx,
-                COLOR_SCHEME["slice_x"],
-                colorscale=_slice_plane_colorscale(COLOR_SCHEME["slice_x"], sphere_color, OPACITY_LEVELS["high"]),
-                cmax=2
-            ),
-            _slice_plane_surface(
-                y_slice,
-                grid,
-                "y",
-                y_idx,
-                COLOR_SCHEME["slice_y"],
-                colorscale=_slice_plane_colorscale(COLOR_SCHEME["slice_y"], sphere_color, OPACITY_LEVELS["high"]),
-                cmax=2
-            ),
-            _slice_plane_surface(
-                z_slice,
-                grid,
-                "z",
-                z_idx,
-                COLOR_SCHEME["slice_z"],
-                colorscale=_slice_plane_colorscale(COLOR_SCHEME["slice_z"], sphere_color, OPACITY_LEVELS["high"]),
-                cmax=2
-            )
-        ]
-        for plane in plane_traces:
-            if plane is not None:
-                fig3d.add_trace(plane)
         for frame in _slice_frames(grid, x_idx, y_idx, z_idx):
             fig3d.add_trace(frame)
 
@@ -1601,143 +1154,15 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
             fig3d.add_trace(t)
         fig3d.update_layout(
             margin=dict(l=0, r=0, b=0, t=0),
-            uirevision=uirev,
             scene=dict(
-                uirevision=uirev,
                 bgcolor="#000000",
                 aspectmode="manual",
                 aspectratio=aspectratio,
-                xaxis=dict(title="X (mm)", range=[-extent_x/2, extent_x/2], showgrid=False, showspikes=False),
-                yaxis=dict(title="Y (mm)", range=[-extent_y/2, extent_y/2], showgrid=False, showspikes=False),
-                zaxis=dict(title="Z (mm)", range=[-extent_z/2, extent_z/2], showgrid=False, showspikes=False),
+                xaxis=dict(title="X (mm)", range=[-extent_x/2, extent_x/2], showgrid=False),
+                yaxis=dict(title="Y (mm)", range=[-extent_y/2, extent_y/2], showgrid=False),
+                zaxis=dict(title="Z (mm)", range=[-extent_z/2, extent_z/2], showgrid=False),
             )
         )
-        if camera_state:
-            fig3d.update_layout(scene_camera=camera_state)
-
-        return x_fig, y_fig, z_fig, fig3d, camera_state
-
-    @app.callback(
-        Output("hover-store", "data"),
-        Input("x-view", "hoverData"),
-        Input("y-view", "hoverData"),
-        Input("z-view", "hoverData"),
-        State("x-slider", "value"),
-        State("y-slider", "value"),
-        State("z-slider", "value"),
-        prevent_initial_call=True
-    )
-    def update_hover_store(x_hover, y_hover, z_hover, x_idx, y_idx, z_idx):
-        triggered = callback_context.triggered or []
-        if not triggered:
-            raise PreventUpdate
-        prop = triggered[0]["prop_id"]
-        data = None
-        if prop.startswith("x-view"):
-            data = x_hover
-            axis = "x"
-        elif prop.startswith("y-view"):
-            data = y_hover
-            axis = "y"
-        elif prop.startswith("z-view"):
-            data = z_hover
-            axis = "z"
-        else:
-            raise PreventUpdate
-
-        if not data or "points" not in data or not data["points"]:
-            raise PreventUpdate
-
-        pt = data["points"][0]
-        try:
-            xv = int(round(pt.get("x", 0)))
-            yv = int(round(pt.get("y", 0)))
-        except (TypeError, ValueError):
-            raise PreventUpdate
-
-        if axis == "x":
-            i_idx = x_idx
-            j_idx = int(np.clip(xv, 0, Ny - 1))
-            k_idx = int(np.clip(yv, 0, Nz - 1))
-        elif axis == "y":
-            i_idx = int(np.clip(xv, 0, Nx - 1))
-            j_idx = y_idx
-            k_idx = int(np.clip(yv, 0, Nz - 1))
-        else:
-            i_idx = int(np.clip(xv, 0, Nx - 1))
-            j_idx = int(np.clip(yv, 0, Ny - 1))
-            k_idx = z_idx
-
-        return {"axis": axis, "i": i_idx, "j": j_idx, "k": k_idx, "ts": data.get("event", {}).get("timeStamp", None)}
-
-    @app.callback(
-        Output("catch-store", "data"),
-        Input("x-view", "clickData"),
-        Input("y-view", "clickData"),
-        Input("z-view", "clickData"),
-        State("x-slider", "value"),
-        State("y-slider", "value"),
-        State("z-slider", "value"),
-        prevent_initial_call=True
-    )
-    def update_catch_store(x_click, y_click, z_click, x_idx, y_idx, z_idx):
-        triggered = callback_context.triggered or []
-        if not triggered:
-            raise PreventUpdate
-        prop = triggered[0]["prop_id"]
-        data = None
-        if prop.startswith("x-view"):
-            data = x_click
-            axis = "x"
-        elif prop.startswith("y-view"):
-            data = y_click
-            axis = "y"
-        elif prop.startswith("z-view"):
-            data = z_click
-            axis = "z"
-        else:
-            raise PreventUpdate
-
-        if not data or "points" not in data or not data["points"]:
-            raise PreventUpdate
-
-        pt = data["points"][0]
-        try:
-            xv = int(round(pt.get("x", 0)))
-            yv = int(round(pt.get("y", 0)))
-        except (TypeError, ValueError):
-            raise PreventUpdate
-
-        if axis == "x":
-            i_idx = x_idx
-            j_idx = int(np.clip(xv, 0, Ny - 1))
-            k_idx = int(np.clip(yv, 0, Nz - 1))
-        elif axis == "y":
-            i_idx = int(np.clip(xv, 0, Nx - 1))
-            j_idx = y_idx
-            k_idx = int(np.clip(yv, 0, Nz - 1))
-        else:
-            i_idx = int(np.clip(xv, 0, Nx - 1))
-            j_idx = int(np.clip(yv, 0, Ny - 1))
-            k_idx = z_idx
-
-        return {"axis": axis, "i": i_idx, "j": j_idx, "k": k_idx}
-
-    @app.callback(
-        Output("p1-x", "value"),
-        Output("p1-y", "value"),
-        Output("p1-z", "value"),
-        Input("p1-set-btn", "n_clicks"),
-        State("catch-store", "data"),
-        State("p1-x", "value"),
-        State("p1-y", "value"),
-        State("p1-z", "value"),
-        prevent_initial_call=True
-    )
-    def set_p1_from_catch(n_clicks, catch_data, p1_x, p1_y, p1_z):
-        if not n_clicks or not catch_data:
-            raise PreventUpdate
-        return catch_data.get("i", p1_x), catch_data.get("j", p1_y), catch_data.get("k", p1_z)
 
         status = (
             f"Active masks: {', '.join(mask_values)} | X={x_idx}, Y={y_idx}, Z={z_idx} "
@@ -1807,14 +1232,6 @@ def run_pipeline(
                         spacing=np.array(grid["spacing"]), origin=np.array(grid["origin"]))
     ok(f"Masks saved (uint8) → {out_npz}")
 
-    if export_stl:
-        stl_root = Path(stl_dir) if stl_dir else Path(out_npz).parent
-        stl_root.mkdir(parents=True, exist_ok=True)
-        save_mask_stl(inside_u8, grid, stl_root / "inside.stl", name="inside")
-        save_mask_stl(on_u8, grid, stl_root / "on.stl", name="on")
-        save_mask_stl(out_u8, grid, stl_root / "out.stl", name="out")
-        ok(f"STL export complete → {stl_root}")
-
     # Viewer
     if show:
         if viewer == "dash":
@@ -1851,10 +1268,6 @@ def main():
                     help="Viewer type: 'dash' or 'html'.")
     ap.add_argument("--port", type=int, default=8050,
                     help="Port for Dash viewer (default 8050).")
-    ap.add_argument("--export-stl", action="store_true",
-                    help="Export inside/on/out masks as STL files.")
-    ap.add_argument("--stl-dir", default=None,
-                    help="Directory for STL export (defaults to --out folder).")
 
     args = ap.parse_args()
 
