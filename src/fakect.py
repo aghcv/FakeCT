@@ -26,6 +26,7 @@
 # ---------------------------------------------------------------------
 
 import sys
+import time
 import numpy as np
 import trimesh
 from pathlib import Path
@@ -400,6 +401,157 @@ def _slice_plane_surface(
         hoverinfo="skip",
         opacity=1.0
     )
+
+def _infer_keras_input(model) -> tuple[int, int, int]:
+    """Return (H, W, C) from a Keras model input."""
+    shape = getattr(model, "input_shape", None)
+    if shape is None:
+        raise ValueError("Model has no input_shape")
+    if isinstance(shape, list):
+        shape = shape[0]
+    if not isinstance(shape, (tuple, list)) or len(shape) != 4:
+        raise ValueError(f"Unexpected input shape: {shape}")
+    _, h, w, c = shape
+    if h is None or w is None:
+        raise ValueError(f"Model input must have fixed H/W, got {shape}")
+    if c is None:
+        c = 1
+    return int(h), int(w), int(c)
+
+def _fit_slice_to_model(slice2d: np.ndarray, target_hw: tuple[int, int]) -> tuple[np.ndarray, dict]:
+    """Center-crop or pad a slice to the model size, returning mapping for restore."""
+    h, w = slice2d.shape
+    th, tw = target_hw
+
+    def _calc(a: int, ta: int) -> tuple[slice, tuple[int, int]]:
+        if a >= ta:
+            start = int((a - ta) // 2)
+            return slice(start, start + ta), (0, 0)
+        pad_before = int((ta - a) // 2)
+        pad_after = int(ta - a - pad_before)
+        return slice(0, a), (pad_before, pad_after)
+
+    sl_h, pad_h = _calc(h, th)
+    sl_w, pad_w = _calc(w, tw)
+
+    cropped = slice2d[sl_h, sl_w]
+    if pad_h != (0, 0) or pad_w != (0, 0):
+        fitted = np.pad(cropped, (pad_h, pad_w), mode="constant", constant_values=0)
+    else:
+        fitted = cropped
+
+    mapping = {
+        "orig_hw": (h, w),
+        "target_hw": (th, tw),
+        "slice_h": sl_h,
+        "slice_w": sl_w,
+        "pad_h": pad_h,
+        "pad_w": pad_w,
+    }
+    return fitted, mapping
+
+def _fit_stack_to_model(stack_hwc: np.ndarray, target_hw: tuple[int, int]) -> tuple[np.ndarray, dict]:
+    """Apply the same crop/pad to a (H, W, C) stack."""
+    if stack_hwc.ndim != 3:
+        raise ValueError("Expected HWC stack for model input")
+    base = stack_hwc[:, :, 0]
+    fitted_base, mapping = _fit_slice_to_model(base, target_hw)
+
+    th, tw = target_hw
+    out = np.zeros((th, tw, stack_hwc.shape[2]), dtype=stack_hwc.dtype)
+    sl_h = mapping["slice_h"]
+    sl_w = mapping["slice_w"]
+    pad_h = mapping["pad_h"]
+    pad_w = mapping["pad_w"]
+
+    for c in range(stack_hwc.shape[2]):
+        cropped = stack_hwc[:, :, c][sl_h, sl_w]
+        if pad_h != (0, 0) or pad_w != (0, 0):
+            out[:, :, c] = np.pad(cropped, (pad_h, pad_w), mode="constant", constant_values=0)
+        else:
+            out[:, :, c] = cropped
+    return out, mapping
+
+def _restore_slice_from_model(pred2d: np.ndarray, mapping: dict) -> np.ndarray:
+    """Restore a model output slice to original size using stored mapping."""
+    h, w = mapping["orig_hw"]
+    th, tw = mapping["target_hw"]
+    sl_h = mapping["slice_h"]
+    sl_w = mapping["slice_w"]
+    pad_h = mapping["pad_h"]
+    pad_w = mapping["pad_w"]
+
+    out = pred2d
+    if pad_h != (0, 0) or pad_w != (0, 0):
+        out = out[pad_h[0]:pad_h[0] + h, pad_w[0]:pad_w[0] + w]
+
+    if h > th or w > tw:
+        restored = np.zeros((h, w), dtype=out.dtype)
+        restored[sl_h, sl_w] = out
+        out = restored
+
+    return out
+
+def _predict_fake_volume(
+    mask_zyx: np.ndarray,
+    model,
+    target_hw: tuple[int, int],
+    input_channels: int,
+    axis: str = "i",
+    context_step: int = 1
+) -> np.ndarray:
+    """Run the fakenoise model on each slice along axis to build a ZYX volume."""
+    if mask_zyx.ndim != 3:
+        raise ValueError("Expected (Z, Y, X) mask volume")
+    nz, ny, nx = mask_zyx.shape
+    out = np.zeros_like(mask_zyx, dtype=np.float32)
+
+    axis = (axis or "i").lower()
+    if axis not in {"i", "j", "k"}:
+        raise ValueError("axis must be one of i, j, k")
+
+    context_slices = max(0, int((input_channels - 1) // 2))
+    context_step = max(1, int(context_step))
+
+    if axis == "i":
+        count = nx
+        def get_slice(idx):
+            return mask_zyx[:, :, idx]
+        def set_slice(idx, data2d):
+            out[:, :, idx] = data2d
+        max_idx = nx - 1
+    elif axis == "j":
+        count = ny
+        def get_slice(idx):
+            return mask_zyx[:, idx, :]
+        def set_slice(idx, data2d):
+            out[:, idx, :] = data2d
+        max_idx = ny - 1
+    else:
+        count = nz
+        def get_slice(idx):
+            return mask_zyx[idx, :, :]
+        def set_slice(idx, data2d):
+            out[idx, :, :] = data2d
+        max_idx = nz - 1
+
+    for s_idx in range(count):
+        if input_channels <= 1:
+            mask2d = (get_slice(s_idx) > 0).astype(np.float32)
+            stack = mask2d[..., None]
+        else:
+            stack_list = []
+            for ds in range(-context_slices, context_slices + 1):
+                ix = int(np.clip(s_idx + ds * context_step, 0, max_idx))
+                stack_list.append((get_slice(ix) > 0).astype(np.float32))
+            stack = np.stack(stack_list, axis=-1)
+
+        fitted, mapping = _fit_stack_to_model(stack, target_hw)
+        pred = model.predict(fitted[None, ...], verbose=0)[0, ..., 0]
+        restored = _restore_slice_from_model(pred, mapping)
+        set_slice(s_idx, restored.astype(np.float32))
+
+    return out
 
 def mask_to_trace(mask_u8, grid, color, name, opacity=OPACITY_LEVELS["high"]):
     total = int(np.sum(mask_u8))
@@ -789,6 +941,21 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         "current": inside_u8.copy(),
         "original": inside_u8.copy(),
         "trace": inside_trace
+    }
+
+    model_options = []
+    for model_path in sorted(Path("data").rglob("fakenoise_model.keras")):
+        model_options.append({"label": model_path.as_posix(), "value": model_path.as_posix()})
+    default_model = model_options[0]["value"] if model_options else ""
+
+    fakect_state = {
+        "model": None,
+        "model_path": None,
+        "volume": None,
+        "target_hw": None,
+        "input_channels": None,
+        "context_step": 1,
+        "mask_source": "inside"
     }
 
     app = dash.Dash(__name__)
@@ -1183,6 +1350,93 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                                 ]
                                             )
                                         ]
+                                    ),
+                                    dcc.Tab(
+                                        label="FakeCT",
+                                        value="fakect",
+                                        children=[
+                                            html.Div(
+                                                style={"display": "flex", "flexDirection": "column", "gap": "8px", "padding": "4px 0"},
+                                                children=[
+                                                    html.Div("FakeCT", style={"fontWeight": "600"}),
+                                                    html.Div("Model (.keras)", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    dcc.Dropdown(
+                                                        id="fakect-model",
+                                                        options=model_options,
+                                                        value=default_model,
+                                                        placeholder="Select a model",
+                                                        clearable=True,
+                                                        style=dropdown_compact
+                                                    ),
+                                                    dcc.Input(
+                                                        id="fakect-model-path",
+                                                        type="text",
+                                                        placeholder="Or paste a model path",
+                                                        value="",
+                                                        style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                               "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                               "padding": "4px 6px"}
+                                                    ),
+                                                    html.Div("Input mask", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    dcc.Dropdown(
+                                                        id="fakect-mask-source",
+                                                        options=[
+                                                            {"label": "Inside", "value": "inside"},
+                                                            {"label": "On", "value": "on"},
+                                                            {"label": "Out", "value": "out"},
+                                                        ],
+                                                        value="inside",
+                                                        clearable=False,
+                                                        style=dropdown_compact
+                                                    ),
+                                                    html.Div("Context step (if multi-slice model)", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    dcc.Input(
+                                                        id="fakect-context-step",
+                                                        type="number",
+                                                        min=1,
+                                                        step=1,
+                                                        value=1,
+                                                        style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                               "border": "1px solid #2a2f3a", "borderRadius": "6px",
+                                                               "padding": "4px 6px"}
+                                                    ),
+                                                    html.Div("Apply along axis", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    dcc.Dropdown(
+                                                        id="fakect-axis",
+                                                        options=[
+                                                            {"label": "i (X)", "value": "i"},
+                                                            {"label": "j (Y)", "value": "j"},
+                                                            {"label": "k (Z)", "value": "k"},
+                                                        ],
+                                                        value="i",
+                                                        clearable=False,
+                                                        style=dropdown_compact
+                                                    ),
+                                                    html.Div("Overlay", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    dcc.Checklist(
+                                                        id="fakect-show",
+                                                        options=[{"label": " Show FakeCT overlay", "value": "on"}],
+                                                        value=["on"],
+                                                        inputStyle={"marginRight": "6px"}
+                                                    ),
+                                                    html.Div("Opacity", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    dcc.Slider(
+                                                        id="fakect-alpha",
+                                                        min=0.05,
+                                                        max=1.0,
+                                                        step=0.05,
+                                                        value=0.6,
+                                                        updatemode="drag",
+                                                        marks=None
+                                                    ),
+                                                    html.Button("Apply", id="fakect-apply",
+                                                                style={"background": "#0EA5E9", "color": "white",
+                                                                       "border": "none", "borderRadius": "6px",
+                                                                       **button_compact}),
+                                                    html.Div(id="fakect-status", style={"fontSize": "12px", "opacity": "0.85"})
+                                                ]
+                                            )
+                                        ]
                                     )
                                 ]
                             )
@@ -1200,7 +1454,8 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                     dcc.Store(id="camera-store"),
                     dcc.Store(id="wheel-store"),
                     dcc.Store(id="hover-store"),
-                    dcc.Store(id="catch-store")
+                    dcc.Store(id="catch-store"),
+                    dcc.Store(id="fakect-store")
                 ]
             )
         ]
@@ -1388,6 +1643,73 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         )
 
     @app.callback(
+        Output("fakect-status", "children"),
+        Output("fakect-store", "data"),
+        Input("fakect-apply", "n_clicks"),
+        State("fakect-model", "value"),
+        State("fakect-model-path", "value"),
+        State("fakect-mask-source", "value"),
+        State("fakect-axis", "value"),
+        State("fakect-context-step", "value"),
+        prevent_initial_call=True
+    )
+    def apply_fakect(n_clicks, model_dropdown, model_path, mask_source, axis, context_step):
+        if not n_clicks:
+            raise PreventUpdate
+
+        model_path = (model_path or "").strip() or (model_dropdown or "").strip()
+        if not model_path:
+            return "Select a fakenoise model path.", None
+
+        path = Path(model_path).expanduser().resolve()
+        if not path.exists():
+            return f"Model not found: {path}", None
+
+        try:
+            import tensorflow as tf
+        except Exception:
+            return "TensorFlow is not available. Install tensorflow to run FakeCT.", None
+
+        try:
+            if fakect_state["model_path"] != str(path):
+                fakect_state["model"] = tf.keras.models.load_model(str(path))
+                fakect_state["model_path"] = str(path)
+            model = fakect_state["model"]
+            th, tw, c = _infer_keras_input(model)
+        except Exception as e:
+            return f"Failed to load model: {e}", None
+
+        if mask_source == "on":
+            mask_vol = on_u8
+        elif mask_source == "out":
+            mask_vol = out_u8
+        else:
+            mask_vol = inside_state["current"]
+
+        try:
+            fakect_state["target_hw"] = (th, tw)
+            fakect_state["input_channels"] = c
+            fakect_state["context_step"] = int(context_step or 1)
+            fakect_state["mask_source"] = mask_source or "inside"
+            fakect_state["volume"] = _predict_fake_volume(
+                mask_vol,
+                model,
+                (th, tw),
+                c,
+                axis=axis or "i",
+                context_step=fakect_state["context_step"]
+            )
+        except Exception as e:
+            return f"FakeCT inference failed: {e}", None
+
+        channel_note = ""
+        if c > 1 and (c - 1) % 2 != 0:
+            channel_note = " (non-symmetric channel count)"
+        axis_label = (axis or "i").lower()
+        msg = f"FakeCT ready: {path.name} | axis={axis_label} | input={th}x{tw}x{c}{channel_note}"
+        return msg, {"ts": time.time()}
+
+    @app.callback(
         Output("x-view", "figure"),
         Output("y-view", "figure"),
         Output("z-view", "figure"),
@@ -1411,6 +1733,9 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         Input("roi-line-opacity", "value"),
          Input("roi-sphere-color", "value"),
          Input("roi-sphere-opacity", "value"),
+        Input("fakect-show", "value"),
+        Input("fakect-alpha", "value"),
+        Input("fakect-store", "data"),
         Input("roi-scale-pos", "value"),
         Input("roi-scale-apply", "n_clicks"),
         Input("shape-k", "value"),
@@ -1426,6 +1751,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                p1_opacity, p2_opacity,
                line_color, line_opacity,
              sphere_color, sphere_opacity,
+                         fakect_show, fakect_alpha, _fakect_store,
              scale_pos, scale_apply_clicks,
              shape_k,
              shape_window,
@@ -1517,6 +1843,18 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
             colorscale=_slice_colorscale(COLOR_SCHEME["slice_z"]),
             zmax=1
         )
+
+        show_fakect = "on" in (fakect_show or [])
+        fake_vol = fakect_state.get("volume")
+        if show_fakect and isinstance(fake_vol, np.ndarray) and fake_vol.shape == inside_state["current"].shape:
+            alpha = max(0.0, min(1.0, float(fakect_alpha if fakect_alpha is not None else 0.6)))
+            fake_x = fake_vol[:, :, x_idx]
+            fake_y = fake_vol[:, y_idx, :]
+            fake_z = fake_vol[z_idx, :, :]
+            overlay = dict(colorscale=_binary_colorscale("#ffffff"), showscale=False, opacity=alpha, zmin=0, zmax=1, hoverinfo="skip")
+            x_fig.add_trace(go.Heatmap(z=fake_x, **overlay))
+            y_fig.add_trace(go.Heatmap(z=fake_y, **overlay))
+            z_fig.add_trace(go.Heatmap(z=fake_z, **overlay))
 
         x_fig.add_trace(_roi_overlay_trace(roi_x, sphere_color, sphere_opacity))
         y_fig.add_trace(_roi_overlay_trace(roi_y, sphere_color, sphere_opacity))
