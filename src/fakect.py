@@ -485,6 +485,15 @@ def save_mask_stl(mask_u8: np.ndarray, grid: dict, out_path: Path, name: str) ->
 def _binary_colorscale(on_color="#ffffff"):
     return [[0.0, "black"], [1.0, on_color]]
 
+def _slice_colorscale(color):
+    """Compatibility helper for slice overlays."""
+    return _binary_colorscale(color)
+
+def _slice_plane_colorscale(slice_color, roi_color, roi_alpha):
+    """Compatibility helper for slice planes in 3-D view."""
+    _ = roi_color, roi_alpha
+    return _binary_colorscale(slice_color)
+
 def _slice_fig(z2d, title, border_color="#ffffff", colorscale=None, zmax=1):
     if colorscale is None:
         colorscale = _binary_colorscale(border_color)
@@ -993,13 +1002,6 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                     dcc.Tabs(id="tools-tabs", value="roi", children=[
                         dcc.Tab(label="ROI", value="roi", children=[
                             html.Div([
-                                html.Label("X-slice (i)"),
-                                dcc.Slider(id="x-slider", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
-                                html.Label("Y-slice (j)"),
-                                dcc.Slider(id="y-slider", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
-                                html.Label("Z-slice (k)"),
-                                dcc.Slider(id="z-slider", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
-                                html.Hr(),
                                 html.Div("ROI (sphere)", style={"fontWeight": 600, "opacity": 0.9}),
                                 dcc.Tabs(id="roi-mode-tabs", value="center", children=[
                                     dcc.Tab(label="Center + Radius", value="center", children=[
@@ -1078,10 +1080,6 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                             ], style={"padding": "6px"})
                         ]),
                     ]),
-                    html.Button("Reset", id="reset-btn",
-                                style={"background": "#2563EB", "color": "white",
-                                       "border": "none", "padding": "6px 10px",
-                                       "borderRadius": "6px", "marginTop": "8px"}),
                     html.Div(id="status", style={"fontSize": "12px", "marginTop": "8px"})
                 ]
             ),
@@ -1324,7 +1322,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         elif mask_source == "out":
             mask_vol = out_u8
         else:
-            mask_vol = inside_state["current"]
+            mask_vol = inside_state["inside"]
 
         try:
             fakect_state["target_hw"] = (th, tw)
@@ -1385,6 +1383,13 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                pA_i, pA_j, pA_k, pB_i, pB_j, pB_k,
                tabs_value, ui_mode, morph_mode, morph_iters, apply_clicks,
                stenosis_pct, apply_auto_clicks, n_clicks):
+        camera_state = None
+        uirev = "viewer"
+        sphere_color = "#E11D48"
+        sphere_opacity = float(OPACITY_LEVELS.get("sphere_opacity", 0.05))
+        fakect_show = []
+        fakect_alpha = 0.6
+
         triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
         if "reset-btn.n_clicks" in triggered:
             mask_values = ["inside", "on", "out"]
@@ -1492,10 +1497,14 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         if show_out:
             active.append(out_u8)
 
-        p1 = _voxel_center(grid, p1_x, p1_y, p1_z)
-        p2 = _voxel_center(grid, p2_x, p2_y, p2_z)
-        center = ((p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2.0, (p1[2] + p2[2]) / 2.0)
-        radius = 0.5 * float(np.linalg.norm(np.array(p2) - np.array(p1)))
+        s = float(grid["spacing"][0])
+        ox, oy, oz = grid["origin"]
+        center = (
+            float(ox + (int(eff_roi_x) + 0.5) * s),
+            float(oy + (int(eff_roi_y) + 0.5) * s),
+            float(oz + (int(eff_roi_z) + 0.5) * s),
+        )
+        radius = float(max(0, int(eff_roi_r)) * s)
 
         if len(active) > 0:
             x_slice = compose_slice(active, "x", x_idx)
@@ -1534,7 +1543,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
 
         show_fakect = "on" in (fakect_show or [])
         fake_vol = fakect_state.get("volume")
-        if show_fakect and isinstance(fake_vol, np.ndarray) and fake_vol.shape == inside_state["current"].shape:
+        if show_fakect and isinstance(fake_vol, np.ndarray) and fake_vol.shape == inside_state["inside"].shape:
             alpha = max(0.0, min(1.0, float(fakect_alpha if fakect_alpha is not None else 0.6)))
             fake_x = fake_vol[:, :, x_idx]
             fake_y = fake_vol[:, y_idx, :]
@@ -1769,7 +1778,9 @@ def run_pipeline(
     mc_map: str = "xyz",
     viewer: str = "dash",
     port: int = 8050,
-    method: str = "auto"
+    method: str = "auto",
+    export_stl: bool = False,
+    stl_dir: str | None = None,
 ):
     mesh_path = Path(in_mesh_path).resolve()
     if not mesh_path.exists():
@@ -1877,7 +1888,9 @@ def main():
         mc_map=args.mc_map,
         viewer=args.viewer,
         port=args.port,
-        method=args.method
+        method=args.method,
+        export_stl=args.export_stl,
+        stl_dir=args.stl_dir,
     )
 
 if __name__ == "__main__":
