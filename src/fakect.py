@@ -25,17 +25,38 @@
 #  Quick note: to run without opening the Dash viewer (faster / headless), pass --no-show.
 # ---------------------------------------------------------------------
 
+from __future__ import annotations
+
+import base64
+import re
 import sys
+import xml.etree.ElementTree as ET
 import numpy as np
-import trimesh
 from pathlib import Path
-from typing import Tuple
+from typing import Any, Tuple
+import zlib
 from scipy.ndimage import binary_dilation
 from skimage import measure
-import plotly.graph_objects as go
-import dash
-from dash import dcc, html, Output, Input, State, callback_context
-from dash.exceptions import PreventUpdate
+
+try:
+    import plotly.graph_objects as go
+except Exception:
+    go = None
+
+try:
+    import trimesh
+except Exception:
+    trimesh = None
+
+try:
+    import dash
+    from dash import dcc, html, Output, Input, State, callback_context
+    from dash.exceptions import PreventUpdate
+except Exception:
+    dash = None
+    dcc = html = Output = Input = State = callback_context = None
+    class PreventUpdate(Exception):
+        pass
 
 # libigl for fast winding number
 try:
@@ -74,6 +95,30 @@ COLOR_SCHEME = {
     "roi_p2": "#F472B6",
     "roi_line": "#E5E7EB",
     "roi_sphere": "#A855F7"
+}
+
+LABEL_COLOR_PALETTE = [
+    "#E11D48", "#22C55E", "#F59E0B", "#38BDF8", "#A855F7", "#F472B6",
+    "#84CC16", "#F97316", "#14B8A6", "#EAB308", "#6366F1", "#EC4899",
+    "#10B981", "#EF4444", "#06B6D4", "#8B5CF6", "#F43F5E", "#65A30D",
+]
+
+VTK_DTYPE_MAP = {
+    "Int8": np.int8,
+    "UInt8": np.uint8,
+    "Int16": np.int16,
+    "UInt16": np.uint16,
+    "Int32": np.int32,
+    "UInt32": np.uint32,
+    "Int64": np.int64,
+    "UInt64": np.uint64,
+    "Float32": np.float32,
+    "Float64": np.float64,
+}
+
+VTK_HEADER_DTYPE_MAP = {
+    "UInt32": np.uint32,
+    "UInt64": np.uint64,
 }
 
 ROI_DEFAULTS = {
@@ -163,6 +208,424 @@ def make_cube_grid_from_mesh(
 
     info(f"Grid spacing={s:.4f} mm | N={N} | extent={extent:.3f} mm | safe margin={margin_abs:.3f} mm")
     return grid
+
+def _parse_numeric_tuple(value: str, dtype=float) -> tuple:
+    return tuple(dtype(v) for v in value.replace(",", " ").split())
+
+def _extent_to_dims_xyz(extent: tuple[int, ...], association: str) -> tuple[int, int, int]:
+    x0, x1, y0, y1, z0, z1 = extent
+    if association == "CellData":
+        return max(0, x1 - x0), max(0, y1 - y0), max(0, z1 - z0)
+    return max(0, x1 - x0 + 1), max(0, y1 - y0 + 1), max(0, z1 - z0 + 1)
+
+def _vtk_endian(root: ET.Element) -> str:
+    byte_order = root.attrib.get("byte_order", "LittleEndian")
+    return "<" if byte_order != "BigEndian" else ">"
+
+def _vtk_dtype(type_name: str, endian: str) -> np.dtype:
+    if type_name not in VTK_DTYPE_MAP:
+        raise ValueError(f"Unsupported VTI DataArray type: {type_name}")
+    return np.dtype(VTK_DTYPE_MAP[type_name]).newbyteorder(endian)
+
+def _vtk_header_dtype(header_type: str, endian: str) -> np.dtype:
+    if header_type not in VTK_HEADER_DTYPE_MAP:
+        raise ValueError(f"Unsupported VTI header_type: {header_type}")
+    return np.dtype(VTK_HEADER_DTYPE_MAP[header_type]).newbyteorder(endian)
+
+def _vti_xml_without_appended(text: str) -> str:
+    if "<AppendedData" not in text:
+        return text
+    return text.split("<AppendedData", 1)[0] + "</VTKFile>"
+
+def _decode_vtk_base64_payload(payload: str) -> bytes:
+    """
+    VTK XML writers may concatenate independently padded base64 chunks.
+    Python's base64 decoder stops at the first padding marker, so decode each
+    padded chunk and concatenate the raw bytes.
+    """
+    payload = "".join(payload.split())
+    if "=" not in payload:
+        return base64.b64decode(payload)
+
+    chunks: list[bytes] = []
+    start = 0
+    i = 0
+    while i < len(payload):
+        if payload[i] != "=":
+            i += 1
+            continue
+        j = i
+        while j < len(payload) and payload[j] == "=":
+            j += 1
+        chunk = payload[start:j]
+        if chunk:
+            chunks.append(base64.b64decode(chunk))
+        start = j
+        i = j
+    if start < len(payload):
+        chunks.append(base64.b64decode(payload[start:]))
+    return b"".join(chunks)
+
+def _vti_appended_bytes(text: str) -> bytes:
+    match = re.search(r"<AppendedData[^>]*>\s*_(.*?)\s*</AppendedData>", text, re.S)
+    if not match:
+        raise ValueError("VTI file has no appended data payload")
+    return _decode_vtk_base64_payload(match.group(1))
+
+def _find_vti_data_array(
+    piece: ET.Element,
+    requested_name: str | None = None
+) -> tuple[str, ET.Element]:
+    candidates: list[tuple[str, ET.Element]] = []
+    for association in ("CellData", "PointData"):
+        parent = piece.find(association)
+        if parent is None:
+            continue
+        preferred = parent.attrib.get("Scalars")
+        arrays = list(parent.findall("DataArray"))
+        if requested_name:
+            for data_array in arrays:
+                if data_array.attrib.get("Name") == requested_name:
+                    return association, data_array
+        elif preferred:
+            for data_array in arrays:
+                if data_array.attrib.get("Name") == preferred:
+                    return association, data_array
+        for data_array in arrays:
+            candidates.append((association, data_array))
+
+    if requested_name:
+        raise ValueError(f"No VTI DataArray named {requested_name!r}")
+    if not candidates:
+        raise ValueError("No CellData or PointData arrays found in VTI file")
+    return candidates[0]
+
+def _iter_vtk_uncompressed_payload(
+    raw: bytes,
+    header_dtype: np.dtype,
+    offset: int
+):
+    word = header_dtype.itemsize
+    nbytes = int(np.frombuffer(raw, dtype=header_dtype, count=1, offset=offset)[0])
+    start = offset + word
+    yield raw[start:start + nbytes]
+
+def _iter_vtk_zlib_payloads(
+    raw: bytes,
+    header_dtype: np.dtype,
+    offset: int
+):
+    word = header_dtype.itemsize
+    header = np.frombuffer(raw, dtype=header_dtype, count=3, offset=offset).astype(np.int64)
+    n_blocks = int(header[0])
+    if n_blocks <= 0:
+        return
+    sizes_offset = offset + 3 * word
+    compressed_sizes = np.frombuffer(
+        raw,
+        dtype=header_dtype,
+        count=n_blocks,
+        offset=sizes_offset
+    ).astype(np.int64)
+    data_offset = sizes_offset + n_blocks * word
+    cursor = data_offset
+    for compressed_size in compressed_sizes:
+        compressed_size = int(compressed_size)
+        block = raw[cursor:cursor + compressed_size]
+        cursor += compressed_size
+        yield zlib.decompress(block)
+
+def _sample_flat_chunk(
+    sampled_zyx: np.ndarray,
+    values: np.ndarray,
+    start_elem: int,
+    dims_xyz: tuple[int, int, int],
+    stride: int,
+    sample_offset: int,
+) -> None:
+    if values.size == 0:
+        return
+
+    nx, ny, nz = dims_xyz
+    total = nx * ny * nz
+    idx = np.arange(start_elem, start_elem + values.size, dtype=np.int64)
+    valid = idx < total
+    if not np.any(valid):
+        return
+
+    idx = idx[valid]
+    vals = values[valid]
+    x = idx % nx
+    y = (idx // nx) % ny
+    z = idx // (nx * ny)
+    selected = (
+        (x >= sample_offset) & ((x - sample_offset) % stride == 0) &
+        (y >= sample_offset) & ((y - sample_offset) % stride == 0) &
+        (z >= sample_offset) & ((z - sample_offset) % stride == 0)
+    )
+    if not np.any(selected):
+        return
+
+    sx = ((x[selected] - sample_offset) // stride).astype(np.int64)
+    sy = ((y[selected] - sample_offset) // stride).astype(np.int64)
+    sz = ((z[selected] - sample_offset) // stride).astype(np.int64)
+    sampled_zyx[sz, sy, sx] = vals[selected]
+
+def _read_vti_sampled_array(
+    vti_path: Path,
+    array_name: str | None = None,
+    max_dim: int = 160
+) -> tuple[np.ndarray, dict, dict]:
+    """
+    Read a VTK XML ImageData array into a sampled (Z,Y,X) ndarray.
+
+    Large VTI files can be much larger than browser-friendly voxel grids.  The
+    reader samples every Nth voxel/cell directly from the compressed stream,
+    so it does not need to materialize the full uncompressed VTI volume.
+    """
+    text = vti_path.read_text(errors="ignore")
+    root = ET.fromstring(_vti_xml_without_appended(text))
+    if root.attrib.get("type") != "ImageData":
+        raise ValueError(f"Expected VTK ImageData, got {root.attrib.get('type')!r}")
+
+    image = root.find("ImageData")
+    if image is None:
+        raise ValueError("VTI file is missing ImageData")
+    piece = image.find("Piece")
+    if piece is None:
+        raise ValueError("VTI file is missing ImageData/Piece")
+
+    association, data_array = _find_vti_data_array(piece, array_name)
+    num_components = int(data_array.attrib.get("NumberOfComponents", "1"))
+    if num_components != 1:
+        raise ValueError("VTI label import expects scalar DataArrays with NumberOfComponents=1")
+    endian = _vtk_endian(root)
+    dtype = _vtk_dtype(data_array.attrib.get("type", ""), endian)
+    header_dtype = _vtk_header_dtype(root.attrib.get("header_type", "UInt32"), endian)
+    extent = _parse_numeric_tuple(piece.attrib.get("Extent", image.attrib.get("WholeExtent", "")), int)
+    dims_xyz = _extent_to_dims_xyz(extent, association)
+    if any(d <= 0 for d in dims_xyz):
+        raise ValueError(f"Invalid VTI dimensions for {association}: {dims_xyz}")
+
+    max_full_dim = max(dims_xyz)
+    max_dim = int(max_dim or 0)
+    stride = 1 if max_dim <= 0 else max(1, int(np.ceil(max_full_dim / max_dim)))
+    sample_offset = 0 if stride == 1 else stride // 2
+    sampled_dims_xyz = tuple(
+        0 if dim <= sample_offset else ((dim - 1 - sample_offset) // stride) + 1
+        for dim in dims_xyz
+    )
+    sampled_zyx = np.zeros(
+        (sampled_dims_xyz[2], sampled_dims_xyz[1], sampled_dims_xyz[0]),
+        dtype=dtype
+    )
+
+    fmt = data_array.attrib.get("format", "appended")
+    start_elem = 0
+    itemsize = dtype.itemsize
+    carry = b""
+
+    def consume_payload(payload_iter):
+        nonlocal start_elem, carry
+        for block in payload_iter:
+            data = carry + block
+            usable = (len(data) // itemsize) * itemsize
+            if usable:
+                values = np.frombuffer(data[:usable], dtype=dtype)
+                _sample_flat_chunk(
+                    sampled_zyx,
+                    values,
+                    start_elem,
+                    dims_xyz,
+                    stride,
+                    sample_offset
+                )
+                start_elem += int(values.size)
+            carry = data[usable:]
+        if carry:
+            raise ValueError("VTI payload ended with an incomplete scalar value")
+
+    if fmt == "ascii":
+        values = np.fromstring(data_array.text or "", sep=" ", dtype=dtype)
+        _sample_flat_chunk(sampled_zyx, values, 0, dims_xyz, stride, sample_offset)
+    elif fmt == "binary":
+        raw = _decode_vtk_base64_payload(data_array.text or "")
+        if root.attrib.get("compressor") == "vtkZLibDataCompressor":
+            consume_payload(_iter_vtk_zlib_payloads(raw, header_dtype, 0))
+        else:
+            consume_payload(_iter_vtk_uncompressed_payload(raw, header_dtype, 0))
+    elif fmt == "appended":
+        raw = _vti_appended_bytes(text)
+        offset = int(data_array.attrib.get("offset", "0"))
+        if root.attrib.get("compressor") == "vtkZLibDataCompressor":
+            consume_payload(_iter_vtk_zlib_payloads(raw, header_dtype, offset))
+        else:
+            consume_payload(_iter_vtk_uncompressed_payload(raw, header_dtype, offset))
+    else:
+        raise ValueError(f"Unsupported VTI DataArray format: {fmt!r}")
+
+    origin_xyz = _parse_numeric_tuple(image.attrib.get("Origin", "0 0 0"), float)
+    spacing_xyz = _parse_numeric_tuple(image.attrib.get("Spacing", "1 1 1"), float)
+    sx, sy, sz = spacing_xyz
+    ox, oy, oz = origin_xyz
+    coarse_spacing_xyz = (sx * stride, sy * stride, sz * stride)
+    coarse_origin_xyz = (
+        ox + (sample_offset + 0.5) * sx - 0.5 * coarse_spacing_xyz[0],
+        oy + (sample_offset + 0.5) * sy - 0.5 * coarse_spacing_xyz[1],
+        oz + (sample_offset + 0.5) * sz - 0.5 * coarse_spacing_xyz[2],
+    )
+
+    nz, ny, nx = sampled_zyx.shape
+    grid = {
+        "shape": sampled_zyx.shape,
+        "spacing": (coarse_spacing_xyz[2], coarse_spacing_xyz[1], coarse_spacing_xyz[0]),
+        "origin": coarse_origin_xyz,
+        "extent_mm": (nx * coarse_spacing_xyz[0], ny * coarse_spacing_xyz[1], nz * coarse_spacing_xyz[2]),
+        "aabb_mm": (dims_xyz[0] * sx, dims_xyz[1] * sy, dims_xyz[2] * sz),
+        "margin_mm": 0.0,
+        "sample_stride": stride,
+        "sample_offset": sample_offset,
+    }
+    metadata = {
+        "array_name": data_array.attrib.get("Name", "values"),
+        "association": association,
+        "dtype": str(np.dtype(dtype).newbyteorder("=")),
+        "full_dims_xyz": dims_xyz,
+        "sampled_dims_xyz": sampled_dims_xyz,
+        "sample_stride": stride,
+        "sample_offset": sample_offset,
+    }
+    info(
+        f"Loaded VTI array '{metadata['array_name']}' ({association}) "
+        f"full={dims_xyz}, sampled={sampled_zyx.shape}, stride={stride}"
+    )
+    return sampled_zyx, grid, metadata
+
+def _safe_layer_id(prefix: str, value: Any) -> str:
+    raw = f"{prefix}_{value}".lower()
+    raw = re.sub(r"[^a-z0-9_]+", "_", raw)
+    return raw.strip("_") or "label"
+
+def _label_display_value(value: Any) -> str:
+    if isinstance(value, np.generic):
+        value = value.item()
+    if isinstance(value, float):
+        return f"{value:g}"
+    return str(value)
+
+def _make_mask_layer(
+    layer_id: str,
+    name: str,
+    mask: np.ndarray,
+    color: str,
+    opacity: float = OPACITY_LEVELS["mid"],
+    editable: bool = True,
+    label_value: Any = None,
+    exclusive_group: str | None = None,
+) -> dict:
+    return {
+        "id": layer_id,
+        "name": name,
+        "mask": (mask > 0).astype(np.uint8),
+        "color": color,
+        "opacity": opacity,
+        "editable": bool(editable),
+        "label_value": label_value,
+        "exclusive_group": exclusive_group,
+    }
+
+def _is_discrete_label_array(values: np.ndarray, unique_values: np.ndarray, max_labels: int) -> bool:
+    if np.issubdtype(values.dtype, np.integer) or np.issubdtype(values.dtype, np.bool_):
+        return True
+    if unique_values.size > max_labels + 1:
+        return False
+    finite = unique_values[np.isfinite(unique_values)]
+    if finite.size != unique_values.size:
+        return False
+    return bool(np.allclose(finite, np.round(finite), atol=1e-6))
+
+def load_vti_label_layers(
+    vti_path: str,
+    array_name: str | None = None,
+    background: float = 0.0,
+    background_eps: float = 0.0,
+    max_dim: int = 160,
+    max_labels: int = 64,
+) -> tuple[list[dict], dict, dict]:
+    data, grid, metadata = _read_vti_sampled_array(
+        Path(vti_path).resolve(),
+        array_name=array_name,
+        max_dim=max_dim
+    )
+    unique_values = np.unique(data)
+    array_label = metadata["array_name"]
+    max_labels = max(1, int(max_labels))
+    eps = max(0.0, float(background_eps))
+    bg = float(background)
+
+    if np.issubdtype(data.dtype, np.floating):
+        background_mask = np.isclose(data, bg, atol=eps)
+    else:
+        background_mask = data == np.asarray(background, dtype=data.dtype)
+
+    discrete = _is_discrete_label_array(data, unique_values, max_labels)
+    layers: list[dict] = []
+    if discrete:
+        label_values = [v for v in unique_values if not np.isclose(float(v), bg, atol=eps)]
+        if len(label_values) > max_labels:
+            discrete = False
+            warn(
+                f"VTI array has {len(label_values)} non-background values; "
+                f"treating it as one scalar occupancy layer. Increase --vti-max-labels to split it."
+            )
+        else:
+            for idx, value in enumerate(label_values):
+                if np.issubdtype(data.dtype, np.floating):
+                    mask = np.isclose(data, value, atol=max(eps, 1e-6))
+                else:
+                    mask = data == value
+                name = f"{array_label}={_label_display_value(value)}"
+                layers.append(_make_mask_layer(
+                    _safe_layer_id(array_label, _label_display_value(value)),
+                    name,
+                    mask,
+                    LABEL_COLOR_PALETTE[idx % len(LABEL_COLOR_PALETTE)],
+                    label_value=_label_display_value(value),
+                    exclusive_group="vti-labels"
+                ))
+
+    if not discrete:
+        occupancy = ~background_mask
+        layers.append(_make_mask_layer(
+            _safe_layer_id(array_label, "nonzero"),
+            f"{array_label} non-background",
+            occupancy,
+            LABEL_COLOR_PALETTE[0],
+            label_value="non-background",
+            exclusive_group=None
+        ))
+
+    if not layers:
+        warn("VTI did not contain any non-background voxels after sampling")
+        layers.append(_make_mask_layer(
+            _safe_layer_id(array_label, "empty"),
+            f"{array_label} empty",
+            np.zeros_like(data, dtype=np.uint8),
+            LABEL_COLOR_PALETTE[0],
+            label_value="empty",
+            exclusive_group=None
+        ))
+
+    metadata.update({
+        "background": background,
+        "background_eps": background_eps,
+        "discrete_labels": discrete,
+        "labels": [layer["label_value"] for layer in layers],
+    })
+    info(f"Prepared {len(layers)} editable VTI layer(s): {', '.join(layer['name'] for layer in layers[:8])}")
+    if len(layers) > 8:
+        info(f"... plus {len(layers) - 8} more labels")
+    return layers, grid, metadata
 
 def voxelize_mesh(mesh: trimesh.Trimesh, grid: dict) -> np.ndarray:
     """
@@ -322,7 +785,7 @@ def _roi_overlay_trace(roi_mask: np.ndarray, color: str, opacity: float) -> go.H
     )
 
 def _voxel_center(grid, i_idx, j_idx, k_idx):
-    sx, sy, sz = grid["spacing"]
+    sz, sy, sx = grid["spacing"]
     ox, oy, oz = grid["origin"]
     x = ox + (i_idx + 0.5) * sx
     y = oy + (j_idx + 0.5) * sy
@@ -413,10 +876,10 @@ def mask_to_trace(mask_u8, grid, color, name, opacity=OPACITY_LEVELS["high"]):
         err(f"[{name}] marching cubes failed: {e}")
         return None
 
-    s = grid["spacing"][0]
+    sz, sy, sx = grid["spacing"]
     origin = np.array(grid["origin"])
     # marching_cubes returns verts in (z,y,x) index space → map to world (x,y,z)
-    coords = origin + s * verts[:, [2, 1, 0]]
+    coords = origin + verts[:, [2, 1, 0]] * np.array([sx, sy, sz])
 
     i, j, k = faces.T
     return go.Mesh3d(
@@ -428,6 +891,8 @@ def mask_to_trace(mask_u8, grid, color, name, opacity=OPACITY_LEVELS["high"]):
 
 def mask_to_trimesh(mask_u8: np.ndarray, grid: dict, name: str | None = None) -> trimesh.Trimesh | None:
     """Convert a binary mask to a surface mesh using marching cubes."""
+    if trimesh is None:
+        raise RuntimeError("trimesh is required for STL export. Install with: pip install trimesh")
     if mask_u8 is None or int(np.sum(mask_u8)) == 0:
         return None
     try:
@@ -436,9 +901,9 @@ def mask_to_trimesh(mask_u8: np.ndarray, grid: dict, name: str | None = None) ->
         err(f"[{name or 'mask'}] marching cubes failed: {e}")
         return None
 
-    s = grid["spacing"][0]
+    sz, sy, sx = grid["spacing"]
     origin = np.array(grid["origin"])
-    coords = origin + s * verts[:, [2, 1, 0]]
+    coords = origin + verts[:, [2, 1, 0]] * np.array([sx, sy, sz])
     return trimesh.Trimesh(vertices=coords, faces=faces, process=False)
 
 def save_mask_stl(mask_u8: np.ndarray, grid: dict, out_path: Path, name: str) -> bool:
@@ -546,6 +1011,58 @@ def compose_slice(masks, axis, idx):
     for s in slices:
         out |= (s > 0).astype(np.uint8)
     return out
+
+def _discrete_label_colorscale(colors: list[str]) -> list:
+    if not colors:
+        return [[0.0, "black"], [1.0, "black"]]
+    n = len(colors)
+    colorscale = [[0.0, "black"]]
+    for i, color in enumerate(colors, start=1):
+        pos = i / max(1, n)
+        colorscale.append([pos, color])
+    return colorscale
+
+def _discrete_label_plane_colorscale(colors: list[str], alpha: float = OPACITY_LEVELS["high"]) -> list:
+    if not colors:
+        return [[0.0, "rgba(0,0,0,0)"], [1.0, "rgba(0,0,0,0)"]]
+    n = len(colors)
+    colorscale = [[0.0, "rgba(0,0,0,0)"]]
+    for i, color in enumerate(colors, start=1):
+        pos = i / max(1, n)
+        colorscale.append([pos, _hex_to_rgba(color, alpha)])
+    return colorscale
+
+def compose_layer_slice(layer_states: dict, visible_ids: list[str], axis: str, idx: int) -> tuple[np.ndarray, list[str]]:
+    """Compose visible binary layers into integer-coded slice values."""
+    active_ids = [lid for lid in visible_ids if lid in layer_states]
+    if len(active_ids) == 0:
+        first = next(iter(layer_states.values()), None)
+        if first is None:
+            return np.zeros((1, 1), dtype=np.uint8), []
+        return _empty_slice({"shape": first["current"].shape}, axis), []
+
+    first_mask = layer_states[active_ids[0]]["current"]
+    if axis == "x":
+        out = np.zeros(first_mask[:, :, idx].shape, dtype=np.uint16)
+    elif axis == "y":
+        out = np.zeros(first_mask[:, idx, :].shape, dtype=np.uint16)
+    elif axis == "z":
+        out = np.zeros(first_mask[idx, :, :].shape, dtype=np.uint16)
+    else:
+        raise ValueError("axis must be 'x', 'y', or 'z'")
+
+    colors = []
+    for code, layer_id in enumerate(active_ids, start=1):
+        mask = layer_states[layer_id]["current"]
+        if axis == "x":
+            sl = mask[:, :, idx]
+        elif axis == "y":
+            sl = mask[:, idx, :]
+        else:
+            sl = mask[idx, :, :]
+        out[sl > 0] = code
+        colors.append(layer_states[layer_id]["color"])
+    return out, colors
 
 def _scale_to_pos(scale_val: float) -> float:
     """Map scale value in [0.001, 99.999] to slider position in [0, 1] with 1.0 at 0.5."""
@@ -770,26 +1287,76 @@ def apply_roi_scale(
 
     return current_inside.astype(np.uint8)
 
-def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
-    """Interactive viewer: X/Y/Z slices + 3-D, with mask toggles."""
-    Nz, Ny, Nx = inside_u8.shape
+def show_viewer_dash(
+    mesh,
+    inside_u8=None,
+    on_u8=None,
+    out_u8=None,
+    grid=None,
+    port=8050,
+    mask_layers: list[dict] | None = None,
+    dataset_name: str = "FakeCT",
+):
+    """Interactive viewer: X/Y/Z slices + 3-D, with mask/label toggles."""
+    if dash is None or go is None:
+        raise RuntimeError("Dash and Plotly are required for the browser viewer. Install with: pip install dash plotly")
+    if mask_layers is None:
+        mask_layers = [
+            _make_mask_layer("inside", "Inside", inside_u8, COLOR_SCHEME["inside"], OPACITY_LEVELS["mid"], True),
+            _make_mask_layer("on", "On", on_u8, COLOR_SCHEME["on"], OPACITY_LEVELS["low"], False),
+            _make_mask_layer("out", "Out", out_u8, COLOR_SCHEME["out"], OPACITY_LEVELS["low"], False),
+        ]
+    if not mask_layers:
+        raise ValueError("show_viewer_dash needs at least one mask layer")
+    if grid is None:
+        raise ValueError("show_viewer_dash needs a grid")
+
+    Nz, Ny, Nx = mask_layers[0]["mask"].shape
     x_mid, y_mid, z_mid = Nx // 2, Ny // 2, Nz // 2
 
-    # Mesh (as loaded, centered at origin)
-    mesh_trace = go.Mesh3d(
-        x=mesh.vertices[:, 0], y=mesh.vertices[:, 1], z=mesh.vertices[:, 2],
-        i=mesh.faces[:, 0], j=mesh.faces[:, 1], k=mesh.faces[:, 2],
-        name="mesh", color=COLOR_SCHEME["mesh"], opacity=OPACITY_LEVELS["low"]
-    )
-    inside_trace = mask_to_trace(inside_u8, grid, COLOR_SCHEME["inside"], "inside", OPACITY_LEVELS["mid"])
-    on_trace     = mask_to_trace(on_u8,     grid, COLOR_SCHEME["on"],     "on",     OPACITY_LEVELS["low"])
-    out_trace    = mask_to_trace(out_u8,    grid, COLOR_SCHEME["out"],    "out",    OPACITY_LEVELS["low"])
+    mesh_trace = None
+    if mesh is not None:
+        mesh_trace = go.Mesh3d(
+            x=mesh.vertices[:, 0], y=mesh.vertices[:, 1], z=mesh.vertices[:, 2],
+            i=mesh.faces[:, 0], j=mesh.faces[:, 1], k=mesh.faces[:, 2],
+            name="mesh", color=COLOR_SCHEME["mesh"], opacity=OPACITY_LEVELS["low"]
+        )
 
-    inside_state = {
-        "current": inside_u8.copy(),
-        "original": inside_u8.copy(),
-        "trace": inside_trace
-    }
+    layer_states: dict[str, dict] = {}
+    for idx, layer in enumerate(mask_layers):
+        layer_id = layer["id"]
+        color = layer.get("color", LABEL_COLOR_PALETTE[idx % len(LABEL_COLOR_PALETTE)])
+        opacity = layer.get("opacity", OPACITY_LEVELS["mid"])
+        mask = layer["mask"].astype(np.uint8)
+        layer_states[layer_id] = {
+            "id": layer_id,
+            "name": layer.get("name", layer_id),
+            "current": mask.copy(),
+            "original": mask.copy(),
+            "trace": mask_to_trace(mask, grid, color, layer.get("name", layer_id), opacity),
+            "color": color,
+            "opacity": opacity,
+            "editable": bool(layer.get("editable", True)),
+            "exclusive_group": layer.get("exclusive_group"),
+        }
+
+    layer_options = [
+        {"label": state["name"], "value": layer_id}
+        for layer_id, state in layer_states.items()
+    ]
+    editable_options = [
+        {"label": state["name"], "value": layer_id}
+        for layer_id, state in layer_states.items()
+        if state["editable"]
+    ]
+    if not editable_options:
+        editable_options = layer_options
+    target_default = editable_options[0]["value"]
+    nonempty_ids = [
+        layer_id for layer_id, state in layer_states.items()
+        if int(np.sum(state["current"])) > 0
+    ]
+    default_visible = nonempty_ids[:8] if nonempty_ids else [target_default]
 
     app = dash.Dash(__name__)
     panel_card = {
@@ -909,21 +1476,17 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                 style={"backgroundColor": "#151922", "borderRadius": "10px",
                        "padding": "12px", "display": "flex", "flexDirection": "column", "gap": "10px"},
                 children=[
-                    html.H3("Selection Panel", style={"margin": "0 0 6px 0"}),
+                    html.H3(dataset_name, style={"margin": "0 0 6px 0"}),
                     html.Div(
                         style=panel_card,
                         children=[
-                            html.Div("Mask", style={"fontWeight": "600"}),
+                            html.Div("Labels", style={"fontWeight": "600"}),
                             dcc.Dropdown(
                                 id="mask-check",
-                                options=[
-                                    {"label": "Inside", "value": "inside"},
-                                    {"label": "On", "value": "on"},
-                                    {"label": "Out", "value": "out"},
-                                ],
-                                value=["inside"],
+                                options=layer_options,
+                                value=default_visible,
                                 multi=True,
-                                placeholder="Select masks",
+                                placeholder="Select visible labels",
                                 clearable=False,
                                 style=dropdown_compact
                             ),
@@ -1044,6 +1607,14 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                                                 style={"display": "flex", "flexDirection": "column", "gap": "8px", "padding": "4px 0"},
                                                 children=[
                                                     html.Div("ROI Morphology", style={"fontWeight": "600"}),
+                                                    html.Div("Target label", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    dcc.Dropdown(
+                                                        id="target-label",
+                                                        options=editable_options,
+                                                        value=target_default,
+                                                        clearable=False,
+                                                        style=dropdown_compact
+                                                    ),
                                                     html.Div("Scale factor (diameter)", style={"fontSize": "12px", "opacity": "0.85"}),
                                                     html.Div(id="roi-scale-display", style={"fontSize": "12px", "opacity": "0.85"}),
                                                     dcc.Slider(
@@ -1206,6 +1777,66 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         ]
     )
 
+    def refresh_layer_trace(layer_id: str) -> None:
+        state = layer_states[layer_id]
+        state["trace"] = mask_to_trace(
+            state["current"],
+            grid,
+            state["color"],
+            state["name"],
+            state["opacity"]
+        )
+
+    def reset_all_layers() -> None:
+        for layer_id, state in layer_states.items():
+            state["current"] = state["original"].copy()
+            refresh_layer_trace(layer_id)
+
+    def apply_exclusive_conflicts(target_id: str) -> None:
+        target_state = layer_states.get(target_id)
+        if not target_state:
+            return
+        group = target_state.get("exclusive_group")
+        if not group:
+            return
+        occupied = target_state["current"] > 0
+        for layer_id, state in layer_states.items():
+            if layer_id == target_id or state.get("exclusive_group") != group:
+                continue
+            if np.any(state["current"][occupied]):
+                state["current"][occupied] = 0
+                refresh_layer_trace(layer_id)
+
+    def batch_layer_snapshot_with_target(
+        target_id: str,
+        center_idx: tuple[int, int, int],
+        radius_vox: int,
+        scale_factor: float,
+        shape_k_value: float,
+        shape_window_value: tuple[float, float],
+    ) -> dict[str, np.ndarray]:
+        snapshot = {
+            layer_id: state["original"].copy()
+            for layer_id, state in layer_states.items()
+        }
+        if target_id not in snapshot:
+            return snapshot
+        snapshot[target_id] = apply_roi_scale(
+            snapshot[target_id],
+            center_idx,
+            radius_vox,
+            scale_factor,
+            shape_k=shape_k_value,
+            shape_window=shape_window_value
+        )
+        group = layer_states[target_id].get("exclusive_group")
+        if group:
+            occupied = snapshot[target_id] > 0
+            for layer_id, state in layer_states.items():
+                if layer_id != target_id and state.get("exclusive_group") == group:
+                    snapshot[layer_id][occupied] = 0
+        return snapshot
+
     @app.callback(
         Output("x-slider", "value"),
         Output("y-slider", "value"),
@@ -1303,6 +1934,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         State("shape-window", "value"),
         State("roi-batch-out-dir", "value"),
         State("roi-batch-stl", "value"),
+        State("target-label", "value"),
         prevent_initial_call=True
     )
     def export_batch_masks(n_clicks,
@@ -1310,7 +1942,8 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                            p2_x, p2_y, p2_z,
                            scale_min, scale_max, scale_count,
                            k_min, k_max, k_count,
-                           shape_window, out_dir, export_stl_flags):
+                           shape_window, out_dir, export_stl_flags,
+                           target_label):
         if not n_clicks:
             raise PreventUpdate
 
@@ -1342,28 +1975,36 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
 
         total = 0
         stl_total = 0
-        base_inside = inside_state["original"]
+        target_label = target_label if target_label in layer_states else target_default
+        target_state = layer_states[target_label]
         for sf in scales:
             sf = max(0.001, min(99.999, float(sf)))
             for k in ks:
                 k = max(0.1, float(k))
-                mask = apply_roi_scale(
-                    base_inside,
+                snapshot = batch_layer_snapshot_with_target(
+                    target_label,
                     center_idx,
                     radius_vox,
                     sf,
-                    shape_k=k,
-                    shape_window=(w0, w1)
+                    k,
+                    (w0, w1)
                 )
                 base_name = (
-                    f"inside_sf{_fmt_param(sf)}_k{_fmt_param(k)}"
+                    f"{target_label}_sf{_fmt_param(sf)}_k{_fmt_param(k)}"
                     f"_w{_fmt_param(w0, 2)}-{_fmt_param(w1, 2)}.npz"
                 )
+                export_arrays = {
+                    f"mask_{layer_id}": mask.astype(np.uint8)
+                    for layer_id, mask in snapshot.items()
+                }
                 np.savez_compressed(
                     out_path / base_name,
-                    inside=mask.astype(np.uint8),
+                    **export_arrays,
                     spacing=np.array(grid["spacing"]),
                     origin=np.array(grid["origin"]),
+                    layer_ids=np.array(list(snapshot.keys())),
+                    layer_names=np.array([layer_states[layer_id]["name"] for layer_id in snapshot.keys()]),
+                    target_label=np.array(target_label),
                     scale_factor=np.array(sf),
                     shape_k=np.array(k),
                     shape_window=np.array([w0, w1]),
@@ -1373,17 +2014,17 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                 export_stl = "on" in (export_stl_flags or [])
                 if export_stl:
                     stl_name = base_name.replace(".npz", ".stl")
-                    if save_mask_stl(mask, grid, out_path / stl_name, name="inside"):
+                    if save_mask_stl(snapshot[target_label], grid, out_path / stl_name, name=target_state["name"]):
                         stl_total += 1
                 total += 1
 
         if stl_total > 0:
             return (
-                f"Export done. Wrote {total} masks and {stl_total} STL files to {out_path} "
+                f"Export done. Wrote {total} label stacks and {stl_total} target STL files to {out_path} "
                 f"(scales={len(scales)}, k={len(ks)})."
             )
         return (
-            f"Export done. Wrote {total} masks to {out_path} "
+            f"Export done. Wrote {total} label stacks to {out_path} "
             f"(scales={len(scales)}, k={len(ks)})."
         )
 
@@ -1415,6 +2056,7 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         Input("roi-scale-apply", "n_clicks"),
         Input("shape-k", "value"),
         Input("shape-window", "value"),
+        Input("target-label", "value"),
         Input("threeD-view", "relayoutData"),
         Input("reset-btn", "n_clicks"),
         prevent_initial_call=False
@@ -1429,18 +2071,12 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
              scale_pos, scale_apply_clicks,
              shape_k,
              shape_window,
+             target_label,
              relayout_data, n_clicks):
         triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
         reset_triggered = "reset-btn.n_clicks" in triggered
         if reset_triggered:
-            inside_state["current"] = inside_state["original"].copy()
-            inside_state["trace"] = mask_to_trace(
-                inside_state["current"],
-                grid,
-                COLOR_SCHEME["inside"],
-                "inside",
-                OPACITY_LEVELS["mid"]
-            )
+            reset_all_layers()
 
         center_idx = (
             int(np.clip(round((p1_x + p2_x) / 2.0), 0, Nx - 1)),
@@ -1454,43 +2090,29 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         if (not reset_triggered) and ("roi-scale-apply.n_clicks" in triggered):
             sf = _pos_to_scale(scale_pos if scale_pos is not None else 0.5)
             sf = max(0.001, min(99.999, sf))
-            inside_state["current"] = apply_roi_scale(
-                inside_state["current"],
+            target_label = target_label if target_label in layer_states else target_default
+            layer_states[target_label]["current"] = apply_roi_scale(
+                layer_states[target_label]["current"],
                 center_idx,
                 radius_vox,
                 sf,
                 shape_k=10.0 if shape_k is None else float(shape_k),
                 shape_window=(shape_window[0], shape_window[1]) if shape_window else (0.25, 0.75)
             )
-            inside_state["trace"] = mask_to_trace(
-                inside_state["current"],
-                grid,
-                COLOR_SCHEME["inside"],
-                "inside",
-                OPACITY_LEVELS["mid"]
-            )
+            apply_exclusive_conflicts(target_label)
+            refresh_layer_trace(target_label)
 
-        active = []
-        show_inside = "inside" in mask_values
-        show_on     = "on"     in mask_values
-        show_out    = "out"    in mask_values
-        if show_inside: active.append(inside_state["current"])
-        if show_on:     active.append(on_u8)
-        if show_out:    active.append(out_u8)
+        mask_values = mask_values or []
+        visible_ids = [layer_id for layer_id in mask_values if layer_id in layer_states]
 
         p1 = _voxel_center(grid, p1_x, p1_y, p1_z)
         p2 = _voxel_center(grid, p2_x, p2_y, p2_z)
         center = ((p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2.0, (p1[2] + p2[2]) / 2.0)
         radius = 0.5 * float(np.linalg.norm(np.array(p2) - np.array(p1)))
 
-        if len(active) > 0:
-            x_slice = compose_slice(active, "x", x_idx)
-            y_slice = compose_slice(active, "y", y_idx)
-            z_slice = compose_slice(active, "z", z_idx)
-        else:
-            x_slice = _empty_slice(grid, "x")
-            y_slice = _empty_slice(grid, "y")
-            z_slice = _empty_slice(grid, "z")
+        x_slice, x_colors = compose_layer_slice(layer_states, visible_ids, "x", x_idx)
+        y_slice, y_colors = compose_layer_slice(layer_states, visible_ids, "y", y_idx)
+        z_slice, z_colors = compose_layer_slice(layer_states, visible_ids, "z", z_idx)
 
         roi_x = _roi_slice_mask(grid, "x", x_idx, center, radius)
         roi_y = _roi_slice_mask(grid, "y", y_idx, center, radius)
@@ -1500,32 +2122,34 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
             x_slice,
             f"X-slice (i={x_idx})",
             COLOR_SCHEME["slice_x"],
-            colorscale=_slice_colorscale(COLOR_SCHEME["slice_x"]),
-            zmax=1
+            colorscale=_discrete_label_colorscale(x_colors),
+            zmax=max(1, len(x_colors))
         )
         y_fig = _slice_fig(
             y_slice,
             f"Y-slice (j={y_idx})",
             COLOR_SCHEME["slice_y"],
-            colorscale=_slice_colorscale(COLOR_SCHEME["slice_y"]),
-            zmax=1
+            colorscale=_discrete_label_colorscale(y_colors),
+            zmax=max(1, len(y_colors))
         )
         z_fig = _slice_fig(
             z_slice,
             f"Z-slice (k={z_idx})",
             COLOR_SCHEME["slice_z"],
-            colorscale=_slice_colorscale(COLOR_SCHEME["slice_z"]),
-            zmax=1
+            colorscale=_discrete_label_colorscale(z_colors),
+            zmax=max(1, len(z_colors))
         )
 
         x_fig.add_trace(_roi_overlay_trace(roi_x, sphere_color, sphere_opacity))
         y_fig.add_trace(_roi_overlay_trace(roi_y, sphere_color, sphere_opacity))
         z_fig.add_trace(_roi_overlay_trace(roi_z, sphere_color, sphere_opacity))
 
-        valid_traces = [t for t in [mesh_trace,
-                        inside_state["trace"] if show_inside else None,
-                        on_trace     if show_on     else None,
-                        out_trace    if show_out    else None] if t is not None]
+        valid_traces = [mesh_trace] if mesh_trace is not None else []
+        valid_traces.extend(
+            layer_states[layer_id]["trace"]
+            for layer_id in visible_ids
+            if layer_states[layer_id]["trace"] is not None
+        )
         extent_x, extent_y, extent_z = grid["extent_mm"]
         aspectratio = _aspectratio_from_extents((extent_x, extent_y, extent_z))
 
@@ -1537,8 +2161,8 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                 "x",
                 x_idx,
                 COLOR_SCHEME["slice_x"],
-                colorscale=_slice_plane_colorscale(COLOR_SCHEME["slice_x"], sphere_color, OPACITY_LEVELS["high"]),
-                cmax=2
+                colorscale=_discrete_label_plane_colorscale(x_colors),
+                cmax=max(1, len(x_colors))
             ),
             _slice_plane_surface(
                 y_slice,
@@ -1546,8 +2170,8 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                 "y",
                 y_idx,
                 COLOR_SCHEME["slice_y"],
-                colorscale=_slice_plane_colorscale(COLOR_SCHEME["slice_y"], sphere_color, OPACITY_LEVELS["high"]),
-                cmax=2
+                colorscale=_discrete_label_plane_colorscale(y_colors),
+                cmax=max(1, len(y_colors))
             ),
             _slice_plane_surface(
                 z_slice,
@@ -1555,8 +2179,8 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
                 "z",
                 z_idx,
                 COLOR_SCHEME["slice_z"],
-                colorscale=_slice_plane_colorscale(COLOR_SCHEME["slice_z"], sphere_color, OPACITY_LEVELS["high"]),
-                cmax=2
+                colorscale=_discrete_label_plane_colorscale(z_colors),
+                cmax=max(1, len(z_colors))
             )
         ]
         for plane in plane_traces:
@@ -1773,11 +2397,12 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         Input("p2-z", "value"),
         Input("hover-store", "data"),
         Input("catch-store", "data"),
+        Input("target-label", "value"),
         prevent_initial_call=False
     )
     def update_status(mask_values, x_idx, y_idx, z_idx,
                       p1_x, p1_y, p1_z, p2_x, p2_y, p2_z,
-                      hover_data, catch_data):
+                      hover_data, catch_data, target_label):
         hover_txt = "Hover: -"
         if isinstance(hover_data, dict):
             hover_txt = f"Hover: ({hover_data.get('i')},{hover_data.get('j')},{hover_data.get('k')})"
@@ -1785,8 +2410,16 @@ def show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=8050):
         if isinstance(catch_data, dict):
             catch_txt = f"Catch: ({catch_data.get('i')},{catch_data.get('j')},{catch_data.get('k')})"
 
+        active_names = [
+            layer_states[layer_id]["name"]
+            for layer_id in (mask_values or [])
+            if layer_id in layer_states
+        ]
+        target_name = layer_states.get(target_label, layer_states[target_default])["name"]
+
         return (
-            f"Active masks: {', '.join(mask_values)} | X={x_idx}, Y={y_idx}, Z={z_idx}"
+            f"Active labels: {', '.join(active_names) if active_names else '-'} | Target: {target_name}"
+            f" | X={x_idx}, Y={y_idx}, Z={z_idx}"
             f" | P1=({p1_x},{p1_y},{p1_z}) P2=({p2_x},{p2_y},{p2_z})"
             f" | {hover_txt} | {catch_txt}"
         )
@@ -1811,15 +2444,79 @@ def run_pipeline(
     viewer: str = "dash",
     port: int = 8050,
     export_stl: bool = False,
-    stl_dir: str | None = None
+    stl_dir: str | None = None,
+    vti_array: str | None = None,
+    vti_background: float = 0.0,
+    vti_background_eps: float = 0.0,
+    vti_max_dim: int = 160,
+    vti_max_labels: int = 64,
 ):
-    mesh_path = Path(in_mesh_path).resolve()
-    if not mesh_path.exists():
-        err(f"Input mesh not found: {in_mesh_path}")
+    input_path = Path(in_mesh_path).resolve()
+    if not input_path.exists():
+        err(f"Input not found: {in_mesh_path}")
         raise FileNotFoundError(in_mesh_path)
 
-    mesh = trimesh.load(mesh_path, force="mesh")
-    info(f"Loaded mesh: {mesh_path.name} | watertight={getattr(mesh, 'is_watertight', 'unknown')}")
+    suffix = input_path.suffix.lower()
+    if suffix == ".vti":
+        layers, grid, metadata = load_vti_label_layers(
+            str(input_path),
+            array_name=vti_array,
+            background=vti_background,
+            background_eps=vti_background_eps,
+            max_dim=vti_max_dim,
+            max_labels=vti_max_labels,
+        )
+        Path(out_npz).parent.mkdir(parents=True, exist_ok=True)
+        layer_arrays = {
+            f"mask_{layer['id']}": layer["mask"].astype(np.uint8)
+            for layer in layers
+        }
+        np.savez_compressed(
+            out_npz,
+            **layer_arrays,
+            spacing=np.array(grid["spacing"]),
+            origin=np.array(grid["origin"]),
+            layer_ids=np.array([layer["id"] for layer in layers]),
+            layer_names=np.array([layer["name"] for layer in layers]),
+            layer_values=np.array([str(layer.get("label_value", "")) for layer in layers]),
+            full_dims_xyz=np.array(metadata["full_dims_xyz"]),
+            sampled_dims_xyz=np.array(metadata["sampled_dims_xyz"]),
+            sample_stride=np.array(metadata["sample_stride"]),
+            source_type=np.array("vti"),
+            source_path=np.array(str(input_path)),
+            vti_array=np.array(metadata["array_name"]),
+        )
+        ok(f"VTI label masks saved (uint8) → {out_npz}")
+
+        if export_stl:
+            stl_root = Path(stl_dir) if stl_dir else Path(out_npz).parent
+            stl_root.mkdir(parents=True, exist_ok=True)
+            stl_total = 0
+            for layer in layers:
+                if save_mask_stl(layer["mask"], grid, stl_root / f"{layer['id']}.stl", name=layer["name"]):
+                    stl_total += 1
+            ok(f"STL export complete → {stl_root} ({stl_total} label surface(s))")
+
+        if show:
+            show_viewer_dash(
+                None,
+                grid=grid,
+                mask_layers=layers,
+                port=port,
+                dataset_name=input_path.name,
+            )
+        return
+
+    if trimesh is None:
+        raise RuntimeError("trimesh is required for mesh inputs. Install with: pip install trimesh")
+    if igl is None:
+        raise RuntimeError(
+            "python-igl is required for mesh winding classification. "
+            "Install with: conda install -c conda-forge python-igl  (or pip install igl)"
+        )
+
+    mesh = trimesh.load(input_path, force="mesh")
+    info(f"Loaded mesh: {input_path.name} | watertight={getattr(mesh, 'is_watertight', 'unknown')}")
 
     # Center mesh at origin
     mesh = center_mesh(mesh)
@@ -1858,15 +2555,15 @@ def run_pipeline(
 def main():
     import argparse
 
-    ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline (winding-based)")
+    ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline for STL meshes or VTI voxel labels")
     ap.add_argument("--in", dest="in_mesh", required=True,
-                    help="Input mesh (.stl/.obj/.ply)")
+                    help="Input mesh (.stl/.obj/.ply) or voxel image (.vti)")
     ap.add_argument("--spacing", type=float, default=None,
                     help="Voxel edge length in mm (if provided, N will be computed as next power-of-two)")
     ap.add_argument("--n", type=int, default=7,
                     help="Grid exponent (2^n per side). Used if --spacing is None.")
     ap.add_argument("--margin", type=float, default=0.10,
-                    help="Extra margin fraction around the mesh AABB (default 0.10 = 10%)")
+                    help="Extra margin fraction around the mesh AABB (default 0.10 = 10%%)")
     ap.add_argument("--mc-map", type=str, default="zyx",
                     choices=["zyx", "xyz", "xzy", "yxz", "yzx", "zxy"],
                     help="Axis mapping from marching-cubes (z,y,x) → (X,Y,Z).")
@@ -1882,31 +2579,43 @@ def main():
                     help="Export inside/on/out masks as STL files.")
     ap.add_argument("--stl-dir", default=None,
                     help="Directory for STL export (defaults to --out folder).")
+    ap.add_argument("--vti-array", default=None,
+                    help="VTI DataArray name to read. Defaults to the VTI Scalars array or first array.")
+    ap.add_argument("--vti-background", type=float, default=0.0,
+                    help="Background scalar/label value for VTI label extraction.")
+    ap.add_argument("--vti-background-eps", type=float, default=0.0,
+                    help="Tolerance for matching floating-point VTI background values.")
+    ap.add_argument("--vti-max-dim", type=int, default=160,
+                    help="Maximum sampled VTI dimension for browser interaction. Use 0 for full resolution.")
+    ap.add_argument("--vti-max-labels", type=int, default=64,
+                    help="Maximum number of discrete non-background VTI labels to split into layers.")
 
     args = ap.parse_args()
 
-    if igl is None:
-        err("python-igl is required (fast winding number). Install via conda-forge:\n"
-            "  conda install -c conda-forge python-igl\n"
-            "or pip:\n"
-            "  pip install igl")
-        sys.exit(1)
-
     spacing = None if (args.spacing is None or args.spacing <= 0) else float(args.spacing)
 
-    run_pipeline(
-        in_mesh_path=args.in_mesh,
-        spacing=spacing,
-        n=args.n,
-        margin_frac=args.margin,
-        out_npz=args.out,
-        show=not args.no_show,
-        mc_map=args.mc_map,
-        viewer=args.viewer,
-        port=args.port,
-        export_stl=bool(args.export_stl),
-        stl_dir=args.stl_dir
-    )
+    try:
+        run_pipeline(
+            in_mesh_path=args.in_mesh,
+            spacing=spacing,
+            n=args.n,
+            margin_frac=args.margin,
+            out_npz=args.out,
+            show=not args.no_show,
+            mc_map=args.mc_map,
+            viewer=args.viewer,
+            port=args.port,
+            export_stl=bool(args.export_stl),
+            stl_dir=args.stl_dir,
+            vti_array=args.vti_array,
+            vti_background=args.vti_background,
+            vti_background_eps=args.vti_background_eps,
+            vti_max_dim=args.vti_max_dim,
+            vti_max_labels=args.vti_max_labels,
+        )
+    except (RuntimeError, ValueError) as e:
+        err(str(e))
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
