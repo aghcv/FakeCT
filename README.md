@@ -4,7 +4,7 @@ Instructions shows how to load a mesh, voxelize it into a CT-like grid,
 create in/on/out masks and inspect the result with a simple viewer.
 
 This README includes instructions for installing prerequisites (VS Code, Git, Conda),
-cloning the repo, creating an environment, installing the package (editable), and running the demo.
+cloning the repo, creating an environment, installing runtime dependencies, and running the demo.
 
 ## Current Version
 <img width="1899" height="991" alt="Screenshot 2025-10-13 at 13 20 37" src="https://github.com/user-attachments/assets/5df4d975-da4d-40c0-a29c-85d6af4d81eb" />
@@ -18,7 +18,7 @@ cloning the repo, creating an environment, installing the package (editable), an
 ## Your Tasks:
 ```bash
 1- Install the prerequisites
-2- Follow the 4 steps of the quickstart guideline to try demo exmaples: demo_cube, demo_sphere, and demo_carotid 
+2- Follow the quick start to try the demo examples: cube, sphere, and carotid
 3- Identify user inputs you think is needed needed for the stenosis tool
 ```
 
@@ -68,46 +68,73 @@ git clone https://github.com/aghcv/FakeCT.git
 cd FakeCT
 ```
 
-2. Create and activate the Conda environment (uses `environment.yml`):
+2. Create and activate a Conda environment:
 
 ```bash
-conda env create -f environment.yml
+conda create -n fakect python=3.10 -y
 conda activate fakect
 ```
 
-3. Install the package in editable/development mode and the minimal runtime deps:
+3. Install the runtime dependencies:
 
 ```bash
-pip install -e .
+conda install -c conda-forge python-igl trimesh scipy scikit-image plotly dash -y
 ```
 
-This installs the project as the `fakect` package and the `fakect` command-line entrypoint.
+If you prefer a pip-based environment for the pure Python packages, use:
+
+```bash
+pip install --upgrade pip
+pip install trimesh scipy scikit-image plotly dash
+```
+
+`igl` is typically easiest to install from `conda-forge`.
 
 
 4. Run the demo:
 
 ```bash
-# run the demo_cube script (runs the pipeline with predefined args)
-fakect example demo_cube
+# cube
+python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz
 
-# list of example scripts is in the `examples/` folder (demo_cube, demo_carotid, demo_sphere)
+# sphere
+python src/fakect.py --in data/sphere.stl --n 8 --out outputs/sphere_masks.npz
+
+# carotid
+python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs/carotid_masks.npz
 ```
 
-If you prefer to run the script directly from shell:
+To skip opening the Dash viewer, add `--no-show`.
+
+You can inspect the available CLI options with:
 
 ```bash
-bash examples/demo_cube.sh
+python src/fakect.py --help
 ```
 
-Note on demo meshes:
+## VTI Import Smoke Test
 
-Example scripts expect demo geometry to live in the repository-global `data/` folder
-at the repository root. To populate that folder with small demo meshes, run:
+You can start testing VTI import now. The CLI supports both a single `.vti` file and a directory of tiled `.vti` files.
 
 ```bash
-# from repo root
-python scripts/generate_demo_meshes.py
-# This writes: data/cube.stl, data/sphere.stl, data/carotid.stl
+# Directory of VTI tiles (uses the sample folder in this repo)
+python src/fakect.py --in data/vti --out outputs/vti_dir_test.npz --no-show
+
+# Optional: full-resolution sampling (can be much heavier)
+python src/fakect.py --in data/vti --vti-max-dim 0 --out outputs/vti_dir_fullres.npz --no-show
+
+# Single VTI file example
+python src/fakect.py --in data/vti/activity_grid_000_000_000.vti --out outputs/vti_single_test.npz --no-show
+```
+
+Useful VTI-specific flags:
+
+```bash
+--vti-array <name>          # choose a DataArray by name
+--vti-background <value>    # set the background label/scalar value
+--vti-background-eps <eps>  # tolerance for floating-point background matching
+--vti-max-dim <int>         # browser-friendly downsampling cap (0 = full resolution)
+--vti-max-labels <int>      # max number of discrete labels split into layers
 ```
 
 By default the demo will pop up a small matplotlib-based viewer showing three orthogonal
@@ -115,38 +142,28 @@ slices and a sparse 3D proxy of boundary voxels.
 
 ## Developer instructions (make changes & run tests)
 
-1. Make code changes in `src/fakect/` using your editor of choice.
+1. Make code changes in `src/fakect.py` using your editor of choice.
 
-2. Run the unit tests with pytest. The project includes a small placeholder test so you can
-	 validate the test/CI pipeline:
-
-```bash
-# from the repo root, with the venv activated
-pytest
-```
-
-3. If you change package metadata or dependencies, update `pyproject.toml`.
-
-4. To try your changes interactively, install the package in editable mode (step 3 above)
-	 so that imports pick up the local source without reinstalling.
-
-5. Linting and formatting (recommended):
+2. There is currently no packaged test suite in this repository. Use the CLI directly to validate changes:
 
 ```bash
-black src tests
-flake8
-isort src tests
+python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz --no-show
 ```
+
+3. If you change runtime dependencies, update this README with the revised install command.
+
+4. To try your changes interactively, run `python src/fakect.py --help` or one of the demo commands above.
+
+5. Linting and formatting are not configured in this repository yet. If you add them later, document the commands here.
 
 ## Continuous integration (notes for maintainers)
 
-- The `tests/` directory contains the unit tests. The placeholder test ensures the CI pipeline
-	can run; expand the tests as you add features.
+- There is no CI or `tests/` directory in the current repository state.
 - Recommended CI steps:
 	- Set up a Python 3.10 runner
-	- Create a virtual environment and install `pip install -e .[dev]`
-	- Run `pytest` and optionally `pytest --cov` for coverage
-	- Run linters (black/flake8/isort)
+	- Install the runtime dependencies listed above
+	- Run `python src/fakect.py --help` as a smoke test
+	- Add targeted automated tests before relying on CI for behavior changes
 
 ## Contact / contributing
 

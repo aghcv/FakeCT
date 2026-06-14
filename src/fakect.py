@@ -237,6 +237,12 @@ def _vti_xml_without_appended(text: str) -> str:
         return text
     return text.split("<AppendedData", 1)[0] + "</VTKFile>"
 
+def _vti_appended_payload_b64(text: str) -> str:
+    match = re.search(r"<AppendedData[^>]*>\s*_(.*?)\s*</AppendedData>", text, re.S)
+    if not match:
+        raise ValueError("VTI file has no appended data payload")
+    return "".join(match.group(1).split())
+
 def _decode_vtk_base64_payload(payload: str) -> bytes:
     """
     VTK XML writers may concatenate independently padded base64 chunks.
@@ -267,10 +273,7 @@ def _decode_vtk_base64_payload(payload: str) -> bytes:
     return b"".join(chunks)
 
 def _vti_appended_bytes(text: str) -> bytes:
-    match = re.search(r"<AppendedData[^>]*>\s*_(.*?)\s*</AppendedData>", text, re.S)
-    if not match:
-        raise ValueError("VTI file has no appended data payload")
-    return _decode_vtk_base64_payload(match.group(1))
+    return _decode_vtk_base64_payload(_vti_appended_payload_b64(text))
 
 def _find_vti_data_array(
     piece: ET.Element,
@@ -333,7 +336,11 @@ def _iter_vtk_zlib_payloads(
         compressed_size = int(compressed_size)
         block = raw[cursor:cursor + compressed_size]
         cursor += compressed_size
-        yield zlib.decompress(block)
+        try:
+            yield zlib.decompress(block)
+        except zlib.error:
+            # Some VTK writers emit raw DEFLATE streams without a zlib wrapper.
+            yield zlib.decompress(block, -zlib.MAX_WBITS)
 
 def _sample_flat_chunk(
     sampled_zyx: np.ndarray,
@@ -455,12 +462,36 @@ def _read_vti_sampled_array(
         else:
             consume_payload(_iter_vtk_uncompressed_payload(raw, header_dtype, 0))
     elif fmt == "appended":
-        raw = _vti_appended_bytes(text)
         offset = int(data_array.attrib.get("offset", "0"))
-        if root.attrib.get("compressor") == "vtkZLibDataCompressor":
-            consume_payload(_iter_vtk_zlib_payloads(raw, header_dtype, offset))
-        else:
-            consume_payload(_iter_vtk_uncompressed_payload(raw, header_dtype, offset))
+        payload_b64 = _vti_appended_payload_b64(text)
+        decoded = _decode_vtk_base64_payload(payload_b64)
+        compressor = root.attrib.get("compressor")
+        attempt_errors: list[str] = []
+
+        def _consume_attempt(raw_bytes: bytes, byte_offset: int) -> None:
+            nonlocal start_elem, carry
+            start_elem = 0
+            carry = b""
+            sampled_zyx.fill(0)
+            if compressor == "vtkZLibDataCompressor":
+                consume_payload(_iter_vtk_zlib_payloads(raw_bytes, header_dtype, byte_offset))
+            else:
+                consume_payload(_iter_vtk_uncompressed_payload(raw_bytes, header_dtype, byte_offset))
+
+        # Most files use decoded-byte offsets; some use encoded-base64 offsets.
+        # Try both to maximize compatibility with VTK writers.
+        try:
+            _consume_attempt(decoded, offset)
+        except Exception as e:
+            attempt_errors.append(f"decoded-offset failed: {e}")
+            try:
+                if offset < 0 or offset >= len(payload_b64):
+                    raise ValueError("encoded offset is out of payload bounds")
+                decoded_from_encoded_offset = _decode_vtk_base64_payload(payload_b64[offset:])
+                _consume_attempt(decoded_from_encoded_offset, 0)
+            except Exception as e2:
+                attempt_errors.append(f"encoded-offset failed: {e2}")
+                raise ValueError("; ".join(attempt_errors)) from e2
     else:
         raise ValueError(f"Unsupported VTI DataArray format: {fmt!r}")
 
@@ -544,6 +575,204 @@ def _is_discrete_label_array(values: np.ndarray, unique_values: np.ndarray, max_
         return False
     return bool(np.allclose(finite, np.round(finite), atol=1e-6))
 
+def _read_vti_header_info(vti_path: Path) -> dict:
+    """
+    Read just the XML header of a VTI file.
+    Returns a dict with keys: path, origin, spacing, extent, association, array_name, dtype_str.
+    """
+    text = vti_path.read_text(errors="ignore")
+    root = ET.fromstring(_vti_xml_without_appended(text))
+    if root.attrib.get("type") != "ImageData":
+        raise ValueError(f"Expected VTK ImageData, got {root.attrib.get('type')!r}")
+    image = root.find("ImageData")
+    if image is None:
+        raise ValueError(f"VTI file {vti_path.name} is missing ImageData")
+    piece = image.find("Piece")
+    origin_xyz = _parse_numeric_tuple(image.attrib.get("Origin", "0 0 0"), float)
+    spacing_xyz = _parse_numeric_tuple(image.attrib.get("Spacing", "1 1 1"), float)
+    whole_extent_str = image.attrib.get("WholeExtent", "")
+    piece_extent_str = piece.attrib.get("Extent", whole_extent_str) if piece is not None else whole_extent_str
+    extent = _parse_numeric_tuple(piece_extent_str, int)
+    array_name = None
+    association = "CellData"
+    dtype_str = "Float32"
+    if piece is not None:
+        try:
+            assoc, da = _find_vti_data_array(piece, None)
+            array_name = da.attrib.get("Name", "values")
+            association = assoc
+            dtype_str = da.attrib.get("type", "Float32")
+        except ValueError:
+            pass
+    return {
+        "path": vti_path,
+        "origin": origin_xyz,
+        "spacing": spacing_xyz,
+        "extent": extent,
+        "association": association,
+        "array_name": array_name or "values",
+        "dtype_str": dtype_str,
+    }
+
+
+def _assemble_vti_tiles(
+    vti_dir: Path,
+    array_name: str | None = None,
+    max_dim: int = 160,
+) -> tuple[np.ndarray, dict, dict]:
+    """
+    Load all VTI tiles in a directory and assemble them into a single sampled volume.
+
+    Tiles must share the same spacing and use their Origin attribute to locate themselves
+    in a common integer coordinate system.  Each tile's data is read at full resolution
+    then placed into the appropriate region of the global sampled output.
+
+    Returns (data_zyx, grid, metadata) with the same format as _read_vti_sampled_array.
+    """
+    vti_paths = sorted(vti_dir.glob("*.vti"))
+    if not vti_paths:
+        raise ValueError(f"No VTI files found in {vti_dir}")
+    info(f"Assembling {len(vti_paths)} VTI tile(s) from {vti_dir.name}/")
+
+    # --- Phase 1: read headers to find global bounding box ---
+    tile_infos = []
+    for p in vti_paths:
+        try:
+            tile_infos.append(_read_vti_header_info(p))
+        except Exception as e:
+            warn(f"Skipping {p.name}: {e}")
+
+    if not tile_infos:
+        raise ValueError(f"No valid VTI files could be read from {vti_dir}")
+
+    # Use first tile's spacing as reference (assume uniform)
+    ref_spacing = np.array(tile_infos[0]["spacing"], dtype=float)
+    sx_ref, sy_ref, sz_ref = ref_spacing
+
+    # Compute global integer cell extents
+    gx_min = gx_max = gy_min = gy_max = gz_min = gz_max = None
+    for ti in tile_infos:
+        x0, x1, y0, y1, z0, z1 = ti["extent"]
+        assoc = ti["association"]
+        ox, oy, oz = int(round(ti["origin"][0] / sx_ref)), int(round(ti["origin"][1] / sy_ref)), int(round(ti["origin"][2] / sz_ref))
+        # For CellData: tile covers global cells [ox+x0, ox+x1)
+        if assoc == "CellData":
+            tx_min, tx_max = ox + x0, ox + x1
+            ty_min, ty_max = oy + y0, oy + y1
+            tz_min, tz_max = oz + z0, oz + z1
+        else:
+            tx_min, tx_max = ox + x0, ox + x1 + 1
+            ty_min, ty_max = oy + y0, oy + y1 + 1
+            tz_min, tz_max = oz + z0, oz + z1 + 1
+        gx_min = tx_min if gx_min is None else min(gx_min, tx_min)
+        gx_max = tx_max if gx_max is None else max(gx_max, tx_max)
+        gy_min = ty_min if gy_min is None else min(gy_min, ty_min)
+        gy_max = ty_max if gy_max is None else max(gy_max, ty_max)
+        gz_min = tz_min if gz_min is None else min(gz_min, tz_min)
+        gz_max = tz_max if gz_max is None else max(gz_max, tz_max)
+        ti["_gx_min"] = tx_min; ti["_gx_max"] = tx_max
+        ti["_gy_min"] = ty_min; ti["_gy_max"] = ty_max
+        ti["_gz_min"] = tz_min; ti["_gz_max"] = tz_max
+
+    global_dims_xyz = (gx_max - gx_min, gy_max - gy_min, gz_max - gz_min)
+    max_full_dim = max(global_dims_xyz)
+    stride = max(1, int(np.ceil(max_full_dim / max_dim))) if max_dim > 0 else 1
+    sample_offset = stride // 2 if stride > 1 else 0
+
+    # Output dimensions (ZYX order)
+    def sampled_len(full_len):
+        return max(1, (full_len - 1 - sample_offset) // stride + 1) if full_len > sample_offset else 0
+
+    out_nx = sampled_len(global_dims_xyz[0])
+    out_ny = sampled_len(global_dims_xyz[1])
+    out_nz = sampled_len(global_dims_xyz[2])
+
+    # Determine output dtype from first tile
+    ref_dtype_str = tile_infos[0]["dtype_str"]
+    endian = "<"
+    out_dtype = VTK_DTYPE_MAP.get(ref_dtype_str, np.float32)
+    out = np.zeros((out_nz, out_ny, out_nx), dtype=out_dtype)
+
+    # Global sample positions in each axis
+    # out_cell_k → global cell g = sample_offset + k * stride + g_min
+    out_gx = sample_offset + np.arange(out_nx) * stride + gx_min  # global x index of each output cell
+    out_gy = sample_offset + np.arange(out_ny) * stride + gy_min
+    out_gz = sample_offset + np.arange(out_nz) * stride + gz_min
+
+    # --- Phase 2: read each tile and fill output ---
+    ref_array_name = array_name or tile_infos[0]["array_name"]
+    for ti in tile_infos:
+        tx_min, tx_max = ti["_gx_min"], ti["_gx_max"]
+        ty_min, ty_max = ti["_gy_min"], ti["_gy_max"]
+        tz_min, tz_max = ti["_gz_min"], ti["_gz_max"]
+
+        # Which output cells fall within this tile's global range?
+        mask_x = (out_gx >= tx_min) & (out_gx < tx_max)
+        mask_y = (out_gy >= ty_min) & (out_gy < ty_max)
+        mask_z = (out_gz >= tz_min) & (out_gz < tz_max)
+        if not (np.any(mask_x) and np.any(mask_y) and np.any(mask_z)):
+            continue
+
+        out_ix = np.where(mask_x)[0]
+        out_iy = np.where(mask_y)[0]
+        out_iz = np.where(mask_z)[0]
+
+        # Local tile indices for those global sample positions
+        local_x = (out_gx[mask_x] - tx_min).astype(np.int64)
+        local_y = (out_gy[mask_y] - ty_min).astype(np.int64)
+        local_z = (out_gz[mask_z] - tz_min).astype(np.int64)
+
+        # Read tile at full resolution (max_dim=0)
+        try:
+            tile_data, _, _ = _read_vti_sampled_array(ti["path"], array_name=ref_array_name, max_dim=0)
+        except Exception as e:
+            warn(f"Could not read {ti['path'].name}: {e}")
+            continue
+        # tile_data shape: (tz, ty, tx)
+        tz_size, ty_size, tx_size = tile_data.shape
+        local_x = np.clip(local_x, 0, tx_size - 1)
+        local_y = np.clip(local_y, 0, ty_size - 1)
+        local_z = np.clip(local_z, 0, tz_size - 1)
+
+        OZ, OY, OX = np.meshgrid(out_iz, out_iy, out_ix, indexing="ij")
+        LZ, LY, LX = np.meshgrid(local_z, local_y, local_x, indexing="ij")
+        out[OZ, OY, OX] = tile_data[LZ, LY, LX].astype(out_dtype)
+
+    # Build grid metadata
+    out_spacing_xyz = (sx_ref * stride, sy_ref * stride, sz_ref * stride)
+    out_origin_xyz = (
+        gx_min * sx_ref + (sample_offset + 0.5) * sx_ref - 0.5 * out_spacing_xyz[0],
+        gy_min * sy_ref + (sample_offset + 0.5) * sy_ref - 0.5 * out_spacing_xyz[1],
+        gz_min * sz_ref + (sample_offset + 0.5) * sz_ref - 0.5 * out_spacing_xyz[2],
+    )
+    grid = {
+        "shape": out.shape,
+        "spacing": (out_spacing_xyz[2], out_spacing_xyz[1], out_spacing_xyz[0]),
+        "origin": out_origin_xyz,
+        "extent_mm": (out_nx * out_spacing_xyz[0], out_ny * out_spacing_xyz[1], out_nz * out_spacing_xyz[2]),
+        "aabb_mm": (global_dims_xyz[0] * sx_ref, global_dims_xyz[1] * sy_ref, global_dims_xyz[2] * sz_ref),
+        "margin_mm": 0.0,
+        "sample_stride": stride,
+        "sample_offset": sample_offset,
+    }
+    metadata = {
+        "array_name": ref_array_name,
+        "association": tile_infos[0]["association"],
+        "dtype": str(np.dtype(out_dtype).newbyteorder("=")),
+        "full_dims_xyz": global_dims_xyz,
+        "sampled_dims_xyz": (out_nx, out_ny, out_nz),
+        "sample_stride": stride,
+        "sample_offset": sample_offset,
+        "tile_count": len(tile_infos),
+        "source": "directory",
+    }
+    info(
+        f"Assembly complete: {len(tile_infos)} tiles | global={global_dims_xyz} cells | "
+        f"sampled={out.shape} (stride={stride})"
+    )
+    return out, grid, metadata
+
+
 def load_vti_label_layers(
     vti_path: str,
     array_name: str | None = None,
@@ -626,6 +855,98 @@ def load_vti_label_layers(
     if len(layers) > 8:
         info(f"... plus {len(layers) - 8} more labels")
     return layers, grid, metadata
+
+
+def load_vti_directory_label_layers(
+    vti_dir: str,
+    array_name: str | None = None,
+    background: float = 0.0,
+    background_eps: float = 0.0,
+    max_dim: int = 160,
+    max_labels: int = 64,
+) -> tuple[list[dict], dict, dict]:
+    """
+    Load all VTI tiles in a directory, assemble them spatially, and return label layers.
+
+    Each tile must be a VTK ImageData file with an Origin attribute that positions it in
+    a shared coordinate system.  Tiles are stitched together into a single sampled volume
+    and then split into discrete label layers exactly as load_vti_label_layers() does.
+    """
+    vti_dir_path = Path(vti_dir).resolve()
+    if not vti_dir_path.is_dir():
+        raise ValueError(f"Not a directory: {vti_dir}")
+    data, grid, metadata = _assemble_vti_tiles(vti_dir_path, array_name=array_name, max_dim=max_dim)
+    unique_values = np.unique(data)
+    array_label = metadata["array_name"]
+    max_labels = max(1, int(max_labels))
+    eps = max(0.0, float(background_eps))
+    bg = float(background)
+
+    if np.issubdtype(data.dtype, np.floating):
+        background_mask = np.isclose(data, bg, atol=eps)
+    else:
+        background_mask = data == np.asarray(background, dtype=data.dtype)
+
+    discrete = _is_discrete_label_array(data, unique_values, max_labels)
+    layers: list[dict] = []
+    if discrete:
+        label_values = [v for v in unique_values if not np.isclose(float(v), bg, atol=eps)]
+        if len(label_values) > max_labels:
+            discrete = False
+            warn(
+                f"Assembled VTI volume has {len(label_values)} non-background values; "
+                f"treating it as a single scalar occupancy layer. Increase --vti-max-labels to split."
+            )
+        else:
+            for idx, value in enumerate(label_values):
+                if np.issubdtype(data.dtype, np.floating):
+                    mask = np.isclose(data, value, atol=max(eps, 1e-6))
+                else:
+                    mask = data == value
+                name = f"{array_label}={_label_display_value(value)}"
+                layers.append(_make_mask_layer(
+                    _safe_layer_id(array_label, _label_display_value(value)),
+                    name,
+                    mask,
+                    LABEL_COLOR_PALETTE[idx % len(LABEL_COLOR_PALETTE)],
+                    label_value=_label_display_value(value),
+                    exclusive_group="vti-labels"
+                ))
+
+    if not discrete:
+        occupancy = ~background_mask
+        layers.append(_make_mask_layer(
+            _safe_layer_id(array_label, "nonzero"),
+            f"{array_label} non-background",
+            occupancy,
+            LABEL_COLOR_PALETTE[0],
+            label_value="non-background",
+            exclusive_group=None
+        ))
+
+    if not layers:
+        warn("VTI directory assembly did not yield any non-background voxels")
+        layers.append(_make_mask_layer(
+            _safe_layer_id(array_label, "empty"),
+            f"{array_label} empty",
+            np.zeros_like(data, dtype=np.uint8),
+            LABEL_COLOR_PALETTE[0],
+            label_value="empty",
+            exclusive_group=None
+        ))
+
+    metadata.update({
+        "background": background,
+        "background_eps": background_eps,
+        "discrete_labels": discrete,
+        "labels": [layer["label_value"] for layer in layers],
+    })
+    info(f"Prepared {len(layers)} editable layer(s) from directory: "
+         f"{', '.join(layer['name'] for layer in layers[:8])}")
+    if len(layers) > 8:
+        info(f"... plus {len(layers) - 8} more labels")
+    return layers, grid, metadata
+
 
 def voxelize_mesh(mesh: trimesh.Trimesh, grid: dict) -> np.ndarray:
     """
@@ -1480,20 +1801,81 @@ def show_viewer_dash(
                     html.Div(
                         style=panel_card,
                         children=[
-                            html.Div("Labels", style={"fontWeight": "600"}),
-                            dcc.Dropdown(
-                                id="mask-check",
-                                options=layer_options,
-                                value=default_visible,
-                                multi=True,
-                                placeholder="Select visible labels",
-                                clearable=False,
-                                style=dropdown_compact
+                            html.Div(
+                                style={"display": "flex", "alignItems": "center", "justifyContent": "space-between"},
+                                children=[
+                                    html.Div("Labels", style={"fontWeight": "600"}),
+                                    html.Div(
+                                        style={"display": "flex", "gap": "4px"},
+                                        children=[
+                                            html.Button("All", id="labels-all-btn",
+                                                        style={"background": "#374151", "color": "#e5e7eb",
+                                                               "border": "1px solid #2b3347", "borderRadius": "4px",
+                                                               "padding": "2px 8px", "fontSize": "11px", "cursor": "pointer"}),
+                                            html.Button("None", id="labels-none-btn",
+                                                        style={"background": "#374151", "color": "#e5e7eb",
+                                                               "border": "1px solid #2b3347", "borderRadius": "4px",
+                                                               "padding": "2px 8px", "fontSize": "11px", "cursor": "pointer"}),
+                                            html.Button("Reset", id="reset-btn",
+                                                        style={"background": "#2563EB", "color": "white",
+                                                               "border": "none", "borderRadius": "4px",
+                                                               "padding": "2px 8px", "fontSize": "11px", "cursor": "pointer"}),
+                                        ]
+                                    ),
+                                ]
                             ),
-                            html.Button("Reset", id="reset-btn",
-                                        style={"background": "#2563EB", "color": "white",
-                                               "border": "none", "borderRadius": "6px",
-                                               **button_compact}),
+                            html.Div(
+                                id="label-list",
+                                style={"maxHeight": "260px", "overflowY": "auto",
+                                       "display": "flex", "flexDirection": "column", "gap": "4px",
+                                       "paddingRight": "4px"},
+                                children=[
+                                    html.Div(
+                                        style={"display": "flex", "alignItems": "center", "gap": "5px",
+                                               "minWidth": "0"},
+                                        children=[
+                                            dcc.Checklist(
+                                                id={"type": "label-vis", "index": lid},
+                                                options=[{"label": "", "value": "on"}],
+                                                value=["on"] if lid in default_visible else [],
+                                                style={"flexShrink": "0"}
+                                            ),
+                                            html.Div(
+                                                style={"width": "12px", "height": "12px",
+                                                       "borderRadius": "2px", "flexShrink": "0",
+                                                       "backgroundColor": layer_states[lid]["color"],
+                                                       "border": "1px solid #374151"}
+                                            ),
+                                            html.Span(
+                                                layer_states[lid]["name"],
+                                                title=layer_states[lid]["name"],
+                                                style={"fontSize": "11px", "flex": "1",
+                                                       "overflow": "hidden", "textOverflow": "ellipsis",
+                                                       "whiteSpace": "nowrap", "minWidth": "0"}
+                                            ),
+                                            html.Div(
+                                                dcc.Slider(
+                                                    id={"type": "label-opacity", "index": lid},
+                                                    min=0.0, max=1.0, step=0.05,
+                                                    value=layer_states[lid]["opacity"],
+                                                    updatemode="drag", marks=None,
+                                                    tooltip={"placement": "bottom", "always_visible": False}
+                                                ),
+                                                style={"width": "70px", "flexShrink": "0"}
+                                            ),
+                                        ]
+                                    )
+                                    for lid in layer_states
+                                ]
+                            ),
+                            dcc.Store(
+                                id="vis-store",
+                                data={lid: lid in default_visible for lid in layer_states}
+                            ),
+                            dcc.Store(
+                                id="opacity-store",
+                                data={lid: layer_states[lid]["opacity"] for lid in layer_states}
+                            ),
                         ]
                     ),
                     html.Div(
@@ -1869,6 +2251,53 @@ def show_viewer_dash(
 
         return x_idx, y_idx, z_idx
 
+    # ---- Per-label visibility and opacity stores ----
+
+    try:
+        from dash import ALL as _ALL
+    except ImportError:
+        _ALL = "ALL"
+
+    @app.callback(
+        Output("vis-store", "data"),
+        Input({"type": "label-vis", "index": _ALL}, "value"),
+        State({"type": "label-vis", "index": _ALL}, "id"),
+        Input("labels-all-btn", "n_clicks"),
+        Input("labels-none-btn", "n_clicks"),
+        State("vis-store", "data"),
+        prevent_initial_call=True
+    )
+    def update_vis_store(values, ids, _all_clicks, _none_clicks, current_vis):
+        triggered = callback_context.triggered or []
+        if not triggered:
+            raise PreventUpdate
+        prop = triggered[0]["prop_id"]
+        if "labels-all-btn" in prop:
+            return {lid: True for lid in layer_states}
+        if "labels-none-btn" in prop:
+            return {lid: False for lid in layer_states}
+        # pattern-match update
+        result = dict(current_vis or {})
+        for id_dict, val in zip(ids or [], values or []):
+            lid = id_dict["index"]
+            result[lid] = "on" in (val or [])
+        return result
+
+    @app.callback(
+        Output("opacity-store", "data"),
+        Input({"type": "label-opacity", "index": _ALL}, "value"),
+        State({"type": "label-opacity", "index": _ALL}, "id"),
+        State("opacity-store", "data"),
+        prevent_initial_call=True
+    )
+    def update_opacity_store(values, ids, current_opacity):
+        result = dict(current_opacity or {})
+        for id_dict, val in zip(ids or [], values or []):
+            lid = id_dict["index"]
+            if val is not None:
+                result[lid] = float(np.clip(val, 0.0, 1.0))
+        return result
+
     @app.callback(
         Output("roi-scale-pos", "value"),
         Output("roi-scale-input", "value"),
@@ -2034,7 +2463,8 @@ def show_viewer_dash(
         Output("z-view", "figure"),
         Output("threeD-view", "figure"),
         Output("camera-store", "data"),
-        Input("mask-check", "value"),
+        Input("vis-store", "data"),
+        Input("opacity-store", "data"),
         Input("x-slider", "value"),
         Input("y-slider", "value"),
         Input("z-slider", "value"),
@@ -2061,7 +2491,7 @@ def show_viewer_dash(
         Input("reset-btn", "n_clicks"),
         prevent_initial_call=False
     )
-    def update(mask_values, x_idx, y_idx, z_idx,
+    def update(vis_data, opacity_data, x_idx, y_idx, z_idx,
                p1_x, p1_y, p1_z,
                p2_x, p2_y, p2_z,
                p1_color, p2_color,
@@ -2102,8 +2532,13 @@ def show_viewer_dash(
             apply_exclusive_conflicts(target_label)
             refresh_layer_trace(target_label)
 
-        mask_values = mask_values or []
-        visible_ids = [layer_id for layer_id in mask_values if layer_id in layer_states]
+        # Derive visible_ids and per-layer opacities from stores
+        vis_data = vis_data or {}
+        opacity_data = opacity_data or {}
+        visible_ids = [
+            layer_id for layer_id in layer_states
+            if vis_data.get(layer_id, layer_id in default_visible)
+        ]
 
         p1 = _voxel_center(grid, p1_x, p1_y, p1_z)
         p2 = _voxel_center(grid, p2_x, p2_y, p2_z)
@@ -2144,16 +2579,22 @@ def show_viewer_dash(
         y_fig.add_trace(_roi_overlay_trace(roi_y, sphere_color, sphere_opacity))
         z_fig.add_trace(_roi_overlay_trace(roi_z, sphere_color, sphere_opacity))
 
-        valid_traces = [mesh_trace] if mesh_trace is not None else []
-        valid_traces.extend(
-            layer_states[layer_id]["trace"]
-            for layer_id in visible_ids
-            if layer_states[layer_id]["trace"] is not None
-        )
         extent_x, extent_y, extent_z = grid["extent_mm"]
         aspectratio = _aspectratio_from_extents((extent_x, extent_y, extent_z))
 
-        fig3d = go.Figure(data=valid_traces)
+        fig3d = go.Figure(data=[mesh_trace] if mesh_trace is not None else [])
+        for layer_id in visible_ids:
+            trace = layer_states[layer_id]["trace"]
+            if trace is None:
+                continue
+            # Apply current opacity from store (may differ from cached trace)
+            current_opacity = opacity_data.get(layer_id, layer_states[layer_id]["opacity"])
+            # Plotly Mesh3d / Scatter3d support opacity update via update_traces
+            fig3d.add_trace(trace)
+            fig3d.update_traces(
+                opacity=float(np.clip(current_opacity, 0.0, 1.0)),
+                selector=dict(name=layer_states[layer_id]["name"])
+            )
         plane_traces = [
             _slice_plane_surface(
                 x_slice,
@@ -2385,7 +2826,7 @@ def show_viewer_dash(
 
     @app.callback(
         Output("status", "children"),
-        Input("mask-check", "value"),
+        Input("vis-store", "data"),
         Input("x-slider", "value"),
         Input("y-slider", "value"),
         Input("z-slider", "value"),
@@ -2400,7 +2841,7 @@ def show_viewer_dash(
         Input("target-label", "value"),
         prevent_initial_call=False
     )
-    def update_status(mask_values, x_idx, y_idx, z_idx,
+    def update_status(vis_data, x_idx, y_idx, z_idx,
                       p1_x, p1_y, p1_z, p2_x, p2_y, p2_z,
                       hover_data, catch_data, target_label):
         hover_txt = "Hover: -"
@@ -2410,10 +2851,11 @@ def show_viewer_dash(
         if isinstance(catch_data, dict):
             catch_txt = f"Catch: ({catch_data.get('i')},{catch_data.get('j')},{catch_data.get('k')})"
 
+        vis_data = vis_data or {}
         active_names = [
-            layer_states[layer_id]["name"]
-            for layer_id in (mask_values or [])
-            if layer_id in layer_states
+            layer_states[lid]["name"]
+            for lid in layer_states
+            if vis_data.get(lid, lid in default_visible)
         ]
         target_name = layer_states.get(target_label, layer_states[target_default])["name"]
 
@@ -2457,6 +2899,59 @@ def run_pipeline(
         raise FileNotFoundError(in_mesh_path)
 
     suffix = input_path.suffix.lower()
+
+    # --- VTI directory: assemble spatial tiles then extract labels ---
+    if input_path.is_dir():
+        layers, grid, metadata = load_vti_directory_label_layers(
+            str(input_path),
+            array_name=vti_array,
+            background=vti_background,
+            background_eps=vti_background_eps,
+            max_dim=vti_max_dim,
+            max_labels=vti_max_labels,
+        )
+        Path(out_npz).parent.mkdir(parents=True, exist_ok=True)
+        layer_arrays = {
+            f"mask_{layer['id']}": layer["mask"].astype(np.uint8)
+            for layer in layers
+        }
+        np.savez_compressed(
+            out_npz,
+            **layer_arrays,
+            spacing=np.array(grid["spacing"]),
+            origin=np.array(grid["origin"]),
+            layer_ids=np.array([layer["id"] for layer in layers]),
+            layer_names=np.array([layer["name"] for layer in layers]),
+            layer_values=np.array([str(layer.get("label_value", "")) for layer in layers]),
+            full_dims_xyz=np.array(metadata["full_dims_xyz"]),
+            sampled_dims_xyz=np.array(metadata["sampled_dims_xyz"]),
+            sample_stride=np.array(metadata["sample_stride"]),
+            tile_count=np.array(metadata.get("tile_count", 0)),
+            source_type=np.array("vti_directory"),
+            source_path=np.array(str(input_path)),
+            vti_array=np.array(metadata["array_name"]),
+        )
+        ok(f"VTI directory label masks saved (uint8) → {out_npz}")
+
+        if export_stl:
+            stl_root = Path(stl_dir) if stl_dir else Path(out_npz).parent
+            stl_root.mkdir(parents=True, exist_ok=True)
+            stl_total = 0
+            for layer in layers:
+                if save_mask_stl(layer["mask"], grid, stl_root / f"{layer['id']}.stl", name=layer["name"]):
+                    stl_total += 1
+            ok(f"STL export complete → {stl_root} ({stl_total} label surface(s))")
+
+        if show:
+            show_viewer_dash(
+                None,
+                grid=grid,
+                mask_layers=layers,
+                port=port,
+                dataset_name=input_path.name,
+            )
+        return
+
     if suffix == ".vti":
         layers, grid, metadata = load_vti_label_layers(
             str(input_path),
