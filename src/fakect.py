@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 # ---------------------------------------------------------------------
 # fakect.py
-# Produces winding-based in/on/out masks and (optionally) launches a Dash viewer.
+# Produces in/on/out masks (winding via python-igl when available) and optionally launches a Dash viewer.
 #
 # Usage examples:
-#   python fakect.py --in cube.stl --n 8 --out outputs
-#   python fakect.py --in carotid.stl --n 9 --margin 0.10 --out examples/outputs
+#   python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz
+#   python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs/carotid_masks.npz
 #
 # Requirements & installation
-#  Recommended (conda - easiest, includes python-igl):
+#  Recommended (conda - easiest, python-igl optional):
 #    conda create -n fakect python=3.10 -y
 #    conda activate fakect
-#    conda install -c conda-forge python-igl trimesh scipy scikit-image plotly dash -y
+#    conda install -c conda-forge trimesh scipy scikit-image plotly dash -y
+#    # Optional, if available on your platform:
+#    conda install -c conda-forge python-igl -y
 #
 #  Pip-only (virtualenv): python-igl often requires conda; use pip for the pure-Python deps
 #    python -m venv .venv
@@ -31,7 +33,7 @@ import base64
 import json
 import re
 import sys
-import xml.etree.ElementTree as ET
+import time
 import numpy as np
 from pathlib import Path
 from typing import Any, Tuple
@@ -1085,7 +1087,7 @@ def classify_by_winding(mesh: trimesh.Trimesh, grid: dict, band: float = 0.6
     V = mesh.vertices.copy()
     F = mesh.faces.copy()
 
-    WN = igl.fast_winding_number_for_meshes(V, F, Q)  # (N^3,)
+    WN = igl.fast_winding_number_for_meshes(V, F, Q)  # type:ignore
     WN = np.asarray(WN).reshape((N, N, N))  # (k, j, i) == (Z,Y,X)
 
     # Inside = WN > 0.5
@@ -1096,6 +1098,52 @@ def classify_by_winding(mesh: trimesh.Trimesh, grid: dict, band: float = 0.6
     boundary = dil ^ inside
     on = boundary & ~inside
 
+    out = ~(inside | on)
+
+    return inside.astype(np.uint8), on.astype(np.uint8), out.astype(np.uint8)
+
+def classify_by_trimesh_contains(
+    mesh: trimesh.Trimesh,
+    grid: dict,
+    batch_size: int = 200_000
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Use trimesh.contains (ray parity) to classify inside / on / out.
+    Slower than winding but avoids python-igl.
+    """
+    N = grid["shape"][0]
+    s = grid["spacing"][0]
+    ox, oy, oz = grid["origin"]
+
+    total = N * N * N
+    inside_flat = np.zeros(total, dtype=bool)
+
+    for start in range(0, total, batch_size):
+        end = min(start + batch_size, total)
+        idx = np.arange(start, end, dtype=np.int64)
+
+        k = idx // (N * N)
+        rem = idx % (N * N)
+        j = rem // N
+        i = rem % N
+
+        xs = ox + (i + 0.5) * s
+        ys = oy + (j + 0.5) * s
+        zs = oz + (k + 0.5) * s
+        Q = np.stack((xs, ys, zs), axis=1)
+
+        try:
+            inside_flat[start:end] = mesh.contains(Q)
+        except Exception as exc:
+            raise RuntimeError(
+                "trimesh.contains failed; consider installing python-igl or using a different mesh"
+            ) from exc
+
+    inside = inside_flat.reshape((N, N, N))
+
+    dil = binary_dilation(inside, structure=np.ones((3, 3, 3), dtype=bool))
+    boundary = dil ^ inside
+    on = boundary & ~inside
     out = ~(inside | on)
 
     return inside.astype(np.uint8), on.astype(np.uint8), out.astype(np.uint8)
@@ -1161,279 +1209,97 @@ def _slice_frames(grid, i_idx, j_idx, k_idx, color_map=None, line_width=SLICE_BO
     ))
     return frames
 
-def _hex_to_rgba(hex_color: str, alpha: float) -> str:
-    hex_color = hex_color.lstrip("#")
-    if len(hex_color) != 6:
-        return f"rgba(255,255,255,{alpha})"
-    r = int(hex_color[0:2], 16)
-    g = int(hex_color[2:4], 16)
-    b = int(hex_color[4:6], 16)
-    return f"rgba({r},{g},{b},{alpha})"
-
-def _clean_hex_color(value: str | None, fallback: str = "#E5E7EB") -> str:
-    if isinstance(value, str) and re.match(r"^#[0-9a-fA-F]{6}$", value):
-        return value
-    return fallback
-
-def _tf_position(value: float, vmin: float, vmax: float) -> float:
-    if np.isclose(vmin, vmax):
-        return 0.0
-    return float(np.clip((float(value) - vmin) / (vmax - vmin), 0.0, 1.0))
-
-def _append_transfer_point(
-    points: list[dict],
-    point_id: str,
-    value: float,
-    opacity: float,
-    vmin: float,
-    vmax: float,
-    min_gap: float,
-) -> None:
-    value = float(np.clip(value, vmin, vmax))
-    for point in points:
-        if abs(point["value"] - value) <= min_gap:
-            if point["id"] not in {"tf_min", "tf_zero", "tf_max"}:
-                point["opacity"] = max(point["opacity"], float(np.clip(opacity, 0.0, 1.0)))
-            return
-    points.append({
-        "id": point_id,
-        "value": value,
-        "opacity": float(np.clip(opacity, 0.0, 1.0)),
-    })
-
-def _default_transfer_points(
-    vmin: float,
-    vmax: float,
-    scalar_values: np.ndarray | None = None,
-) -> list[dict]:
-    span = max(1e-9, vmax - vmin)
-    min_gap = span * 1e-5
-
-    if scalar_values is not None:
-        finite = np.asarray(scalar_values, dtype=np.float32)
-        finite = finite[np.isfinite(finite)]
-        if finite.size:
-            nonzero = finite[~np.isclose(finite, 0.0, atol=1e-6)]
-            positive = finite[finite > 0.0]
-            if vmin < 0.0 < vmax and positive.size >= 8:
-                focus = positive
-                percentiles = [50, 75, 95]
-                opacities = [0.22, 0.35, 0.62]
-            else:
-                focus = nonzero if nonzero.size >= 8 else finite
-                percentiles = [25, 60, 90]
-                opacities = [0.08, 0.28, 0.58]
-
-            points: list[dict] = [{"id": "tf_min", "value": float(vmin), "opacity": 0.0}]
-            if vmin < 0.0 < vmax:
-                points.append({"id": "tf_zero", "value": 0.0, "opacity": 0.0})
-            for pct, opacity in zip(percentiles, opacities):
-                value = float(np.percentile(focus, pct))
-                _append_transfer_point(points, f"tf_p{pct}", value, opacity, vmin, vmax, min_gap)
-            _append_transfer_point(points, "tf_max", float(vmax), 0.85, vmin, vmax, min_gap)
-            if not any(point["id"] == "tf_max" for point in points):
-                points.append({"id": "tf_max", "value": float(vmax), "opacity": 0.85})
-            return sorted(points, key=lambda p: (p["value"], p["id"]))
-
-    points = [
-        {"id": "tf_min", "value": float(vmin), "opacity": 0.0},
-        {"id": "tf_mid_low", "value": float(vmin + 0.35 * span), "opacity": 0.14},
-        {"id": "tf_mid_high", "value": float(vmin + 0.70 * span), "opacity": 0.38},
-        {"id": "tf_max", "value": float(vmax), "opacity": 0.75},
-    ]
-    if vmin < 0.0 < vmax:
-        points.insert(1, {"id": "tf_zero", "value": 0.0, "opacity": 0.0})
-    return points
-
-def _sanitize_transfer_points(
-    points: Any,
-    vmin: float,
-    vmax: float,
-    min_points: int = 2
-) -> list[dict]:
-    if not isinstance(points, list):
-        points = _default_transfer_points(vmin, vmax)
-
-    cleaned: list[dict] = []
-    seen_ids: set[str] = set()
-    for idx, point in enumerate(points):
-        if not isinstance(point, dict):
-            continue
-        try:
-            value = float(point.get("value", vmin))
-        except (TypeError, ValueError):
-            value = vmin
-        try:
-            opacity = float(point.get("opacity", 0.1))
-        except (TypeError, ValueError):
-            opacity = 0.1
-        point_id = str(point.get("id") or f"tf_{idx}")
-        if point_id in seen_ids:
-            point_id = f"{point_id}_{idx}"
-        seen_ids.add(point_id)
-        if point_id == "tf_min":
-            value = vmin
-        elif point_id == "tf_max":
-            value = vmax
-        else:
-            value = float(np.clip(value, vmin, vmax))
-        cleaned.append({
-            "id": point_id,
-            "value": value,
-            "opacity": float(np.clip(opacity, 0.0, 1.0)),
-        })
-
-    if len(cleaned) < min_points:
-        cleaned = _default_transfer_points(vmin, vmax)
-
-    cleaned = sorted(cleaned, key=lambda p: (p["value"], p["id"]))
-
-    has_min = any(np.isclose(p["value"], vmin) for p in cleaned)
-    has_max = any(np.isclose(p["value"], vmax) for p in cleaned)
-    if not has_min:
-        first = cleaned[0]
-        cleaned.insert(0, {
-            "id": "tf_min",
-            "value": float(vmin),
-            "opacity": first["opacity"],
-        })
-    if not has_max:
-        last = cleaned[-1]
-        cleaned.append({
-            "id": "tf_max",
-            "value": float(vmax),
-            "opacity": last["opacity"],
-        })
-
-    unique_by_id: dict[str, dict] = {}
-    for point in cleaned:
-        unique_by_id[point["id"]] = point
-    return sorted(unique_by_id.values(), key=lambda p: (p["value"], p["id"]))
-
-def _transfer_color_scheme_key(color_scheme: Any = None) -> str:
-    if isinstance(color_scheme, str) and color_scheme in TRANSFER_COLOR_SCHEMES:
-        return color_scheme
-    return DEFAULT_TRANSFER_COLOR_SCHEME
-
-def _transfer_colorscale(color_scheme: Any = None) -> list:
-    scheme = TRANSFER_COLOR_SCHEMES[_transfer_color_scheme_key(color_scheme)]
-    return [[float(position), color] for position, color in scheme]
-
-def _transfer_opacityscale(points: list[dict], vmin: float, vmax: float, opacity_scale: float = 1.0) -> list:
-    cleaned = _sanitize_transfer_points(points, vmin, vmax)
-    opacity_scale = float(np.clip(opacity_scale, 0.0, 1.0))
-    opacityscale = [
-        [_tf_position(point["value"], vmin, vmax), float(np.clip(point["opacity"] * opacity_scale, 0.0, 1.0))]
-        for point in cleaned
-    ]
-    opacityscale[0][0] = 0.0
-    opacityscale[-1][0] = 1.0
-    return opacityscale
-
-def _slice_colorscale(mask_color: str) -> list:
-    return [[0.0, "black"], [1.0, mask_color]]
-
-def _slice_plane_colorscale(mask_color: str, roi_color: str, alpha: float) -> list:
-    return [
-        [0.0, "rgba(0,0,0,0)"],
-        [0.5, _hex_to_rgba(mask_color, alpha)],
-        [1.0, _hex_to_rgba(roi_color, alpha)]
-    ]
-
-def _roi_overlay_trace(roi_mask: np.ndarray, color: str, opacity: float) -> go.Heatmap:
-    z = np.where(roi_mask > 0, 1.0, np.nan)
-    return go.Heatmap(
-        z=z,
-        zmin=0,
-        zmax=1,
-        colorscale=[[0.0, color], [1.0, color]],
-        showscale=False,
-        hoverinfo="skip",
-        opacity=max(0.0, min(1.0, float(opacity)))
-    )
-
-def _voxel_center(grid, i_idx, j_idx, k_idx):
-    sz, sy, sx = grid["spacing"]
-    ox, oy, oz = grid["origin"]
-    x = ox + (i_idx + 0.5) * sx
-    y = oy + (j_idx + 0.5) * sy
-    z = oz + (k_idx + 0.5) * sz
-    return x, y, z
-
-def _sphere_surface(center, radius, color, opacity, resolution=24):
-    if radius <= 0:
-        return None
-    u = np.linspace(0, 2 * np.pi, resolution)
-    v = np.linspace(0, np.pi, resolution)
-    x = center[0] + radius * np.outer(np.cos(u), np.sin(v))
-    y = center[1] + radius * np.outer(np.sin(u), np.sin(v))
-    z = center[2] + radius * np.outer(np.ones_like(u), np.cos(v))
-    return go.Surface(
-        x=x, y=y, z=z,
-        surfacecolor=np.zeros_like(x),
-        colorscale=[[0.0, color], [1.0, color]],
-        showscale=False,
-        opacity=opacity,
-        name="ROI sphere",
-        hoverinfo="skip"
-    )
-
-def _slice_plane_surface(
-    slice2d,
+def _roi_frame(
     grid,
-    axis,
-    idx,
-    color,
-    alpha=OPACITY_LEVELS["high"],
-    colorscale=None,
-    cmin=0,
-    cmax=1
+    i_idx: int,
+    j_idx: int,
+    k_idx: int,
+    r_vox: int,
+    *,
+    n_lat: int = 12,
+    n_lon: int = 12,
+    color: str = "#E11D48",
+    line_width: int = 1,
 ):
     """
-    Add a semi-transparent slice plane colored by the same mask as the 2D view.
-    slice2d shapes (Z,Y) for x, (Z,X) for y, (Y,X) for z.
+    Build a spherical ROI wireframe centered at voxel indices (i,j,k)
+    with radius specified in voxels (r_vox). Returns a list of Scatter3d traces
+    similar to _slice_frames(), intended to be directly added to the 3D figure.
+
+    Notes:
+    - Indices (i,j,k) are interpreted consistently with _slice_frames: position
+      = origin + index * spacing (voxel-aligned). This mirrors the slice planes.
+    - Radius is converted to millimeters using grid spacing.
+    - The wireframe consists of latitude and longitude rings for clarity and speed.
     """
-    if slice2d.size == 0:
-        return None
+    if r_vox is None or r_vox <= 0:
+        return []
 
     Nz, Ny, Nx = grid["shape"]
     sz, sy, sx = grid["spacing"]
     ox, oy, oz = grid["origin"]
 
-    x_coords = ox + (np.arange(Nx) + 0.5) * sx
-    y_coords = oy + (np.arange(Ny) + 0.5) * sy
-    z_coords = oz + (np.arange(Nz) + 0.5) * sz
+    # Center in world coordinates (voxel-aligned like slice frames)
+    Xc = ox + i_idx * sx
+    Yc = oy + j_idx * sy
+    Zc = oz + k_idx * sz
 
-    if axis == "x":
-        Y, Z = np.meshgrid(y_coords, z_coords)
-        X = np.full_like(Y, ox + (idx + 0.5) * sx)
-    elif axis == "y":
-        X, Z = np.meshgrid(x_coords, z_coords)
-        Y = np.full_like(X, oy + (idx + 0.5) * sy)
-    elif axis == "z":
-        X, Y = np.meshgrid(x_coords, y_coords)
-        Z = np.full_like(X, oz + (idx + 0.5) * sz)
-    else:
-        raise ValueError("axis must be 'x', 'y', or 'z'")
+    # Radius in mm (use isotropic spacing assumption in this grid)
+    s = sx  # == sy == sz
+    r = float(r_vox) * s
+    if r <= 0:
+        return []
 
-    if colorscale is None:
-        colorscale = [
-            [0.0, "rgba(0,0,0,0)"],
-            [1.0, _hex_to_rgba(color, alpha)]
-        ]
+    # Sampling resolution for wireframe rings
+    n_lat = max(3, int(n_lat))   # latitude (phi in [0, pi])
+    n_lon = max(4, int(n_lon))   # longitude (theta in [0, 2pi))
+    n_circle_pts = 60            # points per ring
 
-    return go.Surface(
-        x=X, y=Y, z=Z,
-        surfacecolor=slice2d,
-        cmin=cmin, cmax=cmax,
-        colorscale=colorscale,
-        showscale=False,
-        name=f"{axis}-slice-plane",
-        hoverinfo="skip",
-        opacity=1.0
-    )
+    traces = []
 
-def mask_to_trace(mask_u8, grid, color, name, opacity=OPACITY_LEVELS["high"]):
+    # Latitude rings (parallel to XY planes): phi from epsilon..pi-epsilon to avoid degeneracy
+    phis = np.linspace(1e-6, np.pi - 1e-6, n_lat)
+    thetas_ring = np.linspace(0, 2 * np.pi, n_circle_pts)
+    for phi in phis:
+        sinp = np.sin(phi)
+        cosp = np.cos(phi)
+        xs = Xc + r * sinp * np.cos(thetas_ring)
+        ys = Yc + r * sinp * np.sin(thetas_ring)
+        zs = Zc + r * np.full_like(thetas_ring, cosp)
+        traces.append(
+            go.Scatter3d(
+                x=np.r_[xs, xs[0]], y=np.r_[ys, ys[0]], z=np.r_[zs, zs[0]],
+                mode="lines",
+                line=dict(color=color, width=line_width),
+                name="roi-sphere-lat",
+                showlegend=False,
+            )
+        )
+
+    # Longitude rings (half-meridians closing into lines): theta grid
+    thetas = np.linspace(0, 2 * np.pi, n_lon, endpoint=False)
+    phis_mer = np.linspace(0, np.pi, n_circle_pts)
+    for th in thetas:
+        cost = np.cos(th)
+        sint = np.sin(th)
+        sinp = np.sin(phis_mer)
+        cosp = np.cos(phis_mer)
+        xs = Xc + r * sinp * cost
+        ys = Yc + r * sinp * sint
+        zs = Zc + r * cosp
+        traces.append(
+            go.Scatter3d(
+                x=xs, y=ys, z=zs,
+                mode="lines",
+                line=dict(color=color, width=line_width),
+                name="roi-sphere-lon",
+                showlegend=False,
+            )
+        )
+
+    return traces
+
+def mask_to_trace(mask_u8, grid, color, name, opacity=0.4):
     total = int(np.sum(mask_u8))
     info(f"[{name}] mask sum={total}")
     if total == 0:
@@ -1589,7 +1455,16 @@ def _resolve_output_paths(in_mesh_path: str, out_dir: str) -> tuple[Path, Path]:
 def _binary_colorscale(on_color="#ffffff"):
     return [[0.0, "black"], [1.0, on_color]]
 
-def _slice_fig(z2d, title, border_color="#ffffff", colorscale=None, zmin=0, zmax=1, showscale=False):
+def _slice_colorscale(color):
+    """Compatibility helper for slice overlays."""
+    return _binary_colorscale(color)
+
+def _slice_plane_colorscale(slice_color, roi_color, roi_alpha):
+    """Compatibility helper for slice planes in 3-D view."""
+    _ = roi_color, roi_alpha
+    return _binary_colorscale(slice_color)
+
+def _slice_fig(z2d, title, border_color="#ffffff", colorscale=None, zmax=1):
     if colorscale is None:
         colorscale = _binary_colorscale(border_color)
     x_vals = np.arange(z2d.shape[1])
@@ -1679,328 +1554,246 @@ def compose_slice(masks, axis, idx):
         out |= (s > 0).astype(np.uint8)
     return out
 
-def _discrete_label_colorscale(colors: list[str]) -> list:
-    if not colors:
-        return [[0.0, "black"], [1.0, "black"]]
-    n = len(colors)
-    colorscale = [[0.0, "black"]]
-    for i, color in enumerate(colors, start=1):
-        pos = i / max(1, n)
-        colorscale.append([pos, color])
-    return colorscale
+# ---------------------------------------------------------------------
+# ROI-based masking utilities
+# ---------------------------------------------------------------------
+def filter_inside_by_roi(
+        inside_u8: np.ndarray,
+        i_idx: int,
+        j_idx: int,
+        k_idx: int,
+        r_vox: int,
+) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Intersect the inside_u8 mask with a spherical ROI centered at voxel
+        indices (i_idx, j_idx, k_idx) with radius r_vox (in voxels).
 
-def _discrete_label_plane_colorscale(colors: list[str], alpha: float = OPACITY_LEVELS["high"]) -> list:
-    if not colors:
-        return [[0.0, "rgba(0,0,0,0)"], [1.0, "rgba(0,0,0,0)"]]
-    n = len(colors)
-    colorscale = [[0.0, "rgba(0,0,0,0)"]]
-    for i, color in enumerate(colors, start=1):
-        pos = i / max(1, n)
-        colorscale.append([pos, _hex_to_rgba(color, alpha)])
-    return colorscale
+        Inputs
+        - inside_u8: uint8 mask array of shape (Z, Y, X); nonzero denotes inside
+        - i_idx, j_idx, k_idx: ROI center in voxel indices matching the UI sliders
+          and _slice_frames convention (i=X, j=Y, k=Z)
+        - r_vox: radius of the sphere in voxels
 
-def compose_layer_slice(layer_states: dict, visible_ids: list[str], axis: str, idx: int) -> tuple[np.ndarray, list[str]]:
-    """Compose visible binary layers into integer-coded slice values."""
-    active_ids = [lid for lid in visible_ids if lid in layer_states]
-    if len(active_ids) == 0:
-        first = next(iter(layer_states.values()), None)
-        if first is None:
-            return np.zeros((1, 1), dtype=np.uint8), []
-        return _empty_slice({"shape": first["current"].shape}, axis), []
+        Returns (masked_in_roi, masked_outside_roi)
+        - masked_in_roi:  uint8 mask (Z, Y, X) of inside_u8 limited to the ROI
+        - masked_outside_roi: uint8 mask (Z, Y, X) of inside_u8 outside the ROI
 
-    first_mask = layer_states[active_ids[0]]["current"]
-    if axis == "x":
-        out = np.zeros(first_mask[:, :, idx].shape, dtype=np.uint16)
-    elif axis == "y":
-        out = np.zeros(first_mask[:, idx, :].shape, dtype=np.uint16)
-    elif axis == "z":
-        out = np.zeros(first_mask[idx, :, :].shape, dtype=np.uint16)
-    else:
-        raise ValueError("axis must be 'x', 'y', or 'z'")
+        Notes
+        - Computation happens in index space (voxel units). Grid spacing is not
+          required since r_vox is already in voxels.
+        """
+        if inside_u8 is None:
+                raise ValueError("inside_u8 must not be None")
+        if r_vox is None or r_vox <= 0:
+                # Nothing selected → all inside remains outside-ROI part
+                outside_only = (inside_u8 > 0).astype(np.uint8)
+                return np.zeros_like(inside_u8, dtype=np.uint8), outside_only
 
-    colors = []
-    for code, layer_id in enumerate(active_ids, start=1):
-        mask = layer_states[layer_id]["current"]
-        if axis == "x":
-            sl = mask[:, :, idx]
-        elif axis == "y":
-            sl = mask[:, idx, :]
-        else:
-            sl = mask[idx, :, :]
-        out[sl > 0] = code
-        colors.append(layer_states[layer_id]["color"])
-    return out, colors
+        Nz, Ny, Nx = inside_u8.shape
+        # Distance in voxel units from (i_idx, j_idx, k_idx)
+        ii = np.arange(Nx) - int(i_idx)
+        jj = np.arange(Ny) - int(j_idx)
+        kk = np.arange(Nz) - int(k_idx)
 
-def compose_layer_volume(layer_states: dict, visible_ids: list[str]) -> tuple[np.ndarray, list[str]]:
-    """Compose visible binary layers into an integer-coded 3-D volume."""
-    active_ids = [lid for lid in visible_ids if lid in layer_states]
-    if len(active_ids) == 0:
-        first = next(iter(layer_states.values()), None)
-        if first is None:
-            return np.zeros((1, 1, 1), dtype=np.uint8), []
-        return np.zeros_like(first["current"], dtype=np.uint8), []
+        rr2 = (ii * ii)[None, None, :] + (jj * jj)[None, :, None] + (kk * kk)[:, None, None]
+        roi = rr2 <= (int(r_vox) * int(r_vox))
 
-    base_shape = layer_states[active_ids[0]]["current"].shape
-    out = np.zeros(base_shape, dtype=np.uint16)
-    colors: list[str] = []
-    for code, layer_id in enumerate(active_ids, start=1):
-        mask = layer_states[layer_id]["current"]
-        out[mask > 0] = code
-        colors.append(layer_states[layer_id]["color"])
-    return out, colors
-
-def _volume_trace(volume_u16: np.ndarray, grid: dict, colors: list[str], opacity: float):
-    if volume_u16 is None or int(np.max(volume_u16)) == 0:
-        return None
-
-    Nz, Ny, Nx = grid["shape"]
-    sz, sy, sx = grid["spacing"]
-    ox, oy, oz = grid["origin"]
-
-    x_coords = ox + (np.arange(Nx) + 0.5) * sx
-    y_coords = oy + (np.arange(Ny) + 0.5) * sy
-    z_coords = oz + (np.arange(Nz) + 0.5) * sz
-    zz, yy, xx = np.meshgrid(z_coords, y_coords, x_coords, indexing="ij")
-
-    max_code = int(np.max(volume_u16))
-    return go.Volume(
-        x=xx.ravel(),
-        y=yy.ravel(),
-        z=zz.ravel(),
-        value=volume_u16.ravel(),
-        isomin=0.5,
-        isomax=max_code + 0.5,
-        surface_count=max(2, max_code),
-        opacity=max(0.01, min(1.0, float(opacity))),
-        colorscale=_discrete_label_colorscale(colors),
-        showscale=False,
-        caps=dict(x_show=False, y_show=False, z_show=False),
-        name="labels-volume",
-        hoverinfo="skip"
-    )
-
-def _scale_to_pos(scale_val: float) -> float:
-    """Map scale value in [0.001, 99.999] to slider position in [0, 1] with 1.0 at 0.5."""
-    v = max(0.001, min(99.999, float(scale_val)))
-    if v <= 1.0:
-        return 0.5 * (np.log10(v) - np.log10(0.001)) / (np.log10(1.0) - np.log10(0.001))
-    return 0.5 + 0.5 * (np.log10(v) - np.log10(1.0)) / (np.log10(99.999) - np.log10(1.0))
-
-def _pos_to_scale(pos: float) -> float:
-    """Map slider position in [0, 1] to scale value in [0.001, 99.999] with 1.0 at 0.5."""
-    p = max(0.0, min(1.0, float(pos)))
-    if p <= 0.5:
-        t = p / 0.5
-        return float(10 ** (np.log10(0.001) + t * (np.log10(1.0) - np.log10(0.001))))
-    t = (p - 0.5) / 0.5
-    return float(10 ** (np.log10(1.0) + t * (np.log10(99.999) - np.log10(1.0))))
-
-def _linspace_safe(vmin: float, vmax: float, count: int) -> list:
-    """Generate a safe list of values for batch export (count >= 1)."""
-    try:
-        vmin = float(vmin)
-        vmax = float(vmax)
-    except (TypeError, ValueError):
-        return [1.0]
-    try:
-        count = int(count)
-    except (TypeError, ValueError):
-        count = 1
-    count = max(1, count)
-    if count == 1:
-        return [vmin]
-    return list(np.linspace(vmin, vmax, count))
-
-def _fmt_param(val: float, decimals: int = 3) -> str:
-    """Format a float for filenames (avoid dots)."""
-    try:
-        v = float(val)
-    except (TypeError, ValueError):
-        v = 0.0
-    return f"{v:.{decimals}f}".replace(".", "p")
-
-def _gaussian_shape(x: float, k: float) -> float:
-    """Normalized Gaussian shape with S(0)=0, S(0.5)=1, S(1)=0."""
-    k = max(1e-6, float(k))
-    s = np.exp(-k * (x - 0.5) ** 2)
-    s0 = np.exp(-k * 0.25)
-    denom = max(1e-8, 1.0 - s0)
-    val = (s - s0) / denom
-    return float(max(0.0, min(1.0, val)))
-
-def _roi_mask_vox(shape_zyx, center_ijk, r_vox):
-    """Return a boolean spherical ROI mask in voxel index space."""
-    if r_vox is None or r_vox <= 0:
-        return np.zeros(shape_zyx, dtype=bool)
-    Nz, Ny, Nx = shape_zyx
-    i0, j0, k0 = center_ijk
-    ii = np.arange(Nx) - int(i0)
-    jj = np.arange(Ny) - int(j0)
-    kk = np.arange(Nz) - int(k0)
-    rr2 = (ii * ii)[None, None, :] + (jj * jj)[None, :, None] + (kk * kk)[:, None, None]
-    return rr2 <= (int(r_vox) * int(r_vox))
+        inside_bool = (inside_u8 > 0)
+        masked_in_roi = (inside_bool & roi).astype(np.uint8)
+        masked_outside_roi = (inside_bool & (~roi)).astype(np.uint8)
+        return masked_in_roi, masked_outside_roi
 
 def _bitwise_dilate6(mask_bool: np.ndarray) -> np.ndarray:
-    """Single-iteration 3D dilation using 6-neighborhood via bitwise shifts."""
-    zpos = np.pad(mask_bool[:-1, :, :], ((1, 0), (0, 0), (0, 0)), mode="constant", constant_values=False)
-    zneg = np.pad(mask_bool[1:, :, :], ((0, 1), (0, 0), (0, 0)), mode="constant", constant_values=False)
-    ypos = np.pad(mask_bool[:, :-1, :], ((0, 0), (1, 0), (0, 0)), mode="constant", constant_values=False)
-    yneg = np.pad(mask_bool[:, 1:, :], ((0, 0), (0, 1), (0, 0)), mode="constant", constant_values=False)
-    xpos = np.pad(mask_bool[:, :, :-1], ((0, 0), (0, 0), (1, 0)), mode="constant", constant_values=False)
-    xneg = np.pad(mask_bool[:, :, 1:], ((0, 0), (0, 0), (0, 1)), mode="constant", constant_values=False)
-    return mask_bool | zpos | zneg | ypos | yneg | xpos | xneg
+    """Single-iteration 3D dilation using 6-neighborhood via bitwise shifts.
+    mask_bool is shape (Z, Y, X), dtype=bool.
+    """
+    zpos = np.pad(mask_bool[:-1, :, :], ((1,0),(0,0),(0,0)), mode='constant', constant_values=False)
+    zneg = np.pad(mask_bool[1:,  :, :], ((0,1),(0,0),(0,0)), mode='constant', constant_values=False)
+    ypos = np.pad(mask_bool[:, :-1, :], ((0,0),(1,0),(0,0)), mode='constant', constant_values=False)
+    yneg = np.pad(mask_bool[:, 1:,  :], ((0,0),(0,1),(0,0)), mode='constant', constant_values=False)
+    xpos = np.pad(mask_bool[:, :, :-1], ((0,0),(0,0),(1,0)), mode='constant', constant_values=False)
+    xneg = np.pad(mask_bool[:, :, 1: ], ((0,0),(0,0),(0,1)), mode='constant', constant_values=False)
+    out = mask_bool | zpos | zneg | ypos | yneg | xpos | xneg
+    return out
 
 def _bitwise_erode6(mask_bool: np.ndarray) -> np.ndarray:
-    """Single-iteration 3D erosion using 6-neighborhood via bitwise shifts."""
-    zpos = np.pad(mask_bool[:-1, :, :], ((1, 0), (0, 0), (0, 0)), mode="constant", constant_values=False)
-    zneg = np.pad(mask_bool[1:, :, :], ((0, 1), (0, 0), (0, 0)), mode="constant", constant_values=False)
-    ypos = np.pad(mask_bool[:, :-1, :], ((0, 0), (1, 0), (0, 0)), mode="constant", constant_values=False)
-    yneg = np.pad(mask_bool[:, 1:, :], ((0, 0), (0, 1), (0, 0)), mode="constant", constant_values=False)
-    xpos = np.pad(mask_bool[:, :, :-1], ((0, 0), (0, 0), (1, 0)), mode="constant", constant_values=False)
-    xneg = np.pad(mask_bool[:, :, 1:], ((0, 0), (0, 0), (0, 1)), mode="constant", constant_values=False)
-    return mask_bool & zpos & zneg & ypos & yneg & xpos & xneg
+    """Single-iteration 3D erosion using 6-neighborhood via bitwise shifts.
+    mask_bool is shape (Z, Y, X), dtype=bool.
+    """
+    zpos = np.pad(mask_bool[:-1, :, :], ((1,0),(0,0),(0,0)), mode='constant', constant_values=False)
+    zneg = np.pad(mask_bool[1:,  :, :], ((0,1),(0,0),(0,0)), mode='constant', constant_values=False)
+    ypos = np.pad(mask_bool[:, :-1, :], ((0,0),(1,0),(0,0)), mode='constant', constant_values=False)
+    yneg = np.pad(mask_bool[:, 1:,  :], ((0,0),(0,1),(0,0)), mode='constant', constant_values=False)
+    xpos = np.pad(mask_bool[:, :, :-1], ((0,0),(0,0),(1,0)), mode='constant', constant_values=False)
+    xneg = np.pad(mask_bool[:, :, 1: ], ((0,0),(0,0),(0,1)), mode='constant', constant_values=False)
+    out = mask_bool & zpos & zneg & ypos & yneg & xpos & xneg
+    return out
 
-def proximity_bridge(mask_u8: np.ndarray, max_dist: int = 8) -> np.ndarray:
-    """Bridge disconnected components within a small Chebyshev distance."""
+def proximity_bridge(mask_u8: np.ndarray, max_dist: int = 2) -> np.ndarray:
+    """
+    Bridge disconnected components that are within `max_dist` voxels of each other.
+    - mask_u8: uint8 mask (Z,Y,X)
+    - max_dist: Chebyshev distance threshold (voxels)
+
+    Strategy:
+        1. Dilate mask by max_dist
+        2. Compute potential bridging voxels that lie between disconnected components
+        3. Activate these voxels in the output mask
+    """
     mask = (mask_u8 > 0)
     if max_dist <= 0:
         return mask_u8
 
+    # Step 1: Chebyshev dilation (cube of size (2*max_dist+1))
     size = 2 * max_dist + 1
     kernel = np.ones((size, size, size), dtype=bool)
     dil = binary_dilation(mask, structure=kernel)
+
+    # Step 2: bridging candidates = dilated minus original
     bridge = dil & (~mask)
 
+    # Step 3: activate only voxels that lie between ≥2 different components
+    # Identify connected components
     labeled, num = measure.label(mask.astype(np.uint8), return_num=True, connectivity=1)
-    if num <= 1:
-        return mask.astype(np.uint8)
 
+    if num <= 1:
+        # nothing to connect
+        out = mask.copy()
+        return out.astype(np.uint8)
+
+    # For each bridging voxel, check if neighboring labels belong to >=2 components
     Z, Y, X = np.where(bridge)
     out = mask.copy()
+
     for z, y, x in zip(Z, Y, X):
+        # Neighborhood (6-connectivity)
         neigh = []
-        if z > 0:
-            neigh.append(labeled[z - 1, y, x])
-        if z < labeled.shape[0] - 1:
-            neigh.append(labeled[z + 1, y, x])
-        if y > 0:
-            neigh.append(labeled[z, y - 1, x])
-        if y < labeled.shape[1] - 1:
-            neigh.append(labeled[z, y + 1, x])
-        if x > 0:
-            neigh.append(labeled[z, y, x - 1])
-        if x < labeled.shape[2] - 1:
-            neigh.append(labeled[z, y, x + 1])
+        if z > 0:     neigh.append(labeled[z-1, y, x])
+        if z < labeled.shape[0]-1: neigh.append(labeled[z+1, y, x])
+        if y > 0:     neigh.append(labeled[z, y-1, x])
+        if y < labeled.shape[1]-1: neigh.append(labeled[z, y+1, x])
+        if x > 0:     neigh.append(labeled[z, y, x-1])
+        if x < labeled.shape[2]-1: neigh.append(labeled[z, y, x+1])
 
         neigh = [n for n in neigh if n != 0]
+
         if len(set(neigh)) >= 2:
             out[z, y, x] = True
 
     return out.astype(np.uint8)
 
-def apply_roi_scale(
+def apply_roi_morphology(
     inside_u8: np.ndarray,
-    center_ijk: tuple[int, int, int],
+    i_idx: int,
+    j_idx: int,
+    k_idx: int,
     r_vox: int,
-    scale_factor: float,
-    bridge_dist: int = 2,
-    shape_k: float = 10.0,
-    shape_window: tuple[float, float] = (0.25, 0.75),
+    iterations: int = 1,
+    mode: str = "dilate",
 ) -> np.ndarray:
-    """Scale vessel diameter within a spherical ROI using bitwise morphology."""
-    if inside_u8 is None:
-        return inside_u8
-    try:
-        sf = float(scale_factor)
-    except (TypeError, ValueError):
-        return inside_u8
+    """
+    Apply iterative 3D dilation or shrink (erosion) confined to a spherical ROI.
 
-    r0 = int(round(r_vox))
-    if r0 <= 0 or sf == 1.0:
-        return inside_u8
+    Steps
+    - Use filter_inside_by_roi to split the global inside mask into:
+      inside_in_roi, inside_outside_roi.
+    - Apply `iterations` rounds of bitwise morphology (6-neighborhood) to
+      inside_in_roi only, clamping to the ROI so changes don't leak outside.
+    - Recombine with inside_outside_roi to form the new global inside mask.
 
-    # Convert scale factor to voxel diameter space for 1-voxel iterations.
-    base_diam = max(1, int(round(2 * r0)))
-    target_diam = max(0, int(round(base_diam * sf)))
-    r1 = int(round(target_diam / 2.0))
-    if r1 == r0:
-        return inside_u8
+    Parameters
+    - inside_u8: uint8 global inside mask (Z,Y,X)
+    - i_idx, j_idx, k_idx: center of ROI in voxel indices (i=X, j=Y, k=Z)
+    - r_vox: ROI radius in voxels
+    - iterations: number of iterative morphology steps
+    - mode: 'dilate' to expand, 'shrink' to erode
 
-    inside_bool = (inside_u8 > 0)
-    if r1 <= 0:
-        r1 = 1
+    Returns
+    - uint8 global inside mask after local morphology within ROI.
+    """
+    if iterations is None or iterations <= 0:
+        return (inside_u8 > 0).astype(np.uint8)
 
-    # Ensure target ROI contains at least one voxel of volume.
-    roi_target = _roi_mask_vox(inside_u8.shape, center_ijk, r1)
-    if np.sum(roi_target) < 1:
-        r1 = 1
-        roi_target = _roi_mask_vox(inside_u8.shape, center_ijk, r1)
+    roi_inside_u8, outside_roi_inside_u8 = filter_inside_by_roi(inside_u8, i_idx, j_idx, k_idx, r_vox)
 
-    # Step ROI size toward target, applying one morphology iteration per step.
-    mode = "dilate" if r1 > r0 else "erode"
-    step = 1 if r1 > r0 else -1
-    r_current = r0
-    current_inside = inside_bool.copy()
-    last_valid_inside = current_inside.copy()
-    min_roi_fraction = 0.05
-    initial_roi = _roi_mask_vox(current_inside.shape, center_ijk, r_current)
-    initial_count = int(np.sum(current_inside & initial_roi))
-    min_inside = max(1, int(round(initial_count * min_roi_fraction)))
-    total_steps = abs(r1 - r0)
-    step_idx = 0
-    accum = 0.0
+    # Build ROI boolean from geometry (always clamp to the full spherical ROI)
+    Nz, Ny, Nx = inside_u8.shape
+    ii = np.arange(Nx) - int(i_idx)
+    jj = np.arange(Ny) - int(j_idx)
+    kk = np.arange(Nz) - int(k_idx)
+    rr2 = (ii * ii)[None, None, :] + (jj * jj)[None, :, None] + (kk * kk)[:, None, None]
+    roi_bool = rr2 <= (int(r_vox) * int(r_vox))
 
-    while r_current != r1:
-        roi_current = _roi_mask_vox(current_inside.shape, center_ijk, r_current)
-        inside_in_roi = current_inside & roi_current
-        outside = current_inside & (~roi_current)
-
-        x = 0.5
-        if total_steps > 1:
-            x = step_idx / float(total_steps - 1)
-
-        w0, w1 = shape_window
-        w0 = max(0.0, min(1.0, float(w0)))
-        w1 = max(0.0, min(1.0, float(w1)))
-        if w1 <= w0:
-            w0, w1 = 0.25, 0.75
-        if x < w0 or x > w1:
-            s = 0.0
+    work = roi_inside_u8.astype(bool)
+    for _ in range(int(iterations)):
+        if mode == "dilate":
+            work = _bitwise_dilate6(work)
+        elif mode in ("shrink", "erode", "erosion"):
+            work = _bitwise_erode6(work)
         else:
-            x = (x - w0) / (w1 - w0)
-            s = _gaussian_shape(x, shape_k)
+            raise ValueError("mode must be 'dilate' or 'shrink' (alias: 'erode','erosion')")
+        # Clamp to ROI to prevent leaking outside
+        work = work & roi_bool
 
-        accum += s
-        apply_step = accum >= 1.0
-        if apply_step:
-            accum -= 1.0
+    # Recompose: updated ROI portion + untouched outside-ROI portion
+    updated_roi_u8 = work.astype(np.uint8)
+    new_inside = ((outside_roi_inside_u8 > 0) | (updated_roi_u8 > 0)).astype(np.uint8)
+    # Bridge any ROI→non-ROI pairs within 2 voxels
+    new_inside = proximity_bridge(new_inside, max_dist=2)
+    
+    return new_inside
 
-        work = inside_in_roi
-        if apply_step:
-            if mode == "dilate":
-                work = _bitwise_dilate6(inside_in_roi)
-            else:
-                work = _bitwise_erode6(inside_in_roi)
+def _sigmoid_iteration_schedule(num_steps: int, total_iters: int) -> np.ndarray:
+    """
+    Distribute `total_iters` across `num_steps` with a slow-fast-slow profile.
+    Uses a Hann window to produce low weights at the ends and high in the middle.
 
-        # Clamp to current ROI for this iteration.
-        work = work & roi_current
-        merged = (outside | work).astype(np.uint8)
-        if bridge_dist and bridge_dist > 0:
-            merged = proximity_bridge(merged, max_dist=bridge_dist)
-        current_inside = (merged > 0)
+    Returns an int array of length `num_steps` with at least 1 per step
+    and approximately summing to `total_iters`.
+    """
+    if num_steps <= 0 or total_iters <= 0:
+        return np.array([], dtype=int)
 
-        # Safety: never erase the ROI completely during erosion.
-        if mode == "erode":
-            roi_after = _roi_mask_vox(current_inside.shape, center_ijk, r_current)
-            if int(np.sum(current_inside & roi_after)) < min_inside:
-                current_inside = last_valid_inside
-                break
-            last_valid_inside = current_inside.copy()
+    t = np.linspace(0.0, 1.0, num_steps)
+    weights = 0.5 - 0.5 * np.cos(2.0 * np.pi * t)  # Hann window: 0 at ends, peak mid
+    weights = weights + 1e-6  # avoid exact zeros
+    weights = weights / np.sum(weights) * float(total_iters)
 
-        r_current += step
-        step_idx += 1
+    iters = np.maximum(1, np.round(weights).astype(int))
+    diff = int(total_iters - int(np.sum(iters)))
+    if diff != 0:
+        # Adjust to match total_iters by tweaking largest/smallest weights
+        order = np.argsort(-weights) if diff > 0 else np.argsort(weights)
+        for idx in order[:abs(diff)]:
+            iters[idx] += 1 if diff > 0 else -1
+            if iters[idx] < 1:
+                iters[idx] = 1
+    return iters
 
-    return current_inside.astype(np.uint8)
+def _sigmoid_sparse_apply_schedule(total_ticks: int, num_applies: int) -> np.ndarray:
+    """
+    Build a boolean schedule of length `total_ticks` marking which ticks should
+    apply a single-iteration morphology step. The placement follows a
+    slow–fast–slow (sigmoidal) density using a Hann window: denser in the
+    middle, sparser at the ends. Ensures exactly `num_applies` True entries
+    (clamped to `total_ticks`).
+
+    This keeps each morphology change to a single-voxel iteration so
+    `proximity_bridge` can reliably handle gaps.
+    """
+    if total_ticks <= 0 or num_applies <= 0:
+        return np.zeros(max(0, total_ticks), dtype=bool)
+    num_applies = min(num_applies, total_ticks)
+
+    # Hann window weights across ticks (exclude endpoint to avoid duplicate zero)
+    t = np.linspace(0.0, 1.0, total_ticks, endpoint=False)
+    weights = 0.5 - 0.5 * np.cos(2.0 * np.pi * t)
+
+    order = np.argsort(-weights)  # descending by weight (middle first)
+    chosen = order[:num_applies]
+    schedule = np.zeros(total_ticks, dtype=bool)
+    schedule[chosen] = True
+    return schedule
 
 def show_viewer_dash(
     mesh,
@@ -2048,52 +1841,19 @@ def show_viewer_dash(
     Nz, Ny, Nx = mask_layers[0]["mask"].shape
     x_mid, y_mid, z_mid = Nx // 2, Ny // 2, Nz // 2
 
-    mesh_trace = None
-    if mesh is not None:
-        mesh_trace = go.Mesh3d(
-            x=mesh.vertices[:, 0], y=mesh.vertices[:, 1], z=mesh.vertices[:, 2],
-            i=mesh.faces[:, 0], j=mesh.faces[:, 1], k=mesh.faces[:, 2],
-            name="mesh", color=COLOR_SCHEME["mesh"], opacity=OPACITY_LEVELS["low"]
-        )
+    # Mesh (as loaded, centered at origin)
+    mesh_trace = go.Mesh3d(
+        x=mesh.vertices[:, 0], y=mesh.vertices[:, 1], z=mesh.vertices[:, 2],
+        i=mesh.faces[:, 0], j=mesh.faces[:, 1], k=mesh.faces[:, 2],
+        name="mesh", color=COLOR_SCHEME["mesh"], opacity=OPACITY_LEVELS["low"]
+    )
+    # We will recompute the inside trace dynamically to reflect morphology changes
+    # inside_trace = mask_to_trace(inside_u8, grid, "#3B82F6", "inside", 0.35)
+    on_trace     = mask_to_trace(on_u8,     grid, "#22C55E", "on",     0.55)
+    out_trace    = mask_to_trace(out_u8,    grid, "#F59E0B", "out",    0.08)
 
-    layer_states: dict[str, dict] = {}
-    for idx, layer in enumerate(mask_layers):
-        layer_id = layer["id"]
-        color = layer.get("color", LABEL_COLOR_PALETTE[idx % len(LABEL_COLOR_PALETTE)])
-        opacity = layer.get("opacity", OPACITY_LEVELS["mid"])
-        mask = layer["mask"].astype(np.uint8)
-        layer_states[layer_id] = {
-            "id": layer_id,
-            "name": layer.get("name", layer_id),
-            "current": mask.copy(),
-            "original": mask.copy(),
-            "trace": mask_to_trace(mask, grid, color, layer.get("name", layer_id), opacity),
-            "color": color,
-            "opacity": opacity,
-            "editable": bool(layer.get("editable", True)),
-            "exclusive_group": layer.get("exclusive_group"),
-            "volume_kind": layer.get("volume_kind", "labels"),
-            "scalar_data": layer.get("scalar_data"),
-            "scalar_range": layer.get("scalar_range"),
-        }
-
-    layer_options = [
-        {"label": state["name"], "value": layer_id}
-        for layer_id, state in layer_states.items()
-    ]
-    editable_options = [
-        {"label": state["name"], "value": layer_id}
-        for layer_id, state in layer_states.items()
-        if state["editable"]
-    ]
-    if not editable_options:
-        editable_options = layer_options
-    target_default = editable_options[0]["value"]
-    nonempty_ids = [
-        layer_id for layer_id, state in layer_states.items()
-        if int(np.sum(state["current"])) > 0
-    ]
-    default_visible = nonempty_ids[:8] if nonempty_ids else [target_default]
+    # Mutable state for inside mask so we can apply morphology and reset
+    inside_state = {"inside": inside_u8.copy(), "original": inside_u8.copy()}
 
     app = dash.Dash(__name__)
     panel_card = {
@@ -2847,268 +2607,89 @@ def show_viewer_dash(
                             dcc.Slider(id="z-slider", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag", marks=None, className="slider-z"),
                         ]
                     ),
-                    html.Div(
-                        style=panel_card,
-                        children=[
-                            dcc.Tabs(
-                                id="tool-tabs",
-                                value="roi",
-                                children=[
-                                    dcc.Tab(
-                                        label="ROI",
-                                        value="roi",
-                                        children=[
-                                            html.Div(
-                                                style={"display": "flex", "flexDirection": "column", "gap": "8px", "padding": "4px 0"},
-                                                children=[
-                                                    html.Div("ROI", style={"fontWeight": "600"}),
-                                                    html.Div(
-                                                        style=control_row,
-                                                        children=[
-                                                            html.Label("P1 (i, j, k)", style={"flex": "1 1 auto"}),
-                                                            html.Button("Set from view", id="p1-set-btn",
-                                                                        style={"background": "#1f2937", "color": "#e5e7eb",
-                                                                               "border": "1px solid #2b3347", "borderRadius": "6px",
-                                                                               **button_compact})
-                                                        ]
-                                                    ),
-                                                    dcc.Slider(id="p1-x", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag", marks=None, className="slider-x"),
-                                                    dcc.Slider(id="p1-y", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag", marks=None, className="slider-y"),
-                                                    dcc.Slider(id="p1-z", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag", marks=None, className="slider-z"),
-                                                    html.Div(
-                                                        style=control_row,
-                                                        children=[
-                                                            dcc.Input(id="p1-color", type="color", value=COLOR_SCHEME["roi_p1"], style=color_chip),
-                                                            html.Div("Opacity", style={"fontSize": "11px", "minWidth": "54px"}),
-                                                            html.Div(
-                                                                dcc.Slider(id="p1-opacity", min=0.05, max=1.0, step=0.05, value=ROI_DEFAULTS["p1_opacity"], updatemode="drag", marks=None),
-                                                                style=slider_compact
-                                                            )
-                                                        ]
-                                                    ),
-                                                    html.Div(
-                                                        style={**control_row, "marginTop": "6px"},
-                                                        children=[
-                                                            html.Label("P2 (i, j, k)", style={"flex": "1 1 auto"}),
-                                                            html.Button("Set from view", id="p2-set-btn",
-                                                                        style={"background": "#1f2937", "color": "#e5e7eb",
-                                                                               "border": "1px solid #2b3347", "borderRadius": "6px",
-                                                                               **button_compact})
-                                                        ]
-                                                    ),
-                                                    dcc.Slider(id="p2-x", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag", marks=None, className="slider-x"),
-                                                    dcc.Slider(id="p2-y", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag", marks=None, className="slider-y"),
-                                                    dcc.Slider(id="p2-z", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag", marks=None, className="slider-z"),
-                                                    html.Div(
-                                                        style=control_row,
-                                                        children=[
-                                                            dcc.Input(id="p2-color", type="color", value=COLOR_SCHEME["roi_p2"], style=color_chip),
-                                                            html.Div("Opacity", style={"fontSize": "11px", "minWidth": "54px"}),
-                                                            html.Div(
-                                                                dcc.Slider(id="p2-opacity", min=0.05, max=1.0, step=0.05, value=ROI_DEFAULTS["p2_opacity"], updatemode="drag", marks=None),
-                                                                style=slider_compact
-                                                            )
-                                                        ]
-                                                    ),
-                                                    html.Label("ROI line", style={"marginTop": "6px"}),
-                                                    html.Div(
-                                                        style=control_row,
-                                                        children=[
-                                                            dcc.Input(id="roi-line-color", type="color", value=COLOR_SCHEME["roi_line"], style=color_chip),
-                                                            html.Div("Opacity", style={"fontSize": "11px", "minWidth": "54px"}),
-                                                            html.Div(
-                                                                dcc.Slider(id="roi-line-opacity", min=0.05, max=1.0, step=0.05, value=ROI_DEFAULTS["line_opacity"], updatemode="drag", marks=None),
-                                                                style=slider_compact
-                                                            )
-                                                        ]
-                                                    ),
-                                                    html.Label("ROI sphere", style={"marginTop": "6px"}),
-                                                    html.Div(
-                                                        style=control_row,
-                                                        children=[
-                                                            dcc.Input(id="roi-sphere-color", type="color", value=COLOR_SCHEME["roi_sphere"], style=color_chip),
-                                                            html.Div("Opacity", style={"fontSize": "11px", "minWidth": "54px"}),
-                                                            html.Div(
-                                                                dcc.Slider(id="roi-sphere-opacity", min=0.05, max=1.0, step=0.05, value=ROI_DEFAULTS["sphere_opacity"], updatemode="drag", marks=None),
-                                                                style=slider_compact
-                                                            )
-                                                        ]
-                                                    )
-                                                ]
-                                            )
-                                        ]
+                    html.Hr(),
+                    dcc.Tabs(id="tools-tabs", value="roi", children=[
+                        dcc.Tab(label="ROI", value="roi", children=[
+                            html.Div([
+                                html.Div("ROI (sphere)", style={"fontWeight": 600, "opacity": 0.9}),
+                                dcc.Tabs(id="roi-mode-tabs", value="center", children=[
+                                    dcc.Tab(label="Center + Radius", value="center", children=[
+                                        html.Label("ROI X (i)"),
+                                        dcc.Slider(id="roi-x", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
+                                        html.Label("ROI Y (j)"),
+                                        dcc.Slider(id="roi-y", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
+                                        html.Label("ROI Z (k)"),
+                                        dcc.Slider(id="roi-z", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
+                                        html.Label("ROI Radius (voxels)"),
+                                        dcc.Slider(id="roi-r", min=0, max=int(max(Nx, Ny, Nz)//2), step=1, value=1, updatemode="drag",
+                                                   tooltip={"always_visible": False, "placement": "bottom"}),
+                                    ]),
+                                    dcc.Tab(label="Two Points", value="twopoints", children=[
+                                        html.Div("Point A", style={"fontWeight": 600, "opacity": 0.9, "marginTop": "6px"}),
+                                        html.Label("A: i"),
+                                        dcc.Slider(id="pA-i", min=0, max=Nx-1, step=1, value=x_mid, updatemode="drag"),
+                                        html.Label("A: j"),
+                                        dcc.Slider(id="pA-j", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
+                                        html.Label("A: k"),
+                                        dcc.Slider(id="pA-k", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
+                                        html.Div("Point B", style={"fontWeight": 600, "opacity": 0.9, "marginTop": "6px"}),
+                                        html.Label("B: i"),
+                                        dcc.Slider(id="pB-i", min=0, max=Nx-1, step=1, value=x_mid+1 if x_mid+1 < Nx else x_mid, updatemode="drag"),
+                                        html.Label("B: j"),
+                                        dcc.Slider(id="pB-j", min=0, max=Ny-1, step=1, value=y_mid, updatemode="drag"),
+                                        html.Label("B: k"),
+                                        dcc.Slider(id="pB-k", min=0, max=Nz-1, step=1, value=z_mid, updatemode="drag"),
+                                        html.Div("Note: Sphere center = midpoint(A,B); radius = half distance(A,B)",
+                                                 style={"fontSize": "12px", "opacity": 0.8, "marginTop": "6px"}),
+                                    ])
+                                ])
+                            ], style={"padding": "6px"})
+                        ]),
+                        dcc.Tab(label="Operations", value="ops", children=[
+                            html.Div([
+                                html.Div("Morphology Mode", style={"fontWeight": 600, "opacity": 0.9}),
+                                dcc.RadioItems(
+                                    id="morph-ui-mode",
+                                    options=[
+                                        {"label": " Manual", "value": "manual"},
+                                        {"label": " Automated (percent diameter stenosis)", "value": "auto"},
+                                    ],
+                                    value="manual",
+                                    labelStyle={"display": "block", "marginBottom": "4px"}
+                                ),
+                                html.Div(id="ops-manual", children=[
+                                    dcc.RadioItems(
+                                        id="morph-mode",
+                                        options=[
+                                            {"label": " Dilate", "value": "dilate"},
+                                            {"label": " Erode (shrink)", "value": "shrink"},
+                                        ],
+                                        value="dilate",
+                                        labelStyle={"display": "block", "marginBottom": "4px"}
                                     ),
-                                    dcc.Tab(
-                                        label="Stenosis",
-                                        value="stenosis",
-                                        children=[
-                                            html.Div(
-                                                style={"display": "flex", "flexDirection": "column", "gap": "8px", "padding": "4px 0"},
-                                                children=[
-                                                    html.Div("ROI Morphology", style={"fontWeight": "600"}),
-                                                    html.Div(
-                                                        "Target label",
-                                                        style={
-                                                            "fontSize": "12px",
-                                                            "opacity": "0.85",
-                                                            **({"display": "none"} if is_scalar_volume else {})
-                                                        }
-                                                    ),
-                                                    dcc.Dropdown(
-                                                        id="target-label",
-                                                        options=editable_options,
-                                                        value=target_default,
-                                                        clearable=False,
-                                                        style={
-                                                            **dropdown_compact,
-                                                            **({"display": "none"} if is_scalar_volume else {})
-                                                        }
-                                                    ),
-                                                    html.Div("Scale factor (diameter)", style={"fontSize": "12px", "opacity": "0.85"}),
-                                                    html.Div(id="roi-scale-display", style={"fontSize": "12px", "opacity": "0.85"}),
-                                                    dcc.Slider(
-                                                        id="roi-scale-pos",
-                                                        min=0.0,
-                                                        max=1.0,
-                                                        step=0.001,
-                                                        value=0.5,
-                                                        updatemode="drag",
-                                                        marks=None
-                                                    ),
-                                                    dcc.Input(
-                                                        id="roi-scale-input",
-                                                        type="number",
-                                                        min=0.001,
-                                                        max=99.999,
-                                                        step=0.001,
-                                                        value=1.000,
-                                                        style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                               "border": "1px solid #2a2f3a", "borderRadius": "6px",
-                                                               "padding": "4px 6px"}
-                                                    ),
-                                                    html.Div("Gaussian profile", style={"fontSize": "12px", "opacity": "0.85"}),
-                                                    html.Div(
-                                                        style={"display": "flex", "flexDirection": "column", "gap": "6px"},
-                                                        children=[
-                                                            html.Div(
-                                                                style={"display": "flex", "alignItems": "center", "gap": "6px"},
-                                                                children=[
-                                                                    html.Div("Steepness k", style={"fontSize": "12px", "opacity": "0.85"}),
-                                                                    html.Span("i", title="Steepness for Gaussian profile (larger k = sharper).",
-                                                                              style={"fontSize": "11px", "opacity": "0.7", "cursor": "help"})
-                                                                ]
-                                                            ),
-                                                            dcc.Input(
-                                                                id="shape-k",
-                                                                type="number",
-                                                                min=0.1,
-                                                                max=100.0,
-                                                                step=0.1,
-                                                                value=10.0,
-                                                                style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                                       "border": "1px solid #2a2f3a", "borderRadius": "6px",
-                                                                       "padding": "4px 6px"}
-                                                            )
-                                                        ]
-                                                    ),
-                                                    html.Div("Transition window", style={"fontSize": "12px", "opacity": "0.85"}),
-                                                    dcc.RangeSlider(
-                                                        id="shape-window",
-                                                        min=0.0,
-                                                        max=1.0,
-                                                        step=0.01,
-                                                        value=[0.25, 0.75],
-                                                        allowCross=False,
-                                                        marks=None
-                                                    ),
-                                                    dcc.Checklist(
-                                                        id="shape-symmetric",
-                                                        options=[{"label": " Symmetric window", "value": "on"}],
-                                                        value=["on"],
-                                                        inputStyle={"marginRight": "6px"}
-                                                    ),
-                                                    html.Div("< 1 erosion, > 1 dilation", style={"fontSize": "11px", "opacity": "0.7"}),
-                                                    html.Button("Apply", id="roi-scale-apply",
-                                                                style={"background": "#16A34A", "color": "white",
-                                                                       "border": "none", "borderRadius": "6px",
-                                                                       **button_compact})
-                                                    ,
-                                                    html.Div("Batch export", style={"fontWeight": "600", "marginTop": "8px"}),
-                                                    html.Div("Output folder", style={"fontSize": "12px", "opacity": "0.85"}),
-                                                    dcc.Input(
-                                                        id="roi-batch-out-dir",
-                                                        type="text",
-                                                        value="outputs/stenosis_batch",
-                                                        style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                               "border": "1px solid #2a2f3a", "borderRadius": "6px",
-                                                               "padding": "4px 6px"}
-                                                    ),
-                                                    html.Div("Scale factor range", style={"fontSize": "12px", "opacity": "0.85"}),
-                                                    html.Div(
-                                                        style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "6px",
-                                                               "fontSize": "11px", "opacity": "0.7"},
-                                                        children=["min", "max", "count"]
-                                                    ),
-                                                    html.Div(
-                                                        style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "6px"},
-                                                        children=[
-                                                            dcc.Input(id="roi-batch-scale-min", type="number", value=0.8, step=0.01,
-                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
-                                                                             "padding": "4px 6px"}),
-                                                            dcc.Input(id="roi-batch-scale-max", type="number", value=1.2, step=0.01,
-                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
-                                                                             "padding": "4px 6px"}),
-                                                            dcc.Input(id="roi-batch-scale-count", type="number", value=5, step=1,
-                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
-                                                                             "padding": "4px 6px"})
-                                                        ]
-                                                    ),
-                                                    html.Div("Gaussian k range", style={"fontSize": "12px", "opacity": "0.85"}),
-                                                    html.Div(
-                                                        style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "6px",
-                                                               "fontSize": "11px", "opacity": "0.7"},
-                                                        children=["min", "max", "count"]
-                                                    ),
-                                                    html.Div(
-                                                        style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "6px"},
-                                                        children=[
-                                                            dcc.Input(id="roi-batch-k-min", type="number", value=6.0, step=0.1,
-                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
-                                                                             "padding": "4px 6px"}),
-                                                            dcc.Input(id="roi-batch-k-max", type="number", value=14.0, step=0.1,
-                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
-                                                                             "padding": "4px 6px"}),
-                                                            dcc.Input(id="roi-batch-k-count", type="number", value=5, step=1,
-                                                                      style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-                                                                             "border": "1px solid #2a2f3a", "borderRadius": "6px",
-                                                                             "padding": "4px 6px"})
-                                                        ]
-                                                    ),
-                                                    html.Button("Export batch", id="roi-batch-export",
-                                                                style={"background": "#0EA5E9", "color": "white",
-                                                                       "border": "none", "borderRadius": "6px",
-                                                                       **button_compact}),
-                                                    dcc.Checklist(
-                                                        id="roi-batch-stl",
-                                                        options=[{"label": " Export STL", "value": "on"}],
-                                                        value=["on"],
-                                                        inputStyle={"marginRight": "6px"}
-                                                    ),
-                                                    html.Div(id="roi-batch-status", style={"fontSize": "12px", "opacity": "0.85"})
-                                                ]
-                                            )
-                                        ]
-                                    )
-                                ]
-                            )
-                        ]
-                    ),
-                    html.Div(id="status", style={"fontSize": "12px", "marginTop": "4px"})
+                                    html.Label("Iterations"),
+                                    dcc.Input(id="morph-iters", type="number", min=1, step=1, value=1,
+                                              style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                     "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                    html.Button("Apply Morphology", id="apply-morph",
+                                                style={"background": "#16A34A", "color": "white",
+                                                       "border": "none", "padding": "6px 10px",
+                                                       "borderRadius": "6px", "marginTop": "6px"}),
+                                ], style={"marginTop": "8px"}),
+                                html.Div(id="ops-auto", children=[
+                                    html.Label("Percent Diameter Stenosis (%)"),
+                                    dcc.Input(id="stenosis-pct", type="number", min=1, max=99, step=1, value=50,
+                                              style={"width": "100%", "backgroundColor": "#0f1115", "color": "#e6e6e6",
+                                                     "border": "1px solid #2a2f3a", "borderRadius": "6px", "padding": "4px 6px"}),
+                                    html.Button("Run Automated Stenosis", id="apply-auto",
+                                                style={"background": "#F59E0B", "color": "black",
+                                                       "border": "none", "padding": "6px 10px",
+                                                       "borderRadius": "6px", "marginTop": "6px"}),
+                                ], style={"marginTop": "8px"}),
+                            ], style={"padding": "6px"})
+                        ]),
+                    ]),
+                    html.Div(id="status", style={"fontSize": "12px", "marginTop": "8px"})
                 ]
             ),
             html.Div(
@@ -3121,7 +2702,8 @@ def show_viewer_dash(
                     dcc.Store(id="camera-store"),
                     dcc.Store(id="wheel-store"),
                     dcc.Store(id="hover-store"),
-                    dcc.Store(id="catch-store")
+                    dcc.Store(id="catch-store"),
+                    dcc.Store(id="fakect-store")
                 ]
             ),
             html.Button(
@@ -3646,6 +3228,73 @@ def show_viewer_dash(
         )
 
     @app.callback(
+        Output("fakect-status", "children"),
+        Output("fakect-store", "data"),
+        Input("fakect-apply", "n_clicks"),
+        State("fakect-model", "value"),
+        State("fakect-model-path", "value"),
+        State("fakect-mask-source", "value"),
+        State("fakect-axis", "value"),
+        State("fakect-context-step", "value"),
+        prevent_initial_call=True
+    )
+    def apply_fakect(n_clicks, model_dropdown, model_path, mask_source, axis, context_step):
+        if not n_clicks:
+            raise PreventUpdate
+
+        model_path = (model_path or "").strip() or (model_dropdown or "").strip()
+        if not model_path:
+            return "Select a fakenoise model path.", None
+
+        path = Path(model_path).expanduser().resolve()
+        if not path.exists():
+            return f"Model not found: {path}", None
+
+        try:
+            import tensorflow as tf
+        except Exception:
+            return "TensorFlow is not available. Install tensorflow to run FakeCT.", None
+
+        try:
+            if fakect_state["model_path"] != str(path):
+                fakect_state["model"] = tf.keras.models.load_model(str(path))
+                fakect_state["model_path"] = str(path)
+            model = fakect_state["model"]
+            th, tw, c = _infer_keras_input(model)
+        except Exception as e:
+            return f"Failed to load model: {e}", None
+
+        if mask_source == "on":
+            mask_vol = on_u8
+        elif mask_source == "out":
+            mask_vol = out_u8
+        else:
+            mask_vol = inside_state["inside"]
+
+        try:
+            fakect_state["target_hw"] = (th, tw)
+            fakect_state["input_channels"] = c
+            fakect_state["context_step"] = int(context_step or 1)
+            fakect_state["mask_source"] = mask_source or "inside"
+            fakect_state["volume"] = _predict_fake_volume(
+                mask_vol,
+                model,
+                (th, tw),
+                c,
+                axis=axis or "i",
+                context_step=fakect_state["context_step"]
+            )
+        except Exception as e:
+            return f"FakeCT inference failed: {e}", None
+
+        channel_note = ""
+        if c > 1 and (c - 1) % 2 != 0:
+            channel_note = " (non-symmetric channel count)"
+        axis_label = (axis or "i").lower()
+        msg = f"FakeCT ready: {path.name} | axis={axis_label} | input={th}x{tw}x{c}{channel_note}"
+        return msg, {"ts": time.time()}
+
+    @app.callback(
         Output("x-view", "figure"),
         Output("y-view", "figure"),
         Output("z-view", "figure"),
@@ -3656,85 +3305,154 @@ def show_viewer_dash(
         Input("x-slider", "value"),
         Input("y-slider", "value"),
         Input("z-slider", "value"),
-        Input("p1-x", "value"),
-        Input("p1-y", "value"),
-        Input("p1-z", "value"),
-        Input("p2-x", "value"),
-        Input("p2-y", "value"),
-        Input("p2-z", "value"),
-        Input("p1-color", "value"),
-        Input("p2-color", "value"),
-        Input("p1-opacity", "value"),
-        Input("p2-opacity", "value"),
-        Input("roi-line-color", "value"),
-        Input("roi-line-opacity", "value"),
-         Input("roi-sphere-color", "value"),
-         Input("roi-sphere-opacity", "value"),
-        Input("volume-opacity", "value"),
-        Input("transfer-store", "data"),
-        Input("transfer-color-scheme", "value"),
-        Input("roi-scale-pos", "value"),
-        Input("roi-scale-apply", "n_clicks"),
-        Input("shape-k", "value"),
-        Input("shape-window", "value"),
-        Input("target-label", "value"),
-        Input("threeD-view", "relayoutData"),
+        Input("roi-mode-tabs", "value"),
+        Input("roi-x", "value"),
+        Input("roi-y", "value"),
+        Input("roi-z", "value"),
+        Input("roi-r", "value"),
+        Input("pA-i", "value"),
+        Input("pA-j", "value"),
+        Input("pA-k", "value"),
+        Input("pB-i", "value"),
+        Input("pB-j", "value"),
+        Input("pB-k", "value"),
+        Input("tools-tabs", "value"),
+        Input("morph-ui-mode", "value"),
+        Input("morph-mode", "value"),
+        Input("morph-iters", "value"),
+        Input("apply-morph", "n_clicks"),
+        Input("stenosis-pct", "value"),
+        Input("apply-auto", "n_clicks"),
+        Input("reset-btn", "n_clicks"),
         prevent_initial_call=False
     )
-    def update(vis_data, opacity_data, x_idx, y_idx, z_idx,
-               p1_x, p1_y, p1_z,
-               p2_x, p2_y, p2_z,
-               p1_color, p2_color,
-               p1_opacity, p2_opacity,
-               line_color, line_opacity,
-             sphere_color, sphere_opacity,
-                         volume_opacity,
-             transfer_data,
-             transfer_color_scheme,
-             scale_pos, scale_apply_clicks,
-             shape_k,
-             shape_window,
-             target_label,
-             relayout_data):
+    def update(mask_values, x_idx, y_idx, z_idx, roi_mode,
+               roi_x, roi_y, roi_z, roi_r,
+               pA_i, pA_j, pA_k, pB_i, pB_j, pB_k,
+               tabs_value, ui_mode, morph_mode, morph_iters, apply_clicks,
+               stenosis_pct, apply_auto_clicks, n_clicks):
+        camera_state = None
+        uirev = "viewer"
+        sphere_color = "#E11D48"
+        sphere_opacity = float(OPACITY_LEVELS.get("sphere_opacity", 0.05))
+        fakect_show = []
+        fakect_alpha = 0.6
+
         triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
-        render_mode = "volume" if is_vti_viewer else "surface"
+        if "reset-btn.n_clicks" in triggered:
+            mask_values = ["inside", "on", "out"]
+            x_idx, y_idx, z_idx = x_mid, y_mid, z_mid
+            roi_x, roi_y, roi_z, roi_r = x_mid, y_mid, z_mid, 1
+            pA_i, pA_j, pA_k = x_mid, y_mid, z_mid
+            pB_i, pB_j, pB_k = min(x_mid+1, Nx-1), y_mid, z_mid
+            # Reset the working inside mask
+            inside_state["inside"] = inside_state["original"].copy()
 
-        center_idx = (
-            int(np.clip(round((p1_x + p2_x) / 2.0), 0, Nx - 1)),
-            int(np.clip(round((p1_y + p2_y) / 2.0), 0, Ny - 1)),
-            int(np.clip(round((p1_z + p2_z) / 2.0), 0, Nz - 1))
-        )
-        radius_vox = int(round(0.5 * float(np.linalg.norm(
-            np.array([p2_x - p1_x, p2_y - p1_y, p2_z - p1_z], dtype=float)
-        ))))
-
-        if "roi-scale-apply.n_clicks" in triggered:
-            sf = _pos_to_scale(scale_pos if scale_pos is not None else 0.5)
-            sf = max(0.001, min(99.999, sf))
-            target_label = target_label if target_label in layer_states else target_default
-            layer_states[target_label]["current"] = apply_roi_scale(
-                layer_states[target_label]["current"],
-                center_idx,
-                radius_vox,
-                sf,
-                shape_k=10.0 if shape_k is None else float(shape_k),
-                shape_window=(shape_window[0], shape_window[1]) if shape_window else (0.25, 0.75)
+        # Apply morphology when requested
+        if "apply-morph.n_clicks" in triggered and (ui_mode == "manual"):
+            try:
+                iters = int(morph_iters) if morph_iters is not None else 1
+                iters = max(1, iters)
+            except Exception:
+                iters = 1
+            mode = morph_mode if morph_mode in ("dilate", "shrink") else "dilate"
+            # Update only the inside portion within ROI, keep others untouched, then recombine
+            inside_state["inside"] = apply_roi_morphology(
+                inside_state["inside"], roi_x, roi_y, roi_z, roi_r, iterations=iters, mode=mode
             )
-            apply_exclusive_conflicts(target_label)
-            refresh_layer_trace(target_label)
 
-        # Derive visible_ids and per-layer opacities from stores
-        vis_data = vis_data or {}
-        opacity_data = opacity_data or {}
-        visible_ids = [
-            layer_id for layer_id in layer_states
-            if vis_data.get(layer_id, layer_id in default_visible)
-        ]
+        # Determine effective ROI center+radius depending on ROI mode
+        if roi_mode == "twopoints":
+            # Midpoint center and half-distance radius (in voxels)
+            cx = int(np.round((int(pA_i) + int(pB_i)) / 2))
+            cy = int(np.round((int(pA_j) + int(pB_j)) / 2))
+            cz = int(np.round((int(pA_k) + int(pB_k)) / 2))
+            dx = int(pA_i) - int(pB_i)
+            dy = int(pA_j) - int(pB_j)
+            dz = int(pA_k) - int(pB_k)
+            dist = int(np.round(np.sqrt(dx*dx + dy*dy + dz*dz)))
+            eff_roi_x, eff_roi_y, eff_roi_z = cx, cy, cz
+            eff_roi_r = max(1, dist // 2)
+        else:
+            eff_roi_x, eff_roi_y, eff_roi_z, eff_roi_r = int(roi_x), int(roi_y), int(roi_z), int(roi_r)
 
-        p1 = _voxel_center(grid, p1_x, p1_y, p1_z)
-        p2 = _voxel_center(grid, p2_x, p2_y, p2_z)
-        center = ((p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2.0, (p1[2] + p2[2]) / 2.0)
-        radius = 0.5 * float(np.linalg.norm(np.array(p2) - np.array(p1)))
+        # Automated stenosis: shrink ROI radius using a sparse sigmoidal tick schedule
+        if "apply-auto.n_clicks" in triggered and (ui_mode == "auto"):
+            try:
+                pct = float(stenosis_pct)
+            except Exception:
+                pct = 50.0
+            pct = max(1.0, min(99.0, pct))
+
+            target_r = int(max(0, np.floor(eff_roi_r * (pct / 100.0))))
+            start_r  = int(eff_roi_r)
+            steps = max(0, start_r - target_r)  # number of single-iteration erosions needed
+            auto_status = ""
+            # Safety threshold: do not erode below 10% of the initial in-ROI voxels
+            safety_frac = 0.10
+            base_roi_u8, _ = filter_inside_by_roi(inside_state["inside"], eff_roi_x, eff_roi_y, eff_roi_z, start_r)
+            base_count = int(np.sum(base_roi_u8))
+            safe_min = max(1, int(np.floor(safety_frac * base_count)))
+
+            if steps > 0:
+                # Total time ticks: default to 2×steps (keeps overall duration similar)
+                total_ticks = 2 * steps
+                if total_ticks < steps:
+                    total_ticks = steps
+                apply_ticks = _sigmoid_sparse_apply_schedule(total_ticks, steps)
+
+                current_r = start_r
+                safety_triggered = False
+                applied = 0
+                for tick in range(total_ticks):
+                    if current_r <= target_r:
+                        break
+                    if not apply_ticks[tick]:
+                        continue  # skip this tick to throttle rate (no morphology this tick)
+
+                    # Apply a single-iteration shrink confined to current ROI radius
+                    inside_state["inside"] = apply_roi_morphology(
+                        inside_state["inside"], eff_roi_x, eff_roi_y, eff_roi_z, current_r,
+                        iterations=1, mode="shrink"
+                    )
+                    applied += 1
+
+                    # Safety check: count current in-ROI voxels at this radius
+                    cur_roi_u8, _ = filter_inside_by_roi(inside_state["inside"], eff_roi_x, eff_roi_y, eff_roi_z, current_r)
+                    cur_count = int(np.sum(cur_roi_u8))
+                    if cur_count < safe_min:
+                        safety_triggered = True
+                        auto_status = (
+                            f" | Auto stopped early: r={current_r}, vox={cur_count} < {safe_min}, "
+                            f"applied={applied}/{steps}, ticks={total_ticks}"
+                        )
+                        break
+
+                    current_r -= 1
+
+                if not safety_triggered:
+                    auto_status = f" | Auto done: steps={applied}/{steps}, ticks={total_ticks}"
+            # UI slider for roi-r remains user-controlled; internal loop uses shrinking radii
+
+        active = []
+        show_inside = "inside" in mask_values
+        show_on     = "on"     in mask_values
+        show_out    = "out"    in mask_values
+        if show_inside:
+            active.append(inside_state["inside"])
+        if show_on:
+            active.append(on_u8)
+        if show_out:
+            active.append(out_u8)
+
+        s = float(grid["spacing"][0])
+        ox, oy, oz = grid["origin"]
+        center = (
+            float(ox + (int(eff_roi_x) + 0.5) * s),
+            float(oy + (int(eff_roi_y) + 0.5) * s),
+            float(oz + (int(eff_roi_z) + 0.5) * s),
+        )
+        radius = float(max(0, int(eff_roi_r)) * s)
 
         transfer_points = _sanitize_transfer_points(transfer_data, scalar_min, scalar_max)
         scalar_colorscale = _transfer_colorscale(transfer_color_scheme) if is_scalar_volume else None
@@ -3760,8 +3478,57 @@ def show_viewer_dash(
         roi_y = _roi_slice_mask(grid, "y", y_idx, center, radius)
         roi_z = _roi_slice_mask(grid, "z", z_idx, center, radius)
 
-        if is_scalar_volume:
-            x_fig = _slice_fig(
+        x_fig = _slice_fig(
+            x_slice,
+            f"X-slice (i={x_idx})",
+            COLOR_SCHEME["slice_x"],
+            colorscale=_slice_colorscale(COLOR_SCHEME["slice_x"]),
+            zmax=1
+        )
+        y_fig = _slice_fig(
+            y_slice,
+            f"Y-slice (j={y_idx})",
+            COLOR_SCHEME["slice_y"],
+            colorscale=_slice_colorscale(COLOR_SCHEME["slice_y"]),
+            zmax=1
+        )
+        z_fig = _slice_fig(
+            z_slice,
+            f"Z-slice (k={z_idx})",
+            COLOR_SCHEME["slice_z"],
+            colorscale=_slice_colorscale(COLOR_SCHEME["slice_z"]),
+            zmax=1
+        )
+
+        show_fakect = "on" in (fakect_show or [])
+        fake_vol = fakect_state.get("volume")
+        if show_fakect and isinstance(fake_vol, np.ndarray) and fake_vol.shape == inside_state["inside"].shape:
+            alpha = max(0.0, min(1.0, float(fakect_alpha if fakect_alpha is not None else 0.6)))
+            fake_x = fake_vol[:, :, x_idx]
+            fake_y = fake_vol[:, y_idx, :]
+            fake_z = fake_vol[z_idx, :, :]
+            overlay = dict(colorscale=_binary_colorscale("#ffffff"), showscale=False, opacity=alpha, zmin=0, zmax=1, hoverinfo="skip")
+            x_fig.add_trace(go.Heatmap(z=fake_x, **overlay))
+            y_fig.add_trace(go.Heatmap(z=fake_y, **overlay))
+            z_fig.add_trace(go.Heatmap(z=fake_z, **overlay))
+
+        x_fig.add_trace(_roi_overlay_trace(roi_x, sphere_color, sphere_opacity))
+        y_fig.add_trace(_roi_overlay_trace(roi_y, sphere_color, sphere_opacity))
+        z_fig.add_trace(_roi_overlay_trace(roi_z, sphere_color, sphere_opacity))
+
+        # Rebuild inside surface dynamically from current inside state
+        dyn_inside_trace = mask_to_trace(inside_state["inside"], grid, "#3B82F6", "inside", 0.35) if show_inside else None
+
+        valid_traces = [t for t in [mesh_trace,
+                                    dyn_inside_trace,
+                                    on_trace     if show_on     else None,
+                                    out_trace    if show_out    else None] if t is not None]
+        extent_x, extent_y, extent_z = grid["extent_mm"]
+        aspectratio = _aspectratio_from_extents((extent_x, extent_y, extent_z))
+
+        fig3d = go.Figure(data=valid_traces)
+        plane_traces = [
+            _slice_plane_surface(
                 x_slice,
                 f"X-slice (i={x_idx})",
                 COLOR_SCHEME["slice_x"],
@@ -3937,45 +3704,12 @@ def show_viewer_dash(
                     fig3d.add_trace(plane)
         for frame in _slice_frames(grid, x_idx, y_idx, z_idx):
             fig3d.add_trace(frame)
-        fig3d.add_trace(go.Scatter3d(
-            x=[p1[0]], y=[p1[1]], z=[p1[2]],
-            mode="markers",
-            marker=dict(size=6, color=p1_color, opacity=p1_opacity),
-            name="P1",
-            showlegend=False,
-            hoverinfo="skip"
-        ))
-        fig3d.add_trace(go.Scatter3d(
-            x=[p2[0]], y=[p2[1]], z=[p2[2]],
-            mode="markers",
-            marker=dict(size=6, color=p2_color, opacity=p2_opacity),
-            name="P2",
-            showlegend=False,
-            hoverinfo="skip"
-        ))
-        fig3d.add_trace(go.Scatter3d(
-            x=[p1[0], p2[0]], y=[p1[1], p2[1]], z=[p1[2], p2[2]],
-            mode="lines",
-            line=dict(color=line_color, width=4),
-            opacity=line_opacity,
-            name="ROI line",
-            showlegend=False,
-            hoverinfo="skip"
-        ))
-        sphere = _sphere_surface(center, radius, sphere_color, sphere_opacity)
-        if sphere is not None:
-            fig3d.add_trace(sphere)
-        uirev = "vti-volume" if is_vti_viewer else "mesh-surface"
-        camera_state = None
-        if isinstance(relayout_data, dict):
-            if "scene.camera" in relayout_data:
-                camera_state = relayout_data.get("scene.camera")
-            elif any(k.startswith("scene.camera") for k in relayout_data.keys()):
-                camera_state = {
-                    k.split("scene.camera.", 1)[-1]: v
-                    for k, v in relayout_data.items()
-                    if k.startswith("scene.camera.")
-                }
+
+        # ROI sphere (wireframe)
+        roi_traces = _roi_frame(grid, eff_roi_x, eff_roi_y, eff_roi_z, eff_roi_r,
+                                n_lat=6, n_lon=8, color="#E11D48", line_width=3)
+        for t in roi_traces:
+            fig3d.add_trace(t)
         fig3d.update_layout(
             margin=dict(l=0, r=0, b=0, t=0),
             uirevision=uirev,
@@ -4116,71 +3850,16 @@ def show_viewer_dash(
             raise PreventUpdate
         return catch_data.get("i", p1_x), catch_data.get("j", p1_y), catch_data.get("k", p1_z)
 
-    @app.callback(
-        Output("p2-x", "value"),
-        Output("p2-y", "value"),
-        Output("p2-z", "value"),
-        Input("p2-set-btn", "n_clicks"),
-        State("catch-store", "data"),
-        State("p2-x", "value"),
-        State("p2-y", "value"),
-        State("p2-z", "value"),
-        prevent_initial_call=True
-    )
-    def set_p2_from_catch(n_clicks, catch_data, p2_x, p2_y, p2_z):
-        if not n_clicks or not catch_data:
-            raise PreventUpdate
-        return catch_data.get("i", p2_x), catch_data.get("j", p2_y), catch_data.get("k", p2_z)
-
-    @app.callback(
-        Output("status", "children"),
-        Input("vis-store", "data"),
-        Input("x-slider", "value"),
-        Input("y-slider", "value"),
-        Input("z-slider", "value"),
-        Input("p1-x", "value"),
-        Input("p1-y", "value"),
-        Input("p1-z", "value"),
-        Input("p2-x", "value"),
-        Input("p2-y", "value"),
-        Input("p2-z", "value"),
-        Input("hover-store", "data"),
-        Input("catch-store", "data"),
-        Input("target-label", "value"),
-        prevent_initial_call=False
-    )
-    def update_status(vis_data, x_idx, y_idx, z_idx,
-                      p1_x, p1_y, p1_z, p2_x, p2_y, p2_z,
-                      hover_data, catch_data, target_label):
-        hover_txt = "Hover: -"
-        if isinstance(hover_data, dict):
-            hover_txt = f"Hover: ({hover_data.get('i')},{hover_data.get('j')},{hover_data.get('k')})"
-        catch_txt = "Catch: -"
-        if isinstance(catch_data, dict):
-            catch_txt = f"Catch: ({catch_data.get('i')},{catch_data.get('j')},{catch_data.get('k')})"
-
-        if is_scalar_volume:
-            return (
-                f"Volume | X={x_idx}, Y={y_idx}, Z={z_idx}"
-                f" | P1=({p1_x},{p1_y},{p1_z}) P2=({p2_x},{p2_y},{p2_z})"
-                f" | {hover_txt} | {catch_txt}"
-            )
-
-        vis_data = vis_data or {}
-        active_names = [
-            layer_states[lid]["name"]
-            for lid in layer_states
-            if vis_data.get(lid, lid in default_visible)
-        ]
-        target_name = layer_states.get(target_label, layer_states[target_default])["name"]
-
-        active_label = "Active volume" if is_scalar_volume else "Active labels"
-        return (
-            f"{active_label}: {', '.join(active_names) if active_names else '-'} | Target: {target_name}"
-            f" | X={x_idx}, Y={y_idx}, Z={z_idx}"
-            f" | P1=({p1_x},{p1_y},{p1_z}) P2=({p2_x},{p2_y},{p2_z})"
-            f" | {hover_txt} | {catch_txt}"
+        status = (
+            f"Active masks: {', '.join(mask_values)} | X={x_idx}, Y={y_idx}, Z={z_idx} "
+            f"| ROI: (i,j,k)=({eff_roi_x},{eff_roi_y},{eff_roi_z}), r={eff_roi_r} vox"
         )
+        try:
+            if auto_status:
+                status += auto_status
+        except Exception:
+            pass
+        return x_fig, y_fig, z_fig, fig3d, status
 
     # Open browser on a fresh port each run to avoid caching
     import threading, webbrowser, random
@@ -4201,13 +3880,9 @@ def run_pipeline(
     mc_map: str = "xyz",
     viewer: str = "dash",
     port: int = 8050,
+    method: str = "auto",
     export_stl: bool = False,
     stl_dir: str | None = None,
-    vti_array: str | None = None,
-    vti_background: float = 0.0,
-    vti_background_eps: float = 0.0,
-    vti_max_dim: int = 160,
-    vti_max_labels: int = 64,
 ):
     input_path = Path(in_mesh_path).resolve()
     if not input_path.exists():
@@ -4354,13 +4029,26 @@ def run_pipeline(
     info(f"Loaded mesh: {input_path.name} | watertight={getattr(mesh, 'is_watertight', 'unknown')}")
 
     # Center mesh at origin
-    mesh = center_mesh(mesh)
+    mesh = center_mesh(mesh) # type: ignore
 
     # Grid (power-of-two cubic grid)
     grid = make_cube_grid_from_mesh(mesh, spacing=spacing, n=n, margin_frac=margin_frac)
 
-    # Winding-based masks
-    inside_u8, on_u8, out_u8 = classify_by_winding(mesh, grid, band=0.6)
+    # In/on/out masks
+    if method == "auto":
+        if igl is not None:
+            inside_u8, on_u8, out_u8 = classify_by_winding(mesh, grid, band=0.6)
+        else:
+            warn("python-igl not available; falling back to trimesh.contains (slower).")
+            inside_u8, on_u8, out_u8 = classify_by_trimesh_contains(mesh, grid)
+    elif method == "winding":
+        if igl is None:
+            raise RuntimeError("python-igl is required for method='winding'.")
+        inside_u8, on_u8, out_u8 = classify_by_winding(mesh, grid, band=0.6)
+    elif method == "trimesh":
+        inside_u8, on_u8, out_u8 = classify_by_trimesh_contains(mesh, grid)
+    else:
+        raise ValueError(f"Unknown method: {method}")
 
     # Save masks in a single compressed NPZ with spacing/origin like core.run_pipeline
     np.savez_compressed(str(out_npz), inside=inside_u8, on=on_u8, out=out_u8,
@@ -4389,7 +4077,7 @@ def run_pipeline(
 def main():
     import argparse
 
-    ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline for STL meshes or VTI voxel volumes")
+    ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline (winding or trimesh)")
     ap.add_argument("--in", dest="in_mesh", required=True,
                     help="Input mesh (.stl/.obj/.ply) or voxel image (.vti)")
     ap.add_argument("--spacing", type=float, default=None,
@@ -4401,8 +4089,10 @@ def main():
     ap.add_argument("--mc-map", type=str, default="zyx",
                     choices=["zyx", "xyz", "xzy", "yxz", "yzx", "zxy"],
                     help="Axis mapping from marching-cubes (z,y,x) → (X,Y,Z).")
-    ap.add_argument("--out", default="outputs",
-                    help="Output directory. NPZ filename is auto-derived from input name.")
+    ap.add_argument("--out", default="outputs/masks_demo.npz",
+                    help="Output compressed npz file")
+    ap.add_argument("--method", choices=["auto", "winding", "trimesh"], default="auto",
+                    help="Inside/outside method: auto (default), winding (python-igl), or trimesh")
     ap.add_argument("--no-show", action="store_true",
                     help="Do not open viewer")
     ap.add_argument("--viewer", choices=["dash","html"], default="dash",
@@ -4426,30 +4116,29 @@ def main():
 
     args = ap.parse_args()
 
+    if args.method == "winding" and igl is None:
+        err("python-igl is required for --method winding. Install via conda-forge:\n"
+            "  conda install -c conda-forge python-igl\n"
+            "or pip:\n"
+            "  pip install igl")
+        sys.exit(1)
+
     spacing = None if (args.spacing is None or args.spacing <= 0) else float(args.spacing)
 
-    try:
-        run_pipeline(
-            in_mesh_path=args.in_mesh,
-            spacing=spacing,
-            n=args.n,
-            margin_frac=args.margin,
-            out_dir=args.out,
-            show=not args.no_show,
-            mc_map=args.mc_map,
-            viewer=args.viewer,
-            port=args.port,
-            export_stl=bool(args.export_stl),
-            stl_dir=args.stl_dir,
-            vti_array=args.vti_array,
-            vti_background=args.vti_background,
-            vti_background_eps=args.vti_background_eps,
-            vti_max_dim=args.vti_max_dim,
-            vti_max_labels=args.vti_max_labels,
-        )
-    except (RuntimeError, ValueError) as e:
-        err(str(e))
-        sys.exit(1)
+    run_pipeline(
+        in_mesh_path=args.in_mesh,
+        spacing=spacing,
+        n=args.n,
+        margin_frac=args.margin,
+        out_npz=args.out,
+        show=not args.no_show,
+        mc_map=args.mc_map,
+        viewer=args.viewer,
+        port=args.port,
+        method=args.method,
+        export_stl=args.export_stl,
+        stl_dir=args.stl_dir,
+    )
 
 if __name__ == "__main__":
     main()

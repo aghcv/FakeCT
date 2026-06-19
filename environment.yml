@@ -1,0 +1,20 @@
+name: fakect
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy
+  - scipy
+  - scikit-image
+  - trimesh
+  - plotly
+  - dash
+  - python-igl
+  - pynrrd
+  - pillow
+  - pandas
+  - matplotlib
+  - pip
+  - pip:
+      - tensorflow
