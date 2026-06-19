@@ -95,16 +95,18 @@ pip install trimesh scipy scikit-image plotly dash
 
 ```bash
 # cube
-python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz
+python src/fakect.py --in data/cube.stl --n 8 --out outputs
 
 # sphere
-python src/fakect.py --in data/sphere.stl --n 8 --out outputs/sphere_masks.npz
+python src/fakect.py --in data/sphere.stl --n 8 --out outputs
 
 # carotid
-python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs/carotid_masks.npz
+python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs
 ```
 
 To skip opening the Dash viewer, add `--no-show`.
+
+`--out` now expects a directory path. The tool auto-generates an NPZ filename from the input name (for example, `cube_masks.npz` or `vti_masks.npz`) inside that directory.
 
 You can inspect the available CLI options with:
 
@@ -112,19 +114,24 @@ You can inspect the available CLI options with:
 python src/fakect.py --help
 ```
 
-## VTI Import Smoke Test
+## VTI Import Test
 
 You can start testing VTI import now. The CLI supports both a single `.vti` file and a directory of tiled `.vti` files.
 
+The bundled `data/vti/activity_grid_000_000_000.vti` is `CellData` named `activity` with `Float32`
+values from about `-1011` to `2213`, so the tool treats it as scalar/range data rather than
+integer anatomy labels. Scalar VTI files keep their sampled value volume in the saved NPZ as
+`scalar_values` and open in a volume-rendering workflow.
+
 ```bash
 # Directory of VTI tiles (uses the sample folder in this repo)
-python src/fakect.py --in data/vti --out outputs/vti_dir_test.npz --no-show
+python src/fakect.py --in data/vti --out outputs --no-show
 
 # Optional: full-resolution sampling (can be much heavier)
-python src/fakect.py --in data/vti --vti-max-dim 0 --out outputs/vti_dir_fullres.npz --no-show
+python src/fakect.py --in data/vti --vti-max-dim 0 --out outputs --no-show
 
 # Single VTI file example
-python src/fakect.py --in data/vti/activity_grid_000_000_000.vti --out outputs/vti_single_test.npz --no-show
+python src/fakect.py --in data/vti/activity_grid_000_000_000.vti --out outputs --no-show
 ```
 
 Useful VTI-specific flags:
@@ -137,8 +144,13 @@ Useful VTI-specific flags:
 --vti-max-labels <int>      # max number of discrete labels split into layers
 ```
 
-By default the demo will pop up a small matplotlib-based viewer showing three orthogonal
-slices and a sparse 3D proxy of boundary voxels.
+In the 3D panel, discrete integer-label VTI files use per-label visibility and opacity controls.
+Scalar/range VTI files use a ParaView-style transfer map: choose one color scheme for the full
+range, add or remove opacity points, type exact opacity values, and drag points horizontally on the
+map to reposition them.
+
+By default the Dash viewer opens with three orthogonal slices and a linked 3D view. Use `--no-show`
+for a headless import/export smoke test.
 
 ## Developer instructions (make changes & run tests)
 
@@ -147,7 +159,7 @@ slices and a sparse 3D proxy of boundary voxels.
 2. There is currently no packaged test suite in this repository. Use the CLI directly to validate changes:
 
 ```bash
-python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz --no-show
+python src/fakect.py --in data/cube.stl --n 8 --out outputs --no-show
 ```
 
 3. If you change runtime dependencies, update this README with the revised install command.

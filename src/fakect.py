@@ -4,8 +4,8 @@
 # Produces winding-based in/on/out masks and (optionally) launches a Dash viewer.
 #
 # Usage examples:
-#   python fakect.py --in cube.stl --n 8 --out cube_masks.npz
-#   python fakect.py --in carotid.stl --n 9 --margin 0.10 --out examples/outputs/carotid_masks.npz
+#   python fakect.py --in cube.stl --n 8 --out outputs
+#   python fakect.py --in carotid.stl --n 9 --margin 0.10 --out examples/outputs
 #
 # Requirements & installation
 #  Recommended (conda - easiest, includes python-igl):
@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -103,6 +104,36 @@ LABEL_COLOR_PALETTE = [
     "#10B981", "#EF4444", "#06B6D4", "#8B5CF6", "#F43F5E", "#65A30D",
 ]
 
+DEFAULT_TRANSFER_COLOR_SCHEME = "gray"
+
+TRANSFER_COLOR_SCHEMES = {
+    "gray": [
+        [0.0, "#020617"],
+        [1.0, "#F8FAFC"],
+    ],
+    "rainbow": [
+        [0.0, "#4C1D95"],
+        [0.18, "#2563EB"],
+        [0.36, "#06B6D4"],
+        [0.54, "#22C55E"],
+        [0.72, "#F59E0B"],
+        [1.0, "#EF4444"],
+    ],
+    "heat": [
+        [0.0, "#050505"],
+        [0.25, "#7F1D1D"],
+        [0.52, "#DC2626"],
+        [0.78, "#F59E0B"],
+        [1.0, "#F8FAFC"],
+    ],
+}
+
+TRANSFER_COLOR_OPTIONS = [
+    {"label": "Gray", "value": "gray"},
+    {"label": "Rainbow", "value": "rainbow"},
+    {"label": "Heat", "value": "heat"},
+]
+
 VTK_DTYPE_MAP = {
     "Int8": np.int8,
     "UInt8": np.uint8,
@@ -139,6 +170,23 @@ def _grid_extents_display(grid):
     Nz, Ny, Nx = grid["shape"]
     sz, sy, sx = grid["spacing"]
     return (Nx * sx, Ny * sy, Nz * sz)
+
+def _grid_bounds_xyz(grid, pad_fraction: float = 0.0):
+    """Return physical cell bounds as ((xmin, xmax), (ymin, ymax), (zmin, zmax))."""
+    Nz, Ny, Nx = grid["shape"]
+    sz, sy, sx = grid["spacing"]
+    ox, oy, oz = grid["origin"]
+    bounds = [
+        sorted((ox, ox + Nx * sx)),
+        sorted((oy, oy + Ny * sy)),
+        sorted((oz, oz + Nz * sz)),
+    ]
+    padded = []
+    for low, high in bounds:
+        span = high - low
+        pad = max(span * float(pad_fraction), 1e-6)
+        padded.append((low - pad, high + pad))
+    return tuple(padded)
 
 def _aspectratio_from_extents(extents_xyz):
     """Normalize extents so that the largest side = 1 (realistic proportions)."""
@@ -566,14 +614,37 @@ def _make_mask_layer(
     }
 
 def _is_discrete_label_array(values: np.ndarray, unique_values: np.ndarray, max_labels: int) -> bool:
-    if np.issubdtype(values.dtype, np.integer) or np.issubdtype(values.dtype, np.bool_):
-        return True
     if unique_values.size > max_labels + 1:
         return False
     finite = unique_values[np.isfinite(unique_values)]
     if finite.size != unique_values.size:
         return False
+    if np.issubdtype(values.dtype, np.integer) or np.issubdtype(values.dtype, np.bool_):
+        return True
     return bool(np.allclose(finite, np.round(finite), atol=1e-6))
+
+def _finite_range(values: np.ndarray) -> tuple[float, float]:
+    finite = values[np.isfinite(values)]
+    if finite.size == 0:
+        return 0.0, 1.0
+    vmin = float(np.min(finite))
+    vmax = float(np.max(finite))
+    if np.isclose(vmin, vmax):
+        vmax = vmin + 1.0
+    return vmin, vmax
+
+def _non_background_unique_values(unique_values: np.ndarray, background: float, eps: float, dtype: np.dtype) -> list:
+    if np.issubdtype(dtype, np.floating):
+        return [v for v in unique_values if not np.isclose(float(v), float(background), atol=eps)]
+    bg = np.asarray(background, dtype=dtype)
+    return [v for v in unique_values if v != bg]
+
+def _attach_scalar_volume(layer: dict, data: np.ndarray, scalar_range: tuple[float, float]) -> dict:
+    layer["volume_kind"] = "scalar"
+    layer["scalar_data"] = data.astype(np.float32, copy=False)
+    layer["scalar_range"] = tuple(float(v) for v in scalar_range)
+    layer["opacity"] = 1.0
+    return layer
 
 def _read_vti_header_info(vti_path: Path) -> dict:
     """
@@ -791,6 +862,7 @@ def load_vti_label_layers(
     max_labels = max(1, int(max_labels))
     eps = max(0.0, float(background_eps))
     bg = float(background)
+    scalar_range = _finite_range(data)
 
     if np.issubdtype(data.dtype, np.floating):
         background_mask = np.isclose(data, bg, atol=eps)
@@ -798,9 +870,9 @@ def load_vti_label_layers(
         background_mask = data == np.asarray(background, dtype=data.dtype)
 
     discrete = _is_discrete_label_array(data, unique_values, max_labels)
+    label_values = _non_background_unique_values(unique_values, bg, eps, data.dtype)
     layers: list[dict] = []
     if discrete:
-        label_values = [v for v in unique_values if not np.isclose(float(v), bg, atol=eps)]
         if len(label_values) > max_labels:
             discrete = False
             warn(
@@ -814,25 +886,28 @@ def load_vti_label_layers(
                 else:
                     mask = data == value
                 name = f"{array_label}={_label_display_value(value)}"
-                layers.append(_make_mask_layer(
+                layer = _make_mask_layer(
                     _safe_layer_id(array_label, _label_display_value(value)),
                     name,
                     mask,
                     LABEL_COLOR_PALETTE[idx % len(LABEL_COLOR_PALETTE)],
                     label_value=_label_display_value(value),
                     exclusive_group="vti-labels"
-                ))
+                )
+                layer["volume_kind"] = "labels"
+                layers.append(layer)
 
     if not discrete:
         occupancy = ~background_mask
-        layers.append(_make_mask_layer(
+        scalar_layer = _make_mask_layer(
             _safe_layer_id(array_label, "nonzero"),
             f"{array_label} non-background",
             occupancy,
             LABEL_COLOR_PALETTE[0],
             label_value="non-background",
             exclusive_group=None
-        ))
+        )
+        layers.append(_attach_scalar_volume(scalar_layer, data, scalar_range))
 
     if not layers:
         warn("VTI did not contain any non-background voxels after sampling")
@@ -849,6 +924,10 @@ def load_vti_label_layers(
         "background": background,
         "background_eps": background_eps,
         "discrete_labels": discrete,
+        "volume_kind": "labels" if discrete else "scalar",
+        "scalar_range": scalar_range,
+        "unique_value_count": int(unique_values.size),
+        "non_background_unique_value_count": int(len(label_values)),
         "labels": [layer["label_value"] for layer in layers],
     })
     info(f"Prepared {len(layers)} editable VTI layer(s): {', '.join(layer['name'] for layer in layers[:8])}")
@@ -881,6 +960,7 @@ def load_vti_directory_label_layers(
     max_labels = max(1, int(max_labels))
     eps = max(0.0, float(background_eps))
     bg = float(background)
+    scalar_range = _finite_range(data)
 
     if np.issubdtype(data.dtype, np.floating):
         background_mask = np.isclose(data, bg, atol=eps)
@@ -888,9 +968,9 @@ def load_vti_directory_label_layers(
         background_mask = data == np.asarray(background, dtype=data.dtype)
 
     discrete = _is_discrete_label_array(data, unique_values, max_labels)
+    label_values = _non_background_unique_values(unique_values, bg, eps, data.dtype)
     layers: list[dict] = []
     if discrete:
-        label_values = [v for v in unique_values if not np.isclose(float(v), bg, atol=eps)]
         if len(label_values) > max_labels:
             discrete = False
             warn(
@@ -904,25 +984,28 @@ def load_vti_directory_label_layers(
                 else:
                     mask = data == value
                 name = f"{array_label}={_label_display_value(value)}"
-                layers.append(_make_mask_layer(
+                layer = _make_mask_layer(
                     _safe_layer_id(array_label, _label_display_value(value)),
                     name,
                     mask,
                     LABEL_COLOR_PALETTE[idx % len(LABEL_COLOR_PALETTE)],
                     label_value=_label_display_value(value),
                     exclusive_group="vti-labels"
-                ))
+                )
+                layer["volume_kind"] = "labels"
+                layers.append(layer)
 
     if not discrete:
         occupancy = ~background_mask
-        layers.append(_make_mask_layer(
+        scalar_layer = _make_mask_layer(
             _safe_layer_id(array_label, "nonzero"),
             f"{array_label} non-background",
             occupancy,
             LABEL_COLOR_PALETTE[0],
             label_value="non-background",
             exclusive_group=None
-        ))
+        )
+        layers.append(_attach_scalar_volume(scalar_layer, data, scalar_range))
 
     if not layers:
         warn("VTI directory assembly did not yield any non-background voxels")
@@ -939,6 +1022,10 @@ def load_vti_directory_label_layers(
         "background": background,
         "background_eps": background_eps,
         "discrete_labels": discrete,
+        "volume_kind": "labels" if discrete else "scalar",
+        "scalar_range": scalar_range,
+        "unique_value_count": int(unique_values.size),
+        "non_background_unique_value_count": int(len(label_values)),
         "labels": [layer["label_value"] for layer in layers],
     })
     info(f"Prepared {len(layers)} editable layer(s) from directory: "
@@ -1083,6 +1170,166 @@ def _hex_to_rgba(hex_color: str, alpha: float) -> str:
     b = int(hex_color[4:6], 16)
     return f"rgba({r},{g},{b},{alpha})"
 
+def _clean_hex_color(value: str | None, fallback: str = "#E5E7EB") -> str:
+    if isinstance(value, str) and re.match(r"^#[0-9a-fA-F]{6}$", value):
+        return value
+    return fallback
+
+def _tf_position(value: float, vmin: float, vmax: float) -> float:
+    if np.isclose(vmin, vmax):
+        return 0.0
+    return float(np.clip((float(value) - vmin) / (vmax - vmin), 0.0, 1.0))
+
+def _append_transfer_point(
+    points: list[dict],
+    point_id: str,
+    value: float,
+    opacity: float,
+    vmin: float,
+    vmax: float,
+    min_gap: float,
+) -> None:
+    value = float(np.clip(value, vmin, vmax))
+    for point in points:
+        if abs(point["value"] - value) <= min_gap:
+            if point["id"] not in {"tf_min", "tf_zero", "tf_max"}:
+                point["opacity"] = max(point["opacity"], float(np.clip(opacity, 0.0, 1.0)))
+            return
+    points.append({
+        "id": point_id,
+        "value": value,
+        "opacity": float(np.clip(opacity, 0.0, 1.0)),
+    })
+
+def _default_transfer_points(
+    vmin: float,
+    vmax: float,
+    scalar_values: np.ndarray | None = None,
+) -> list[dict]:
+    span = max(1e-9, vmax - vmin)
+    min_gap = span * 1e-5
+
+    if scalar_values is not None:
+        finite = np.asarray(scalar_values, dtype=np.float32)
+        finite = finite[np.isfinite(finite)]
+        if finite.size:
+            nonzero = finite[~np.isclose(finite, 0.0, atol=1e-6)]
+            positive = finite[finite > 0.0]
+            if vmin < 0.0 < vmax and positive.size >= 8:
+                focus = positive
+                percentiles = [50, 75, 95]
+                opacities = [0.22, 0.35, 0.62]
+            else:
+                focus = nonzero if nonzero.size >= 8 else finite
+                percentiles = [25, 60, 90]
+                opacities = [0.08, 0.28, 0.58]
+
+            points: list[dict] = [{"id": "tf_min", "value": float(vmin), "opacity": 0.0}]
+            if vmin < 0.0 < vmax:
+                points.append({"id": "tf_zero", "value": 0.0, "opacity": 0.0})
+            for pct, opacity in zip(percentiles, opacities):
+                value = float(np.percentile(focus, pct))
+                _append_transfer_point(points, f"tf_p{pct}", value, opacity, vmin, vmax, min_gap)
+            _append_transfer_point(points, "tf_max", float(vmax), 0.85, vmin, vmax, min_gap)
+            if not any(point["id"] == "tf_max" for point in points):
+                points.append({"id": "tf_max", "value": float(vmax), "opacity": 0.85})
+            return sorted(points, key=lambda p: (p["value"], p["id"]))
+
+    points = [
+        {"id": "tf_min", "value": float(vmin), "opacity": 0.0},
+        {"id": "tf_mid_low", "value": float(vmin + 0.35 * span), "opacity": 0.14},
+        {"id": "tf_mid_high", "value": float(vmin + 0.70 * span), "opacity": 0.38},
+        {"id": "tf_max", "value": float(vmax), "opacity": 0.75},
+    ]
+    if vmin < 0.0 < vmax:
+        points.insert(1, {"id": "tf_zero", "value": 0.0, "opacity": 0.0})
+    return points
+
+def _sanitize_transfer_points(
+    points: Any,
+    vmin: float,
+    vmax: float,
+    min_points: int = 2
+) -> list[dict]:
+    if not isinstance(points, list):
+        points = _default_transfer_points(vmin, vmax)
+
+    cleaned: list[dict] = []
+    seen_ids: set[str] = set()
+    for idx, point in enumerate(points):
+        if not isinstance(point, dict):
+            continue
+        try:
+            value = float(point.get("value", vmin))
+        except (TypeError, ValueError):
+            value = vmin
+        try:
+            opacity = float(point.get("opacity", 0.1))
+        except (TypeError, ValueError):
+            opacity = 0.1
+        point_id = str(point.get("id") or f"tf_{idx}")
+        if point_id in seen_ids:
+            point_id = f"{point_id}_{idx}"
+        seen_ids.add(point_id)
+        if point_id == "tf_min":
+            value = vmin
+        elif point_id == "tf_max":
+            value = vmax
+        else:
+            value = float(np.clip(value, vmin, vmax))
+        cleaned.append({
+            "id": point_id,
+            "value": value,
+            "opacity": float(np.clip(opacity, 0.0, 1.0)),
+        })
+
+    if len(cleaned) < min_points:
+        cleaned = _default_transfer_points(vmin, vmax)
+
+    cleaned = sorted(cleaned, key=lambda p: (p["value"], p["id"]))
+
+    has_min = any(np.isclose(p["value"], vmin) for p in cleaned)
+    has_max = any(np.isclose(p["value"], vmax) for p in cleaned)
+    if not has_min:
+        first = cleaned[0]
+        cleaned.insert(0, {
+            "id": "tf_min",
+            "value": float(vmin),
+            "opacity": first["opacity"],
+        })
+    if not has_max:
+        last = cleaned[-1]
+        cleaned.append({
+            "id": "tf_max",
+            "value": float(vmax),
+            "opacity": last["opacity"],
+        })
+
+    unique_by_id: dict[str, dict] = {}
+    for point in cleaned:
+        unique_by_id[point["id"]] = point
+    return sorted(unique_by_id.values(), key=lambda p: (p["value"], p["id"]))
+
+def _transfer_color_scheme_key(color_scheme: Any = None) -> str:
+    if isinstance(color_scheme, str) and color_scheme in TRANSFER_COLOR_SCHEMES:
+        return color_scheme
+    return DEFAULT_TRANSFER_COLOR_SCHEME
+
+def _transfer_colorscale(color_scheme: Any = None) -> list:
+    scheme = TRANSFER_COLOR_SCHEMES[_transfer_color_scheme_key(color_scheme)]
+    return [[float(position), color] for position, color in scheme]
+
+def _transfer_opacityscale(points: list[dict], vmin: float, vmax: float, opacity_scale: float = 1.0) -> list:
+    cleaned = _sanitize_transfer_points(points, vmin, vmax)
+    opacity_scale = float(np.clip(opacity_scale, 0.0, 1.0))
+    opacityscale = [
+        [_tf_position(point["value"], vmin, vmax), float(np.clip(point["opacity"] * opacity_scale, 0.0, 1.0))]
+        for point in cleaned
+    ]
+    opacityscale[0][0] = 0.0
+    opacityscale[-1][0] = 1.0
+    return opacityscale
+
 def _slice_colorscale(mask_color: str) -> list:
     return [[0.0, "black"], [1.0, mask_color]]
 
@@ -1139,6 +1386,7 @@ def _slice_plane_surface(
     color,
     alpha=OPACITY_LEVELS["high"],
     colorscale=None,
+    cmin=0,
     cmax=1
 ):
     """
@@ -1177,7 +1425,7 @@ def _slice_plane_surface(
     return go.Surface(
         x=X, y=Y, z=Z,
         surfacecolor=slice2d,
-        cmin=0, cmax=cmax,
+        cmin=cmin, cmax=cmax,
         colorscale=colorscale,
         showscale=False,
         name=f"{axis}-slice-plane",
@@ -1210,6 +1458,90 @@ def mask_to_trace(mask_u8, grid, color, name, opacity=OPACITY_LEVELS["high"]):
         flatshading=True, showscale=False
     )
 
+def mask_to_volume_trace(mask_u8: np.ndarray, grid: dict, color: str, name: str, opacity: float):
+    total = int(np.sum(mask_u8))
+    info(f"[{name}] volume mask sum={total}")
+    if total == 0:
+        return None
+
+    Nz, Ny, Nx = grid["shape"]
+    sz, sy, sx = grid["spacing"]
+    ox, oy, oz = grid["origin"]
+    x_coords = ox + (np.arange(Nx) + 0.5) * sx
+    y_coords = oy + (np.arange(Ny) + 0.5) * sy
+    z_coords = oz + (np.arange(Nz) + 0.5) * sz
+    zz, yy, xx = np.meshgrid(z_coords, y_coords, x_coords, indexing="ij")
+
+    return go.Volume(
+        x=xx.ravel(),
+        y=yy.ravel(),
+        z=zz.ravel(),
+        value=mask_u8.ravel(),
+        isomin=0.5,
+        isomax=1.5,
+        surface_count=2,
+        opacity=max(0.01, min(1.0, float(opacity))),
+        colorscale=[[0.0, "rgba(0,0,0,0)"], [1.0, color]],
+        showscale=False,
+        caps=dict(x_show=False, y_show=False, z_show=False),
+        name=name,
+        hoverinfo="skip"
+    )
+
+def scalar_to_volume_trace(
+    values_zyx: np.ndarray,
+    grid: dict,
+    transfer_points: list[dict],
+    scalar_range: tuple[float, float],
+    opacity_scale: float,
+    color_scheme: str = DEFAULT_TRANSFER_COLOR_SCHEME,
+    name: str = "scalar-volume",
+):
+    if values_zyx is None or values_zyx.size == 0:
+        return None
+    vmin, vmax = scalar_range
+    if np.isclose(vmin, vmax):
+        return None
+
+    Nz, Ny, Nx = grid["shape"]
+    sz, sy, sx = grid["spacing"]
+    ox, oy, oz = grid["origin"]
+    x_coords = ox + (np.arange(Nx) + 0.5) * sx
+    y_coords = oy + (np.arange(Ny) + 0.5) * sy
+    z_coords = oz + (np.arange(Nz) + 0.5) * sz
+    zz, yy, xx = np.meshgrid(z_coords, y_coords, x_coords, indexing="ij")
+
+    return go.Volume(
+        x=xx.ravel(),
+        y=yy.ravel(),
+        z=zz.ravel(),
+        value=values_zyx.ravel(),
+        isomin=vmin,
+        isomax=vmax,
+        surface_count=24,
+        opacity=1.0,
+        opacityscale=_transfer_opacityscale(transfer_points, vmin, vmax, opacity_scale),
+        colorscale=_transfer_colorscale(color_scheme),
+        showscale=True,
+        caps=dict(x_show=False, y_show=False, z_show=False),
+        colorbar=dict(
+            title="Signal",
+            thickness=10,
+            len=0.50,
+            x=0.985,
+            xanchor="right",
+            xpad=0,
+            y=0.50,
+            yanchor="middle",
+            ypad=0,
+            bgcolor="rgba(15, 19, 26, 0.72)",
+            bordercolor="rgba(226, 232, 240, 0.35)",
+            borderwidth=1,
+        ),
+        name=name,
+        hovertemplate="x=%{x:.2f}<br>y=%{y:.2f}<br>z=%{z:.2f}<br>value=%{value:.3g}<extra></extra>",
+    )
+
 def mask_to_trimesh(mask_u8: np.ndarray, grid: dict, name: str | None = None) -> trimesh.Trimesh | None:
     """Convert a binary mask to a surface mesh using marching cubes."""
     if trimesh is None:
@@ -1240,10 +1572,24 @@ def save_mask_stl(mask_u8: np.ndarray, grid: dict, out_path: Path, name: str) ->
         return False
     return True
 
+def _resolve_output_paths(in_mesh_path: str, out_dir: str) -> tuple[Path, Path]:
+    """Return validated output directory and derived NPZ path from input name."""
+    input_path = Path(in_mesh_path).resolve()
+    out_root = Path(out_dir)
+    if out_root.suffix:
+        raise ValueError("--out must be a directory path, not a filename")
+    if out_root.exists() and not out_root.is_dir():
+        raise ValueError(f"--out points to a file, expected a directory: {out_root}")
+
+    out_root.mkdir(parents=True, exist_ok=True)
+    input_token = input_path.name if input_path.is_dir() else input_path.stem
+    npz_path = out_root / f"{input_token}_masks.npz"
+    return out_root, npz_path
+
 def _binary_colorscale(on_color="#ffffff"):
     return [[0.0, "black"], [1.0, on_color]]
 
-def _slice_fig(z2d, title, border_color="#ffffff", colorscale=None, zmax=1):
+def _slice_fig(z2d, title, border_color="#ffffff", colorscale=None, zmin=0, zmax=1, showscale=False):
     if colorscale is None:
         colorscale = _binary_colorscale(border_color)
     x_vals = np.arange(z2d.shape[1])
@@ -1253,10 +1599,10 @@ def _slice_fig(z2d, title, border_color="#ffffff", colorscale=None, zmax=1):
             z=z2d,
             x=x_vals,
             y=y_vals,
-            zmin=0,
+            zmin=zmin,
             zmax=zmax,
             colorscale=colorscale,
-            showscale=False,
+            showscale=showscale,
             hovertemplate="x=%{x}<br>y=%{y}<br>value=%{z}<extra></extra>"
         )],
         layout=go.Layout(
@@ -1384,6 +1730,54 @@ def compose_layer_slice(layer_states: dict, visible_ids: list[str], axis: str, i
         out[sl > 0] = code
         colors.append(layer_states[layer_id]["color"])
     return out, colors
+
+def compose_layer_volume(layer_states: dict, visible_ids: list[str]) -> tuple[np.ndarray, list[str]]:
+    """Compose visible binary layers into an integer-coded 3-D volume."""
+    active_ids = [lid for lid in visible_ids if lid in layer_states]
+    if len(active_ids) == 0:
+        first = next(iter(layer_states.values()), None)
+        if first is None:
+            return np.zeros((1, 1, 1), dtype=np.uint8), []
+        return np.zeros_like(first["current"], dtype=np.uint8), []
+
+    base_shape = layer_states[active_ids[0]]["current"].shape
+    out = np.zeros(base_shape, dtype=np.uint16)
+    colors: list[str] = []
+    for code, layer_id in enumerate(active_ids, start=1):
+        mask = layer_states[layer_id]["current"]
+        out[mask > 0] = code
+        colors.append(layer_states[layer_id]["color"])
+    return out, colors
+
+def _volume_trace(volume_u16: np.ndarray, grid: dict, colors: list[str], opacity: float):
+    if volume_u16 is None or int(np.max(volume_u16)) == 0:
+        return None
+
+    Nz, Ny, Nx = grid["shape"]
+    sz, sy, sx = grid["spacing"]
+    ox, oy, oz = grid["origin"]
+
+    x_coords = ox + (np.arange(Nx) + 0.5) * sx
+    y_coords = oy + (np.arange(Ny) + 0.5) * sy
+    z_coords = oz + (np.arange(Nz) + 0.5) * sz
+    zz, yy, xx = np.meshgrid(z_coords, y_coords, x_coords, indexing="ij")
+
+    max_code = int(np.max(volume_u16))
+    return go.Volume(
+        x=xx.ravel(),
+        y=yy.ravel(),
+        z=zz.ravel(),
+        value=volume_u16.ravel(),
+        isomin=0.5,
+        isomax=max_code + 0.5,
+        surface_count=max(2, max_code),
+        opacity=max(0.01, min(1.0, float(opacity))),
+        colorscale=_discrete_label_colorscale(colors),
+        showscale=False,
+        caps=dict(x_show=False, y_show=False, z_show=False),
+        name="labels-volume",
+        hoverinfo="skip"
+    )
 
 def _scale_to_pos(scale_val: float) -> float:
     """Map scale value in [0.001, 99.999] to slider position in [0, 1] with 1.0 at 0.5."""
@@ -1616,7 +2010,7 @@ def show_viewer_dash(
     grid=None,
     port=8050,
     mask_layers: list[dict] | None = None,
-    dataset_name: str = "FakeCT",
+    viewer_kind: str = "surface",
 ):
     """Interactive viewer: X/Y/Z slices + 3-D, with mask/label toggles."""
     if dash is None or go is None:
@@ -1631,6 +2025,25 @@ def show_viewer_dash(
         raise ValueError("show_viewer_dash needs at least one mask layer")
     if grid is None:
         raise ValueError("show_viewer_dash needs a grid")
+
+    viewer_kind = "volume" if viewer_kind == "volume" else "surface"
+    is_vti_viewer = viewer_kind == "volume"
+    scalar_layers = [
+        layer for layer in mask_layers
+        if layer.get("volume_kind") == "scalar" and layer.get("scalar_data") is not None
+    ]
+    is_scalar_volume = is_vti_viewer and bool(scalar_layers)
+    scalar_layer_id = scalar_layers[0]["id"] if is_scalar_volume else None
+    scalar_data = (
+        scalar_layers[0]["scalar_data"].astype(np.float32, copy=False)
+        if is_scalar_volume else None
+    )
+    scalar_range = (
+        tuple(float(v) for v in scalar_layers[0].get("scalar_range", _finite_range(scalar_data)))
+        if is_scalar_volume else (0.0, 1.0)
+    )
+    scalar_min, scalar_max = scalar_range
+    default_transfer_points = _default_transfer_points(scalar_min, scalar_max, scalar_data)
 
     Nz, Ny, Nx = mask_layers[0]["mask"].shape
     x_mid, y_mid, z_mid = Nx // 2, Ny // 2, Nz // 2
@@ -1659,6 +2072,9 @@ def show_viewer_dash(
             "opacity": opacity,
             "editable": bool(layer.get("editable", True)),
             "exclusive_group": layer.get("exclusive_group"),
+            "volume_kind": layer.get("volume_kind", "labels"),
+            "scalar_data": layer.get("scalar_data"),
+            "scalar_range": layer.get("scalar_range"),
         }
 
     layer_options = [
@@ -1715,6 +2131,350 @@ def show_viewer_dash(
         "padding": "4px 10px",
         "fontSize": "12px"
     }
+    input_dark = {
+        "width": "100%",
+        "backgroundColor": "#0f1115",
+        "color": "#e6e6e6",
+        "border": "1px solid #2a2f3a",
+        "borderRadius": "6px",
+        "padding": "4px 6px",
+        "fontSize": "11px",
+    }
+
+    def _resolved_active_transfer_id(points: list[dict], active_id: str | None = None) -> str | None:
+        clean_points = _sanitize_transfer_points(points, scalar_min, scalar_max)
+        ids = [point["id"] for point in clean_points]
+        if active_id in ids:
+            return active_id
+        return ids[0] if ids else None
+
+    def make_transfer_figure(
+        points: list[dict],
+        active_id: str | None = None,
+        color_scheme: str = DEFAULT_TRANSFER_COLOR_SCHEME,
+    ):
+        clean_points = _sanitize_transfer_points(points, scalar_min, scalar_max)
+        active_id = _resolved_active_transfer_id(clean_points, active_id)
+        xs = [point["value"] for point in clean_points]
+        ys = [point["opacity"] for point in clean_points]
+        colorscale = _transfer_colorscale(color_scheme)
+        marker_positions = [_tf_position(point["value"], scalar_min, scalar_max) for point in clean_points]
+        ids = [point["id"] for point in clean_points]
+        sizes = [14 if point["id"] == active_id else 8 for point in clean_points]
+        line_colors = ["#F8FAFC" if point["id"] == active_id else "#111827" for point in clean_points]
+        line_widths = [3 if point["id"] == active_id else 1 for point in clean_points]
+        strip_x = np.linspace(scalar_min, scalar_max, 160)
+        strip_y = np.linspace(0.0, 1.0, 24)
+        strip_z = np.tile(np.linspace(0.0, 1.0, strip_x.size), (strip_y.size, 1))
+        fig = go.Figure()
+        fig.add_trace(go.Heatmap(
+            z=strip_z,
+            x=strip_x,
+            y=strip_y,
+            colorscale=colorscale,
+            showscale=False,
+            opacity=0.30,
+            hoverinfo="skip",
+        ))
+        fig.add_trace(go.Scatter(
+            x=xs,
+            y=ys,
+            mode="lines+markers",
+            line=dict(color="#E5E7EB", width=2),
+            marker=dict(
+                size=sizes,
+                color=marker_positions,
+                cmin=0.0,
+                cmax=1.0,
+                colorscale=colorscale,
+                showscale=False,
+                line=dict(color=line_colors, width=line_widths),
+            ),
+            customdata=ids,
+            hovertemplate="value=%{x:.3g}<br>opacity=%{y:.2f}<extra></extra>",
+            showlegend=False,
+        ))
+        fig.update_layout(
+            height=132,
+            margin=dict(l=26, r=8, t=4, b=24),
+            paper_bgcolor="#0f131a",
+            plot_bgcolor="#0f131a",
+            clickmode="event+select",
+            dragmode=False,
+            hovermode="closest",
+            uirevision="transfer-map-fixed",
+            xaxis=dict(
+                color="#CBD5E1",
+                showgrid=False,
+                zeroline=False,
+                range=[scalar_min, scalar_max],
+                autorange=False,
+                fixedrange=True,
+            ),
+            yaxis=dict(
+                color="#CBD5E1",
+                showgrid=True,
+                range=[0.0, 1.0],
+                autorange=False,
+                fixedrange=True,
+                title=None,
+            ),
+        )
+        return fig
+
+    def make_transfer_rows(points: list[dict], active_id: str | None = None):
+        clean_points = _sanitize_transfer_points(points, scalar_min, scalar_max)
+        active_id = _resolved_active_transfer_id(clean_points, active_id)
+        rows = []
+        for point in clean_points:
+            pid = point["id"]
+            is_active = pid == active_id
+            rows.append(
+                html.Div(
+                    id={"type": "tf-row", "index": pid},
+                    n_clicks=0,
+                    style={
+                        "display": "grid",
+                        "gridTemplateColumns": "1fr 78px 26px",
+                        "gap": "6px",
+                        "alignItems": "center",
+                        "padding": "4px",
+                        "borderRadius": "6px",
+                        "border": "1px solid #38BDF8" if is_active else "1px solid transparent",
+                        "backgroundColor": "rgba(56, 189, 248, 0.12)" if is_active else "transparent",
+                        "opacity": "1.0" if is_active else "0.55",
+                        "cursor": "pointer",
+                    },
+                    children=[
+                        html.Div(
+                            f"{point['value']:.4g}",
+                            title=f"value {point['value']:.6g}",
+                            style={
+                                "fontSize": "11px",
+                                "color": "#CBD5E1",
+                                "overflow": "hidden",
+                                "textOverflow": "ellipsis",
+                                "whiteSpace": "nowrap",
+                            },
+                        ),
+                        dcc.Input(
+                            id={"type": "tf-opacity", "index": pid},
+                            type="number",
+                            min=0.0,
+                            max=1.0,
+                            step=0.01,
+                            value=point["opacity"],
+                            debounce=True,
+                            disabled=not is_active,
+                            style=input_dark,
+                        ),
+                        html.Button(
+                            "X",
+                            id={"type": "tf-remove", "index": pid},
+                            n_clicks=0,
+                            disabled=(len(clean_points) <= 2 or not is_active),
+                            title="Remove point",
+                            style={
+                                "height": "24px",
+                                "padding": "0",
+                                "fontSize": "11px",
+                                "background": "#1f2937",
+                                "color": "#e5e7eb",
+                                "border": "1px solid #2b3347",
+                                "borderRadius": "4px",
+                                "cursor": "pointer",
+                            },
+                        ),
+                    ],
+                )
+            )
+        return rows
+
+    def make_active_transfer_opacity_control(points: list[dict], active_id: str | None = None):
+        clean_points = _sanitize_transfer_points(points, scalar_min, scalar_max)
+        active_id = _resolved_active_transfer_id(clean_points, active_id)
+        active_point = next(
+            (point for point in clean_points if point["id"] == active_id),
+            clean_points[0] if clean_points else {"opacity": 0.0},
+        )
+        active_opacity = float(np.clip(active_point.get("opacity", 0.0), 0.0, 1.0))
+        return html.Div(
+            style={"display": "flex", "flexDirection": "column", "gap": "4px"},
+            children=[
+                html.Div(
+                    style={"display": "flex", "justifyContent": "space-between",
+                           "alignItems": "center", "fontSize": "11px", "opacity": "0.85"},
+                    children=[
+                        html.Span("Point opacity"),
+                        html.Span(f"{active_opacity:.2f}"),
+                    ],
+                ),
+                dcc.Slider(
+                    id="active-transfer-opacity",
+                    min=0.0,
+                    max=1.0,
+                    step=0.01,
+                    value=active_opacity,
+                    updatemode="drag",
+                    marks=None,
+                    tooltip={"placement": "bottom", "always_visible": False},
+                ),
+            ],
+        )
+
+    def make_transfer_editor(points: list[dict], active_id: str | None = None):
+        return [
+            *make_transfer_rows(points, active_id),
+            make_active_transfer_opacity_control(points, active_id),
+        ]
+
+    transfer_controls = html.Div(
+        style={
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "6px",
+            **({} if is_scalar_volume else {"display": "none"})
+        },
+        children=[
+            html.Div(
+                style={"display": "flex", "alignItems": "center", "justifyContent": "space-between"},
+                children=[
+                    html.Div("Transfer map", style={"fontSize": "12px", "fontWeight": "600"}),
+                    html.Button(
+                        "Add point",
+                        id="tf-add-point",
+                        n_clicks=0,
+                        style={"background": "#0EA5E9", "color": "white",
+                               "border": "none", "borderRadius": "6px", **button_compact},
+                    ),
+                ],
+            ),
+            html.Div(
+                f"{scalar_min:.3g} to {scalar_max:.3g}",
+                style={"fontSize": "11px", "opacity": "0.7"},
+            ),
+            dcc.Graph(
+                id="transfer-map",
+                figure=make_transfer_figure(
+                    default_transfer_points,
+                    default_transfer_points[0]["id"],
+                    DEFAULT_TRANSFER_COLOR_SCHEME,
+                ),
+                config={"displayModeBar": False},
+                className="transfer-map-host",
+                style={"height": "132px"},
+            ),
+            html.Div("Color scheme", style={"fontSize": "11px", "opacity": "0.7"}),
+            dcc.Dropdown(
+                id="transfer-color-scheme",
+                options=TRANSFER_COLOR_OPTIONS,
+                value=DEFAULT_TRANSFER_COLOR_SCHEME,
+                clearable=False,
+                searchable=False,
+                style={"fontSize": "12px", "color": "#0f172a"},
+            ),
+            html.Div(
+                style={
+                    "display": "grid",
+                    "gridTemplateColumns": "1fr 78px 26px",
+                    "gap": "6px",
+                    "fontSize": "10px",
+                    "opacity": "0.7",
+                },
+                children=["value", "opacity", ""],
+            ),
+            html.Div(
+                id="transfer-editor",
+                style={"display": "flex", "flexDirection": "column", "gap": "6px"},
+                children=make_transfer_editor(default_transfer_points, default_transfer_points[0]["id"]),
+            ),
+        ],
+    )
+    default_volume_opacity = 0.65 if is_scalar_volume else (0.45 if is_vti_viewer else 0.12)
+
+    volume_opacity_control = html.Div(
+        style={"display": "none"} if is_scalar_volume else {
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "6px",
+        },
+        children=[
+            html.Div("Volume opacity", style={"fontSize": "12px", "opacity": "0.85"}),
+            dcc.Slider(
+                id="volume-opacity",
+                min=0.01,
+                max=0.9,
+                step=0.01,
+                value=default_volume_opacity,
+                updatemode="drag",
+                marks=None
+            ),
+        ],
+    )
+
+    render_controls = html.Div(
+        style={
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "6px",
+            **({} if is_vti_viewer else {"display": "none"})
+        },
+        children=[
+            volume_opacity_control,
+            transfer_controls,
+        ],
+    )
+    layer_controls_header = [] if is_scalar_volume else [
+        html.Div("Labels" if is_vti_viewer else "Masks", style={"fontWeight": "600"})
+    ]
+    layer_list_style = {
+        "maxHeight": "260px",
+        "overflowY": "auto",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "paddingRight": "4px",
+    }
+    if is_scalar_volume:
+        layer_list_style["display"] = "none"
+    layer_control_rows = [
+        html.Div(
+            style={"display": "flex", "alignItems": "center", "gap": "5px",
+                   "minWidth": "0"},
+            children=[
+                dcc.Checklist(
+                    id={"type": "label-vis", "index": lid},
+                    options=[{"label": "", "value": "on"}],
+                    value=["on"] if lid in default_visible else [],
+                    style={"flexShrink": "0"}
+                ),
+                html.Div(
+                    style={"width": "12px", "height": "12px",
+                           "borderRadius": "2px", "flexShrink": "0",
+                           "backgroundColor": layer_states[lid]["color"],
+                           "border": "1px solid #374151"}
+                ),
+                html.Span(
+                    layer_states[lid]["name"],
+                    title=layer_states[lid]["name"],
+                    style={"fontSize": "11px", "flex": "1",
+                           "overflow": "hidden", "textOverflow": "ellipsis",
+                           "whiteSpace": "nowrap", "minWidth": "0"}
+                ),
+                html.Div(
+                    dcc.Slider(
+                        id={"type": "label-opacity", "index": lid},
+                        min=0.0, max=1.0, step=0.05,
+                        value=layer_states[lid]["opacity"],
+                        updatemode="drag", marks=None,
+                        tooltip={"placement": "bottom", "always_visible": False}
+                    ),
+                    style={"width": "70px", "flexShrink": "0"}
+                ),
+            ]
+        )
+        for lid in layer_states
+    ]
     slider_css = f"""
     .slider-x .rc-slider-rail {{ background-color: #1f2937; }}
     .slider-y .rc-slider-rail {{ background-color: #1f2937; }}
@@ -1739,9 +2499,20 @@ def show_viewer_dash(
     .slider-z .rc-slider-handle:focus,
     .slider-z .rc-slider-handle:hover,
     .slider-z .rc-slider-handle:active {{ box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35); }}
+
+    button,
+    input[type="color"],
+    .rc-slider-handle,
+    .transfer-map-host .scatterlayer .points path {{ cursor: pointer; }}
+
+    input[type="number"],
+    input[type="text"] {{ cursor: text; }}
     """
     wheel_js = """
     (function() {
+        var transferHoverPoint = null;
+        var transferDragging = null;
+        var transferLastEmit = 0;
         function attachWheel(id, axis) {
             var el = document.getElementById(id);
             if (!el || el.__wheelBound) return;
@@ -1757,7 +2528,171 @@ def show_viewer_dash(
             attachWheel("x-view", "x");
             attachWheel("y-view", "y");
             attachWheel("z-view", "z");
+            attachTransferCursor();
         }
+        function setCursor(el, cursor) {
+            if (!el) return;
+            el.style.cursor = cursor;
+            var svg = el.querySelector(".main-svg");
+            if (svg) svg.style.cursor = cursor;
+        }
+        function activeTransferId(el) {
+            var trace = el && el.data && el.data[1];
+            var ids = trace && trace.customdata;
+            var sizes = trace && trace.marker && trace.marker.size;
+            if (!ids || !sizes || !ids.length) return null;
+            var active = null;
+            var maxSize = -Infinity;
+            for (var i = 0; i < ids.length; i += 1) {
+                var size = Number(Array.isArray(sizes) ? sizes[i] : sizes);
+                if (size > maxSize) {
+                    maxSize = size;
+                    active = ids[i];
+                }
+            }
+            return active;
+        }
+        function transferIndexById(el, id) {
+            var ids = el && el.data && el.data[1] && el.data[1].customdata;
+            if (!ids) return -1;
+            for (var i = 0; i < ids.length; i += 1) {
+                if (ids[i] === id) return i;
+            }
+            return -1;
+        }
+        function isMovableTransferPoint(id) {
+            return id && id !== "tf_min" && id !== "tf_max";
+        }
+        function hoveredTransferPoint(data) {
+            var point = data && data.points && data.points[0];
+            if (!point || point.curveNumber !== 1) return null;
+            return {
+                id: point.customdata,
+                index: Number(point.pointIndex != null ? point.pointIndex : point.pointNumber)
+            };
+        }
+        function axisRange(axis) {
+            var range = (axis && axis.range) || [0, 1];
+            var lo = Number(range[0]);
+            var hi = Number(range[1]);
+            if (!isFinite(lo) || !isFinite(hi) || lo === hi) return [0, 1];
+            return lo < hi ? [lo, hi] : [hi, lo];
+        }
+        function pixelToTransferX(el, clientX) {
+            var axis = el && el._fullLayout && el._fullLayout.xaxis;
+            if (!axis) return null;
+            var rect = el.getBoundingClientRect();
+            var px = clientX - rect.left - (axis._offset || 0);
+            var value = null;
+            if (typeof axis.p2d === "function") {
+                value = Number(axis.p2d(px));
+            } else if (typeof axis.p2l === "function") {
+                value = Number(axis.p2l(px));
+            }
+            if (!isFinite(value)) {
+                var range = axisRange(axis);
+                var width = Number(axis._length || 1);
+                value = range[0] + (px / width) * (range[1] - range[0]);
+            }
+            var bounds = axisRange(axis);
+            return Math.max(bounds[0], Math.min(bounds[1], value));
+        }
+        function currentTransferPoints(el, movingIndex, movingValue) {
+            var trace = el && el.data && el.data[1];
+            var ids = trace && trace.customdata;
+            var xs = trace && trace.x;
+            var ys = trace && trace.y;
+            if (!ids || !xs || !ys) return [];
+            var bounds = axisRange(el._fullLayout && el._fullLayout.xaxis);
+            var points = [];
+            for (var i = 0; i < ids.length; i += 1) {
+                var id = ids[i];
+                var value = Number(i === movingIndex ? movingValue : xs[i]);
+                if (id === "tf_min") value = bounds[0];
+                if (id === "tf_max") value = bounds[1];
+                points.push({
+                    id: String(id),
+                    value: value,
+                    opacity: Number(ys[i])
+                });
+            }
+            return points;
+        }
+        function previewTransferPoint(el, movingIndex, movingValue) {
+            var trace = el && el.data && el.data[1];
+            if (!trace || !trace.x || !window.Plotly || !window.Plotly.restyle) return;
+            var xs = Array.prototype.slice.call(trace.x);
+            xs[movingIndex] = movingValue;
+            var bounds = axisRange(el._fullLayout && el._fullLayout.xaxis);
+            var span = Math.max(1e-12, bounds[1] - bounds[0]);
+            var markerColors = xs.map(function(x) {
+                return Math.max(0, Math.min(1, (Number(x) - bounds[0]) / span));
+            });
+            window.Plotly.restyle(el, {x: [xs], "marker.color": [markerColors]}, [1]);
+        }
+        function emitTransferPoints(el, movingIndex, movingValue, force) {
+            if (!window.dash_clientside || !window.dash_clientside.set_props) return;
+            var now = Date.now();
+            if (!force && now - transferLastEmit < 45) return;
+            transferLastEmit = now;
+            window.dash_clientside.set_props("transfer-store", {
+                data: currentTransferPoints(el, movingIndex, movingValue)
+            });
+        }
+        function attachTransferCursor() {
+            var el = document.getElementById("transfer-map");
+            if (!el || el.__transferCursorBound || !el.on) return;
+            el.__transferCursorBound = true;
+            el.on("plotly_hover", function(data) {
+                transferHoverPoint = hoveredTransferPoint(data);
+                if (transferHoverPoint) {
+                    var activeId = activeTransferId(el);
+                    var canDrag = transferHoverPoint.id === activeId && isMovableTransferPoint(activeId);
+                    setCursor(el, canDrag ? "ew-resize" : "pointer");
+                }
+            });
+            el.on("plotly_unhover", function() {
+                transferHoverPoint = null;
+                if (!transferDragging) setCursor(el, "default");
+            });
+            el.addEventListener("mousedown", function(e) {
+                if (e.button !== 0 || !transferHoverPoint) return;
+                var activeId = activeTransferId(el);
+                if (transferHoverPoint.id !== activeId || !isMovableTransferPoint(activeId)) return;
+                transferDragging = {id: activeId};
+                setCursor(el, "ew-resize");
+                if (window.dash_clientside && window.dash_clientside.set_props) {
+                    window.dash_clientside.set_props("active-transfer-point", {data: activeId});
+                }
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        }
+        document.addEventListener("mousemove", function(e) {
+            if (!transferDragging) return;
+            var el = document.getElementById("transfer-map");
+            var idx = transferIndexById(el, transferDragging.id);
+            var value = pixelToTransferX(el, e.clientX);
+            if (!el || idx < 0 || value == null) {
+                transferDragging = null;
+                return;
+            }
+            previewTransferPoint(el, idx, value);
+            emitTransferPoints(el, idx, value, false);
+            e.preventDefault();
+        });
+        document.addEventListener("mouseup", function(e) {
+            if (!transferDragging) return;
+            var el = document.getElementById("transfer-map");
+            var idx = transferIndexById(el, transferDragging.id);
+            var value = pixelToTransferX(el, e.clientX);
+            if (el && idx >= 0 && value != null) {
+                previewTransferPoint(el, idx, value);
+                emitTransferPoints(el, idx, value, true);
+            }
+            transferDragging = null;
+            setCursor(el, "default");
+        });
         document.addEventListener("DOMContentLoaded", init);
         setInterval(init, 1000);
     })();
@@ -1788,85 +2723,99 @@ def show_viewer_dash(
     </html>
     """
 
+    app_shell_base = {
+        "display": "grid",
+        "gridTemplateColumns": "300px 1fr",
+        "gap": "10px",
+        "height": "100vh",
+        "backgroundColor": "#0f1115",
+        "color": "#e6e6e6",
+        "padding": "10px",
+        "position": "relative",
+        "overflow": "hidden",
+    }
+    sidebar_base = {
+        "backgroundColor": "#151922",
+        "borderRadius": "10px",
+        "padding": "12px",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "10px",
+        "minHeight": "0",
+        "overflowY": "auto",
+    }
+    floating_toggle_base = {
+        "position": "absolute",
+        "top": "14px",
+        "left": "14px",
+        "zIndex": "12",
+        "height": "32px",
+        "padding": "4px 10px",
+        "fontSize": "12px",
+        "background": "#0EA5E9",
+        "color": "white",
+        "border": "none",
+        "borderRadius": "6px",
+        "cursor": "pointer",
+        "display": "none",
+    }
+
     app.layout = html.Div(
-        style={"display": "grid", "gridTemplateColumns": "300px 1fr", "gap": "10px",
-               "height": "100vh", "backgroundColor": "#0f1115", "color": "#e6e6e6",
-               "padding": "10px"},
+        id="app-shell",
+        style=app_shell_base,
         children=[
             html.Div(
-                style={"backgroundColor": "#151922", "borderRadius": "10px",
-                       "padding": "12px", "display": "flex", "flexDirection": "column", "gap": "10px"},
+                id="sidebar-panel",
+                style=sidebar_base,
                 children=[
-                    html.H3(dataset_name, style={"margin": "0 0 6px 0"}),
+                    html.Div(
+                        style={
+                            "display": "grid",
+                            "gridTemplateColumns": "auto 1fr",
+                            "gap": "8px",
+                            "alignItems": "center",
+                        },
+                        children=[
+                            html.Button(
+                                "Hide panel",
+                                id="sidebar-toggle",
+                                n_clicks=0,
+                                style={
+                                    "background": "#1f2937",
+                                    "color": "#e5e7eb",
+                                    "border": "1px solid #2b3347",
+                                    "borderRadius": "6px",
+                                    **button_compact,
+                                },
+                            ),
+                            dcc.Checklist(
+                                id="sidebar-pin",
+                                options=[{"label": " Pin", "value": "on"}],
+                                value=["on"],
+                                inputStyle={"marginRight": "6px"},
+                                style={"fontSize": "12px", "justifySelf": "end"},
+                            ),
+                            html.Div("Width", style={"fontSize": "11px", "opacity": "0.7"}),
+                            dcc.Slider(
+                                id="sidebar-width",
+                                min=260,
+                                max=560,
+                                step=10,
+                                value=300,
+                                marks=None,
+                                updatemode="drag",
+                            ),
+                        ],
+                    ),
                     html.Div(
                         style=panel_card,
                         children=[
-                            html.Div(
-                                style={"display": "flex", "alignItems": "center", "justifyContent": "space-between"},
-                                children=[
-                                    html.Div("Labels", style={"fontWeight": "600"}),
-                                    html.Div(
-                                        style={"display": "flex", "gap": "4px"},
-                                        children=[
-                                            html.Button("All", id="labels-all-btn",
-                                                        style={"background": "#374151", "color": "#e5e7eb",
-                                                               "border": "1px solid #2b3347", "borderRadius": "4px",
-                                                               "padding": "2px 8px", "fontSize": "11px", "cursor": "pointer"}),
-                                            html.Button("None", id="labels-none-btn",
-                                                        style={"background": "#374151", "color": "#e5e7eb",
-                                                               "border": "1px solid #2b3347", "borderRadius": "4px",
-                                                               "padding": "2px 8px", "fontSize": "11px", "cursor": "pointer"}),
-                                            html.Button("Reset", id="reset-btn",
-                                                        style={"background": "#2563EB", "color": "white",
-                                                               "border": "none", "borderRadius": "4px",
-                                                               "padding": "2px 8px", "fontSize": "11px", "cursor": "pointer"}),
-                                        ]
-                                    ),
-                                ]
-                            ),
+                            *layer_controls_header,
+                            render_controls,
                             html.Div(
                                 id="label-list",
-                                style={"maxHeight": "260px", "overflowY": "auto",
-                                       "display": "flex", "flexDirection": "column", "gap": "4px",
-                                       "paddingRight": "4px"},
-                                children=[
-                                    html.Div(
-                                        style={"display": "flex", "alignItems": "center", "gap": "5px",
-                                               "minWidth": "0"},
-                                        children=[
-                                            dcc.Checklist(
-                                                id={"type": "label-vis", "index": lid},
-                                                options=[{"label": "", "value": "on"}],
-                                                value=["on"] if lid in default_visible else [],
-                                                style={"flexShrink": "0"}
-                                            ),
-                                            html.Div(
-                                                style={"width": "12px", "height": "12px",
-                                                       "borderRadius": "2px", "flexShrink": "0",
-                                                       "backgroundColor": layer_states[lid]["color"],
-                                                       "border": "1px solid #374151"}
-                                            ),
-                                            html.Span(
-                                                layer_states[lid]["name"],
-                                                title=layer_states[lid]["name"],
-                                                style={"fontSize": "11px", "flex": "1",
-                                                       "overflow": "hidden", "textOverflow": "ellipsis",
-                                                       "whiteSpace": "nowrap", "minWidth": "0"}
-                                            ),
-                                            html.Div(
-                                                dcc.Slider(
-                                                    id={"type": "label-opacity", "index": lid},
-                                                    min=0.0, max=1.0, step=0.05,
-                                                    value=layer_states[lid]["opacity"],
-                                                    updatemode="drag", marks=None,
-                                                    tooltip={"placement": "bottom", "always_visible": False}
-                                                ),
-                                                style={"width": "70px", "flexShrink": "0"}
-                                            ),
-                                        ]
-                                    )
-                                    for lid in layer_states
-                                ]
+                                style=layer_list_style,
+                                children=layer_control_rows
                             ),
                             dcc.Store(
                                 id="vis-store",
@@ -1875,6 +2824,14 @@ def show_viewer_dash(
                             dcc.Store(
                                 id="opacity-store",
                                 data={lid: layer_states[lid]["opacity"] for lid in layer_states}
+                            ),
+                            dcc.Store(
+                                id="transfer-store",
+                                data=default_transfer_points
+                            ),
+                            dcc.Store(
+                                id="active-transfer-point",
+                                data=default_transfer_points[0]["id"]
                             ),
                         ]
                     ),
@@ -1989,13 +2946,23 @@ def show_viewer_dash(
                                                 style={"display": "flex", "flexDirection": "column", "gap": "8px", "padding": "4px 0"},
                                                 children=[
                                                     html.Div("ROI Morphology", style={"fontWeight": "600"}),
-                                                    html.Div("Target label", style={"fontSize": "12px", "opacity": "0.85"}),
+                                                    html.Div(
+                                                        "Target label",
+                                                        style={
+                                                            "fontSize": "12px",
+                                                            "opacity": "0.85",
+                                                            **({"display": "none"} if is_scalar_volume else {})
+                                                        }
+                                                    ),
                                                     dcc.Dropdown(
                                                         id="target-label",
                                                         options=editable_options,
                                                         value=target_default,
                                                         clearable=False,
-                                                        style=dropdown_compact
+                                                        style={
+                                                            **dropdown_compact,
+                                                            **({"display": "none"} if is_scalar_volume else {})
+                                                        }
                                                     ),
                                                     html.Div("Scale factor (diameter)", style={"fontSize": "12px", "opacity": "0.85"}),
                                                     html.Div(id="roi-scale-display", style={"fontSize": "12px", "opacity": "0.85"}),
@@ -2145,6 +3112,7 @@ def show_viewer_dash(
                 ]
             ),
             html.Div(
+                id="plot-panel",
                 style={"display": "grid", "gridTemplateColumns": "1fr 1fr",
                        "gridTemplateRows": "1fr 1fr", "gap": "10px"},
                 children=[
@@ -2155,6 +3123,12 @@ def show_viewer_dash(
                     dcc.Store(id="hover-store"),
                     dcc.Store(id="catch-store")
                 ]
+            ),
+            html.Button(
+                "Tools",
+                id="sidebar-toggle-floating",
+                n_clicks=0,
+                style=floating_toggle_base,
             )
         ]
     )
@@ -2168,11 +3142,6 @@ def show_viewer_dash(
             state["name"],
             state["opacity"]
         )
-
-    def reset_all_layers() -> None:
-        for layer_id, state in layer_states.items():
-            state["current"] = state["original"].copy()
-            refresh_layer_trace(layer_id)
 
     def apply_exclusive_conflicts(target_id: str) -> None:
         target_state = layer_states.get(target_id)
@@ -2259,24 +3228,66 @@ def show_viewer_dash(
         _ALL = "ALL"
 
     @app.callback(
+        Output("app-shell", "style"),
+        Output("sidebar-panel", "style"),
+        Output("sidebar-toggle-floating", "style"),
+        Output("sidebar-toggle", "children"),
+        Input("sidebar-toggle", "n_clicks"),
+        Input("sidebar-toggle-floating", "n_clicks"),
+        Input("sidebar-width", "value"),
+        Input("sidebar-pin", "value"),
+        prevent_initial_call=False
+    )
+    def update_sidebar_layout(toggle_clicks, floating_clicks, sidebar_width, pin_values):
+        try:
+            width = int(sidebar_width)
+        except (TypeError, ValueError):
+            width = 300
+        width = int(np.clip(width, 260, 560))
+        toggle_clicks = int(toggle_clicks or 0)
+        floating_clicks = int(floating_clicks or 0)
+        is_open = toggle_clicks <= floating_clicks
+        is_pinned = "on" in (pin_values or [])
+
+        shell_style = dict(app_shell_base)
+        sidebar_style = dict(sidebar_base)
+        floating_style = dict(floating_toggle_base)
+
+        if not is_open:
+            shell_style["gridTemplateColumns"] = "0px 1fr"
+            sidebar_style["display"] = "none"
+            floating_style["display"] = "block"
+            return shell_style, sidebar_style, floating_style, "Show panel"
+
+        floating_style["display"] = "none"
+        if is_pinned:
+            shell_style["gridTemplateColumns"] = f"{width}px 1fr"
+            sidebar_style["width"] = "auto"
+            sidebar_style["position"] = "relative"
+        else:
+            shell_style["gridTemplateColumns"] = "0px 1fr"
+            sidebar_style.update({
+                "position": "absolute",
+                "top": "10px",
+                "left": "10px",
+                "bottom": "10px",
+                "width": f"{width}px",
+                "zIndex": "10",
+                "boxShadow": "0 16px 40px rgba(0, 0, 0, 0.42)",
+            })
+        return shell_style, sidebar_style, floating_style, "Hide panel"
+
+    @app.callback(
         Output("vis-store", "data"),
         Input({"type": "label-vis", "index": _ALL}, "value"),
         State({"type": "label-vis", "index": _ALL}, "id"),
-        Input("labels-all-btn", "n_clicks"),
-        Input("labels-none-btn", "n_clicks"),
         State("vis-store", "data"),
         prevent_initial_call=True
     )
-    def update_vis_store(values, ids, _all_clicks, _none_clicks, current_vis):
+    def update_vis_store(values, ids, current_vis):
         triggered = callback_context.triggered or []
         if not triggered:
             raise PreventUpdate
-        prop = triggered[0]["prop_id"]
-        if "labels-all-btn" in prop:
-            return {lid: True for lid in layer_states}
-        if "labels-none-btn" in prop:
-            return {lid: False for lid in layer_states}
-        # pattern-match update
         result = dict(current_vis or {})
         for id_dict, val in zip(ids or [], values or []):
             lid = id_dict["index"]
@@ -2297,6 +3308,183 @@ def show_viewer_dash(
             if val is not None:
                 result[lid] = float(np.clip(val, 0.0, 1.0))
         return result
+
+    @app.callback(
+        Output("active-transfer-point", "data"),
+        Input("transfer-map", "clickData"),
+        Input({"type": "tf-row", "index": _ALL}, "n_clicks"),
+        State("transfer-store", "data"),
+        State({"type": "tf-row", "index": _ALL}, "id"),
+        State("active-transfer-point", "data"),
+        prevent_initial_call=True
+    )
+    def update_active_transfer_point(click_data, row_clicks, transfer_points, row_ids, current_active):
+        if not is_scalar_volume:
+            raise PreventUpdate
+        points = _sanitize_transfer_points(transfer_points, scalar_min, scalar_max)
+        current_active = _resolved_active_transfer_id(points, current_active)
+        triggered = callback_context.triggered or []
+        if not triggered:
+            raise PreventUpdate
+        prop = triggered[0]["prop_id"]
+
+        if prop.startswith("transfer-map"):
+            clicked_points = (click_data or {}).get("points") or []
+            if not clicked_points:
+                raise PreventUpdate
+            point = clicked_points[0]
+            if point.get("curveNumber") != 1:
+                raise PreventUpdate
+            custom = point.get("customdata")
+            if custom:
+                resolved = _resolved_active_transfer_id(points, custom)
+                if resolved == current_active:
+                    raise PreventUpdate
+                return resolved
+            try:
+                point_index = int(point.get("pointIndex", point.get("pointNumber")))
+            except (TypeError, ValueError):
+                raise PreventUpdate
+            if 0 <= point_index < len(points):
+                resolved = points[point_index]["id"]
+                if resolved == current_active:
+                    raise PreventUpdate
+                return resolved
+            raise PreventUpdate
+
+        if "\"type\":\"tf-row\"" in prop or "'type': 'tf-row'" in prop:
+            raw_id = prop.rsplit(".", 1)[0]
+            try:
+                clicked_id = json.loads(raw_id).get("index")
+            except Exception:
+                clicked_id = None
+            if clicked_id:
+                resolved = _resolved_active_transfer_id(points, clicked_id)
+                if resolved == current_active:
+                    raise PreventUpdate
+                return resolved
+            raise PreventUpdate
+
+        raise PreventUpdate
+
+    @app.callback(
+        Output("transfer-store", "data"),
+        Input("tf-add-point", "n_clicks"),
+        Input({"type": "tf-opacity", "index": _ALL}, "value"),
+        Input("active-transfer-opacity", "value"),
+        Input({"type": "tf-remove", "index": _ALL}, "n_clicks"),
+        State({"type": "tf-opacity", "index": _ALL}, "id"),
+        State("active-transfer-point", "data"),
+        State({"type": "tf-remove", "index": _ALL}, "id"),
+        State("transfer-store", "data"),
+        prevent_initial_call=True
+    )
+    def update_transfer_store(add_clicks, opacities, active_opacity, remove_clicks,
+                              opacity_ids, active_id, remove_ids, current_points):
+        if not is_scalar_volume:
+            raise PreventUpdate
+
+        triggered = callback_context.triggered or []
+        if not triggered:
+            raise PreventUpdate
+        prop = triggered[0]["prop_id"]
+
+        points = _sanitize_transfer_points(current_points, scalar_min, scalar_max)
+        by_id = {point["id"]: dict(point) for point in points}
+        changed = False
+
+        for id_dict, opacity in zip(opacity_ids or [], opacities or []):
+            pid = id_dict.get("index")
+            if pid is None:
+                continue
+            point = by_id.get(pid, {
+                "id": pid,
+                "value": scalar_min,
+                "opacity": 0.1,
+            })
+            try:
+                next_opacity = float(np.clip(float(opacity), 0.0, 1.0))
+            except (TypeError, ValueError):
+                next_opacity = float(np.clip(point.get("opacity", 0.1), 0.0, 1.0))
+            if not np.isclose(float(point.get("opacity", 0.1)), next_opacity):
+                changed = True
+            point["opacity"] = next_opacity
+            by_id[pid] = point
+
+        if prop.startswith("active-transfer-opacity"):
+            active_id = _resolved_active_transfer_id(points, active_id)
+            if active_id in by_id:
+                try:
+                    next_opacity = float(np.clip(float(active_opacity), 0.0, 1.0))
+                except (TypeError, ValueError):
+                    next_opacity = float(np.clip(by_id[active_id].get("opacity", 0.1), 0.0, 1.0))
+                if not np.isclose(float(by_id[active_id].get("opacity", 0.1)), next_opacity):
+                    changed = True
+                by_id[active_id]["opacity"] = next_opacity
+
+        points = _sanitize_transfer_points(list(by_id.values()), scalar_min, scalar_max)
+
+        if prop.startswith("tf-add-point"):
+            sorted_points = sorted(points, key=lambda p: p["value"])
+            gaps = [
+                (sorted_points[i + 1]["value"] - sorted_points[i]["value"], i)
+                for i in range(len(sorted_points) - 1)
+            ]
+            if gaps:
+                _, gap_idx = max(gaps, key=lambda item: item[0])
+                left = sorted_points[gap_idx]
+                right = sorted_points[gap_idx + 1]
+                new_value = 0.5 * (left["value"] + right["value"])
+                new_opacity = 0.5 * (left["opacity"] + right["opacity"])
+            else:
+                new_value = 0.5 * (scalar_min + scalar_max)
+                new_opacity = 0.1
+            seed = int(add_clicks or 0)
+            new_id = f"tf_user_{seed}_{len(points)}"
+            existing = {point["id"] for point in points}
+            while new_id in existing:
+                seed += 1
+                new_id = f"tf_user_{seed}_{len(points)}"
+            points.append({
+                "id": new_id,
+                "value": float(np.clip(new_value, scalar_min, scalar_max)),
+                "opacity": float(np.clip(new_opacity, 0.0, 1.0)),
+            })
+            return _sanitize_transfer_points(points, scalar_min, scalar_max)
+
+        if "\"type\":\"tf-remove\"" in prop or "'type': 'tf-remove'" in prop:
+            raw_id = prop.rsplit(".", 1)[0]
+            remove_id = None
+            try:
+                remove_id = json.loads(raw_id).get("index")
+            except Exception:
+                for id_dict, clicks in zip(remove_ids or [], remove_clicks or []):
+                    if clicks:
+                        remove_id = id_dict.get("index")
+                        break
+            if remove_id and len(points) > 2:
+                points = [point for point in points if point["id"] != remove_id]
+            return _sanitize_transfer_points(points, scalar_min, scalar_max)
+
+        if not changed:
+            raise PreventUpdate
+        return _sanitize_transfer_points(points, scalar_min, scalar_max)
+
+    @app.callback(
+        Output("transfer-map", "figure"),
+        Output("transfer-editor", "children"),
+        Input("transfer-store", "data"),
+        Input("active-transfer-point", "data"),
+        Input("transfer-color-scheme", "value"),
+        prevent_initial_call=False
+    )
+    def render_transfer_editor(points, active_id, color_scheme):
+        clean_points = _sanitize_transfer_points(points, scalar_min, scalar_max)
+        active_id = _resolved_active_transfer_id(clean_points, active_id)
+        return (
+            make_transfer_figure(clean_points, active_id, color_scheme),
+            make_transfer_editor(clean_points, active_id),
+        )
 
     @app.callback(
         Output("roi-scale-pos", "value"),
@@ -2482,13 +3670,15 @@ def show_viewer_dash(
         Input("roi-line-opacity", "value"),
          Input("roi-sphere-color", "value"),
          Input("roi-sphere-opacity", "value"),
+        Input("volume-opacity", "value"),
+        Input("transfer-store", "data"),
+        Input("transfer-color-scheme", "value"),
         Input("roi-scale-pos", "value"),
         Input("roi-scale-apply", "n_clicks"),
         Input("shape-k", "value"),
         Input("shape-window", "value"),
         Input("target-label", "value"),
         Input("threeD-view", "relayoutData"),
-        Input("reset-btn", "n_clicks"),
         prevent_initial_call=False
     )
     def update(vis_data, opacity_data, x_idx, y_idx, z_idx,
@@ -2498,15 +3688,16 @@ def show_viewer_dash(
                p1_opacity, p2_opacity,
                line_color, line_opacity,
              sphere_color, sphere_opacity,
+                         volume_opacity,
+             transfer_data,
+             transfer_color_scheme,
              scale_pos, scale_apply_clicks,
              shape_k,
              shape_window,
              target_label,
-             relayout_data, n_clicks):
+             relayout_data):
         triggered = [t["prop_id"] for t in (callback_context.triggered or [])]
-        reset_triggered = "reset-btn.n_clicks" in triggered
-        if reset_triggered:
-            reset_all_layers()
+        render_mode = "volume" if is_vti_viewer else "surface"
 
         center_idx = (
             int(np.clip(round((p1_x + p2_x) / 2.0), 0, Nx - 1)),
@@ -2517,7 +3708,7 @@ def show_viewer_dash(
             np.array([p2_x - p1_x, p2_y - p1_y, p2_z - p1_z], dtype=float)
         ))))
 
-        if (not reset_triggered) and ("roi-scale-apply.n_clicks" in triggered):
+        if "roi-scale-apply.n_clicks" in triggered:
             sf = _pos_to_scale(scale_pos if scale_pos is not None else 0.5)
             sf = max(0.001, min(99.999, sf))
             target_label = target_label if target_label in layer_states else target_default
@@ -2545,88 +3736,205 @@ def show_viewer_dash(
         center = ((p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2.0, (p1[2] + p2[2]) / 2.0)
         radius = 0.5 * float(np.linalg.norm(np.array(p2) - np.array(p1)))
 
-        x_slice, x_colors = compose_layer_slice(layer_states, visible_ids, "x", x_idx)
-        y_slice, y_colors = compose_layer_slice(layer_states, visible_ids, "y", y_idx)
-        z_slice, z_colors = compose_layer_slice(layer_states, visible_ids, "z", z_idx)
+        transfer_points = _sanitize_transfer_points(transfer_data, scalar_min, scalar_max)
+        scalar_colorscale = _transfer_colorscale(transfer_color_scheme) if is_scalar_volume else None
+        scalar_visible = bool(is_scalar_volume and scalar_layer_id in visible_ids and scalar_data is not None)
+
+        if scalar_visible:
+            x_slice = scalar_data[:, :, x_idx]
+            y_slice = scalar_data[:, y_idx, :]
+            z_slice = scalar_data[z_idx, :, :]
+            x_colors = y_colors = z_colors = []
+        elif is_scalar_volume:
+            x_slice = np.full((Nz, Ny), np.nan, dtype=np.float32)
+            y_slice = np.full((Nz, Nx), np.nan, dtype=np.float32)
+            z_slice = np.full((Ny, Nx), np.nan, dtype=np.float32)
+            x_colors = y_colors = z_colors = []
+        else:
+            scalar_colorscale = None
+            x_slice, x_colors = compose_layer_slice(layer_states, visible_ids, "x", x_idx)
+            y_slice, y_colors = compose_layer_slice(layer_states, visible_ids, "y", y_idx)
+            z_slice, z_colors = compose_layer_slice(layer_states, visible_ids, "z", z_idx)
 
         roi_x = _roi_slice_mask(grid, "x", x_idx, center, radius)
         roi_y = _roi_slice_mask(grid, "y", y_idx, center, radius)
         roi_z = _roi_slice_mask(grid, "z", z_idx, center, radius)
 
-        x_fig = _slice_fig(
-            x_slice,
-            f"X-slice (i={x_idx})",
-            COLOR_SCHEME["slice_x"],
-            colorscale=_discrete_label_colorscale(x_colors),
-            zmax=max(1, len(x_colors))
-        )
-        y_fig = _slice_fig(
-            y_slice,
-            f"Y-slice (j={y_idx})",
-            COLOR_SCHEME["slice_y"],
-            colorscale=_discrete_label_colorscale(y_colors),
-            zmax=max(1, len(y_colors))
-        )
-        z_fig = _slice_fig(
-            z_slice,
-            f"Z-slice (k={z_idx})",
-            COLOR_SCHEME["slice_z"],
-            colorscale=_discrete_label_colorscale(z_colors),
-            zmax=max(1, len(z_colors))
-        )
+        if is_scalar_volume:
+            x_fig = _slice_fig(
+                x_slice,
+                f"X-slice (i={x_idx})",
+                COLOR_SCHEME["slice_x"],
+                colorscale=scalar_colorscale,
+                zmin=scalar_min,
+                zmax=scalar_max,
+                showscale=False
+            )
+            y_fig = _slice_fig(
+                y_slice,
+                f"Y-slice (j={y_idx})",
+                COLOR_SCHEME["slice_y"],
+                colorscale=scalar_colorscale,
+                zmin=scalar_min,
+                zmax=scalar_max,
+                showscale=False
+            )
+            z_fig = _slice_fig(
+                z_slice,
+                f"Z-slice (k={z_idx})",
+                COLOR_SCHEME["slice_z"],
+                colorscale=scalar_colorscale,
+                zmin=scalar_min,
+                zmax=scalar_max,
+                showscale=False
+            )
+        else:
+            x_fig = _slice_fig(
+                x_slice,
+                f"X-slice (i={x_idx})",
+                COLOR_SCHEME["slice_x"],
+                colorscale=_discrete_label_colorscale(x_colors),
+                zmax=max(1, len(x_colors))
+            )
+            y_fig = _slice_fig(
+                y_slice,
+                f"Y-slice (j={y_idx})",
+                COLOR_SCHEME["slice_y"],
+                colorscale=_discrete_label_colorscale(y_colors),
+                zmax=max(1, len(y_colors))
+            )
+            z_fig = _slice_fig(
+                z_slice,
+                f"Z-slice (k={z_idx})",
+                COLOR_SCHEME["slice_z"],
+                colorscale=_discrete_label_colorscale(z_colors),
+                zmax=max(1, len(z_colors))
+            )
 
         x_fig.add_trace(_roi_overlay_trace(roi_x, sphere_color, sphere_opacity))
         y_fig.add_trace(_roi_overlay_trace(roi_y, sphere_color, sphere_opacity))
         z_fig.add_trace(_roi_overlay_trace(roi_z, sphere_color, sphere_opacity))
 
-        extent_x, extent_y, extent_z = grid["extent_mm"]
+        x_range, y_range, z_range = _grid_bounds_xyz(grid, pad_fraction=0.02)
+        extent_x = x_range[1] - x_range[0]
+        extent_y = y_range[1] - y_range[0]
+        extent_z = z_range[1] - z_range[0]
         aspectratio = _aspectratio_from_extents((extent_x, extent_y, extent_z))
 
         fig3d = go.Figure(data=[mesh_trace] if mesh_trace is not None else [])
-        for layer_id in visible_ids:
-            trace = layer_states[layer_id]["trace"]
-            if trace is None:
-                continue
-            # Apply current opacity from store (may differ from cached trace)
-            current_opacity = opacity_data.get(layer_id, layer_states[layer_id]["opacity"])
-            # Plotly Mesh3d / Scatter3d support opacity update via update_traces
-            fig3d.add_trace(trace)
-            fig3d.update_traces(
-                opacity=float(np.clip(current_opacity, 0.0, 1.0)),
-                selector=dict(name=layer_states[layer_id]["name"])
-            )
-        plane_traces = [
-            _slice_plane_surface(
-                x_slice,
-                grid,
-                "x",
-                x_idx,
-                COLOR_SCHEME["slice_x"],
-                colorscale=_discrete_label_plane_colorscale(x_colors),
-                cmax=max(1, len(x_colors))
-            ),
-            _slice_plane_surface(
-                y_slice,
-                grid,
-                "y",
-                y_idx,
-                COLOR_SCHEME["slice_y"],
-                colorscale=_discrete_label_plane_colorscale(y_colors),
-                cmax=max(1, len(y_colors))
-            ),
-            _slice_plane_surface(
-                z_slice,
-                grid,
-                "z",
-                z_idx,
-                COLOR_SCHEME["slice_z"],
-                colorscale=_discrete_label_plane_colorscale(z_colors),
-                cmax=max(1, len(z_colors))
-            )
-        ]
-        for plane in plane_traces:
-            if plane is not None:
-                fig3d.add_trace(plane)
+        if render_mode == "volume":
+            try:
+                volume_opacity = float(volume_opacity)
+            except (TypeError, ValueError):
+                volume_opacity = 0.12
+            volume_opacity = max(0.01, min(0.9, volume_opacity))
+            if scalar_visible:
+                scalar_layer_opacity = float(np.clip(
+                    opacity_data.get(scalar_layer_id, layer_states[scalar_layer_id]["opacity"]),
+                    0.0,
+                    1.0,
+                ))
+                trace = scalar_to_volume_trace(
+                    scalar_data,
+                    grid,
+                    transfer_points,
+                    scalar_range,
+                    volume_opacity * scalar_layer_opacity,
+                    transfer_color_scheme,
+                    layer_states[scalar_layer_id]["name"]
+                )
+                if trace is not None:
+                    fig3d.add_trace(trace)
+            elif not is_scalar_volume:
+                for layer_id in visible_ids:
+                    trace = mask_to_volume_trace(
+                        layer_states[layer_id]["current"],
+                        grid,
+                        layer_states[layer_id]["color"],
+                        layer_states[layer_id]["name"],
+                        float(np.clip(opacity_data.get(layer_id, layer_states[layer_id]["opacity"]), 0.0, 1.0)) * volume_opacity
+                    )
+                    if trace is not None:
+                        fig3d.add_trace(trace)
+        else:
+            for layer_id in visible_ids:
+                trace = layer_states[layer_id]["trace"]
+                if trace is None:
+                    continue
+                # Apply current opacity from store (may differ from cached trace)
+                current_opacity = opacity_data.get(layer_id, layer_states[layer_id]["opacity"])
+                # Plotly Mesh3d / Scatter3d support opacity update via update_traces
+                fig3d.add_trace(trace)
+                fig3d.update_traces(
+                    opacity=float(np.clip(current_opacity, 0.0, 1.0)),
+                    selector=dict(name=layer_states[layer_id]["name"])
+                )
+            if is_scalar_volume:
+                plane_traces = [
+                    _slice_plane_surface(
+                        x_slice,
+                        grid,
+                        "x",
+                        x_idx,
+                        COLOR_SCHEME["slice_x"],
+                        colorscale=scalar_colorscale,
+                        cmin=scalar_min,
+                        cmax=scalar_max
+                    ),
+                    _slice_plane_surface(
+                        y_slice,
+                        grid,
+                        "y",
+                        y_idx,
+                        COLOR_SCHEME["slice_y"],
+                        colorscale=scalar_colorscale,
+                        cmin=scalar_min,
+                        cmax=scalar_max
+                    ),
+                    _slice_plane_surface(
+                        z_slice,
+                        grid,
+                        "z",
+                        z_idx,
+                        COLOR_SCHEME["slice_z"],
+                        colorscale=scalar_colorscale,
+                        cmin=scalar_min,
+                        cmax=scalar_max
+                    )
+                ]
+            else:
+                plane_traces = [
+                    _slice_plane_surface(
+                        x_slice,
+                        grid,
+                        "x",
+                        x_idx,
+                        COLOR_SCHEME["slice_x"],
+                        colorscale=_discrete_label_plane_colorscale(x_colors),
+                        cmax=max(1, len(x_colors))
+                    ),
+                    _slice_plane_surface(
+                        y_slice,
+                        grid,
+                        "y",
+                        y_idx,
+                        COLOR_SCHEME["slice_y"],
+                        colorscale=_discrete_label_plane_colorscale(y_colors),
+                        cmax=max(1, len(y_colors))
+                    ),
+                    _slice_plane_surface(
+                        z_slice,
+                        grid,
+                        "z",
+                        z_idx,
+                        COLOR_SCHEME["slice_z"],
+                        colorscale=_discrete_label_plane_colorscale(z_colors),
+                        cmax=max(1, len(z_colors))
+                    )
+                ]
+            for plane in plane_traces:
+                if plane is not None:
+                    fig3d.add_trace(plane)
         for frame in _slice_frames(grid, x_idx, y_idx, z_idx):
             fig3d.add_trace(frame)
         fig3d.add_trace(go.Scatter3d(
@@ -2657,7 +3965,7 @@ def show_viewer_dash(
         sphere = _sphere_surface(center, radius, sphere_color, sphere_opacity)
         if sphere is not None:
             fig3d.add_trace(sphere)
-        uirev = 0 if n_clicks is None else n_clicks
+        uirev = "vti-volume" if is_vti_viewer else "mesh-surface"
         camera_state = None
         if isinstance(relayout_data, dict):
             if "scene.camera" in relayout_data:
@@ -2676,9 +3984,9 @@ def show_viewer_dash(
                 bgcolor="#000000",
                 aspectmode="manual",
                 aspectratio=aspectratio,
-                xaxis=dict(title="X (mm)", range=[-extent_x/2, extent_x/2], showgrid=False, showspikes=False),
-                yaxis=dict(title="Y (mm)", range=[-extent_y/2, extent_y/2], showgrid=False, showspikes=False),
-                zaxis=dict(title="Z (mm)", range=[-extent_z/2, extent_z/2], showgrid=False, showspikes=False),
+                xaxis=dict(title="X (mm)", range=list(x_range), showgrid=False, showspikes=False),
+                yaxis=dict(title="Y (mm)", range=list(y_range), showgrid=False, showspikes=False),
+                zaxis=dict(title="Z (mm)", range=list(z_range), showgrid=False, showspikes=False),
             )
         )
         if camera_state:
@@ -2851,6 +4159,13 @@ def show_viewer_dash(
         if isinstance(catch_data, dict):
             catch_txt = f"Catch: ({catch_data.get('i')},{catch_data.get('j')},{catch_data.get('k')})"
 
+        if is_scalar_volume:
+            return (
+                f"Volume | X={x_idx}, Y={y_idx}, Z={z_idx}"
+                f" | P1=({p1_x},{p1_y},{p1_z}) P2=({p2_x},{p2_y},{p2_z})"
+                f" | {hover_txt} | {catch_txt}"
+            )
+
         vis_data = vis_data or {}
         active_names = [
             layer_states[lid]["name"]
@@ -2859,8 +4174,9 @@ def show_viewer_dash(
         ]
         target_name = layer_states.get(target_label, layer_states[target_default])["name"]
 
+        active_label = "Active volume" if is_scalar_volume else "Active labels"
         return (
-            f"Active labels: {', '.join(active_names) if active_names else '-'} | Target: {target_name}"
+            f"{active_label}: {', '.join(active_names) if active_names else '-'} | Target: {target_name}"
             f" | X={x_idx}, Y={y_idx}, Z={z_idx}"
             f" | P1=({p1_x},{p1_y},{p1_z}) P2=({p2_x},{p2_y},{p2_z})"
             f" | {hover_txt} | {catch_txt}"
@@ -2880,7 +4196,7 @@ def run_pipeline(
     spacing: float | None = None,
     n: int | None = None,
     margin_frac: float = 0.10,
-    out_npz: str = "outputs/masks_demo.npz",
+    out_dir: str = "outputs",
     show: bool = True,
     mc_map: str = "xyz",
     viewer: str = "dash",
@@ -2898,6 +4214,8 @@ def run_pipeline(
         err(f"Input not found: {in_mesh_path}")
         raise FileNotFoundError(in_mesh_path)
 
+    out_root, out_npz = _resolve_output_paths(in_mesh_path, out_dir)
+
     suffix = input_path.suffix.lower()
 
     # --- VTI directory: assemble spatial tiles then extract labels ---
@@ -2910,13 +4228,18 @@ def run_pipeline(
             max_dim=vti_max_dim,
             max_labels=vti_max_labels,
         )
-        Path(out_npz).parent.mkdir(parents=True, exist_ok=True)
         layer_arrays = {
             f"mask_{layer['id']}": layer["mask"].astype(np.uint8)
             for layer in layers
         }
+        scalar_layers = [
+            layer for layer in layers
+            if layer.get("volume_kind") == "scalar" and layer.get("scalar_data") is not None
+        ]
+        if scalar_layers:
+            layer_arrays["scalar_values"] = scalar_layers[0]["scalar_data"].astype(np.float32, copy=False)
         np.savez_compressed(
-            out_npz,
+            str(out_npz),
             **layer_arrays,
             spacing=np.array(grid["spacing"]),
             origin=np.array(grid["origin"]),
@@ -2930,11 +4253,17 @@ def run_pipeline(
             source_type=np.array("vti_directory"),
             source_path=np.array(str(input_path)),
             vti_array=np.array(metadata["array_name"]),
+            vti_discrete_labels=np.array(metadata["discrete_labels"]),
+            vti_volume_kind=np.array(metadata.get("volume_kind", "labels")),
+            vti_scalar_range=np.array(metadata.get("scalar_range", (0.0, 1.0))),
+            vti_unique_value_count=np.array(metadata.get("unique_value_count", 0)),
+            vti_non_background_unique_value_count=np.array(metadata.get("non_background_unique_value_count", 0)),
         )
-        ok(f"VTI directory label masks saved (uint8) → {out_npz}")
+        save_desc = "scalar volume + occupancy mask" if metadata.get("volume_kind") == "scalar" else "label masks"
+        ok(f"VTI directory {save_desc} saved → {out_npz}")
 
         if export_stl:
-            stl_root = Path(stl_dir) if stl_dir else Path(out_npz).parent
+            stl_root = Path(stl_dir) if stl_dir else out_root
             stl_root.mkdir(parents=True, exist_ok=True)
             stl_total = 0
             for layer in layers:
@@ -2948,7 +4277,7 @@ def run_pipeline(
                 grid=grid,
                 mask_layers=layers,
                 port=port,
-                dataset_name=input_path.name,
+                viewer_kind="volume",
             )
         return
 
@@ -2961,13 +4290,18 @@ def run_pipeline(
             max_dim=vti_max_dim,
             max_labels=vti_max_labels,
         )
-        Path(out_npz).parent.mkdir(parents=True, exist_ok=True)
         layer_arrays = {
             f"mask_{layer['id']}": layer["mask"].astype(np.uint8)
             for layer in layers
         }
+        scalar_layers = [
+            layer for layer in layers
+            if layer.get("volume_kind") == "scalar" and layer.get("scalar_data") is not None
+        ]
+        if scalar_layers:
+            layer_arrays["scalar_values"] = scalar_layers[0]["scalar_data"].astype(np.float32, copy=False)
         np.savez_compressed(
-            out_npz,
+            str(out_npz),
             **layer_arrays,
             spacing=np.array(grid["spacing"]),
             origin=np.array(grid["origin"]),
@@ -2980,11 +4314,17 @@ def run_pipeline(
             source_type=np.array("vti"),
             source_path=np.array(str(input_path)),
             vti_array=np.array(metadata["array_name"]),
+            vti_discrete_labels=np.array(metadata["discrete_labels"]),
+            vti_volume_kind=np.array(metadata.get("volume_kind", "labels")),
+            vti_scalar_range=np.array(metadata.get("scalar_range", (0.0, 1.0))),
+            vti_unique_value_count=np.array(metadata.get("unique_value_count", 0)),
+            vti_non_background_unique_value_count=np.array(metadata.get("non_background_unique_value_count", 0)),
         )
-        ok(f"VTI label masks saved (uint8) → {out_npz}")
+        save_desc = "scalar volume + occupancy mask" if metadata.get("volume_kind") == "scalar" else "label masks"
+        ok(f"VTI {save_desc} saved → {out_npz}")
 
         if export_stl:
-            stl_root = Path(stl_dir) if stl_dir else Path(out_npz).parent
+            stl_root = Path(stl_dir) if stl_dir else out_root
             stl_root.mkdir(parents=True, exist_ok=True)
             stl_total = 0
             for layer in layers:
@@ -2998,7 +4338,7 @@ def run_pipeline(
                 grid=grid,
                 mask_layers=layers,
                 port=port,
-                dataset_name=input_path.name,
+                viewer_kind="volume",
             )
         return
 
@@ -3023,13 +4363,12 @@ def run_pipeline(
     inside_u8, on_u8, out_u8 = classify_by_winding(mesh, grid, band=0.6)
 
     # Save masks in a single compressed NPZ with spacing/origin like core.run_pipeline
-    Path(out_npz).parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(out_npz, inside=inside_u8, on=on_u8, out=out_u8,
+    np.savez_compressed(str(out_npz), inside=inside_u8, on=on_u8, out=out_u8,
                         spacing=np.array(grid["spacing"]), origin=np.array(grid["origin"]))
     ok(f"Masks saved (uint8) → {out_npz}")
 
     if export_stl:
-        stl_root = Path(stl_dir) if stl_dir else Path(out_npz).parent
+        stl_root = Path(stl_dir) if stl_dir else out_root
         stl_root.mkdir(parents=True, exist_ok=True)
         save_mask_stl(inside_u8, grid, stl_root / "inside.stl", name="inside")
         save_mask_stl(on_u8, grid, stl_root / "on.stl", name="on")
@@ -3039,10 +4378,10 @@ def run_pipeline(
     # Viewer
     if show:
         if viewer == "dash":
-            show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=port)
+            show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=port, viewer_kind="surface")
         else:
             # fallback: use the 3-D html viewer (not implemented separately here)
-            show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=port)
+            show_viewer_dash(mesh, inside_u8, on_u8, out_u8, grid, port=port, viewer_kind="surface")
 
 # ---------------------------------------------------------------------
 # CLI
@@ -3050,7 +4389,7 @@ def run_pipeline(
 def main():
     import argparse
 
-    ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline for STL meshes or VTI voxel labels")
+    ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline for STL meshes or VTI voxel volumes")
     ap.add_argument("--in", dest="in_mesh", required=True,
                     help="Input mesh (.stl/.obj/.ply) or voxel image (.vti)")
     ap.add_argument("--spacing", type=float, default=None,
@@ -3062,8 +4401,8 @@ def main():
     ap.add_argument("--mc-map", type=str, default="zyx",
                     choices=["zyx", "xyz", "xzy", "yxz", "yzx", "zxy"],
                     help="Axis mapping from marching-cubes (z,y,x) → (X,Y,Z).")
-    ap.add_argument("--out", default="outputs/masks_demo.npz",
-                    help="Output compressed npz file")
+    ap.add_argument("--out", default="outputs",
+                    help="Output directory. NPZ filename is auto-derived from input name.")
     ap.add_argument("--no-show", action="store_true",
                     help="Do not open viewer")
     ap.add_argument("--viewer", choices=["dash","html"], default="dash",
@@ -3073,17 +4412,17 @@ def main():
     ap.add_argument("--export-stl", action="store_true",
                     help="Export inside/on/out masks as STL files.")
     ap.add_argument("--stl-dir", default=None,
-                    help="Directory for STL export (defaults to --out folder).")
+                    help="Directory for STL export (defaults to --out directory).")
     ap.add_argument("--vti-array", default=None,
                     help="VTI DataArray name to read. Defaults to the VTI Scalars array or first array.")
     ap.add_argument("--vti-background", type=float, default=0.0,
-                    help="Background scalar/label value for VTI label extraction.")
+                    help="Background scalar/label value for VTI volume extraction.")
     ap.add_argument("--vti-background-eps", type=float, default=0.0,
                     help="Tolerance for matching floating-point VTI background values.")
     ap.add_argument("--vti-max-dim", type=int, default=160,
                     help="Maximum sampled VTI dimension for browser interaction. Use 0 for full resolution.")
     ap.add_argument("--vti-max-labels", type=int, default=64,
-                    help="Maximum number of discrete non-background VTI labels to split into layers.")
+                    help="Maximum number of discrete non-background VTI values to split into label layers.")
 
     args = ap.parse_args()
 
@@ -3095,7 +4434,7 @@ def main():
             spacing=spacing,
             n=args.n,
             margin_frac=args.margin,
-            out_npz=args.out,
+            out_dir=args.out,
             show=not args.no_show,
             mc_map=args.mc_map,
             viewer=args.viewer,
