@@ -26,6 +26,7 @@ env/
 
 # ---- Outputs & Artifacts ----
 outputs/
+output/
 data/
 demos/outputs/
 *.nii
@@ -34,7 +35,6 @@ demos/outputs/
 *.raw
 *.nrrd
 *.vtk
-*.vti
 *.vtp
 *.vtu
 
