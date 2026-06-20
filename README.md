@@ -160,11 +160,22 @@ Example VTI import interface:
 By default the Dash viewer opens with three orthogonal slices and a linked 3D view. Use `--no-show`
 for a headless import/export smoke test.
 
+## Run Unit Tests
+
+After activating the `fakect` conda environment, run:
+
+```bash
+python -m unittest discover -s tests
+```
+
+The current tests are smoke tests for the README examples. They run the STL and VTI commands with
+`--no-show` and write temporary outputs outside the repository.
+
 ## Developer instructions (make changes & run tests)
 
 1. Make code changes in `src/fakect.py` using your editor of choice.
 
-2. There is currently no automated Python test suite in this repository. The `tests/` directory contains a VTI fixture for smoke checks. Use the CLI directly to validate changes:
+2. Run the unit tests above. You can also use the CLI directly to validate a specific change:
 
 ```bash
 python src/fakect.py --in data/cube.stl --n 8 --out outputs --no-show
@@ -184,8 +195,7 @@ python src/fakect.py --in data/arm.vti --out outputs --no-show --vti-max-dim 64
 	- Set up a Python 3.10 runner
 	- Install the runtime dependencies listed above
 	- Run `python src/fakect.py --help` as a smoke test
-	- Run a headless STL smoke test with `data/cube.stl`
-	- Run a headless VTI smoke test with `tests/activity_grid_000_001_005.vti`
+	- Run `python -m unittest discover -s tests`
 	- Add targeted automated tests before relying on CI for behavior changes
 
 ## Contact / contributing
