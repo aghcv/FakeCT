@@ -153,6 +153,10 @@ Scalar/range VTI files use a ParaView-style transfer map: choose one color schem
 range, add or remove opacity points, type exact opacity values, and drag points horizontally on the
 map to reposition them.
 
+Example VTI import interface:
+
+<img src="docs/images/vti-import-interface.png" alt="FakeCT VTI import interface with orthogonal slices, transfer map controls, and linked 3D volume view" />
+
 By default the Dash viewer opens with three orthogonal slices and a linked 3D view. Use `--no-show`
 for a headless import/export smoke test.
 
