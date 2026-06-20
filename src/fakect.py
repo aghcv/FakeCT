@@ -4,8 +4,8 @@
 # Produces winding-based in/on/out masks and (optionally) launches a Dash viewer.
 #
 # Usage examples:
-#   python fakect.py --in cube.stl --n 8 --out outputs
-#   python fakect.py --in carotid.stl --n 9 --margin 0.10 --out examples/outputs
+#   python src/fakect.py --in data/cube.stl --n 8 --out outputs
+#   python src/fakect.py --in data/carotid.stl --n 8 --margin 0.10 --out outputs
 #
 # Requirements & installation
 #  Recommended (conda - easiest, includes python-igl):
@@ -4182,9 +4182,10 @@ def show_viewer_dash(
             f" | {hover_txt} | {catch_txt}"
         )
 
-    # Open browser on a fresh port each run to avoid caching
+    # Use the requested port. Passing --port 0 picks a fresh port in the app range.
     import threading, webbrowser, random
-    port = random.randint(8050, 9000)
+    requested_port = int(port or 0)
+    port = random.randint(8050, 9000) if requested_port <= 0 else requested_port
     threading.Timer(0.5, lambda: webbrowser.open(f"http://127.0.0.1:{port}")).start()
     app.run(debug=False, port=port)
 
@@ -4391,7 +4392,7 @@ def main():
 
     ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline for STL meshes or VTI voxel volumes")
     ap.add_argument("--in", dest="in_mesh", required=True,
-                    help="Input mesh (.stl/.obj/.ply) or voxel image (.vti)")
+                    help="Input mesh (.stl/.obj/.ply), voxel image (.vti), or directory of VTI tiles")
     ap.add_argument("--spacing", type=float, default=None,
                     help="Voxel edge length in mm (if provided, N will be computed as next power-of-two)")
     ap.add_argument("--n", type=int, default=7,
@@ -4400,15 +4401,15 @@ def main():
                     help="Extra margin fraction around the mesh AABB (default 0.10 = 10%%)")
     ap.add_argument("--mc-map", type=str, default="zyx",
                     choices=["zyx", "xyz", "xzy", "yxz", "yzx", "zxy"],
-                    help="Axis mapping from marching-cubes (z,y,x) → (X,Y,Z).")
+                    help="Legacy marching-cubes axis mapping option; accepted for compatibility.")
     ap.add_argument("--out", default="outputs",
                     help="Output directory. NPZ filename is auto-derived from input name.")
     ap.add_argument("--no-show", action="store_true",
                     help="Do not open viewer")
     ap.add_argument("--viewer", choices=["dash","html"], default="dash",
-                    help="Viewer type: 'dash' or 'html'.")
+                    help="Viewer type. 'html' currently falls back to the Dash viewer.")
     ap.add_argument("--port", type=int, default=8050,
-                    help="Port for Dash viewer (default 8050).")
+                    help="Port for Dash viewer (default 8050; use 0 for a random port).")
     ap.add_argument("--export-stl", action="store_true",
                     help="Export inside/on/out masks as STL files.")
     ap.add_argument("--stl-dir", default=None,

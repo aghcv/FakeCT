@@ -30,6 +30,8 @@ output/
 temp/
 tmp/
 demos/outputs/
+data/*.vti
+!data/arm.vti
 *.nii
 *.nii.gz
 *.mhd

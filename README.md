@@ -1,6 +1,6 @@
 # FakeCT — Minimal synthetic CT / voxelization toolkit
 
-Instructions shows how to load a mesh, voxelize it into a CT-like grid,
+These instructions show how to load a mesh, voxelize it into a CT-like grid,
 create in/on/out masks and inspect the result with a simple viewer.
 
 This README includes instructions for installing prerequisites (VS Code, Git, Conda),
@@ -18,8 +18,8 @@ cloning the repo, creating an environment, installing runtime dependencies, and 
 ## Your Tasks:
 ```bash
 1- Install the prerequisites
-2- Follow the quick start to try the demo examples: cube, sphere, and carotid
-3- Identify user inputs you think is needed needed for the stenosis tool
+2- Follow the quick start to try the demo examples: cube, sphere, carotid, and the bundled VTI sample
+3- Identify user inputs you think are needed for the stenosis tool
 ```
 
 ## Prerequisites
@@ -66,6 +66,7 @@ Before following the quick start, make sure you have these tools installed. The 
 ```bash
 git clone https://github.com/aghcv/FakeCT.git
 cd FakeCT
+git switch phantom
 ```
 
 2. Create and activate a Conda environment:
@@ -78,17 +79,19 @@ conda activate fakect
 3. Install the runtime dependencies:
 
 ```bash
-conda install -c conda-forge python-igl trimesh scipy scikit-image plotly dash -y
+conda install -c conda-forge numpy scipy scikit-image python-igl trimesh plotly dash -y
 ```
 
 If you prefer a pip-based environment for the pure Python packages, use:
 
 ```bash
 pip install --upgrade pip
-pip install trimesh scipy scikit-image plotly dash
+pip install numpy scipy scikit-image trimesh plotly dash
 ```
 
-`igl` is typically easiest to install from `conda-forge`.
+`igl`/`python-igl` is required for STL mesh voxelization and is typically easiest to install from `conda-forge`.
+Use the conda path above for the class examples unless you already know how to install `igl` in your pip environment.
+After activating the conda environment, use `python` for the commands below. On macOS, `python3` may point to the system Python instead of the conda environment.
 
 
 4. Run the demo:
@@ -101,12 +104,13 @@ python src/fakect.py --in data/cube.stl --n 8 --out outputs
 python src/fakect.py --in data/sphere.stl --n 8 --out outputs
 
 # carotid
-python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs
+python src/fakect.py --in data/carotid.stl --n 8 --margin 0.10 --out outputs
 ```
 
 To skip opening the Dash viewer, add `--no-show`.
 
 `--out` now expects a directory path. The tool auto-generates an NPZ filename from the input name (for example, `cube_masks.npz` or `vti_masks.npz`) inside that directory.
+`--n` controls the grid size as `2^n` voxels per side. The examples above use `--n 8` for a 256 x 256 x 256 grid; use `--n 7` for a faster first smoke test.
 
 You can inspect the available CLI options with:
 
@@ -118,20 +122,20 @@ python src/fakect.py --help
 
 You can start testing VTI import now. The CLI supports both a single `.vti` file and a directory of tiled `.vti` files.
 
-The bundled `data/vti/activity_grid_000_000_000.vti` is `CellData` named `activity` with `Float32`
-values from about `-1011` to `2213`, so the tool treats it as scalar/range data rather than
-integer anatomy labels. Scalar VTI files keep their sampled value volume in the saved NPZ as
-`scalar_values` and open in a volume-rendering workflow.
+The bundled `data/arm.vti` file is `CellData` named `activity` with `Float32` values from about
+`-893` to `2263`. With the default `--vti-max-labels 64`, the tool treats it as scalar/range data
+and saves both a non-background occupancy mask and the sampled value volume as `scalar_values`.
 
 ```bash
-# Directory of VTI tiles (uses the sample folder in this repo)
-python src/fakect.py --in data/vti --out outputs --no-show
+# Bundled single VTI sample
+python src/fakect.py --in data/arm.vti --out outputs --no-show --vti-max-dim 64
 
-# Optional: full-resolution sampling (can be much heavier)
-python src/fakect.py --in data/vti --vti-max-dim 0 --out outputs --no-show
+# Development fixture used for smoke checks
+python src/fakect.py --in tests/activity_grid_000_001_005.vti --out outputs --no-show --vti-max-dim 64
 
-# Single VTI file example
-python src/fakect.py --in data/vti/activity_grid_000_000_000.vti --out outputs --no-show
+# Directory import is also supported for your own tiled VTI folders.
+# Replace path/to/vti_tiles before running this pattern:
+# python src/fakect.py --in path/to/vti_tiles --out outputs --no-show --vti-max-dim 64
 ```
 
 Useful VTI-specific flags:
@@ -156,10 +160,11 @@ for a headless import/export smoke test.
 
 1. Make code changes in `src/fakect.py` using your editor of choice.
 
-2. There is currently no packaged test suite in this repository. Use the CLI directly to validate changes:
+2. There is currently no automated Python test suite in this repository. The `tests/` directory contains a VTI fixture for smoke checks. Use the CLI directly to validate changes:
 
 ```bash
 python src/fakect.py --in data/cube.stl --n 8 --out outputs --no-show
+python src/fakect.py --in data/arm.vti --out outputs --no-show --vti-max-dim 64
 ```
 
 3. If you change runtime dependencies, update this README with the revised install command.
@@ -170,11 +175,13 @@ python src/fakect.py --in data/cube.stl --n 8 --out outputs --no-show
 
 ## Continuous integration (notes for maintainers)
 
-- There is no CI or `tests/` directory in the current repository state.
+- There is no CI workflow in the current repository state.
 - Recommended CI steps:
 	- Set up a Python 3.10 runner
 	- Install the runtime dependencies listed above
 	- Run `python src/fakect.py --help` as a smoke test
+	- Run a headless STL smoke test with `data/cube.stl`
+	- Run a headless VTI smoke test with `tests/activity_grid_000_001_005.vti`
 	- Add targeted automated tests before relying on CI for behavior changes
 
 ## Contact / contributing
