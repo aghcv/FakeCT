@@ -23,11 +23,14 @@ cloning the repo, creating an environment, installing runtime dependencies, and 
 
 ## Prerequisites
 
-Before following the quick start, make sure you have these tools installed. The links go to official installers and the one-liners work on macOS (zsh).
+Before following the quick start, make sure you have these tools installed. The setup is almost the same on macOS,
+Windows, and Linux once Git and Conda are available; the main differences are how you install those two tools and
+which terminal you use.
 
 - Visual Studio Code — editor and debugging UI
 	- Website: https://code.visualstudio.com/
-	- macOS (Homebrew):
+	- Install using the official installer for macOS, Windows, or Linux.
+	- Optional macOS Homebrew command:
 
 		```bash
 		brew install --cask visual-studio-code
@@ -35,7 +38,7 @@ Before following the quick start, make sure you have these tools installed. The 
 
 - Git — version control
 	- Website: https://git-scm.com/
-	- macOS one-liners (choose one):
+	- macOS options:
 
 		```bash
 		# Install Xcode command-line tools (includes git)
@@ -45,15 +48,42 @@ Before following the quick start, make sure you have these tools installed. The 
 		brew install git
 		```
 
-- Conda (Miniconda recommended) — environment and package manager
-	- Miniconda: https://docs.conda.io/en/latest/miniconda.html
-	- macOS (Homebrew) one-liner:
+	- Windows: install Git for Windows from https://git-scm.com/download/win. After installation, use Git Bash,
+	  PowerShell, Command Prompt, or the VS Code terminal.
+	- Linux: install Git with your distribution package manager. For example:
 
 		```bash
+		# Debian/Ubuntu
+		sudo apt install git
+
+		# Fedora/RHEL-style distributions
+		sudo dnf install git
+		```
+
+- Conda (Miniconda recommended) — environment and package manager
+	- Miniconda install guide: https://www.anaconda.com/docs/getting-started/miniconda/install
+	- Conda install overview: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
+	- macOS options:
+
+		```bash
+		# Option 1: official graphical or terminal installer from the Miniconda guide
+
+		# Option 2: Homebrew
 		brew install --cask miniconda
-		# initialize conda for zsh and reload your shell
 		conda init zsh
 		exec $SHELL
+		```
+
+	- Windows: use the Miniconda graphical installer from the install guide. Then open "Anaconda Prompt" or
+	  "Miniconda Prompt" and run the quick-start commands below. If you want to use PowerShell instead, run
+	  `conda init powershell` once, close the terminal, and open it again.
+	- Linux: use the Miniconda Linux terminal installer from the install guide. After installation, initialize Conda
+	  for your shell, then close and reopen the terminal. Common examples:
+
+		```bash
+		conda init bash
+		# or, if you use zsh
+		conda init zsh
 		```
 
 	If you prefer Anaconda, use the Anaconda installer instead. Follow the official installer pages for platform-specific guidance.
