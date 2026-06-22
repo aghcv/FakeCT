@@ -19,7 +19,6 @@ cloning the repo, creating an environment, installing runtime dependencies, and 
 ```bash
 1- Install the prerequisites
 2- Follow the quick start to try the demo examples: cube, sphere, carotid, and the bundled VTI sample
-3- Identify user inputs you think are needed for the stenosis tool
 ```
 
 ## Prerequisites
