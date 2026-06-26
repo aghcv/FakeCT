@@ -122,6 +122,7 @@ pip install numpy scipy scikit-image trimesh plotly dash
 Use the conda path above for the class examples unless you already know how to install `igl` in your pip environment.
 After activating the conda environment, use `python` for the commands below. On macOS, `python3` may point to the system Python instead of the conda environment.
 
+python -m pip install libigl==2.5.1
 
 4. Run the demo:
 
