@@ -1,7 +1,11 @@
-import base64, numpy as np, re, zlib
+import base64, numpy as np, re, sys, zlib
 from pathlib import Path
 
-p = Path('data/vti/activity_grid_000_000_000.vti')
+p = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('data/arm.vti')
+if not p.exists():
+    raise FileNotFoundError(f"VTI file not found: {p}")
+
+print(f"Inspecting: {p}")
 text = p.read_text(errors='ignore')
 
 match = re.search(r"<AppendedData[^>]*>\s*_(.*?)\s*</AppendedData>", text, re.S)
