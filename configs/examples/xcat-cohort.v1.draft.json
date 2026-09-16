@@ -34,9 +34,18 @@
     "target_names_for_review": [
       "internal_carotid_left"
     ],
-    "category_map": null,
+    "category_map": "outputs/tissues/atlas-v1/label-catalog.json",
     "unknown_ids": "error",
-    "nonfinite_values": "error"
+    "nonfinite_values": "error",
+    "tissue_policy": "configs/tissues/tissue-policy.v1.json",
+    "anatomy_atlas": "references/atlas/dpi/anatomy_atlas.csv",
+    "anatomy_hierarchy": "references/atlas/dpi/xcat_anatomy_hierarchy.yml",
+    "original_id_dictionaries": [
+      "references/atlas/xcat/organ_ids.primary.txt",
+      "references/atlas/xcat/organ_ids.040.txt"
+    ],
+    "preserve_original_voxel_labels": true,
+    "material_classification": "separate_from_anatomical_group"
   },
   "preprocess": {
     "label_interpolation": "nearest",

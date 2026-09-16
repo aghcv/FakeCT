@@ -1,0 +1,36 @@
+{
+  "source_repository": "/home/aghorban/repo/dpi",
+  "head": "c7532cfd3c0230cb6cf76f83afe924ed6d791edf",
+  "snapshot_date": "2026-09-16",
+  "note": "Read-only copies of user-provided DPI classification control documents. Source hierarchy and source atlas differ from downstream cardiovascular role atlas. DPI working tree itself was not modified.",
+  "files": [
+    {
+      "source_path": "/home/aghorban/repo/dpi/config/atlas/anatomy_atlas.csv",
+      "snapshot": "references/atlas/dpi/anatomy_atlas.csv",
+      "sha256": "59268c0e15f787a19938ff66c195e7845b6ba2780fcefe757ddc42575c7e64a1",
+      "bytes": 188029,
+      "differs_from_dpi_head": false
+    },
+    {
+      "source_path": "/home/aghorban/repo/dpi/config/atlas/cardiovascular_atlas_v1_1.csv",
+      "snapshot": "references/atlas/dpi/cardiovascular_atlas_v1_1.csv",
+      "sha256": "e80e03c811aecf46d47f5fe7bc1af979bcab393a1ade212c68bce6cac0f20080",
+      "bytes": 7818,
+      "differs_from_dpi_head": false
+    },
+    {
+      "source_path": "/home/aghorban/repo/dpi/config/atlas/README.md",
+      "snapshot": "references/atlas/dpi/README.md",
+      "sha256": "9261d1e51a8d656ea62e667a80a81dba495efd24baf549c4ac0978330f364c18",
+      "bytes": 1383,
+      "differs_from_dpi_head": false
+    },
+    {
+      "source_path": "/home/aghorban/repo/dpi/config/source/xcat_anatomy_hierarchy.yml",
+      "snapshot": "references/atlas/dpi/xcat_anatomy_hierarchy.yml",
+      "sha256": "6013555161631a65158e27318de1b6260539539f1f40d1317a9793700d1ca888",
+      "bytes": 31720,
+      "differs_from_dpi_head": false
+    }
+  ]
+}

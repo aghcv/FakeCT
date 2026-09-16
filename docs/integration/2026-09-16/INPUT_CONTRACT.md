@@ -126,3 +126,12 @@ Split by underlying anatomy family **before** frame selection, ROI variants or s
 extraction. Every descendant of one base anatomy stays in one train/validation/test
 partition. Keep the old dataset as an immutable baseline and real-data validation
 source while evaluating synthetic and mixed training cohorts.
+
+## Implemented atlas grouping extension
+
+The draft example now references the source atlas, hierarchy, explicit original-ID
+dictionaries and tissue policy. `scripts/prepare_tissues.py` implements catalog building,
+attenuation profiling from the audit and reversible crop export independently of the
+planned full cohort CLI. Details are in [the tissue workbench](../../TISSUE_MAPPING.md).
+Original per-voxel signed IDs must survive grouping; a lookup table alone cannot invert
+a many-to-one volume. Material evidence is separate from anatomical hierarchy.

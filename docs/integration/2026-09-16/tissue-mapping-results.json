@@ -1,0 +1,1285 @@
+{
+  "schema_version": "fakect.tissue-catalog-summary.v1",
+  "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+  "original_ids": 3166,
+  "categories": [
+    {
+      "id": 0,
+      "name": "background",
+      "description": "Reserved exterior/background label."
+    },
+    {
+      "id": 1,
+      "name": "soft_tissue",
+      "description": "Other named organs, skin, glands and connective tissues."
+    },
+    {
+      "id": 2,
+      "name": "bone",
+      "description": "Anatomical skeletal structures; not a cortical/trabecular material claim."
+    },
+    {
+      "id": 3,
+      "name": "cartilage",
+      "description": "Cartilage and intervertebral discs."
+    },
+    {
+      "id": 4,
+      "name": "muscle",
+      "description": "Skeletal muscle and explicitly identified myocardium/papillary muscle."
+    },
+    {
+      "id": 5,
+      "name": "artery",
+      "description": "Arterial anatomy, including vessel blood and wall until separately resolved."
+    },
+    {
+      "id": 6,
+      "name": "vein",
+      "description": "Venous anatomy, including vessel blood and wall until separately resolved."
+    },
+    {
+      "id": 7,
+      "name": "lung",
+      "description": "Pulmonary parenchymal anatomy."
+    },
+    {
+      "id": 8,
+      "name": "adipose",
+      "description": "Subcutaneous/adipose anatomy."
+    },
+    {
+      "id": 9,
+      "name": "nervous_tissue",
+      "description": "Brain, spinal cord and peripheral nervous anatomy."
+    },
+    {
+      "id": 10,
+      "name": "fluid",
+      "description": "Explicit fluid structures; chamber names alone are insufficient."
+    },
+    {
+      "id": 255,
+      "name": "unknown",
+      "description": "Unresolved, ambiguous or unreviewed evidence; never silently soft tissue."
+    }
+  ],
+  "labels_by_category": {
+    "unknown": 393,
+    "soft_tissue": 369,
+    "artery": 644,
+    "bone": 406,
+    "background": 1,
+    "muscle": 413,
+    "cartilage": 52,
+    "nervous_tissue": 103,
+    "fluid": 8,
+    "vein": 775,
+    "lung": 2
+  },
+  "label_status_counts": {
+    "anatomy_review_required": 1,
+    "classified": 2768,
+    "material_review_required": 210,
+    "reserved_background": 1,
+    "unknown": 182,
+    "tissue_consensus": 4
+  },
+  "surface_occurrences": 2634,
+  "surface_names": 912,
+  "surface_join_counts": {
+    "unique_name_match": 796,
+    "ambiguous_name": 1838
+  },
+  "warnings": [
+    {
+      "kind": "atlas_row_width",
+      "line": 423,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_pericardium"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 424,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_pericardium"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 425,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_aorta"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 426,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_aorta"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 427,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_inf_vc"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 428,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_inf_vc"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 429,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_sup_vc"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 430,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_sup_vc"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 431,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_lam"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 432,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_lam"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 433,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_left_atrium"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 434,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_left_atrium"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 435,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_left_ventricle_000"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 436,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_lv_0"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 437,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_left_ventricle_001"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 438,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_lv_1"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 439,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_left_ventricle_002"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 440,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_lv_2"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 441,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_left_ventricle_003"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 442,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_lv_3"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 443,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_left_ventricle_004"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 444,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_lv_4"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 445,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_lpap_001"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 446,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_lpap1"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 447,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_lpap_002"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 448,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_lpap2"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 449,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_upap"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 450,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_upap"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 451,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_pul_art"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 452,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_pul_art"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 453,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_ram"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 454,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_ram"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 455,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_la"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 456,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_ra"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 457,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_rv"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 458,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "diastole_rvm"
+    },
+    {
+      "kind": "atlas_row_width",
+      "line": 459,
+      "expected": 22,
+      "actual": 23,
+      "original_name": "dias_rvm"
+    }
+  ],
+  "dictionaries": [
+    {
+      "path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+      "sha256": "e429081ac4412344f77a99ce1ed5ba0e4e3cc00fabe949153d9aa938988aa7e5"
+    },
+    {
+      "path": "references/atlas/xcat/organ_ids.040.txt",
+      "sha256": "7bee1ae8717f94a4dd7bca7f4c3e8b2409a0fbae9227c2a1be5dfb3b382b4390"
+    }
+  ],
+  "scope": "Dictionary union and one complete six-file frame1 surface scan; attenuation reused from previous bounded12-case paired audit; one bounded real label crop.",
+  "atlas_rows_quarantined": 37,
+  "dictionary_signed_ids_excluding_background": 3165,
+  "profile": {
+    "observed_original_ids": 1779,
+    "unknown_original_ids": [
+      -830,
+      -827,
+      -825,
+      -824,
+      -822,
+      -821,
+      -817,
+      -816,
+      -814,
+      -806,
+      -802
+    ],
+    "unresolved_group_original_ids": [
+      -1392,
+      -989,
+      -984,
+      -983,
+      -982,
+      -962,
+      -954,
+      -953,
+      -952,
+      -937,
+      -936,
+      -935,
+      -934,
+      -933,
+      -931,
+      -930,
+      -928,
+      -927,
+      -926,
+      -925,
+      -924,
+      -923,
+      -922,
+      -921,
+      -906,
+      -905,
+      -904,
+      -903,
+      -901,
+      -900,
+      -899,
+      -898,
+      -897,
+      -896,
+      -895,
+      -894,
+      -893,
+      -892,
+      -891,
+      -890,
+      -889,
+      -888,
+      -887,
+      -886,
+      -830,
+      -829,
+      -828,
+      -827,
+      -826,
+      -825,
+      -824,
+      -822,
+      -821,
+      -820,
+      -817,
+      -816,
+      -814,
+      -812,
+      -811,
+      -809,
+      -807,
+      -806,
+      -805,
+      -803,
+      -802,
+      -799,
+      -798,
+      -797,
+      -796,
+      -795,
+      -794,
+      -793,
+      -791,
+      -790,
+      -789,
+      -788,
+      -787,
+      -786,
+      -785,
+      -783,
+      -782,
+      -781,
+      -780,
+      -779,
+      -778,
+      -777,
+      -776,
+      -775,
+      -774,
+      -773,
+      -772,
+      -770,
+      -769,
+      -767,
+      -765,
+      -764,
+      -763,
+      -762,
+      -760,
+      -759,
+      -758,
+      -757,
+      -756,
+      -755,
+      -754,
+      -753,
+      -752,
+      -751,
+      -750,
+      -749,
+      -748,
+      -747,
+      -745,
+      -744,
+      -743,
+      -742,
+      -741,
+      -740,
+      -739,
+      -738,
+      -736,
+      -735,
+      -734,
+      -733,
+      -732,
+      -731,
+      -730,
+      -729,
+      -725,
+      -724,
+      -723,
+      -721,
+      -720,
+      -718,
+      -717,
+      -716,
+      -715,
+      -714,
+      -713,
+      -711,
+      -710,
+      -705,
+      -694,
+      -693,
+      -692,
+      -691,
+      -690,
+      -689,
+      -688,
+      -687,
+      -686,
+      -685,
+      -684,
+      -683,
+      -681,
+      -680,
+      -679,
+      -678,
+      -677,
+      -676,
+      -675,
+      -674,
+      -673,
+      -672,
+      -671,
+      -670,
+      2,
+      3,
+      41,
+      42,
+      43,
+      881,
+      882,
+      883,
+      884,
+      885,
+      886,
+      887,
+      1014,
+      1016,
+      1017,
+      1018,
+      1019,
+      1020,
+      1021,
+      1022,
+      1023,
+      1024,
+      1027,
+      1258,
+      1294,
+      1295,
+      1296,
+      1297,
+      1298,
+      1299,
+      1300,
+      1301,
+      1302,
+      1395,
+      1428,
+      1431,
+      1435,
+      1438,
+      1439,
+      1441,
+      1442,
+      1444,
+      1445,
+      1453,
+      1455,
+      1457,
+      1459,
+      1465,
+      1466,
+      1470,
+      1472,
+      1476,
+      1480,
+      1482,
+      1484,
+      1499,
+      1500,
+      1502,
+      1503,
+      1514,
+      1519,
+      1522,
+      1528,
+      1533,
+      1536,
+      1539,
+      1540,
+      1544,
+      2897,
+      2898,
+      2902,
+      2906,
+      2908,
+      2910
+    ],
+    "material_candidates_by_group": {
+      "artery": [
+        "Body (water)",
+        "Iodine blood"
+      ],
+      "bone": [
+        "Cartilage",
+        "Muscle",
+        "Red Marrow",
+        "Rib Bone",
+        "Skull",
+        "Spine Bone"
+      ],
+      "cartilage": [
+        "Cartilage",
+        "Muscle"
+      ],
+      "fluid": [
+        "Brain"
+      ],
+      "lung": [
+        "Lung"
+      ],
+      "muscle": [
+        "Adipose (fat)",
+        "Heart",
+        "Muscle"
+      ],
+      "nervous_tissue": [
+        "Body (water)",
+        "Brain",
+        "Iodine blood"
+      ],
+      "soft_tissue": [
+        "Adipose (fat)",
+        "Bladder",
+        "Blood",
+        "Body (water)",
+        "Intestine",
+        "Kidney",
+        "Liver",
+        "Lung",
+        "Muscle",
+        "Ovary",
+        "Pancreas",
+        "Spleen",
+        "Testis",
+        "Thyroid"
+      ],
+      "unknown": [
+        "Adipose (fat)",
+        "Bladder",
+        "Body (water)",
+        "Heart",
+        "Iodine blood",
+        "Lung",
+        "Muscle",
+        "Red Marrow",
+        "Testis"
+      ],
+      "vein": [
+        "Iodine blood"
+      ]
+    },
+    "group_levels": {
+      "unknown": [
+        0.047933755558915436,
+        0.04793375652904312,
+        0.047933757305145264,
+        0.04793376040955385,
+        0.14807544648647308,
+        0.14807545683450168,
+        0.16136675452192625,
+        0.16136675840243697,
+        0.1613667607307434,
+        0.16136676486995485,
+        0.16450930076340836,
+        0.1645093085244298,
+        0.16450931628545126,
+        0.16450932249426842,
+        0.16692500794306397,
+        0.16692502217160332,
+        0.16692502424120903,
+        0.16794318798929453,
+        0.167943195750316,
+        0.16794320195913315,
+        0.1679432060983446,
+        0.16819710144773126,
+        0.168197105328242,
+        0.1681971156762706,
+        0.1681971177458763,
+        0.1838051714003086,
+        0.1838051817483372,
+        0.1838051830418408,
+        0.1838051900267601
+      ],
+      "soft_tissue": [
+        0.047933755558915436,
+        0.04793375652904312,
+        0.047933757305145264,
+        0.04793376040955385,
+        0.14807544648647308,
+        0.14807545683450168,
+        0.16136675452192625,
+        0.16136675840243697,
+        0.1613667607307434,
+        0.16136676486995485,
+        0.16520308563485742,
+        0.16520308951536816,
+        0.16520309986339676,
+        0.16520310193300247,
+        0.16673626378178596,
+        0.16673627542331815,
+        0.16673628240823746,
+        0.1667362844778432,
+        0.16687558963894844,
+        0.16687560128048062,
+        0.16687560826539993,
+        0.16687561033500567,
+        0.16794318798929453,
+        0.167943195750316,
+        0.16794320195913315,
+        0.1679432060983446,
+        0.1680862158536911,
+        0.1680862262017197,
+        0.1684148795902729,
+        0.16923178918659687,
+        0.16923179436061117,
+        0.16923179849982262,
+        0.1695572049356997,
+        0.16955720881621045,
+        0.16955721916423905,
+        0.16955722123384476,
+        0.16973504098132253,
+        0.16973504486183327,
+        0.16973504796624184,
+        0.16973505003584757
+      ],
+      "bone": [
+        0.1645093085244298,
+        0.16450931628545126,
+        0.16450932249426842,
+        0.16794318798929453,
+        0.167943195750316,
+        0.16794320195913315,
+        0.1679432060983446,
+        0.17559360712766647,
+        0.17559362575411797,
+        0.1755936278237237,
+        0.19653849303722382,
+        0.21300103204945725,
+        0.2130010398104787,
+        0.21300104757150015,
+        0.2130010537803173,
+        0.23968943860381842,
+        0.23968944636483988,
+        0.23968946188688278
+      ],
+      "muscle": [
+        0.14807544648647308,
+        0.14807545683450168,
+        0.16794318798929453,
+        0.167943195750316,
+        0.16794320195913315,
+        0.1679432060983446,
+        0.16819710144773126,
+        0.168197105328242,
+        0.1681971156762706,
+        0.1681971177458763
+      ],
+      "cartilage": [
+        0.16794318798929453,
+        0.167943195750316,
+        0.16794320195913315,
+        0.1679432060983446,
+        0.17559360712766647,
+        0.17559362575411797,
+        0.1755936278237237
+      ],
+      "nervous_tissue": [
+        0.16136675452192625,
+        0.16136675840243697,
+        0.1613667607307434,
+        0.16136676486995485,
+        0.16707568429410458,
+        0.16707569360733032,
+        0.1670756998161475,
+        0.1838051714003086,
+        0.1838051830418408,
+        0.1838051900267601
+      ],
+      "artery": [
+        0.16136675452192625,
+        0.16136675840243697,
+        0.1613667607307434,
+        0.16136676486995485,
+        0.1838051714003086,
+        0.1838051817483372,
+        0.1838051830418408,
+        0.1838051900267601
+      ],
+      "vein": [
+        0.1838051714003086,
+        0.1838051817483372,
+        0.1838051830418408,
+        0.1838051900267601
+      ],
+      "lung": [
+        0.047933755558915436,
+        0.04793375652904312,
+        0.047933757305145264,
+        0.04793376040955385
+      ],
+      "fluid": [
+        0.16707568429410458,
+        0.16707569360733032,
+        0.1670756998161475
+      ]
+    },
+    "shared_attenuation_levels": [
+      {
+        "left": "artery",
+        "right": "nervous_tissue",
+        "shared_levels_cm_inverse": [
+          0.16136675452192625,
+          0.16136675840243697,
+          0.1613667607307434,
+          0.16136676486995485,
+          0.1838051714003086,
+          0.1838051817483372,
+          0.1838051830418408,
+          0.1838051900267601
+        ]
+      },
+      {
+        "left": "artery",
+        "right": "soft_tissue",
+        "shared_levels_cm_inverse": [
+          0.16136675452192625,
+          0.16136675840243697,
+          0.1613667607307434,
+          0.16136676486995485
+        ]
+      },
+      {
+        "left": "artery",
+        "right": "unknown",
+        "shared_levels_cm_inverse": [
+          0.16136675452192625,
+          0.16136675840243697,
+          0.1613667607307434,
+          0.16136676486995485,
+          0.1838051714003086,
+          0.1838051817483372,
+          0.1838051830418408,
+          0.1838051900267601
+        ]
+      },
+      {
+        "left": "artery",
+        "right": "vein",
+        "shared_levels_cm_inverse": [
+          0.1838051714003086,
+          0.1838051817483372,
+          0.1838051830418408,
+          0.1838051900267601
+        ]
+      },
+      {
+        "left": "bone",
+        "right": "cartilage",
+        "shared_levels_cm_inverse": [
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446,
+          0.17559360712766647,
+          0.17559362575411797,
+          0.1755936278237237
+        ]
+      },
+      {
+        "left": "bone",
+        "right": "muscle",
+        "shared_levels_cm_inverse": [
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446
+        ]
+      },
+      {
+        "left": "bone",
+        "right": "soft_tissue",
+        "shared_levels_cm_inverse": [
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446
+        ]
+      },
+      {
+        "left": "bone",
+        "right": "unknown",
+        "shared_levels_cm_inverse": [
+          0.1645093085244298,
+          0.16450931628545126,
+          0.16450932249426842,
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446
+        ]
+      },
+      {
+        "left": "cartilage",
+        "right": "muscle",
+        "shared_levels_cm_inverse": [
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446
+        ]
+      },
+      {
+        "left": "cartilage",
+        "right": "soft_tissue",
+        "shared_levels_cm_inverse": [
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446
+        ]
+      },
+      {
+        "left": "cartilage",
+        "right": "unknown",
+        "shared_levels_cm_inverse": [
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446
+        ]
+      },
+      {
+        "left": "fluid",
+        "right": "nervous_tissue",
+        "shared_levels_cm_inverse": [
+          0.16707568429410458,
+          0.16707569360733032,
+          0.1670756998161475
+        ]
+      },
+      {
+        "left": "lung",
+        "right": "soft_tissue",
+        "shared_levels_cm_inverse": [
+          0.047933755558915436,
+          0.04793375652904312,
+          0.047933757305145264,
+          0.04793376040955385
+        ]
+      },
+      {
+        "left": "lung",
+        "right": "unknown",
+        "shared_levels_cm_inverse": [
+          0.047933755558915436,
+          0.04793375652904312,
+          0.047933757305145264,
+          0.04793376040955385
+        ]
+      },
+      {
+        "left": "muscle",
+        "right": "soft_tissue",
+        "shared_levels_cm_inverse": [
+          0.14807544648647308,
+          0.14807545683450168,
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446
+        ]
+      },
+      {
+        "left": "muscle",
+        "right": "unknown",
+        "shared_levels_cm_inverse": [
+          0.14807544648647308,
+          0.14807545683450168,
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446,
+          0.16819710144773126,
+          0.168197105328242,
+          0.1681971156762706,
+          0.1681971177458763
+        ]
+      },
+      {
+        "left": "nervous_tissue",
+        "right": "soft_tissue",
+        "shared_levels_cm_inverse": [
+          0.16136675452192625,
+          0.16136675840243697,
+          0.1613667607307434,
+          0.16136676486995485
+        ]
+      },
+      {
+        "left": "nervous_tissue",
+        "right": "unknown",
+        "shared_levels_cm_inverse": [
+          0.16136675452192625,
+          0.16136675840243697,
+          0.1613667607307434,
+          0.16136676486995485,
+          0.1838051714003086,
+          0.1838051830418408,
+          0.1838051900267601
+        ]
+      },
+      {
+        "left": "nervous_tissue",
+        "right": "vein",
+        "shared_levels_cm_inverse": [
+          0.1838051714003086,
+          0.1838051830418408,
+          0.1838051900267601
+        ]
+      },
+      {
+        "left": "soft_tissue",
+        "right": "unknown",
+        "shared_levels_cm_inverse": [
+          0.047933755558915436,
+          0.04793375652904312,
+          0.047933757305145264,
+          0.04793376040955385,
+          0.14807544648647308,
+          0.14807545683450168,
+          0.16136675452192625,
+          0.16136675840243697,
+          0.1613667607307434,
+          0.16136676486995485,
+          0.16794318798929453,
+          0.167943195750316,
+          0.16794320195913315,
+          0.1679432060983446
+        ]
+      },
+      {
+        "left": "unknown",
+        "right": "vein",
+        "shared_levels_cm_inverse": [
+          0.1838051714003086,
+          0.1838051817483372,
+          0.1838051830418408,
+          0.1838051900267601
+        ]
+      }
+    ]
+  },
+  "case_label_profile_records": 8070,
+  "crop_roundtrip": {
+    "shape_zyx": [
+      32,
+      64,
+      64
+    ],
+    "voxels": 131072,
+    "original_ids": [
+      -1383,
+      -779,
+      -777,
+      -775,
+      4,
+      152,
+      154,
+      155,
+      662,
+      777,
+      779,
+      781,
+      1271,
+      1273,
+      1282,
+      1294,
+      1297,
+      1298,
+      1303,
+      1323,
+      1385,
+      1612,
+      1705,
+      1719,
+      2340,
+      2923
+    ],
+    "tissue_counts": {
+      "1": 68054,
+      "2": 564,
+      "3": 554,
+      "4": 60337,
+      "5": 478,
+      "6": 561,
+      "255": 524
+    },
+    "original_values_exactly_preserved": true,
+    "geometry": {
+      "case_id": "260602",
+      "frame": 1,
+      "source_path": "/home/aghorban/slurm/xcat/260602/260602_act_1.bin",
+      "source_shape_zyx": [
+        1860,
+        750,
+        750
+      ],
+      "array_order": "zyx",
+      "crop_origin_ijk": [
+        300,
+        350,
+        1100
+      ],
+      "shape_zyx": [
+        32,
+        64,
+        64
+      ],
+      "spacing_ijk_mm": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "coordinate_status": "source-relative coordinates; anatomical orientation and source physical origin unverified",
+      "source_bytes": 4185000000
+    },
+    "catalog_hash_matches_profile": true
+  },
+  "tests": {
+    "command": "python3 -m unittest discover -s tests -p 'test_tissue*.py' -v",
+    "passed": 25
+  },
+  "code_sha256": {
+    "src/fakect_tissues.py": "f6c72d335afa0624c5b4dfe005a38961ade505f8ce3a47d90e047a312cbcdc28",
+    "scripts/prepare_tissues.py": "ac4b9d1003d05e407273a227e756952535839213cd8aaa0f2a52d27a351fbc17",
+    "configs/tissues/tissue-policy.v1.json": "98eb67c48460b09750b46bec36c73a1a5ff0482b4e0d908c8b851827960eca8c"
+  },
+  "profile_examples": [
+    {
+      "case_id": "260602",
+      "original_id": -1392,
+      "original_name": "bladder_inner",
+      "tissue_id": 255,
+      "tissue_name": "unknown",
+      "mapping_status": "anatomy_review_required",
+      "minimum_cm_inverse": 0.1613667607307434,
+      "maximum_cm_inverse": 0.1613667607307434,
+      "observed_levels": [
+        {
+          "attenuation_cm_inverse": 0.1613667607307434,
+          "material_candidates": [
+            "Body (water)"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "260602",
+      "original_id": -829,
+      "original_name": "skull_inner",
+      "tissue_id": 255,
+      "tissue_name": "unknown",
+      "mapping_status": "material_review_required",
+      "minimum_cm_inverse": 0.16450932249426842,
+      "maximum_cm_inverse": 0.16450932249426842,
+      "observed_levels": [
+        {
+          "attenuation_cm_inverse": 0.16450932249426842,
+          "material_candidates": [
+            "Red Marrow"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "260602",
+      "original_id": 4,
+      "original_name": "chest_surface",
+      "tissue_id": 1,
+      "tissue_name": "soft_tissue",
+      "mapping_status": "classified",
+      "minimum_cm_inverse": 0.14807544648647308,
+      "maximum_cm_inverse": 0.14807544648647308,
+      "observed_levels": [
+        {
+          "attenuation_cm_inverse": 0.14807544648647308,
+          "material_candidates": [
+            "Adipose (fat)"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "260602",
+      "original_id": 1185,
+      "original_name": "internal_carotid_left",
+      "tissue_id": 5,
+      "tissue_name": "artery",
+      "mapping_status": "classified",
+      "minimum_cm_inverse": 0.1838051900267601,
+      "maximum_cm_inverse": 0.1838051900267601,
+      "observed_levels": [
+        {
+          "attenuation_cm_inverse": 0.1838051900267601,
+          "material_candidates": [
+            "Iodine blood"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "260602",
+      "original_id": 1186,
+      "original_name": "internal_carotid_right",
+      "tissue_id": 5,
+      "tissue_name": "artery",
+      "mapping_status": "classified",
+      "minimum_cm_inverse": 0.1838051900267601,
+      "maximum_cm_inverse": 0.1838051900267601,
+      "observed_levels": [
+        {
+          "attenuation_cm_inverse": 0.1838051900267601,
+          "material_candidates": [
+            "Iodine blood"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "260602",
+      "original_id": 1226,
+      "original_name": "right_dia",
+      "tissue_id": 4,
+      "tissue_name": "muscle",
+      "mapping_status": "classified",
+      "minimum_cm_inverse": 0.14807544648647308,
+      "maximum_cm_inverse": 0.14807544648647308,
+      "observed_levels": [
+        {
+          "attenuation_cm_inverse": 0.14807544648647308,
+          "material_candidates": [
+            "Adipose (fat)"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -27,6 +27,16 @@ Evidence: [XCAT audit](XCAT_AUDIT.md) and [indexed histogram/slice preview](xcat
 [proposed input contract](INPUT_CONTRACT.md). See the adjacent JSON reports for
 measurements and sampling scope. Reproduction commands are in `VERIFICATION.md`.
 
+## Atlas follow-up implemented
+
+The [DPI atlas tissue workbench](../../TISSUE_MAPPING.md) now implements the grouping
+part of M1: a versioned ten-group policy, signed-ID and hierarchy catalog, raw-surface
+name crosswalk, material/attenuation profiles and reversible crop export. The source
+and supplementary dictionaries resolve 30 of the 41 initially missing sampled IDs;
+11 remain unresolved. Anatomical boundary labels and material assignments stay separate.
+See [the evaluated results](TISSUE_MAPPING_EVALUATION.md). M1's general volume adapters,
+full preview/GUI integration and production geometry validation remain pending.
+
 ## Findings that determine the design
 
 **Prefer paired organ labels and scalar volumes.** All 12 supplied XCAT cases are

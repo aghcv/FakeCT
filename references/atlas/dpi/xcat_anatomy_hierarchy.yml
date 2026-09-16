@@ -1,0 +1,1005 @@
+# DPI native XCAT source-adapter anatomy classification defaults.
+#
+# The parser intentionally supports a small YAML subset so the converter does
+# not need a new runtime dependency. Custom files can add aliases or rules using
+# the same fields shown here.
+
+aliases:
+  lkidney:
+    canonical_name: kidney
+    normalized_name: kidney
+    laterality: left
+  rkidney:
+    canonical_name: kidney
+    normalized_name: kidney
+    laterality: right
+  lv:
+    canonical_name: left_ventricle
+    normalized_name: left_ventricle
+    laterality: left
+  rv:
+    canonical_name: right_ventricle
+    normalized_name: right_ventricle
+    laterality: right
+  la:
+    canonical_name: left_atrium
+    normalized_name: left_atrium
+    laterality: left
+  ra:
+    canonical_name: right_atrium
+    normalized_name: right_atrium
+    laterality: right
+  lad:
+    canonical_name: left_anterior_descending_coronary_artery
+    normalized_name: left_anterior_descending_coronary_artery
+    laterality: left
+    structure_type: artery
+  dia:
+    canonical_name: diaphragm
+    normalized_name: diaphragm
+  pulmonary_arts:
+    canonical_name: pulmonary_artery
+    normalized_name: pulmonary_artery
+  llung:
+    canonical_name: lung
+    normalized_name: lung
+    laterality: left
+  rlung:
+    canonical_name: lung
+    normalized_name: lung
+    laterality: right
+  lfoot_musc:
+    canonical_name: foot_muscle
+    normalized_name: foot_muscle
+    laterality: left
+    structure_type: muscle
+  rfoot_musc:
+    canonical_name: foot_muscle
+    normalized_name: foot_muscle
+    laterality: right
+    structure_type: muscle
+  dias_lv:
+    canonical_name: left_ventricle
+    normalized_name: left_ventricle
+    laterality: left
+    structure_type: heart
+    temporal_phase: diastole
+  sys_lv:
+    canonical_name: left_ventricle
+    normalized_name: left_ventricle
+    laterality: left
+    structure_type: heart
+    temporal_phase: systole
+  anterior_comunicating:
+    canonical_name: anterior_communicating_artery
+    normalized_name: anterior_communicating
+    structure_type: artery
+  cuniform:
+    canonical_name: cuneiform
+    normalized_name: cuneiform
+    structure_type: bone
+  cart:
+    canonical_name: nasal_cartilage
+    normalized_name: nasal_cartilage
+    system: respiratory
+    subsystem: upper_airway/nasal_cavity
+    anatomical_region: head_and_neck
+    structure_type: cartilage
+    hierarchy_path: 03_Respiratory/Upper_Airway/Nasal_Cavity
+
+rules:
+  - id: pulmonary_artery
+    priority: 100
+    pattern: ".*pulmonary.*art.*"
+    canonical_name: pulmonary_artery
+    system: cardiovascular
+    subsystem: pulmonary_circulation/arteries
+    anatomical_region: thorax
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Pulmonary_Circulation/Arteries
+    confidence: high
+  - id: pulmonary_vein
+    priority: 100
+    pattern: ".*pulmonary.*vein.*"
+    system: cardiovascular
+    subsystem: pulmonary_circulation/veins
+    anatomical_region: thorax
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Pulmonary_Circulation/Veins
+    confidence: high
+  - id: coronary_artery
+    priority: 95
+    pattern: ".*(coronary|left_anterior_descending|lad|rca|lcx).*"
+    system: cardiovascular
+    subsystem: coronary_circulation/coronary_arteries
+    anatomical_region: thorax
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Coronary_Circulation/Coronary_Arteries
+    confidence: high
+  - id: diastolic_cardiovascular_components
+    priority: 89
+    pattern: ".*(dias_|diastole_).*"
+    system: cardiovascular
+    subsystem: dynamic_cardiac_components
+    anatomical_region: thorax
+    structure_type: other
+    hierarchy_path: 01_Cardiovascular/Heart
+    confidence: medium
+  - id: coronary_vein
+    priority: 95
+    pattern: ".*coronary.*vein.*"
+    system: cardiovascular
+    subsystem: coronary_circulation/coronary_veins
+    anatomical_region: thorax
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Coronary_Circulation/Coronary_Veins
+    confidence: high
+  - id: diastole_coronary_vein_fragments
+    priority: 95
+    pattern: '.*\b(?:diastole_cor_vein_00[12]|dias_cor_vein[12])\b.*'
+    canonical_name: coronary_vein
+    system: cardiovascular
+    subsystem: coronary_circulation/coronary_veins
+    anatomical_region: thorax
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Coronary_Circulation/Coronary_Veins
+    confidence: high
+  - id: diastole_pericardium
+    priority: 95
+    pattern: '.*\b(?:dias|diastole)_pericardium\b.*'
+    canonical_name: pericardium
+    system: cardiovascular
+    subsystem: heart/pericardium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Pericardium
+    confidence: high
+  - id: diastole_aorta
+    priority: 95
+    pattern: '.*\b(?:dias|diastole)_aorta\b.*'
+    canonical_name: aorta
+    system: cardiovascular
+    subsystem: heart/aorta
+    anatomical_region: thorax
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Heart/Aorta
+    confidence: high
+  - id: diastole_inferior_vena_cava
+    priority: 95
+    pattern: '.*\b(?:dias|diastole)_inf_vc\b.*'
+    canonical_name: inferior_vena_cava
+    system: cardiovascular
+    subsystem: heart/inferior_vena_cava
+    anatomical_region: thorax
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Heart/Inferior_Vena_Cava
+    confidence: high
+  - id: diastole_superior_vena_cava
+    priority: 95
+    pattern: '.*\b(?:dias|diastole)_sup_vc\b.*'
+    canonical_name: superior_vena_cava
+    system: cardiovascular
+    subsystem: heart/superior_vena_cava
+    anatomical_region: thorax
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Heart/Superior_Vena_Cava
+    confidence: high
+  - id: diastole_left_atrium_myocardium
+    priority: 95
+    pattern: '.*\b(?:dias|diastole)_lam\b.*'
+    canonical_name: left_atrium_myocardium
+    system: cardiovascular
+    subsystem: heart/left_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Atrium
+    confidence: high
+  - id: diastole_left_atrium
+    priority: 95
+    pattern: '.*\b(?:dias_la|dias_left_atrium|diastole_left_atrium)\b.*'
+    canonical_name: left_atrium
+    system: cardiovascular
+    subsystem: heart/left_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Atrium
+    confidence: high
+  - id: dias_left_atrium
+    priority: 95
+    pattern: '.*\b(?:dias_la|dias_left_atrium)\b.*'
+    canonical_name: left_atrium
+    system: cardiovascular
+    subsystem: heart/left_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Atrium
+    confidence: high
+  - id: diastole_left_ventricle_fragments
+    priority: 95
+    pattern: '.*\b(?:diastole_left_ventricle_00[0-4]|dias_lv_[0-4])\b.*'
+    canonical_name: left_ventricle
+    system: cardiovascular
+    subsystem: heart/left_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Ventricle
+    confidence: high
+  - id: diastole_left_ventricle_papillary_muscles_lower
+    priority: 95
+    pattern: '.*\b(?:diastole_lpap_00[12]|dias_lpap[12])\b.*'
+    canonical_name: left_papillary_muscle_lower
+    system: cardiovascular
+    subsystem: heart/left_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Ventricle
+    confidence: high
+  - id: diastole_left_ventricle_papillary_muscle_upper
+    priority: 95
+    pattern: '.*\b(?:dias_upap|diastole_upap)\b.*'
+    canonical_name: left_papillary_muscle_upper
+    system: cardiovascular
+    subsystem: heart/left_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Left_Ventricle
+    confidence: high
+  - id: diastole_pulmonary_artery
+    priority: 95
+    pattern: '.*\b(?:dias_pul_art|diastole_pul_art)\b.*'
+    canonical_name: pulmonary_artery
+    system: cardiovascular
+    subsystem: heart/pulmonary_artery
+    anatomical_region: thorax
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Heart/Pulmonary_Artery
+    confidence: high
+  - id: diastole_right_atrium_myocardium
+    priority: 95
+    pattern: '.*\b(?:dias_ram|diastole_ram)\b.*'
+    canonical_name: right_atrium_myocardium
+    system: cardiovascular
+    subsystem: heart/right_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Right_Atrium
+    confidence: high
+  - id: dias_right_atrium
+    priority: 95
+    pattern: '.*\b(?:dias_ra|dias_right_atrium)\b.*'
+    canonical_name: right_atrium
+    system: cardiovascular
+    subsystem: heart/right_atrium
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Right_Atrium
+    confidence: high
+  - id: dias_right_ventricle
+    priority: 95
+    pattern: '.*\bdias_rv\b.*'
+    canonical_name: right_ventricle
+    system: cardiovascular
+    subsystem: heart/right_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Right_Ventricle
+    confidence: high
+  - id: diastole_right_ventricle_myocardium
+    priority: 95
+    pattern: '.*\b(?:dias_rvm|diastole_rvm)\b.*'
+    canonical_name: right_ventricle_myocardium
+    system: cardiovascular
+    subsystem: heart/right_ventricle
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart/Right_Ventricle
+    confidence: high
+  - id: heart
+    priority: 90
+    pattern: ".*(heart|atrium|ventricle|myocard|pericard|left_ventricle|right_ventricle|left_atrium|right_atrium).*"
+    system: cardiovascular
+    subsystem: heart
+    anatomical_region: thorax
+    structure_type: heart
+    hierarchy_path: 01_Cardiovascular/Heart
+    confidence: high
+  - id: great_vessels
+    priority: 88
+    pattern: ".*(aorta|vena_cava|pulmonary_trunk|brachiocephalic).*"
+    system: cardiovascular
+    subsystem: great_vessels
+    anatomical_region: thorax
+    structure_type: other
+    hierarchy_path: 01_Cardiovascular/Great_Vessels
+    confidence: high
+  - id: portal_hepatic_venous
+    priority: 86
+    pattern: ".*(portal_vein|hepatic_vein).*"
+    system: cardiovascular
+    subsystem: portal_and_hepatic_venous_system
+    anatomical_region: abdomen
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Portal_and_Hepatic_Venous_System
+    confidence: high
+  - id: cerebrovascular_artery
+    priority: 84
+    pattern: ".*(cerebral|carotid|vertebral|basilar|circle_of_willis).*arter.*"
+    system: cardiovascular
+    subsystem: cerebrovascular/arteries
+    anatomical_region: head_and_neck
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Cerebrovascular/Arteries
+    confidence: high
+  - id: cerebral_artery_segments
+    priority: 87
+    pattern: ".*(middle_cerebral|posterior_cerebral|posterior_communicating|pericallosal).*"
+    system: cardiovascular
+    subsystem: cerebrovascular/arteries
+    anatomical_region: head_and_neck
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Cerebrovascular/Arteries
+    confidence: high
+  - id: medial_occipital_p2_artery
+    priority: 94
+    pattern: "(^|.* )medial_occipital_p2_(left|right)($| .*)"
+    canonical_name: medial_occipital_artery
+    system: cardiovascular
+    subsystem: cerebrovascular/arteries
+    anatomical_region: head_and_neck
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Cerebrovascular/Arteries
+    confidence: high
+  - id: cerebrovascular_named_arteries
+    priority: 89
+    pattern: ".*(anterior_cerebral|anterior_choroidal|anterior_communicating|frontopolar|calcarine|internal_carotid|basilar).*"
+    system: cardiovascular
+    subsystem: cerebrovascular/arteries
+    anatomical_region: head_and_neck
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Cerebrovascular/Arteries
+    confidence: high
+  - id: cerebrovascular_vein
+    priority: 84
+    pattern: ".*(cerebral|dural|sinus|sagittal).*vein.*|.*dural.*sinus.*"
+    system: cardiovascular
+    subsystem: cerebrovascular/veins_and_dural_sinuses
+    anatomical_region: head_and_neck
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Cerebrovascular/Veins_and_Dural_Sinuses
+    confidence: high
+  - id: dural_venous_sinuses
+    priority: 87
+    pattern: ".*(lateral_sinus|sigmoid_sinus|straight_sinus|superior_saggital_sinus|superior_sagittal_sinus).*"
+    system: cardiovascular
+    subsystem: cerebrovascular/veins_and_dural_sinuses
+    anatomical_region: head_and_neck
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Cerebrovascular/Veins_and_Dural_Sinuses
+    confidence: high
+  - id: generic_artery
+    priority: 20
+    pattern: ".*(artery|arterial|arter).*"
+    system: cardiovascular
+    subsystem: systemic_arteries
+    anatomical_region: unspecified
+    structure_type: artery
+    hierarchy_path: 01_Cardiovascular/Systemic_Arteries
+    confidence: medium
+  - id: generic_vein
+    priority: 20
+    pattern: ".*(vein|venous|vena).*"
+    system: cardiovascular
+    subsystem: systemic_veins
+    anatomical_region: unspecified
+    structure_type: vein
+    hierarchy_path: 01_Cardiovascular/Systemic_Veins
+    confidence: medium
+  - id: brain
+    priority: 90
+    pattern: "^(brain|cerebrum|cortex|white_matter|gray_matter).*"
+    system: nervous
+    subsystem: brain
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 02_Nervous/Brain
+    confidence: high
+  - id: brainstem
+    priority: 90
+    pattern: ".*(brainstem|midbrain|pons|medulla).*"
+    system: nervous
+    subsystem: brainstem
+    anatomical_region: head_and_neck
+    structure_type: nerve
+    hierarchy_path: 02_Nervous/Brainstem
+    confidence: high
+  - id: brainstem_nuclei
+    priority: 91
+    pattern: ".*(substantia_nigra|superior_colliculus|inferior_colliculus|peria.*grey|peria.*gray|cerebral_peduncle|medullary_pyramid|inferior_olive|tegmentum).*"
+    system: nervous
+    subsystem: brainstem
+    anatomical_region: head_and_neck
+    structure_type: nerve
+    hierarchy_path: 02_Nervous/Brainstem
+    confidence: high
+  - id: deep_brain_structures
+    priority: 89
+    pattern: ".*(thalamus|putamen|caudate|globus_pallidus|amygdala|hippocampus|mamillary|mammillary|fornix|internal_capsule|anterior_commissure|corpus_callosum).*"
+    system: nervous
+    subsystem: brain
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 02_Nervous/Brain
+    confidence: high
+  - id: cortical_brain_regions
+    priority: 88
+    pattern: ".*(frontobasal|frontal|prefrontal|rolandic|paracentral|parietal|occipital|temporal_lobe|parieto_occipital|mediomedial|posteromedial).*"
+    system: nervous
+    subsystem: brain
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 02_Nervous/Brain
+    confidence: medium
+  - id: cerebellum
+    priority: 90
+    pattern: ".*cerebell.*"
+    system: nervous
+    subsystem: cerebellum
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 02_Nervous/Cerebellum
+    confidence: high
+  - id: ventricular_system
+    priority: 88
+    pattern: ".*(ventricle|csf|cerebral_aqueduct|aqueduct_of_sylvius|mesencephalic_aqueduct).*"
+    system: nervous
+    subsystem: ventricular_system
+    anatomical_region: head_and_neck
+    structure_type: fluid
+    hierarchy_path: 02_Nervous/Ventricular_System
+    confidence: medium
+  - id: spinal_cord
+    priority: 90
+    pattern: ".*spinal_cord.*"
+    system: nervous
+    subsystem: spinal_cord
+    anatomical_region: spine
+    structure_type: nerve
+    hierarchy_path: 02_Nervous/Spinal_Cord
+    confidence: high
+  - id: nerve
+    priority: 30
+    pattern: ".*nerve.*"
+    system: nervous
+    subsystem: peripheral_nerves
+    anatomical_region: unspecified
+    structure_type: nerve
+    hierarchy_path: 02_Nervous/Peripheral_Nerves
+    confidence: medium
+  - id: lung
+    priority: 90
+    pattern: ".*lung.*"
+    system: respiratory
+    subsystem: lungs
+    anatomical_region: thorax
+    structure_type: organ
+    hierarchy_path: 03_Respiratory/Lungs
+    confidence: high
+  - id: trachea
+    priority: 90
+    pattern: ".*trachea.*"
+    system: respiratory
+    subsystem: trachea
+    anatomical_region: thorax
+    structure_type: airway
+    hierarchy_path: 03_Respiratory/Trachea
+    confidence: high
+  - id: bronchi
+    priority: 90
+    pattern: ".*(bronchus|bronchi|bronchial).*"
+    canonical_name: bronchus
+    system: respiratory
+    subsystem: tracheobronchial_tree/bronchi
+    anatomical_region: thorax
+    structure_type: airway
+    hierarchy_path: 03_Respiratory/Tracheobronchial_Tree/Bronchi
+    confidence: high
+  - id: pleura
+    priority: 85
+    pattern: ".*pleura.*"
+    system: respiratory
+    subsystem: pleura
+    anatomical_region: thorax
+    structure_type: other
+    hierarchy_path: 03_Respiratory/Pleura
+    confidence: high
+  - id: upper_airway
+    priority: 70
+    pattern: ".*(nasal|larynx|laryngeal|pharynx|airway|epiglottis).*"
+    system: respiratory
+    subsystem: upper_airway
+    anatomical_region: head_and_neck
+    structure_type: airway
+    hierarchy_path: 03_Respiratory/Upper_Airway
+    confidence: medium
+  - id: laryngeal_cartilage
+    priority: 78
+    pattern: ".*(arytenoid_cart|corniculate_cart|cricoid_cart|cuneiform_cart|conus_elasticus).*"
+    system: respiratory
+    subsystem: upper_airway/larynx
+    anatomical_region: head_and_neck
+    structure_type: cartilage
+    hierarchy_path: 03_Respiratory/Upper_Airway/Larynx
+    secondary_systems: musculoskeletal
+    confidence: high
+  - id: nasal_cartilage
+    priority: 77
+    pattern: ".*cart.*"
+    system: respiratory
+    subsystem: upper_airway/nasal_cavity
+    anatomical_region: head_and_neck
+    structure_type: cartilage
+    hierarchy_path: 03_Respiratory/Upper_Airway/Nasal_Cavity
+    secondary_systems: musculoskeletal
+    confidence: medium
+  - id: paranasal_sinus
+    priority: 69
+    pattern: ".*sinus.*"
+    system: respiratory
+    subsystem: upper_airway/paranasal_sinuses
+    anatomical_region: head_and_neck
+    structure_type: cavity
+    hierarchy_path: 03_Respiratory/Upper_Airway/Paranasal_Sinuses
+    confidence: medium
+  - id: laryngeal_soft_tissue
+    priority: 76
+    pattern: ".*(vocal_folds|thyrohyoid_membrane).*"
+    system: respiratory
+    subsystem: upper_airway/larynx
+    anatomical_region: head_and_neck
+    structure_type: other
+    hierarchy_path: 03_Respiratory/Upper_Airway/Larynx
+    secondary_systems: musculoskeletal
+    confidence: medium
+  - id: teeth
+    priority: 87
+    pattern: ".*(teeth|tooth).*"
+    canonical_name: teeth
+    system: digestive
+    subsystem: oral_cavity
+    anatomical_region: head_and_neck
+    structure_type: bone
+    hierarchy_path: 04_Digestive/Oral_Cavity
+    confidence: high
+  - id: tongue
+    priority: 87
+    pattern: ".*tongue.*"
+    system: digestive
+    subsystem: oral_cavity
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 04_Digestive/Oral_Cavity
+    secondary_systems: musculoskeletal
+    confidence: high
+  - id: oral_cavity
+    priority: 80
+    pattern: ".*(mouth|oral).*"
+    system: digestive
+    subsystem: oral_cavity
+    anatomical_region: head_and_neck
+    structure_type: cavity
+    hierarchy_path: 04_Digestive/Oral_Cavity
+    confidence: medium
+  - id: esophagus
+    priority: 85
+    pattern: ".*(esophagus|oesophagus|pharynx).*"
+    system: digestive
+    subsystem: pharynx_and_esophagus
+    anatomical_region: thorax
+    structure_type: organ
+    hierarchy_path: 04_Digestive/Pharynx_and_Esophagus
+    confidence: medium
+  - id: stomach
+    priority: 90
+    pattern: ".*stomach.*"
+    system: digestive
+    subsystem: stomach
+    anatomical_region: abdomen
+    structure_type: organ
+    hierarchy_path: 04_Digestive/Stomach
+    confidence: high
+  - id: salivary_glands
+    priority: 86
+    pattern: ".*(parotid|subling|submand|salivary).*"
+    system: digestive
+    subsystem: oral_cavity/salivary_glands
+    anatomical_region: head_and_neck
+    structure_type: gland
+    hierarchy_path: 04_Digestive/Oral_Cavity/Salivary_Glands
+    confidence: high
+  - id: small_intestine
+    priority: 85
+    pattern: ".*(small_intestine|small_intest|sm_intest|duodenum|jejunum|ileum).*"
+    system: digestive
+    subsystem: small_intestine
+    anatomical_region: abdomen
+    structure_type: organ
+    hierarchy_path: 04_Digestive/Small_Intestine
+    confidence: high
+  - id: large_intestine
+    priority: 85
+    pattern: ".*(large_intestine|large_intest|large_int|trans_large_int|sigmoid|colon|cecum|rectum|appendix).*"
+    system: digestive
+    subsystem: large_intestine
+    anatomical_region: abdomen
+    structure_type: organ
+    hierarchy_path: 04_Digestive/Large_Intestine
+    confidence: high
+  - id: liver
+    priority: 90
+    pattern: ".*liver.*"
+    system: digestive
+    subsystem: liver
+    anatomical_region: abdomen
+    structure_type: organ
+    hierarchy_path: 04_Digestive/Liver
+    confidence: high
+  - id: pancreas_digestive
+    priority: 80
+    pattern: ".*pancreas.*"
+    system: digestive
+    subsystem: pancreas
+    anatomical_region: abdomen
+    structure_type: gland
+    hierarchy_path: 04_Digestive/Pancreas
+    secondary_systems: endocrine
+    confidence: medium
+  - id: kidney
+    priority: 92
+    pattern: ".*kidney.*"
+    system: urinary
+    subsystem: kidneys
+    anatomical_region: abdomen
+    structure_type: organ
+    hierarchy_path: 05_Urinary/Kidneys
+    confidence: high
+  - id: renal_collecting
+    priority: 85
+    pattern: ".*(renal_pelvis|calyx|calyces|collecting).*"
+    system: urinary
+    subsystem: renal_collecting_system
+    anatomical_region: abdomen
+    structure_type: duct
+    hierarchy_path: 05_Urinary/Renal_Collecting_System
+    confidence: high
+  - id: ureter
+    priority: 85
+    pattern: ".*ureter.*"
+    system: urinary
+    subsystem: ureters
+    anatomical_region: abdomen
+    structure_type: duct
+    hierarchy_path: 05_Urinary/Ureters
+    confidence: high
+  - id: bladder
+    priority: 85
+    pattern: ".*(urinary_bladder|bladder).*"
+    system: urinary
+    subsystem: urinary_bladder
+    anatomical_region: pelvis
+    structure_type: organ
+    hierarchy_path: 05_Urinary/Urinary_Bladder
+    confidence: high
+  - id: urethra
+    priority: 85
+    pattern: ".*urethra.*"
+    system: urinary
+    subsystem: urethra
+    anatomical_region: pelvis
+    structure_type: duct
+    hierarchy_path: 05_Urinary/Urethra
+    confidence: high
+  - id: male_reproductive
+    priority: 80
+    pattern: ".*(prostate|testis|testicle|seminal|penis|scrotum|epididym|vas_def|vas_deferens|ejaculatory|ejac_duct).*"
+    system: reproductive
+    subsystem: male
+    anatomical_region: pelvis
+    structure_type: duct
+    hierarchy_path: 06_Reproductive/Male
+    confidence: medium
+  - id: female_reproductive
+    priority: 80
+    pattern: ".*(ovary|uterus|uterine|vagina|fallopian|cervix).*"
+    system: reproductive
+    subsystem: female
+    anatomical_region: pelvis
+    structure_type: organ
+    hierarchy_path: 06_Reproductive/Female
+    confidence: medium
+  - id: thyroid
+    priority: 90
+    pattern: ".*thyroid.*"
+    system: endocrine
+    subsystem: thyroid
+    anatomical_region: head_and_neck
+    structure_type: gland
+    hierarchy_path: 07_Endocrine/Thyroid
+    confidence: high
+  - id: pineal
+    priority: 90
+    pattern: ".*pineal.*"
+    system: endocrine
+    subsystem: other/pineal
+    anatomical_region: head_and_neck
+    structure_type: gland
+    hierarchy_path: 07_Endocrine/Other/Pineal
+    secondary_systems: nervous
+    confidence: high
+  - id: adrenal
+    priority: 90
+    pattern: ".*adrenal.*"
+    system: endocrine
+    subsystem: adrenal
+    anatomical_region: abdomen
+    structure_type: gland
+    hierarchy_path: 07_Endocrine/Adrenal
+    secondary_systems: urinary
+    confidence: high
+  - id: visual_system
+    priority: 85
+    pattern: ".*(eye|retina|lens|cornea|sclera|optic).*"
+    system: sensory
+    subsystem: visual_system
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 08_Sensory/Visual_System
+    confidence: medium
+  - id: auditory_system
+    priority: 85
+    pattern: ".*(ear|cochlea|auditory).*"
+    system: sensory
+    subsystem: auditory_system
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 08_Sensory/Auditory_System
+    confidence: medium
+  - id: skull
+    priority: 90
+    pattern: ".*(skull|cranium|mandible|maxilla).*"
+    system: musculoskeletal
+    subsystem: skeleton/skull
+    anatomical_region: head_and_neck
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Skull
+    confidence: high
+  - id: vertebral_column
+    priority: 90
+    pattern: ".*(vertebra|cervical|thoracic|lumbar|sacrum|coccyx|atlas|axis|c[1-7]|c_0*[1-7]).*"
+    system: musculoskeletal
+    subsystem: skeleton/vertebral_column
+    anatomical_region: spine
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Vertebral_Column
+    confidence: high
+  - id: hyoid_bone
+    priority: 90
+    pattern: ".*hyoid.*"
+    system: musculoskeletal
+    subsystem: skeleton/hyoid
+    anatomical_region: head_and_neck
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Hyoid
+    confidence: high
+  - id: thoracic_cage
+    priority: 88
+    pattern: ".*(rib|sternum).*"
+    system: musculoskeletal
+    subsystem: skeleton/thoracic_cage
+    anatomical_region: thorax
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Thoracic_Cage
+    confidence: high
+  - id: shoulder_girdle
+    priority: 86
+    pattern: ".*(scapula|clavicle).*"
+    system: musculoskeletal
+    subsystem: skeleton/shoulder_girdle
+    anatomical_region: upper_limb
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Shoulder_Girdle
+    confidence: high
+  - id: upper_limb_bone
+    priority: 86
+    pattern: ".*(humerus|radius|ulna|carpal|metacarpal|capitate|hamate|lunate|pisform|pisiform|scaphoid|trapezium|trapezoid|triquetrum).*"
+    system: musculoskeletal
+    subsystem: skeleton/upper_limb
+    anatomical_region: upper_limb
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Upper_Limb
+    confidence: high
+  - id: pelvis_bone
+    priority: 86
+    pattern: ".*(pelvis|ilium|ischium|pubis|hip).*"
+    system: musculoskeletal
+    subsystem: skeleton/pelvis
+    anatomical_region: pelvis
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Pelvis
+    confidence: high
+  - id: lower_limb_bone
+    priority: 86
+    pattern: ".*(femur|tibia|fibula|patella|tarsal|metatarsal|calcaneus|talus|cuboid|navicular|cuneiform|cuniform).*"
+    system: musculoskeletal
+    subsystem: skeleton/lower_limb
+    anatomical_region: lower_limb
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Lower_Limb
+    confidence: high
+  - id: phalanges
+    priority: 86
+    pattern: ".*phalanx.*|.*phalange.*"
+    canonical_name: phalanx
+    system: musculoskeletal
+    subsystem: skeleton/phalanges
+    anatomical_region: unspecified
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Phalanges
+    confidence: medium
+  - id: hand_digits
+    priority: 84
+    pattern: ".*(thumb|pinky|ring|middle).*"
+    system: musculoskeletal
+    subsystem: skeleton/upper_limb
+    anatomical_region: upper_limb
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton/Upper_Limb
+    confidence: medium
+  - id: diaphragm
+    priority: 82
+    pattern: ".*diaphragm.*|^dia$"
+    canonical_name: diaphragm
+    system: musculoskeletal
+    subsystem: skeletal_muscle
+    anatomical_region: thorax
+    structure_type: muscle
+    hierarchy_path: 09_Musculoskeletal/Skeletal_Muscle
+    secondary_systems: respiratory
+    confidence: medium
+  - id: lower_limb_soft_tissue
+    priority: 72
+    pattern: ".*(leg|foot_muscle).*"
+    system: musculoskeletal
+    subsystem: skeletal_muscle/lower_limb
+    anatomical_region: lower_limb
+    structure_type: muscle
+    hierarchy_path: 09_Musculoskeletal/Skeletal_Muscle/Lower_Limb
+    confidence: medium
+  - id: intervertebral_disc
+    priority: 85
+    pattern: ".*(disc|disk).*"
+    system: musculoskeletal
+    subsystem: intervertebral_discs
+    anatomical_region: spine
+    structure_type: cartilage
+    hierarchy_path: 09_Musculoskeletal/Intervertebral_Discs
+    confidence: medium
+  - id: cartilage
+    priority: 75
+    pattern: ".*cartilage.*"
+    system: musculoskeletal
+    subsystem: cartilage
+    anatomical_region: unspecified
+    structure_type: cartilage
+    hierarchy_path: 09_Musculoskeletal/Cartilage
+    confidence: medium
+  - id: ligament
+    priority: 75
+    pattern: ".*ligament.*"
+    system: musculoskeletal
+    subsystem: ligaments
+    anatomical_region: unspecified
+    structure_type: ligament
+    hierarchy_path: 09_Musculoskeletal/Ligaments
+    confidence: medium
+  - id: tendon
+    priority: 75
+    pattern: ".*tendon.*"
+    system: musculoskeletal
+    subsystem: tendons
+    anatomical_region: unspecified
+    structure_type: tendon
+    hierarchy_path: 09_Musculoskeletal/Tendons
+    confidence: medium
+  - id: muscle
+    priority: 70
+    pattern: ".*(muscle|musculus|musc).*"
+    canonical_name: skeletal_muscle
+    system: musculoskeletal
+    subsystem: skeletal_muscle
+    anatomical_region: unspecified
+    structure_type: muscle
+    hierarchy_path: 09_Musculoskeletal/Skeletal_Muscle
+    confidence: medium
+  - id: generic_bone
+    priority: 25
+    pattern: ".*bone.*"
+    system: musculoskeletal
+    subsystem: skeleton
+    anatomical_region: unspecified
+    structure_type: bone
+    hierarchy_path: 09_Musculoskeletal/Skeleton
+    confidence: medium
+  - id: lymph_node
+    priority: 90
+    pattern: ".*lymph.*node.*"
+    system: lymphatic_immune
+    subsystem: lymph_nodes
+    anatomical_region: unspecified
+    structure_type: organ
+    hierarchy_path: 10_Lymphatic_and_Immune/Lymph_Nodes
+    confidence: high
+  - id: thymus
+    priority: 90
+    pattern: ".*thymus.*"
+    system: lymphatic_immune
+    subsystem: thymus
+    anatomical_region: thorax
+    structure_type: organ
+    hierarchy_path: 10_Lymphatic_and_Immune/Thymus
+    confidence: high
+  - id: spleen
+    priority: 90
+    pattern: ".*spleen.*"
+    system: lymphatic_immune
+    subsystem: spleen
+    anatomical_region: abdomen
+    structure_type: organ
+    hierarchy_path: 10_Lymphatic_and_Immune/Spleen
+    secondary_systems: digestive
+    confidence: high
+  - id: tonsil
+    priority: 85
+    pattern: ".*tonsil.*"
+    system: lymphatic_immune
+    subsystem: tonsils
+    anatomical_region: head_and_neck
+    structure_type: organ
+    hierarchy_path: 10_Lymphatic_and_Immune/Tonsils
+    confidence: medium
+  - id: bone_marrow
+    priority: 85
+    pattern: ".*marrow.*"
+    system: lymphatic_immune
+    subsystem: bone_marrow
+    anatomical_region: unspecified
+    structure_type: organ
+    hierarchy_path: 10_Lymphatic_and_Immune/Bone_Marrow
+    secondary_systems: musculoskeletal
+    confidence: medium
+  - id: skin
+    priority: 90
+    pattern: ".*skin.*"
+    system: integumentary
+    subsystem: skin
+    anatomical_region: whole_body
+    structure_type: organ
+    hierarchy_path: 11_Integumentary/Skin
+    confidence: high
+  - id: region_surface_skin
+    priority: 89
+    pattern: ".*(head|chest_surface|arm_low|arm_upp|hand|foot|index).*|^index$"
+    system: integumentary
+    subsystem: skin
+    anatomical_region: whole_body
+    structure_type: organ
+    hierarchy_path: 11_Integumentary/Skin
+    confidence: medium
+  - id: subcutaneous
+    priority: 70
+    pattern: ".*(subcutaneous|adipose|fat).*"
+    system: integumentary
+    subsystem: subcutaneous_tissue
+    anatomical_region: whole_body
+    structure_type: other
+    hierarchy_path: 11_Integumentary/Subcutaneous_Tissue
+    confidence: medium

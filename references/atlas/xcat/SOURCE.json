@@ -1,0 +1,15 @@
+{
+  "files": [
+    {
+      "source_path": "/home/aghorban/slurm/xcat/organ_ids.txt",
+      "snapshot": "references/atlas/xcat/organ_ids.primary.txt",
+      "sha256": "e429081ac4412344f77a99ce1ed5ba0e4e3cc00fabe949153d9aa938988aa7e5"
+    },
+    {
+      "source_path": "/home/aghorban/slurm/xcat/high_res/040/organ_ids.txt",
+      "snapshot": "references/atlas/xcat/organ_ids.040.txt",
+      "sha256": "7bee1ae8717f94a4dd7bca7f4c3e8b2409a0fbae9227c2a1be5dfb3b382b4390"
+    }
+  ],
+  "note": "Explicit dictionaries only; do not infer missing signed IDs from absolute values or surface block order."
+}

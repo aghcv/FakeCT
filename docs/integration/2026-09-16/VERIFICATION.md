@@ -72,3 +72,10 @@ full-volume XCAT validation, real-case geometry edit, medical/clinical validatio
 or dataset replacement was performed. Existing logs/metrics are historical evidence
 and are explicitly separated from newly run bounded evaluations. The draft cohort
 configuration is not executable by the inherited CLI; implementing it starts at M1.
+
+## Atlas tissue follow-up
+
+The [tissue mapping evaluation](TISSUE_MAPPING_EVALUATION.md) adds 25 passing focused
+tests, a complete six-file pilot surface scan, dictionary/atlas crosswalks, reused
+12-case attenuation profiles and a real 131,072-voxel reversible crop roundtrip.
+These do not change the scope of the earlier full-pipeline evaluation.

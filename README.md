@@ -1,3 +1,5 @@
+> Tissue grouping is now available: [DPI atlas workbench and usage](docs/TISSUE_MAPPING.md).
+
 > Integration branch `fakect.26.09.16`: start with
 > [the evaluation and milestone plan](docs/integration/2026-09-16/PLAN.md).
 > This branch assembles the existing phantom GUI, TensorFlow trainer, and XCAT

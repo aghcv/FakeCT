@@ -1,0 +1,287 @@
+{
+  "schema_version": "fakect.tissue-policy/1",
+  "version": "1.0.0-proposed",
+  "status": "proposed",
+  "description": "Reversible semantic anatomy grouping, not an attenuation/material segmentation ground truth. Preserve signed original per-voxel IDs and catalog; tissue IDs alone cannot restore anatomy.",
+  "background_original_ids": [
+    0
+  ],
+  "unknown_id": 255,
+  "categories": [
+    {
+      "id": 0,
+      "name": "background",
+      "description": "Reserved exterior/background label."
+    },
+    {
+      "id": 1,
+      "name": "soft_tissue",
+      "description": "Other named organs, skin, glands and connective tissues."
+    },
+    {
+      "id": 2,
+      "name": "bone",
+      "description": "Anatomical skeletal structures; not a cortical/trabecular material claim."
+    },
+    {
+      "id": 3,
+      "name": "cartilage",
+      "description": "Cartilage and intervertebral discs."
+    },
+    {
+      "id": 4,
+      "name": "muscle",
+      "description": "Skeletal muscle and explicitly identified myocardium/papillary muscle."
+    },
+    {
+      "id": 5,
+      "name": "artery",
+      "description": "Arterial anatomy, including vessel blood and wall until separately resolved."
+    },
+    {
+      "id": 6,
+      "name": "vein",
+      "description": "Venous anatomy, including vessel blood and wall until separately resolved."
+    },
+    {
+      "id": 7,
+      "name": "lung",
+      "description": "Pulmonary parenchymal anatomy."
+    },
+    {
+      "id": 8,
+      "name": "adipose",
+      "description": "Subcutaneous/adipose anatomy."
+    },
+    {
+      "id": 9,
+      "name": "nervous_tissue",
+      "description": "Brain, spinal cord and peripheral nervous anatomy."
+    },
+    {
+      "id": 10,
+      "name": "fluid",
+      "description": "Explicit fluid structures; chamber names alone are insufficient."
+    },
+    {
+      "id": 255,
+      "name": "unknown",
+      "description": "Unresolved, ambiguous or unreviewed evidence; never silently soft tissue."
+    }
+  ],
+  "rules": [
+    {
+      "id": "structure_bone",
+      "tissue": "bone",
+      "priority": 100,
+      "match": {
+        "structure_type": [
+          "bone"
+        ]
+      }
+    },
+    {
+      "id": "structure_cartilage",
+      "tissue": "cartilage",
+      "priority": 100,
+      "match": {
+        "structure_type": [
+          "cartilage"
+        ]
+      }
+    },
+    {
+      "id": "structure_muscle",
+      "tissue": "muscle",
+      "priority": 100,
+      "match": {
+        "structure_type": [
+          "muscle"
+        ]
+      }
+    },
+    {
+      "id": "structure_artery",
+      "tissue": "artery",
+      "priority": 100,
+      "match": {
+        "structure_type": [
+          "artery"
+        ]
+      }
+    },
+    {
+      "id": "structure_vein",
+      "tissue": "vein",
+      "priority": 100,
+      "match": {
+        "structure_type": [
+          "vein"
+        ]
+      }
+    },
+    {
+      "id": "structure_fluid",
+      "tissue": "fluid",
+      "priority": 100,
+      "match": {
+        "structure_type": [
+          "fluid"
+        ]
+      }
+    },
+    {
+      "id": "structure_nerve",
+      "tissue": "nervous_tissue",
+      "priority": 100,
+      "match": {
+        "structure_type": [
+          "nerve"
+        ]
+      }
+    },
+    {
+      "id": "explicit_cardiac_muscle",
+      "tissue": "muscle",
+      "priority": 110,
+      "match": {
+        "structure_type": [
+          "heart"
+        ],
+        "canonical_name_regex": "(myocard|papillary_muscle)"
+      }
+    },
+    {
+      "id": "lung_hierarchy",
+      "tissue": "lung",
+      "priority": 95,
+      "match": {
+        "hierarchy_prefix": [
+          "03_Respiratory/Lungs"
+        ],
+        "structure_type": [
+          "organ"
+        ]
+      }
+    },
+    {
+      "id": "nervous_hierarchy",
+      "tissue": "nervous_tissue",
+      "priority": 95,
+      "match": {
+        "hierarchy_prefix": [
+          "02_Nervous"
+        ],
+        "structure_type": [
+          "organ",
+          "nerve"
+        ]
+      }
+    },
+    {
+      "id": "subcutaneous_hierarchy",
+      "tissue": "adipose",
+      "priority": 95,
+      "match": {
+        "hierarchy_prefix": [
+          "11_Integumentary/Subcutaneous_Tissue"
+        ]
+      }
+    },
+    {
+      "id": "aorta_named",
+      "tissue": "artery",
+      "priority": 95,
+      "match": {
+        "system": [
+          "cardiovascular"
+        ],
+        "canonical_name": [
+          "aorta",
+          "pulmonary_trunk",
+          "brachiocephalic_artery"
+        ]
+      }
+    },
+    {
+      "id": "cava_named",
+      "tissue": "vein",
+      "priority": 95,
+      "match": {
+        "system": [
+          "cardiovascular"
+        ],
+        "canonical_name": [
+          "vena_cava",
+          "inferior_vena_cava",
+          "superior_vena_cava"
+        ]
+      }
+    },
+    {
+      "id": "named_soft_structures",
+      "tissue": "soft_tissue",
+      "priority": 70,
+      "match": {
+        "structure_type": [
+          "skin",
+          "gland",
+          "ligament",
+          "tendon",
+          "tissue"
+        ]
+      }
+    },
+    {
+      "id": "other_organ_anatomy",
+      "tissue": "soft_tissue",
+      "priority": 50,
+      "match": {
+        "structure_type": [
+          "organ"
+        ],
+        "system": [
+          "digestive",
+          "urinary",
+          "reproductive",
+          "endocrine",
+          "lymphatic_immune",
+          "integumentary"
+        ]
+      }
+    }
+  ],
+  "semantics": "proposed_anatomical_groups_not_material_ground_truth",
+  "material_review_rules": [
+    {
+      "id": "bone_inner_outer_boundary",
+      "match": {
+        "structure_type": [
+          "bone"
+        ],
+        "canonical_name_regex": "(^|_)(inner|outer)(_|$)"
+      },
+      "reason": "A bone boundary may enclose marrow or other material; inspect per-ID attenuation evidence."
+    }
+  ],
+  "hierarchy_review_rules": [
+    {
+      "id": "numeric_muscle_pattern_collision",
+      "original_name_regex": "^(?:[lr]_)?musc[0-9]+$",
+      "allowed_structure_types": [
+        "muscle"
+      ],
+      "reason": "Explicit DPI YAML vertebral regex can match c1 inside numeric musc labels; require reviewed muscle anatomy."
+    },
+    {
+      "id": "bladder_coronary_substring_collision",
+      "original_name_regex": "^(?:urinary_)?bladder(?:_(?:inner|outer))?(?:_[0-9]+)?$",
+      "disallowed_structure_types": [
+        "artery",
+        "vein"
+      ],
+      "status": "anatomy_review_required",
+      "reason": "Explicit DPI YAML coronary regex matches lad inside bladder. Preserve source hierarchy for review; do not treat a bladder boundary as vascular anatomy."
+    }
+  ]
+}
