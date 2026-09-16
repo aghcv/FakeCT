@@ -76,6 +76,16 @@ absolute-value ID guess establishes their original anatomical identity.
 
 ## Reversibility and tests
 
+The follow-up [tissue slice preview](xcat-tissue-preview.png) shows attenuation,
+original signed IDs and proposed groups at the original preview's crosshair
+`[k,j,i]=[1264,375,375]`, for case 260602/frame 1. Its
+[JSON provenance](xcat-tissue-preview.json) records the exact catalog and sampling.
+The axial plane is full resolution; the whole-body views use k stride 8 and
+in-plane stride 2. The 150,212-voxel histogram grid matches the original audit and
+contains 140,271 background and 682 unresolved samples. Zero counts in this sparse
+grid do not imply absence from the full volume. The magenta unresolved category
+remains visible alongside the assigned tissue colors.
+
 The crop came from case 260602, frame 1, native indices
 `i=300:364, j=350:414, k=1100:1132`, at 1 mm spacing. It contains 26 original IDs and
 seven coarse groups. The NPZ preserves the original array, grouped array, exact crop

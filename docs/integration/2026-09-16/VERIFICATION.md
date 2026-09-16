@@ -79,3 +79,13 @@ The [tissue mapping evaluation](TISSUE_MAPPING_EVALUATION.md) adds 25 passing fo
 tests, a complete six-file pilot surface scan, dictionary/atlas crosswalks, reused
 12-case attenuation profiles and a real 131,072-voxel reversible crop roundtrip.
 These do not change the scope of the earlier full-pipeline evaluation.
+
+The subsequent tissue slice preview was rendered from case 260602/frame 1 with
+the baseline crosshair. The script compiled successfully; the PNG was visually
+inspected and independently reviewed for axis, sampling and color semantics.
+Checks confirmed 150,212 histogram samples, matching baseline background counts,
+per-view category count totals, and catalog/script/image hashes. It read 247
+contiguous axial planes per channel (1,111,500,000 requested bytes in total),
+materializing only the selected views and histogram samples. The full-resolution
+axial image and decimated orthogonal images are for preview, not full-volume
+validation or proof of anatomical orientation.

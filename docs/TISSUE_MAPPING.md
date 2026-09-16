@@ -127,6 +127,32 @@ The initial results are at `outputs/tissues/atlas-v1/` and
 `outputs/tissues/atlas-profile-v1/`. Their compact, versioned evaluation is
 [here](integration/2026-09-16/TISSUE_MAPPING_EVALUATION.md).
 
+### Compare tissue groups on the original preview slices
+
+The [tissue slice preview](integration/2026-09-16/xcat-tissue-preview.png) adds a
+third row of categorical tissue views to the attenuation and original signed-ID
+views. It uses the original preview's case 260602, frame 1, and crosshair
+`i=375, j=375, k=1264`. The axial plane is full resolution; the whole-body context
+uses every eighth k plane and every second in-plane voxel. Unknown/review labels
+are magenta. Histograms describe the same 17-plane, ji-stride-8 sample grid as the
+original preview, not full-volume counts. Native index and relative-mm axes are
+shown; anatomical orientation remains unverified.
+
+```bash
+python3 scripts/evaluation/preview_xcat_tissues.py \
+  --catalog outputs/tissues/atlas-v1/label-catalog.json \
+  --case 260602 --frame 1 --crosshair-kji 1264 375 375 \
+  --context-step 8 --inplane-step 2 \
+  --out outputs/tissues/MY_TISSUE_PREVIEW.png
+```
+
+The JSON beside the PNG records the catalog/image/script hashes, source metadata,
+sampling coordinates and group counts. Selected contiguous axial planes are read
+once per channel, avoiding strided sagittal reads on NFS. Reducing the context
+stride improves detail while increasing I/O; the decimated preview can omit thin
+vessels. Original `.bin` files are opened read-only. Existing PNG/JSON output paths
+are refused, so comparisons can be retained as separate versions.
+
 For a bounded 3D label crop, provide its geometry explicitly and preserve both arrays:
 
 ```bash
