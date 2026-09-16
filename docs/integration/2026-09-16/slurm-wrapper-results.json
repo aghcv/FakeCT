@@ -1,0 +1,146 @@
+[
+  {
+    "case": "default_local_root",
+    "exit_code": 0,
+    "module_called": true,
+    "crun_called": true,
+    "arguments_preserved": true,
+    "stderr": ""
+  },
+  {
+    "case": "paths_with_spaces",
+    "exit_code": 0,
+    "module_called": true,
+    "crun_called": true,
+    "arguments_preserved": true,
+    "stderr": ""
+  },
+  {
+    "case": "explicit_root",
+    "exit_code": 0,
+    "module_called": true,
+    "crun_called": true,
+    "arguments_preserved": true,
+    "stderr": ""
+  },
+  {
+    "case": "submit_dir_root",
+    "exit_code": 0,
+    "module_called": true,
+    "crun_called": true,
+    "arguments_preserved": true,
+    "stderr": ""
+  },
+  {
+    "case": "missing_csv",
+    "exit_code": 2,
+    "module_called": false,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": "Usage: /home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/scripts/slurm/fakenoise_train_gpu.sh --csv /path/to/pairs.csv --out-dir /path/to/new-run [training options]"
+  },
+  {
+    "case": "missing_out_dir",
+    "exit_code": 2,
+    "module_called": false,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": "Usage: /home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/scripts/slurm/fakenoise_train_gpu.sh --csv /path/to/pairs.csv --out-dir /path/to/new-run [training options]"
+  },
+  {
+    "case": "bad_root",
+    "exit_code": 2,
+    "module_called": false,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": "Set FAKECT_ROOT to the integration checkout."
+  },
+  {
+    "case": "module_failure",
+    "exit_code": 7,
+    "module_called": true,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": ""
+  },
+  {
+    "case": "crun_failure",
+    "exit_code": 13,
+    "module_called": true,
+    "crun_called": true,
+    "arguments_preserved": true,
+    "stderr": ""
+  },
+  {
+    "case": "equals_options",
+    "exit_code": 0,
+    "module_called": true,
+    "crun_called": true,
+    "arguments_preserved": true,
+    "stderr": ""
+  },
+  {
+    "case": "missing_csv_but_token_in_out_path",
+    "exit_code": 2,
+    "module_called": false,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": "Usage: /home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/scripts/slurm/fakenoise_train_gpu.sh --csv /path/to/pairs.csv --out-dir /path/to/new-run [training options]"
+  },
+  {
+    "case": "missing_out_value",
+    "exit_code": 2,
+    "module_called": false,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": "Missing value for --out-dir"
+  },
+  {
+    "case": "empty_csv_equals",
+    "exit_code": 2,
+    "module_called": false,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": "Usage: /home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/scripts/slurm/fakenoise_train_gpu.sh --csv /path/to/pairs.csv --out-dir /path/to/new-run [training options]"
+  },
+  {
+    "case": "empty_out_equals",
+    "exit_code": 2,
+    "module_called": false,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": "Usage: /home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/scripts/slurm/fakenoise_train_gpu.sh --csv /path/to/pairs.csv --out-dir /path/to/new-run [training options]"
+  },
+  {
+    "case": "csv_value_is_next_option",
+    "exit_code": 2,
+    "module_called": false,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": "Missing value for --csv"
+  },
+  {
+    "case": "mixed_csv_equals",
+    "exit_code": 0,
+    "module_called": true,
+    "crun_called": true,
+    "arguments_preserved": true,
+    "stderr": ""
+  },
+  {
+    "case": "mixed_out_equals",
+    "exit_code": 0,
+    "module_called": true,
+    "crun_called": true,
+    "arguments_preserved": true,
+    "stderr": ""
+  },
+  {
+    "case": "empty_csv_argument",
+    "exit_code": 2,
+    "module_called": false,
+    "crun_called": false,
+    "arguments_preserved": null,
+    "stderr": "Missing value for --csv"
+  }
+]

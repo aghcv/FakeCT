@@ -1,0 +1,160 @@
+{
+  "method": "AST-selected function definitions; no top-level notebook code, installs, downloads, or writes to data",
+  "versions": {
+    "numpy": "2.0.2"
+  },
+  "dilation_full_export_parses": {
+    "line": 3121,
+    "text": "-import numpy as np",
+    "error": "invalid syntax (<unknown>, line 3121)"
+  },
+  "dilation_function_definitions": 94,
+  "erosion_function_definitions": 14,
+  "selected_dilation_function_lines": {
+    "borrow_pixels_2d": 3509,
+    "borrow_pixels_3d": 3683,
+    "vti_make_teaching_bands": 4103,
+    "vti_make_sphere": 4115,
+    "vti_find_illustrative_seed": 4123,
+    "vti_dilate6": 4149,
+    "vti_shape_domain": 4161,
+    "vti_borrow_round": 4229
+  },
+  "selected_erosion_function_lines": {
+    "release_pixels_2d": 566,
+    "run_recipient_policy_tests": 888,
+    "run_erosion_2d_tests": 1024,
+    "run_additional_erosion_test": 1094,
+    "run_expanded_search_test": 1132
+  },
+  "notebook_test_functions": {
+    "test_disallowed_donor": "pass",
+    "test_disjoint_request_mask": "pass",
+    "test_empty_allowed_donors": "pass",
+    "test_empty_request_mask": "pass",
+    "test_full_artery_grid": "pass",
+    "test_large_integer_dtypes": "pass",
+    "test_overlapping_allowed_and_protected": "pass",
+    "test_self_borrowing": "pass",
+    "test_single_element_and_1d_like_grids": "pass",
+    "test_unlisted_and_multi_counts": "pass",
+    "run_additional_erosion_test": "pass",
+    "run_erosion_2d_tests": "pass",
+    "run_expanded_search_test": "pass",
+    "run_recipient_policy_tests": "pass"
+  },
+  "self_donor_2d": {
+    "changed": 1,
+    "sum_donor_counts": 2,
+    "donor_counts": {
+      "2": 1,
+      "9": 1
+    },
+    "blocked": 0
+  },
+  "self_donor_3d": {
+    "changed": 1,
+    "sum_donor_counts": 2,
+    "donor_counts": {
+      "2": 1,
+      "9": 1
+    },
+    "blocked": 0
+  },
+  "random_3d_donor_invariant_trials_passed": 30,
+  "erosion_protected_ring": {
+    "old_center": 9,
+    "new_center": 2,
+    "unresolved": false,
+    "protected_changed": 0
+  },
+  "erosion_recipient_not_in_priority": {
+    "assigned_label": 7,
+    "priority": [
+      2,
+      3
+    ]
+  },
+  "erosion_invalid_release_mask": {
+    "old_center": 4,
+    "new_center": 2,
+    "protected_label": 4
+  },
+  "erosion_3d": "ValueError: too many values to unpack (expected 2)",
+  "dilate6_scipy_equivalence_trials_passed": 30,
+  "rounds_vs_requested_sphere": [
+    {
+      "spacing_zyx": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "seed_radius": 1.0,
+      "target_radius": 3.0,
+      "rounds": 2,
+      "target_voxels": 123,
+      "actual_voxels": 63,
+      "target_fill_fraction": 0.5121951219512195
+    },
+    {
+      "spacing_zyx": [
+        2.0,
+        1.0,
+        1.0
+      ],
+      "seed_radius": 2.0,
+      "target_radius": 6.0,
+      "rounds": 4,
+      "target_voxels": 455,
+      "actual_voxels": 291,
+      "target_fill_fraction": 0.6395604395604395
+    },
+    {
+      "spacing_zyx": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "seed_radius": 4.0,
+      "target_radius": 10.0,
+      "rounds": 6,
+      "target_voxels": 4169,
+      "actual_voxels": 2433,
+      "target_fill_fraction": 0.5835931878148237
+    }
+  ],
+  "dilation_full_protected_plane": {
+    "target_voxels_far_side": 0,
+    "protected_changed": 0,
+    "grown_voxels": 324
+  },
+  "scalar_bands": {
+    "input_repr": [
+      "-inf",
+      "-1.0",
+      "0.0",
+      "5e-07",
+      "4.5",
+      "5.5",
+      "100.0",
+      "700.0",
+      "1400.0",
+      "inf",
+      "nan"
+    ],
+    "labels": [
+      1,
+      1,
+      0,
+      0,
+      3,
+      4,
+      5,
+      6,
+      7,
+      7,
+      7
+    ]
+  },
+  "inspection_auto_seed_missing_target": "ValueError: No sufficiently interior illustrative seed was found. Choose a different VTI_TARGET_SOURCE_LABEL, reduce VTI_SEED_RADIUS_MM, or set VTI_SEED_CENTER_ZYX."
+}

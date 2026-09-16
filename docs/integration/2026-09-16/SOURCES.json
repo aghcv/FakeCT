@@ -1,0 +1,56 @@
+{
+  "branch": "fakect.26.09.16",
+  "date": "2026-09-16",
+  "base": {
+    "ref": "origin/phantom",
+    "commit": "c6a5c2c9c47ebcbee116c8ade18269eef4ac09ff",
+    "purpose": "VTI/mesh GUI, ROI tools"
+  },
+  "imports": [
+    {
+      "ref": "stenosis",
+      "commit": "d3b7a62923959abd7f6f983526367829ffcf0c65",
+      "paths": [
+        "src/fakenoise.py",
+        "environment.yml",
+        "images/train_preview*.png"
+      ]
+    },
+    {
+      "ref": "main (local)",
+      "commit": "183e0035b3e01d877b532aa4718db90d0802d0a4",
+      "paths": [
+        "requirements.txt",
+        "scripts/xcat_job.sh",
+        "scripts/xcat_pool.sh",
+        "scripts/xcat_raw_to_obj.py"
+      ]
+    },
+    {
+      "source": "/home/aghorban/slurm",
+      "paths": [
+        "fakenoise_train_gpu.sh",
+        "fakenoise_train_cpu.sh",
+        "fakenoise_train_cpu_heavy.sh",
+        "fakenoise_train_gpu_heavy.sh",
+        "fakenoise_pair.sh"
+      ],
+      "destination": "scripts/slurm/reference/",
+      "note": "Exact reference copies; GPU setup user-confirmed, old CPU scripts unvalidated."
+    }
+  ],
+  "notebooks": [
+    {
+      "original_path": "/home/aghorban/.codex/attachments/eee0320a-7c9b-44e9-bbbd-86eb116832ba/pasted-text.txt",
+      "reference_path": "references/notebooks/dilation_export.py.txt",
+      "sha256": "b9cfd2f67de85872ab4f5805baeaa3ce2dff3a6f4dc396bbc58ef9fa663bd680",
+      "size_bytes": 217014
+    },
+    {
+      "original_path": "/home/aghorban/.codex/attachments/11085a55-af1e-4f43-b350-69cd17fe56b4/pasted-text.txt",
+      "reference_path": "references/notebooks/erosion_export.py.txt",
+      "sha256": "ea87b52c538d8364ee4802fdb49d1c5e3781bf14ea3e91e2697134b4e10a43b4",
+      "size_bytes": 62081
+    }
+  ]
+}

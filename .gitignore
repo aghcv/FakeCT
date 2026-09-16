@@ -50,3 +50,7 @@ htmlcov/
 .coverage
 .cache/
 pytest_cache/
+
+# Integration runs and cluster logs
+logs/
+*.bin

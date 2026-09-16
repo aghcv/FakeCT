@@ -1,0 +1,926 @@
+{
+  "scope": "Read-only files/metadata; synthetic arrays only; no TensorFlow, training, or job submission.",
+  "versions": {
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "pynrrd": "1.1.3",
+    "scipy": "1.13.1",
+    "skimage": "0.24.0",
+    "nrrd_read_signature": "(filename: str, custom_field_map: Optional[Dict[str, typing_extensions.Literal['int', 'double', 'string', 'int list', 'double list', 'string list', 'quoted string list', 'int vector', 'double vector', 'int matrix', 'double matrix']]] = None, index_order: typing_extensions.Literal['F', 'C'] = 'F') -> Tuple[numpy.ndarray[Any, numpy.dtype[+_ScalarType_co]], Dict[str, Any]]"
+  },
+  "manifest": {
+    "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/pairs.csv",
+    "sha256": "be40671f96259230620a5f0aaed2e5f5417b21aef3c7e18ed037a76e01224388",
+    "rows": 22753,
+    "cases": 56,
+    "images": 56,
+    "masks": 56,
+    "duplicate_image_slice": 0,
+    "missing_paths": [],
+    "image_shape_case_counts": {
+      "(512, 512)": 39,
+      "(512, 666)": 17
+    },
+    "segment_header_groups": [
+      {
+        "count": 45,
+        "fields": {
+          "Segment0_LabelValue": "1",
+          "Segment0_Layer": "0",
+          "Segment0_Name": "aorta"
+        }
+      },
+      {
+        "count": 10,
+        "fields": {
+          "Segment0_LabelValue": "1",
+          "Segment0_Layer": "0",
+          "Segment0_Name": "Segment_1"
+        }
+      },
+      {
+        "count": 1,
+        "fields": {
+          "Segment0_LabelValue": "1",
+          "Segment0_Layer": "0",
+          "Segment0_Name": "Segment_3"
+        }
+      }
+    ]
+  },
+  "memory_estimates": {
+    "all_image_mask_arrays_GiB": 17.538923263549805,
+    "note": "Header-derived uncompressed estimate; not measured RSS.",
+    "expanded_shuffle": [
+      {
+        "shape": [
+          512,
+          666
+        ],
+        "context": 0,
+        "channels": 1,
+        "shuffle256_GiB": 0.650390625,
+        "batch8_inputs_GiB": 0.010162353515625
+      },
+      {
+        "shape": [
+          512,
+          666
+        ],
+        "context": 3,
+        "channels": 7,
+        "shuffle256_GiB": 2.6015625,
+        "batch8_inputs_GiB": 0.071136474609375
+      },
+      {
+        "shape": [
+          512,
+          666
+        ],
+        "context": 15,
+        "channels": 31,
+        "shuffle256_GiB": 10.40625,
+        "batch8_inputs_GiB": 0.315032958984375
+      },
+      {
+        "shape": [
+          512,
+          666
+        ],
+        "context": 30,
+        "channels": 61,
+        "shuffle256_GiB": 20.162109375,
+        "batch8_inputs_GiB": 0.619903564453125
+      },
+      {
+        "shape": [
+          512,
+          666
+        ],
+        "context": 60,
+        "channels": 121,
+        "shuffle256_GiB": 39.673828125,
+        "batch8_inputs_GiB": 1.229644775390625
+      }
+    ]
+  },
+  "historical_split_reproduction": {
+    "seed": 42,
+    "first_training_case": "D3__D3",
+    "selected_shape": [
+      512,
+      666
+    ],
+    "splits": {
+      "train": {
+        "nominal_rows": 15972,
+        "nominal_cases": 44,
+        "yielded_rows": 1991,
+        "yielded_cases": 14,
+        "retained_ids": [
+          "D10__D10",
+          "D12__D12",
+          "D13__D13",
+          "D15__D15",
+          "D16__D16",
+          "D17__D17",
+          "D18__D18",
+          "D1__D1",
+          "D2__D2",
+          "D3__D3",
+          "D5__D5",
+          "D6__D6",
+          "D7__D7",
+          "D9__D9"
+        ]
+      },
+      "validation": {
+        "nominal_rows": 1774,
+        "nominal_cases": 44,
+        "yielded_rows": 235,
+        "yielded_cases": 14,
+        "retained_ids": [
+          "D10__D10",
+          "D12__D12",
+          "D13__D13",
+          "D15__D15",
+          "D16__D16",
+          "D17__D17",
+          "D18__D18",
+          "D1__D1",
+          "D2__D2",
+          "D3__D3",
+          "D5__D5",
+          "D6__D6",
+          "D7__D7",
+          "D9__D9"
+        ]
+      },
+      "test": {
+        "nominal_rows": 5007,
+        "nominal_cases": 12,
+        "yielded_rows": 482,
+        "yielded_cases": 3,
+        "retained_ids": [
+          "D11__D11",
+          "D4__D4",
+          "D8__D8"
+        ]
+      }
+    },
+    "train_validation_case_overlap": [
+      "D10__D10",
+      "D12__D12",
+      "D13__D13",
+      "D14__D14",
+      "D15__D15",
+      "D16__D16",
+      "D17__D17",
+      "D18__D18",
+      "D1__D1",
+      "D2__D2",
+      "D3__D3",
+      "D5__D5",
+      "D6__D6",
+      "D7__D7",
+      "D9__D9",
+      "K11__K11",
+      "K12__K12",
+      "K13__K13",
+      "K15__K15",
+      "K16__K16",
+      "K17__K17",
+      "K19__K19",
+      "K1__K1",
+      "K20__K20",
+      "K2__K2",
+      "K3__K3",
+      "K6__K6",
+      "K7__K7",
+      "K8__K8",
+      "K9__K9",
+      "R10__R10",
+      "R12__R12",
+      "R14__R14",
+      "R15__R15",
+      "R16__R16",
+      "R17__R17",
+      "R18__R18",
+      "R1__R1",
+      "R2__R2",
+      "R4__R4",
+      "R5__R5",
+      "R6__R6",
+      "R7__R7",
+      "R8__R8"
+    ],
+    "test_train_or_validation_case_overlap": [],
+    "limitation": "Reproduces path-derived case IDs; true subject linkage is unverified."
+  },
+  "metrics": [
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train/test_metrics.csv",
+      "sha256": "b28d7d39655021e19f558fac4bdbb2b2aa2190e92c1e6dbc706607cb05499cdc",
+      "rows": [
+        {
+          "loss": 0.21243755519390106,
+          "mae": 0.21243755519390106,
+          "rmse": 0.35638806223869324
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx15_step4/test_metrics_ctx15_step4.csv",
+      "sha256": "478ed8a997df75d7d704126e60b2ef5558bad043be6378910bbf8bf8fced6946",
+      "rows": [
+        {
+          "loss": 0.19933225214481354,
+          "mae": 0.19933223724365234,
+          "rmse": 0.3475632965564728,
+          "psnr": 9.250643560005916,
+          "ssim": 0.3536439563970843
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx30_step1/test_metrics_ctx30_step1.csv",
+      "sha256": "c6cad157670cc7ba4c0a5fdb97ff1331cc29f3dd77cece74b3be613792ae0aac",
+      "rows": [
+        {
+          "loss": 0.20407439768314362,
+          "mae": 0.20407439768314362,
+          "rmse": 0.3513913154602051,
+          "psnr": 9.152007235530995,
+          "ssim": 0.3443188845369331
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx30_step2/test_metrics_ctx30_step2.csv",
+      "sha256": "0ed5f7a2c3ee77629e65e1819263dfe097d1432f8b1702fa4ec2b7e3ee61ae96",
+      "rows": [
+        {
+          "loss": 0.1988370269536972,
+          "mae": 0.1988370567560196,
+          "rmse": 0.3441341519355774,
+          "psnr": 9.337595437077566,
+          "ssim": 0.34180753705907163
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx3_step2/test_metrics_ctx3_step2.csv",
+      "sha256": "6851d2fbc920f491e782e10781c99a1c632c00d841570253b1d0cb84172cc010",
+      "rows": [
+        {
+          "loss": 0.21184086799621582,
+          "mae": 0.21184086799621582,
+          "rmse": 0.3598106801509857,
+          "psnr": 8.936834857671588,
+          "ssim": 0.33675635701887835
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx60_step1/test_metrics_ctx60_step1.csv",
+      "sha256": "fba028eee9b61a49fe3351088e39d5315cd5e5ca9c26e754054c062645ffbfe6",
+      "rows": [
+        {
+          "loss": 0.19947370886802673,
+          "mae": 0.19947372376918793,
+          "rmse": 0.34582188725471497,
+          "psnr": 9.294464269614318,
+          "ssim": 0.3460900504064758
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train/fakenoise_model.keras",
+      "bytes": 274105,
+      "sha256": "77d31c4a24297253cf27db37deab069b859c9043a43bb1f7d9a063767b54ca90",
+      "metadata": {
+        "keras_version": "3.10.0",
+        "date_saved": "2026-04-11@21:17:21"
+      },
+      "input_layers": [
+        {
+          "batch_shape": [
+            null,
+            512,
+            666,
+            7
+          ],
+          "dtype": "float32",
+          "sparse": false,
+          "ragged": false,
+          "name": "mask"
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx15_step4/fakenoise_model_ctx15_step4.keras",
+      "bytes": 315580,
+      "sha256": "bb45f82118a61d9b31bfd0bdbf440c5cf08409547cfc767e86f72bcf230df1e9",
+      "metadata": {
+        "keras_version": "3.10.0",
+        "date_saved": "2026-04-12@20:53:58"
+      },
+      "input_layers": [
+        {
+          "batch_shape": [
+            null,
+            512,
+            666,
+            31
+          ],
+          "dtype": "float32",
+          "sparse": false,
+          "ragged": false,
+          "name": "mask"
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx30_step1/fakenoise_model_ctx30_step1.keras",
+      "bytes": 367420,
+      "sha256": "3e27c5843335a0e8c9cfb5c1306cd8ec902ee0e5ba77987e7ee4314aa7e1e28b",
+      "metadata": {
+        "keras_version": "3.10.0",
+        "date_saved": "2026-04-12@22:41:32"
+      },
+      "input_layers": [
+        {
+          "batch_shape": [
+            null,
+            512,
+            666,
+            61
+          ],
+          "dtype": "float32",
+          "sparse": false,
+          "ragged": false,
+          "name": "mask"
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx30_step2/fakenoise_model_ctx30_step2.keras",
+      "bytes": 367420,
+      "sha256": "aa4721e5e73fbb827edaa508296179a0e363827274d45e498d9029a6bbe63600",
+      "metadata": {
+        "keras_version": "3.10.0",
+        "date_saved": "2026-04-12@23:04:55"
+      },
+      "input_layers": [
+        {
+          "batch_shape": [
+            null,
+            512,
+            666,
+            61
+          ],
+          "dtype": "float32",
+          "sparse": false,
+          "ragged": false,
+          "name": "mask"
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx3_step2/fakenoise_model_ctx3_step2.keras",
+      "bytes": 274105,
+      "sha256": "2dd1f1fa642f925b708aaaf3b64f6f3482a886af5fb6d6a8c15318f4e2b41374",
+      "metadata": {
+        "keras_version": "3.10.0",
+        "date_saved": "2026-04-12@02:15:19"
+      },
+      "input_layers": [
+        {
+          "batch_shape": [
+            null,
+            512,
+            666,
+            7
+          ],
+          "dtype": "float32",
+          "sparse": false,
+          "ragged": false,
+          "name": "mask"
+        }
+      ]
+    },
+    {
+      "path": "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx60_step1/fakenoise_model_ctx60_step1.keras",
+      "bytes": 471103,
+      "sha256": "5253c9c18715fa7d82aaf2e32157ac58146569bfde6b72985dc04690983146da",
+      "metadata": {
+        "keras_version": "3.10.0",
+        "date_saved": "2026-04-13@02:52:05"
+      },
+      "input_layers": [
+        {
+          "batch_shape": [
+            null,
+            512,
+            666,
+            121
+          ],
+          "dtype": "float32",
+          "sparse": false,
+          "ragged": false,
+          "name": "mask"
+        }
+      ]
+    }
+  ],
+  "launcher_snapshots": [
+    {
+      "path": "/home/aghorban/slurm/fakenoise_pair.sh",
+      "sha256": "4ba4659fca13bd07f35513ef733a4e0b80d5a47ddc1f1a4e15aa2a2efd4ed407",
+      "contents": "#!/bin/bash\n#SBATCH --job-name=fnpair\n#SBATCH --output=logs/fakenoise_pair.%j.out\n#SBATCH --error=logs/fakenoise_pair.%j.err\n#SBATCH --time=01:00:00\n#SBATCH --mem=8G\n#SBATCH --cpus-per-task=1\nset -euo pipefail\nmodule load container_env python3\nmkdir -p logs\ncrun -p ~/.conda/envs/fakect python ~/repo/FakeCT/src/fakenoise.py --mode pair --dataset-dir ~/repo/FakeCT/data/dataset/\n"
+    },
+    {
+      "path": "/home/aghorban/slurm/fakenoise_train_cpu.sh",
+      "sha256": "94aeec866ca3d35b42b9fe9cbb65be42bdcd381441811effb146c337e9af4038",
+      "contents": "#!/bin/bash\n#SBATCH --job-name=fntrain\n#SBATCH --output=logs/fakenoise_train.%j.out\n#SBATCH --error=logs/fakenoise_train.%j.err\n#SBATCH --time=48:00:00\n#SBATCH --mem=8G\n#SBATCH --cpus-per-task=1\nset -euo pipefail\n\nenable_lmod\nmodule load container_env tensorflow-cpu/1.15.0\nmkdir -p logs\n#/usr/bin/python3 -m pip install --user -r ~/repo/FakeCT/requirements.txt\n/usr/bin/python3 ~/repo/FakeCT/src/fakenoise.py --mode train --csv ~/repo/FakeCT/data/dataset/paired_datasets/pairs.csv\n"
+    },
+    {
+      "path": "/home/aghorban/slurm/fakenoise_train_cpu_heavy.sh",
+      "sha256": "a478e5128ca04b3698179a5a28d3b99e341427f5f01378e911dd0ef076afee4e",
+      "contents": "#!/bin/bash\n#SBATCH --job-name=fnpairhvy\n#SBATCH --output=logs/fakenoise_pair.%j.out\n#SBATCH --error=logs/fakenoise_pair.%j.err\n#SBATCH --time=48:00:00\n#SBATCH --mem=8G\n#SBATCH --cpus-per-task=1\nset -euo pipefail\nmodule load container_env python3\nmkdir -p logs\n/usr/bin/python3 ~/repo/FakeCT/src/fakenoise.py --mode train --csv ~/repo/FakeCT/data/dataset/paired_datasets/pairs.csv --context 60 --context-step 1\n"
+    },
+    {
+      "path": "/home/aghorban/slurm/fakenoise_train_gpu.sh",
+      "sha256": "267784f11f595e617ec9ee59e08cd62950b954f638504fe85923cc31df736823",
+      "contents": "#!/bin/bash\n#SBATCH -p gpu\n#SBATCH --gres gpu:1\n#SBATCH --job-name=fntrain_gpu\n#SBATCH --output=logs/fakenoise_train.%j.out\n#SBATCH --error=logs/fakenoise_train.%j.err\n#SBATCH --time=28:00:00\n#SBATCH --mem=8G\n#SBATCH --cpus-per-task=8\n\n# one-time setup: install from requirements.txt\n#mkdir -p ~/envs/tf-gpu\n#crun -c -p ~/envs/tf-gpu\n#crun -p ~/envs/tf-gpu pip install -r /home/aghorban/repo/FakeCT/requirements.txt\n\nmodule load container_env tensorflow-gpu/2.17\n\ncrun -p ~/envs/fakect python ~/repo/FakeCT/src/fakenoise.py --mode train --csv ~/repo/FakeCT/data/dataset/paired_datasets/pairs.csv --context 15 --context-step 4\n"
+    },
+    {
+      "path": "/home/aghorban/slurm/fakenoise_train_gpu_heavy.sh",
+      "sha256": "e5edc91e9d85ce84ac9e8dfce68ce6f72f715717a550e275c9b5f381f13a08c6",
+      "contents": "#!/bin/bash\n#SBATCH -p gpu\n#SBATCH --gres gpu:1\n#SBATCH --job-name=fnt_gpuhvy\n#SBATCH --output=logs/fakenoise_train.%j.out\n#SBATCH --error=logs/fakenoise_train.%j.err\n#SBATCH --time=48:00:00\n#SBATCH --mem=8G\n#SBATCH --cpus-per-task=4\n\n# one-time setup: install from requirements.txt\n#mkdir -p ~/envs/tf-gpu\n#crun -c -p ~/envs/tf-gpu\n#crun -p ~/envs/tf-gpu pip install -r /home/aghorban/repo/FakeCT/requirements.txt\n\nenable_lmod\nmodule load container_env tensorflow-gpu/1.15.0\nmodule load gcc/4\nmodule load cuda/9.2\nmkdir -p logs\n/usr/bin/python3 ~/repo/FakeCT/src/fakenoise.py --mode train --csv ~/repo/FakeCT/data/dataset/paired_datasets/pairs.csv --context 60 --context-step 1\n"
+    }
+  ],
+  "logs": [
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_pair.5553455.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_pair.5553455.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": []
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_pair.5553460.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_pair.5553460.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "I0000 00:00:1775428405.656268 2915692 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "I0000 00:00:1775428419.532489 2915692 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1775428431.690660 2915692 cuda_platform.cc:52] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected",
+        "[2026-04-05T19:33:44.003] error: *** JOB 5553460 ON d1-w6420a-02 CANCELLED AT 2026-04-05T19:33:44 DUE TO TIME LIMIT ***"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_pair.5575092.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_pair.5575092.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": []
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_pair.5575097.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_pair.5575097.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "2026-04-10 23:17:15.886667: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-10 23:17:24.546911: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-10 23:17:33.455324: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected",
+        "[2026-04-10T23:26:08.955] error: *** JOB 5575097 ON d1-w6420a-02 CANCELLED AT 2026-04-10T23:26:08 DUE to SIGNAL Terminated ***"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5553531.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5553531.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "ImportError: /lib64/libm.so.6: version `GLIBC_2.27' not found (required by /home/aghorban/.conda/envs/fakect/lib/python3.10/site-packages/tensorflow/python/platform/../../libtensorflow_framework.so.2)",
+        "ImportError: Missing training dependencies. Install: tensorflow pandas matplotlib"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5553667.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5553667.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": []
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5553674.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5553674.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "ModuleNotFoundError: No module named 'numpy'"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5553763.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5553763.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "2026-04-05 23:43:00.542762: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-05 23:43:14.644510: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-05 23:43:24.495777: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected",
+        "[2026-04-06T00:43:13.004] error: *** JOB 5553763 ON d1-w6420a-15 CANCELLED AT 2026-04-06T00:43:13 DUE TO TIME LIMIT ***"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5553793.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5553793.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": []
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5553807.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5553807.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "2026-04-05 23:50:09.235479: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-05 23:50:19.014807: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1775447426.624189 2137129 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used.",
+        "[2026-04-06T00:43:04.731] error: *** JOB 5553807 ON d4-w4140b-02 CANCELLED AT 2026-04-06T00:43:04 DUE to SIGNAL Terminated ***"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5554111.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5554111.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "ModuleNotFoundError: No module named 'numpy.typing'"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575070.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575070.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "2026-04-10 21:28:12.384687: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-10 21:28:25.376453: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-10 21:28:35.400066: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected",
+        "[2026-04-10T22:28:22.004] error: *** JOB 5575070 ON d1-w6420a-02 CANCELLED AT 2026-04-10T22:28:22 DUE TO TIME LIMIT ***"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575071.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575071.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "ModuleNotFoundError: No module named 'numpy.typing'"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575093.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575093.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "ModuleNotFoundError: No module named 'numpy.typing'"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575094.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575094.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "2026-04-10 23:13:39.543632: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-10 23:13:53.502872: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-10 23:14:02.950999: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected",
+        "[2026-04-10T23:26:14.547] error: *** JOB 5575094 ON d4-w6420b-08 CANCELLED AT 2026-04-10T23:26:14 DUE to SIGNAL Terminated ***"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575100.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575100.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "2026-04-10 23:18:33.421712: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-10 23:18:44.378829: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1775877532.320056 1226977 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used.",
+        "[2026-04-10T23:26:03.981] error: *** JOB 5575100 ON d2-w4140a-06 CANCELLED AT 2026-04-10T23:26:03 DUE to SIGNAL Terminated ***"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575103.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575103.err",
+      "saved_models": [],
+      "epoch10_present": false,
+      "diagnostic_lines": [
+        "2026-04-10 23:27:15.086871: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-10 23:27:20.927197: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1775878047.476385 1227682 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used.",
+        "[2026-04-10T23:47:25.607] error: *** JOB 5575103 ON d2-w4140a-06 CANCELLED AT 2026-04-10T23:47:25 DUE to SIGNAL Terminated ***"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575112.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575112.err",
+      "saved_models": [],
+      "epoch10_present": true,
+      "diagnostic_lines": [
+        "2026-04-10 23:49:59.841571: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-10 23:50:13.065950: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1775879421.579005 3084057 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used.",
+        "ValueError: Input 0 of layer \"functional\" is incompatible with the layer: expected shape=(None, 512, 666, 121), found shape=(1, 512, 512, 121)"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575202.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575202.err",
+      "saved_models": [],
+      "epoch10_present": true,
+      "diagnostic_lines": [
+        "2026-04-11 12:25:11.187720: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-11 12:25:23.167419: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1775924731.355071 3099489 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used.",
+        "ValueError: Input 0 of layer \"functional\" is incompatible with the layer: expected shape=(None, 512, 666, 7), found shape=(1, 512, 512, 7)"
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575321.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575321.err",
+      "saved_models": [
+        "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train/fakenoise_model.keras"
+      ],
+      "epoch10_present": true,
+      "diagnostic_lines": [
+        "2026-04-11 17:56:25.317300: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-11 17:56:38.244931: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1775944606.904982 1370576 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used."
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575375.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575375.err",
+      "saved_models": [
+        "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx3_step2/fakenoise_model_ctx3_step2.keras"
+      ],
+      "epoch10_present": true,
+      "diagnostic_lines": [
+        "2026-04-11 22:42:07.757180: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-11 22:42:22.375064: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1775961751.968569 3679819 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used."
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575594.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575594.err",
+      "saved_models": [
+        "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx60_step1/fakenoise_model_ctx60_step1.keras"
+      ],
+      "epoch10_present": true,
+      "diagnostic_lines": [
+        "2026-04-12 16:47:34.831799: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-12 16:47:49.881501: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1776026879.444199   19911 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used."
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575595.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575595.err",
+      "saved_models": [
+        "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx30_step1/fakenoise_model_ctx30_step1.keras"
+      ],
+      "epoch10_present": true,
+      "diagnostic_lines": [
+        "2026-04-12 16:48:05.052501: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-12 16:48:14.149341: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1776026902.396719 3146999 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used."
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575596.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575596.err",
+      "saved_models": [
+        "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx30_step2/fakenoise_model_ctx30_step2.keras"
+      ],
+      "epoch10_present": true,
+      "diagnostic_lines": [
+        "2026-04-12 16:48:23.907914: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-12 16:48:31.814380: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1776026919.769594 1317282 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used."
+      ]
+    },
+    {
+      "stdout_path": "/home/aghorban/slurm/logs/fakenoise_train.5575597.out",
+      "stderr_path": "/home/aghorban/slurm/logs/fakenoise_train.5575597.err",
+      "saved_models": [
+        "/home/aghorban/repo/FakeCT/data/dataset/paired_datasets/fakenoise_train_ctx15_step4/fakenoise_model_ctx15_step4.keras"
+      ],
+      "epoch10_present": true,
+      "diagnostic_lines": [
+        "2026-04-12 16:48:40.506771: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "2026-04-12 16:48:47.652651: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.",
+        "E0000 00:00:1776026934.087228 1317447 cuda_executor.cc:1309] INTERNAL: CUDA Runtime error: Failed call to cudaGetRuntimeVersion: Error loading CUDA libraries. GPU will not be used.: Error loading CUDA libraries. GPU will not be used."
+      ]
+    }
+  ],
+  "gpu_evidence_caveat": "Historical completion stderr records CUDA failures. Launcher snapshots describe current files, and logs do not persist exact submitted script/version; this does not prove current TF2.17 launcher failed.",
+  "morphology": {
+    "git_ref": "c6a5c2c9c47ebcbee116c8ade18269eef4ac09ff",
+    "git_sha": "c6a5c2c9c47ebcbee116c8ade18269eef4ac09ff",
+    "source_sha256": "a7c8b5e08cb91df6bd6522fdc051771b2cfa70a335304e5242e8c8933512bdb3",
+    "method": "AST extraction of unmodified functions; no GUI imports",
+    "fixture": "zeros((49,49,49)); mask[10:39,21:28,21:28]=1; center(24,24,24)",
+    "cases": [
+      {
+        "radius": 8,
+        "scale": 0.5,
+        "bridge": 0,
+        "before": 1421,
+        "after": 1421,
+        "changed_voxels": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 8,
+        "scale": 0.8,
+        "bridge": 0,
+        "before": 1421,
+        "after": 1421,
+        "changed_voxels": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 8,
+        "scale": 1.0,
+        "bridge": 0,
+        "before": 1421,
+        "after": 1421,
+        "changed_voxels": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 8,
+        "scale": 1.2,
+        "bridge": 0,
+        "before": 1421,
+        "after": 1421,
+        "changed_voxels": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 8,
+        "scale": 1.5,
+        "bridge": 0,
+        "before": 1421,
+        "after": 1421,
+        "changed_voxels": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 8,
+        "scale": 2.0,
+        "bridge": 0,
+        "before": 1421,
+        "after": 2049,
+        "changed_voxels": 628,
+        "changed_outside_initial_roi": 264
+      },
+      {
+        "radius": 12,
+        "scale": 0.5,
+        "bridge": 0,
+        "before": 1421,
+        "after": 971,
+        "changed_voxels": 450,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 12,
+        "scale": 0.8,
+        "bridge": 0,
+        "before": 1421,
+        "after": 1421,
+        "changed_voxels": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 12,
+        "scale": 1.0,
+        "bridge": 0,
+        "before": 1421,
+        "after": 1421,
+        "changed_voxels": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 12,
+        "scale": 1.2,
+        "bridge": 0,
+        "before": 1421,
+        "after": 1421,
+        "changed_voxels": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 12,
+        "scale": 1.5,
+        "bridge": 0,
+        "before": 1421,
+        "after": 2235,
+        "changed_voxels": 814,
+        "changed_outside_initial_roi": 186
+      },
+      {
+        "radius": 12,
+        "scale": 2.0,
+        "bridge": 0,
+        "before": 1421,
+        "after": 3413,
+        "changed_voxels": 1992,
+        "changed_outside_initial_roi": 692
+      },
+      {
+        "radius": 16,
+        "scale": 0.5,
+        "bridge": 0,
+        "before": 1421,
+        "after": 819,
+        "changed_voxels": 602,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 16,
+        "scale": 0.8,
+        "bridge": 0,
+        "before": 1421,
+        "after": 675,
+        "changed_voxels": 746,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 16,
+        "scale": 1.0,
+        "bridge": 0,
+        "before": 1421,
+        "after": 1421,
+        "changed_voxels": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 16,
+        "scale": 1.2,
+        "bridge": 0,
+        "before": 1421,
+        "after": 2331,
+        "changed_voxels": 910,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 16,
+        "scale": 1.5,
+        "bridge": 0,
+        "before": 1421,
+        "after": 2331,
+        "changed_voxels": 910,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "radius": 16,
+        "scale": 2.0,
+        "bridge": 0,
+        "before": 1421,
+        "after": 4675,
+        "changed_voxels": 3254,
+        "changed_outside_initial_roi": 274
+      }
+    ],
+    "bridge_fixture": "zeros((33,33,33)); mask[10:23,14:19,14:19]=1; mask[2,2,2]=mask[2,2,4]=1; center(16,16,16),radius8,scale1.5",
+    "bridge_cases": [
+      {
+        "bridge": 0,
+        "remote_gap_before": 0,
+        "remote_gap_after": 0,
+        "changed_outside_initial_roi": 0
+      },
+      {
+        "bridge": 2,
+        "remote_gap_before": 0,
+        "remote_gap_after": 1,
+        "changed_outside_initial_roi": 1
+      }
+    ]
+  }
+}

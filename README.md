@@ -1,3 +1,9 @@
+> Integration branch `fakect.26.09.16`: start with
+> [the evaluation and milestone plan](docs/integration/2026-09-16/PLAN.md).
+> This branch assembles the existing phantom GUI, TensorFlow trainer, and XCAT
+> utilities. The unified cohort configuration is a **design draft**; the planned
+> headless cohort pipeline is not implemented yet.
+
 # FakeCT — Minimal synthetic CT / voxelization toolkit
 
 These instructions show how to load a mesh, voxelize it into a CT-like grid,

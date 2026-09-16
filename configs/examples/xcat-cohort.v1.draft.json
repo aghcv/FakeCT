@@ -1,0 +1,159 @@
+{
+  "schema_version": "fakect.cohort/0.1-draft",
+  "status": "preview_only_unreviewed",
+  "study_id": "xcat-carotid-pilot",
+  "seed": 260916,
+  "input": {
+    "format": "xcat",
+    "root": "/home/aghorban/slurm/xcat",
+    "case_ids": [
+      "260602"
+    ],
+    "frames": [
+      1
+    ],
+    "parameter_pattern": "{case_id}.par",
+    "label_pattern": "{case_id}/{case_id}_act_{frame}.bin",
+    "scalar_pattern": "{case_id}/{case_id}_atn_{frame}.bin",
+    "organ_table": "organ_ids.txt",
+    "dtype": "<f4",
+    "array_order": "zyx",
+    "geometry_from": "par_and_output_log",
+    "source_orientation": "unverified",
+    "labels_from": "color_code_per_frame",
+    "scalar_units": "attenuation_per_pixel",
+    "canonical_scalar_units": "1/cm"
+  },
+  "labels": {
+    "storage_dtype": "int32",
+    "background_id": 0,
+    "preserve_signed_source_ids": true,
+    "target_source_ids": [
+      1185
+    ],
+    "target_names_for_review": [
+      "internal_carotid_left"
+    ],
+    "category_map": null,
+    "unknown_ids": "error",
+    "nonfinite_values": "error"
+  },
+  "preprocess": {
+    "label_interpolation": "nearest",
+    "scalar_interpolation": "linear",
+    "working_spacing_mm": null,
+    "full_resolution_edit": true
+  },
+  "preview": {
+    "slice_indices_ijk": null,
+    "histogram": {
+      "bins": 128,
+      "include_zero_separately": true,
+      "show_organs_and_attenuation_separately": true
+    },
+    "cross_sections": [
+      "axial",
+      "coronal",
+      "sagittal"
+    ],
+    "show_index_coordinates": true,
+    "show_physical_coordinates": true,
+    "show_label_ids": true,
+    "roi_overlay": true,
+    "downsample_preview_only": true
+  },
+  "roi": {
+    "space": "source_voxel_ijk",
+    "center_ijk": null,
+    "radius_mm": null,
+    "shape": "sphere",
+    "coordinate_reviewed": false
+  },
+  "operation": {
+    "kind": "roi_morphology",
+    "direction": "from_scale",
+    "profile": {
+      "family": "gaussian",
+      "shape_k": 10.0,
+      "window": [
+        0.25,
+        0.75
+      ]
+    },
+    "scale": 1.1,
+    "scale_semantics": "legacy_roi_radius_ratio_pending_calibration",
+    "max_change_domain": "roi",
+    "connectivity": 6,
+    "bridge": {
+      "enabled": false
+    },
+    "target_component": "review_required"
+  },
+  "reassignment": {
+    "allowed_donor_ids": [],
+    "protected_ids": [],
+    "allowed_recipient_ids": [],
+    "recipient_priority": [],
+    "recipient_search_radius_mm": null,
+    "recipient_rule": "local_majority_then_explicit_priority",
+    "outside_roi": "preserve",
+    "unresolved": "error",
+    "empty_allowlist": "allow_none",
+    "scalar_update": "deterministic_material_or_local_recipient",
+    "ai_recovery": {
+      "enabled": false,
+      "model": null
+    },
+    "id_namespace": "source_organ_id",
+    "recipient_search": "bounded_geodesic_without_crossing_protected_labels",
+    "scalar_write_domain": "accepted_change_mask"
+  },
+  "sweep": {
+    "mode": "cartesian",
+    "parameters": {
+      "operation.scale": [
+        0.9,
+        1.0,
+        1.1
+      ],
+      "operation.profile.shape_k": [
+        6.0,
+        10.0,
+        14.0
+      ]
+    },
+    "base_for_every_variant": "immutable_original",
+    "max_jobs": 9
+  },
+  "output": {
+    "root": "outputs/xcat-carotid-pilot",
+    "overwrite": false,
+    "write_labels": true,
+    "write_scalar": true,
+    "write_change_mask": true,
+    "write_transition_counts": true,
+    "write_resolved_config": true,
+    "write_provenance": true
+  },
+  "qa": {
+    "reject_outside_roi_changes": true,
+    "reject_protected_label_changes": true,
+    "require_complete_assignment": true,
+    "report_components": true,
+    "report_target_volume_mm3": true,
+    "require_reviewed_config_hash": true
+  },
+  "execution": {
+    "backend": "local_preview",
+    "max_memory_gib": 8,
+    "chunk_depth": 16,
+    "resume": true
+  },
+  "training_export": {
+    "enabled": false,
+    "format": "manifest_and_nrrd",
+    "split_unit": "base_anatomy_family",
+    "keep_all_frames_and_variants_together": true,
+    "old_dataset_policy": "retain_readonly_reference"
+  }
+}
