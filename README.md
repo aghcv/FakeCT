@@ -2,6 +2,7 @@
 > and [single HTML report guide](docs/ROI_PREVIEWS.md). Sphere inputs remain supported.
 > Apply bounded erosion/dilation through the [edit INI](configs/examples/xcat-edit.ini)
 > and [morphology workflow](docs/MORPHOLOGY.md), using the same command.
+> Next project: [thoracic-aorta segmentation and the four-method workflow](docs/THORACIC_AORTA_PROJECT.md).
 > Tissue grouping: [DPI atlas workbench and usage](docs/TISSUE_MAPPING.md).
 
 > Integration branch `fakect.26.09.16`: start with
