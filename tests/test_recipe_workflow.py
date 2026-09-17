@@ -105,7 +105,13 @@ class RecipeWorkflowTests(unittest.TestCase):
             for key in ('comparison', 'profile'):
                 path = self.output/step['figures'][key]
                 self.assertIn(hashlib.sha256(path.read_bytes()).hexdigest(), embedded)
-        self.assertEqual(len(parsed.frames), 3)
+        self.assertEqual(len(parsed.frames), 4)
+        overlay = report['recipe']['surface_overlay']
+        self.assertEqual(overlay['counts']['before_voxels'], report['recipe']['full_target_before'])
+        self.assertEqual(overlay['counts']['after_voxels'], report['recipe']['full_target_after'])
+        self.assertEqual(overlay['counts']['added_voxels'], report['recipe']['counts']['added'])
+        self.assertEqual(overlay['counts']['removed_voxels'], report['recipe']['counts']['removed'])
+        self.assertTrue((self.output/'edit-overlay.html').is_file())
         inventory = json.loads((self.output/'artifact-manifest.json').read_text())
         for name, digest in inventory.items():
             self.assertEqual(hashlib.sha256((self.output/name).read_bytes()).hexdigest(), digest)

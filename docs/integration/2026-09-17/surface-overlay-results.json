@@ -1,0 +1,450 @@
+{
+  "schema_version": "fakect-surface-overlay-evaluation-1",
+  "date": "2026-09-17",
+  "report": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v4/report.html",
+  "report_anchor": "surface-overlay",
+  "input_provenance": {
+    "source_input": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/studies/thoracic-aorta-recipe.ini",
+    "source_input_sha256": "73223ca2bd1ea6101d07cdb6db2604a9ed7face4ea33df36c672ad2582cfcdcb",
+    "render_input": "/tmp/fakect-aorta-surface-overlay.ini",
+    "render_input_sha256": "b2c47ed4e63524770275de7cdd61a02d1d35d99794e0f61e8838c6706d8438d2",
+    "only_changed_parameter": "output.directory"
+  },
+  "input_file_preserved": true,
+  "render_input_differences": [
+    [
+      "output",
+      "directory"
+    ]
+  ],
+  "edit_settings": {
+    "ascending_expand": {
+      "roi": "ascending",
+      "iterations": 1,
+      "operation": "dilation",
+      "distance_mm": 5.0,
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_k": 6.0,
+      "shape_window": [
+        0.0,
+        1.0
+      ]
+    },
+    "descending_narrow": {
+      "roi": "descending",
+      "iterations": 1,
+      "operation": "erosion",
+      "distance_mm": 5.0,
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_k": 8.0,
+      "shape_window": [
+        0.0,
+        1.0
+      ]
+    },
+    "arch_refine": {
+      "roi": "arch",
+      "iterations": 1,
+      "operation": "none",
+      "distance_mm": 1.0,
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_k": 6.0,
+      "shape_window": [
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "selection_source_ids": [
+    2922
+  ],
+  "geometry": {
+    "array_order": "kji",
+    "source_shape_kji": [
+      1860,
+      750,
+      750
+    ],
+    "crop_origin_ijk": [
+      351,
+      338,
+      1294
+    ],
+    "crop_high_ijk_exclusive": [
+      416,
+      442,
+      1440
+    ],
+    "crop_shape_kji": [
+      146,
+      104,
+      65
+    ],
+    "spacing_ijk_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "roi_kind": "tube",
+    "nodes_ijk": [
+      [
+        387.0,
+        360.0,
+        1352.0
+      ],
+      [
+        378.0,
+        365.0,
+        1363.0
+      ],
+      [
+        373.0,
+        362.0,
+        1374.0
+      ],
+      [
+        373.0,
+        363.0,
+        1389.0
+      ],
+      [
+        376.0,
+        366.0,
+        1409.0
+      ],
+      [
+        385.0,
+        375.0,
+        1415.0
+      ],
+      [
+        392.0,
+        386.0,
+        1417.0
+      ],
+      [
+        393.0,
+        398.0,
+        1409.0
+      ],
+      [
+        390.0,
+        408.0,
+        1394.0
+      ],
+      [
+        387.0,
+        414.0,
+        1383.0
+      ],
+      [
+        387.0,
+        419.0,
+        1370.0
+      ],
+      [
+        387.0,
+        419.0,
+        1356.0
+      ],
+      [
+        389.0,
+        419.0,
+        1341.0
+      ],
+      [
+        391.0,
+        416.0,
+        1316.0
+      ]
+    ],
+    "radii_mm": [
+      10.0,
+      10.0,
+      10.0,
+      12.0,
+      11.0,
+      10.0,
+      10.0,
+      13.0,
+      12.0,
+      11.0,
+      11.0,
+      11.0,
+      11.0,
+      11.0
+    ],
+    "focus_ijk": [
+      393,
+      398,
+      1409
+    ],
+    "roi_semantics": "Sphere, or union of balls whose centers and radii interpolate linearly along each ordered segment; round caps",
+    "orientation": "native array interpretation; anatomical orientation and physical origin unverified"
+  },
+  "overlay": {
+    "schema_version": "fakect-surface-overlay-1",
+    "html": "edit-overlay.html",
+    "png": "edit-overlay.png",
+    "metadata": "edit-overlay.json",
+    "html_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v4/edit-overlay.html",
+    "png_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v4/edit-overlay.png",
+    "metadata_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v4/edit-overlay.json",
+    "source_shape_kji": [
+      146,
+      104,
+      65
+    ],
+    "crop_origin_ijk": [
+      351.0,
+      338.0,
+      1294.0
+    ],
+    "spacing_ijk_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "crop_bounds_ijk_relative_mm": [
+      [
+        350.5,
+        415.5
+      ],
+      [
+        337.5,
+        441.5
+      ],
+      [
+        1293.5,
+        1439.5
+      ]
+    ],
+    "counts": {
+      "before_voxels": 55814,
+      "after_voxels": 54454,
+      "added_voxels": 1889,
+      "removed_voxels": 3249,
+      "unchanged_target_voxels": 52565,
+      "net_delta_voxels": -1360
+    },
+    "colors": {
+      "before": "#0077b6",
+      "after": "#e54b1b"
+    },
+    "opacity_presets": [
+      0.15,
+      0.45,
+      0.8
+    ],
+    "initial_opacity": {
+      "before": 0.15,
+      "after": 0.45
+    },
+    "surfaces": [
+      {
+        "key": "before",
+        "trace_index": 0,
+        "color": "#0077b6",
+        "source_voxels": 55814,
+        "surface_vertices": 19982,
+        "surface_triangles": 39984,
+        "mask_sha256": "da774f56218fe9d4d7df53e626964855f0e8ec825c088e6c9e3caea8457b0332",
+        "opacity": 0.15,
+        "visible": true,
+        "bounds_ijk_relative_mm": [
+          [
+            364.5,
+            402.5
+          ],
+          [
+            346.5,
+            427.5
+          ],
+          [
+            1293.5,
+            1424.5
+          ]
+        ]
+      },
+      {
+        "key": "after",
+        "trace_index": 1,
+        "color": "#e54b1b",
+        "source_voxels": 54454,
+        "surface_vertices": 20084,
+        "surface_triangles": 40188,
+        "mask_sha256": "f58870bd2b4a2fc86d248dce6148b3bb878e112c46a3befe76748473e55c7aa9",
+        "opacity": 0.45,
+        "visible": true,
+        "bounds_ijk_relative_mm": [
+          [
+            362.5,
+            402.5
+          ],
+          [
+            346.5,
+            426.5
+          ],
+          [
+            1293.5,
+            1424.5
+          ]
+        ]
+      }
+    ],
+    "requested_volume_stride": 2,
+    "volume_stride": 1,
+    "sampling": "native Boolean voxel occupancy; no max pooling or mesh decimation",
+    "surface_boundary": "zero occupancy border closes surfaces on the exact crop boundary",
+    "selection_extent": "selected anatomy throughout the crop, not clipped to the edit ROI",
+    "coordinates": "source index times spacing in mm; physical origin and orientation unverified",
+    "interactive_renderer": "Plotly Mesh3d: registered before and after surfaces in one scene",
+    "static_renderer": "same native marching-cubes meshes and initial opacities in one view",
+    "counts_resolution": "native voxels; changed target membership, not all relabeling or scalar changes",
+    "limits": {
+      "source_voxels": 2000000,
+      "combined_surface_triangles": 600000
+    },
+    "warnings": [],
+    "standalone_plotly_javascript": true,
+    "source_arrays_modified": false,
+    "html_bytes": 6810628
+  },
+  "unchanged_target_voxels_outside_main_roi": 5329,
+  "checks": {
+    "artifact_hashes_verified": 33,
+    "generating_code_hashes_verified": 14,
+    "source_stats_unchanged": true,
+    "original_crop_hashes_verified": true,
+    "overlay_mask_hashes_verified": true,
+    "overlay_counts_match_native_recipe_changes": true,
+    "full_source_files_hashed": false,
+    "source_arrays_preserved": true,
+    "unittest_command": "python3 -m unittest discover -s tests",
+    "tests_passed": 202,
+    "static_overlay_visually_inspected": true,
+    "browser": {
+      "initial": {
+        "traces": [
+          {
+            "name": "Before",
+            "opacity": 0.15,
+            "visible": true,
+            "type": "mesh3d"
+          },
+          {
+            "name": "After",
+            "opacity": 0.45,
+            "visible": true,
+            "type": "mesh3d"
+          }
+        ],
+        "camera": {
+          "eye": {
+            "x": 1.6,
+            "y": -1.9,
+            "z": 1.3
+          }
+        },
+        "checkboxes": [
+          true,
+          true
+        ]
+      },
+      "final": {
+        "traces": [
+          {
+            "name": "Before",
+            "opacity": 0.45,
+            "visible": true,
+            "type": "mesh3d"
+          },
+          {
+            "name": "After",
+            "opacity": 0.45,
+            "visible": true,
+            "type": "mesh3d"
+          }
+        ],
+        "camera": {
+          "eye": {
+            "x": 2,
+            "y": -1,
+            "z": 0.7
+          },
+          "center": {
+            "x": 0.1,
+            "y": 0,
+            "z": 0
+          },
+          "up": {
+            "x": 0,
+            "y": 0,
+            "z": 1
+          }
+        },
+        "checkboxes": [
+          true,
+          true
+        ]
+      },
+      "graphics": {
+        "canvases": 2,
+        "sceneKeys": [
+          "graphDiv",
+          "svgContainer",
+          "fullLayout",
+          "id",
+          "fullSceneLayout",
+          "plotArgs",
+          "axesOptions",
+          "spikeOptions",
+          "container",
+          "staticMode",
+          "pixelRatio",
+          "dataScale",
+          "contourLevels",
+          "convertAnnotations",
+          "drawAnnotations",
+          "camera",
+          "prepareOptions",
+          "tryCreatePlot",
+          "initializeGLCamera",
+          "initializeGLPlot",
+          "render",
+          "recoverContext",
+          "plot",
+          "destroy",
+          "getCamera",
+          "setViewport",
+          "isCameraChanged",
+          "isAspectChanged",
+          "saveLayout",
+          "updateFx",
+          "toImage",
+          "setConvert",
+          "make4thDimension",
+          "viewInitial"
+        ],
+        "glplotPresent": false,
+        "webglErrorText": true
+      },
+      "browser": "Firefox 140.12.0 ESR headless",
+      "report": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v4/report.html",
+      "checks_passed": [
+        "two registered mesh traces",
+        "independent visibility",
+        "six opacity presets",
+        "hidden surface remains hidden on opacity change",
+        "other surface unchanged",
+        "camera preserved",
+        "surface-overlay report anchor"
+      ]
+    },
+    "interactive_webgl_pixels_verified": false,
+    "browser_limitation": "Headless Firefox reports WebGL unsupported; JavaScript controls, trace states, camera preservation, and embedded report navigation passed."
+  }
+}

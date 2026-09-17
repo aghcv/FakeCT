@@ -255,6 +255,32 @@ def _selected_rows(report, selection):
             for label, count in pairs], 'Original signed IDs observed in the selected tissue–ROI intersection.'
 
 
+def _surface_overlay_section(output, edit, embedded, *, recipe=False):
+    """One registered scene comparing original and final full-crop anatomy."""
+    if not (output/'edit-overlay.html').is_file() and not (output/'edit-overlay.png').is_file():
+        return ''
+    metadata = edit.get('surface_overlay', {})
+    after = 'the final result of the complete recipe' if recipe else 'the result of this edit'
+    content = ('<div id="surface-overlay"><h3>Before / after surface overlay</h3>'
+               '<p>Compare the original anatomy with ' + after + ' in one shared 3D view. '
+               '<strong>Blue: before. Orange: after.</strong> Toggle each surface independently and '
+               'choose its opacity: <strong>15%, 45%, or 80%</strong>. Drag to rotate and scroll to zoom.</p>'
+               '<p class="subtle">Both surfaces use the same native coordinates and the full selected '
+               'anatomy within this crop. They are not clipped to the editing ROI. Shared regions '
+               'overlap; separated boundaries reveal expansion or erosion.</p>')
+    if (output/'edit-overlay.html').is_file():
+        content += _embed_volume(output, 'edit-overlay.html', 'Before and after surfaces in one 3D view', embedded)
+    if (output/'edit-overlay.png').is_file():
+        content += ('<details><summary>Static before / after overlay</summary>' +
+                    _embed_png(output, 'edit-overlay.png', 'Static before / after surface overlay',
+                               'Registered blue original and orange final surfaces. Interactive opacity '
+                               'changes do not modify this saved image or any label data.', embedded) + '</details>')
+    if metadata:
+        content += '<details><summary>Surface counts and native geometry</summary><pre>' + _escape(
+            json.dumps(metadata, indent=2, ensure_ascii=False, allow_nan=False)) + '</pre></details>'
+    return content + '</div>'
+
+
 def _morphology_section(output, report, embedded):
     """Render applied label changes without treating a scalar proxy as recovered CT."""
     edit = report['edit']
@@ -308,6 +334,7 @@ def _morphology_section(output, report, embedded):
             after += _embed_png(output, 'after/roi-surfaces.png', 'After-edit static 3D context',
                                 'Transparent surfaces of the edited labels, with the same ROI planning overlay.', embedded)
     return ('<section id="edit"><h2>Morphology trial: ' + _escape(operation) + '</h2>'
+            + _surface_overlay_section(output, edit, embedded) +
             '<p class="rule">Target counts and volumes below refer to the target <strong>inside the ROI</strong>, '
             'before and after this trial. Applied additions and removals describe actual label changes.</p>'
             '<div class="metrics">' + metrics + '</div>' + warnings +
@@ -468,7 +495,8 @@ def _recipe_section(output, report, embedded):
     transition_rows = [[_text_value(row.get('original_id')), _text_value(row.get('new_id')), _number(row.get('count'))]
                        for row in recipe.get('transitions', [])]
     warnings = ''.join('<p class="warning">'+_escape(w)+'</p>' for w in recipe.get('warnings', []))
-    return ('<section id="recipe"><h2>Named-region edit recipe</h2>'
+    return ('<section id="recipe"><h2>Named-region edit recipe</h2>' +
+            _surface_overlay_section(output, recipe, embedded, recipe=True) +
             '<p class="rule">Each pass consumes the previous pass’s labels and attenuation proxy. '
             '<strong>Every named ROI is clipped to the fixed main ROI.</strong> '
             'The source arrays remain preserved; regions stay at their configured native coordinates.</p>'

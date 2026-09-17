@@ -151,7 +151,8 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
     code_files = [Path(__file__), ROOT/'src/fakect_roi.py', ROOT/'src/fakect_config.py',
                   ROOT/'src/fakect_volume_preview.py', ROOT/'src/fakect_tissues.py', ROOT/'src/fakect_preview_report.py',
                   ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_reassignment.py',
-                  ROOT/'src/fakect_edit_preview.py', ROOT/'src/fakect_global_preview.py']
+                  ROOT/'src/fakect_edit_preview.py', ROOT/'src/fakect_global_preview.py',
+                  ROOT/'src/fakect_surface_overlay.py']
     code_files += [Path(p) for p in extra_code_files]
     recipe_requested = 'recipe' in config
     if recipe_requested:
@@ -240,6 +241,11 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
         volume_opacity=config['preview']['volume_opacity'], context_opacity=config['preview']['context_opacity'], output_dir=output)
     if edit_result is not None:
         from fakect_edit_preview import render_edit_comparison
+        from fakect_surface_overlay import render_surface_overlay
+        surface_overlay = render_surface_overlay(
+            arrays['candidates'], np.isin(edit_result['edited_labels'], resolved['source_ids']),
+            crop_origin_ijk=resolved['crop_low_ijk'], spacing_ijk_mm=resolved['spacing_ijk_mm'],
+            volume_stride=config['preview']['volume_stride'], output_dir=output)
         figure_config = config if not recipe_requested else {**config, 'edit': {'operation': 'recipe'}}
         edit_figures = render_edit_comparison(arrays, edit_result, resolved, figure_config, output)
         after_volume = render_volume_preview(edit_result['edited_labels'], edit_result['edited_tissue_labels'],
@@ -296,9 +302,11 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
             report['recipe'] = {**edit_result['summary'], 'figures': recipe_figures,
                                 'engine_steps': edit_result['summary'].get('steps', []), 'steps': recipe_steps,
                                 'final_figures': edit_figures, 'after_volume': after_volume,
+                                'surface_overlay': surface_overlay,
                                 'array_artifact': 'edit.npz', 'plan': recipe_plan}
         else:
             report['edit'] = {**edit_result['summary'], 'figures': edit_figures, 'after_volume': after_volume,
+                              'surface_overlay': surface_overlay,
                               'scope': 'Derived native crop only; source volumes preserved', 'array_artifact': 'edit.npz'}
         metadata_key = 'recipe' if recipe_requested else 'edit'
         np.savez_compressed(output / 'edit.npz',

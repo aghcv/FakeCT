@@ -104,6 +104,9 @@ directory = {root / 'output'}
             for name, expected in json.loads((out / 'artifact-manifest.json').read_text()).items():
                 self.assertEqual(hashlib.sha256((out / name).read_bytes()).hexdigest(), expected, name)
             self.assertTrue((out / 'after/roi-volume.html').is_file())
+            self.assertTrue((out / 'edit-overlay.html').is_file())
+            self.assertEqual(report['edit']['surface_overlay']['counts']['removed_voxels'], counts['removed'])
+            self.assertEqual(report['edit']['surface_overlay']['counts']['added_voxels'], counts['added'])
             self.assertTrue((out / 'edit-comparison.png').read_bytes().startswith(b'\x89PNG'))
             html = (out / 'report.html').read_text()
             self.assertIn('Morphology trial', html)

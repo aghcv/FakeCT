@@ -13,6 +13,11 @@ ROI definition, native-resolution close-ups, neighboring z levels, interactive
 input, and provenance. Images and Plotly JavaScript are embedded: copy this one
 file to open the report elsewhere without a server or internet connection.
 Browser WebGL is required for interactive 3D; static views remain in the report.
+Edit and recipe reports also provide a registered **Before / after surface
+overlay** in the Edits tab. Separate Show checkboxes and three opacity presets
+(15%, 45%, 80%) control the blue original and orange final surfaces independently.
+The comparison uses native surfaces in one scene; a static overlay is embedded
+as a fallback. It appears automatically on newly generated edit reports.
 Source volumes remain at their recorded paths; reversible crop arrays are saved
 in the output directory.
 

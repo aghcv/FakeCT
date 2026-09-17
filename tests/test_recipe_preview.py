@@ -126,6 +126,18 @@ class RecipeReportTests(unittest.TestCase):
         self.assertNotIn(payload, document)
         self.assertIn('&lt;script&gt;window.BAD=true&lt;/script&gt;', document)
 
+    def test_recipe_overlay_compares_original_with_complete_recipe_once(self):
+        (self.output/'edit-overlay.html').write_text('<html><body>shared registered scene</body></html>')
+        (self.output/'edit-overlay.png').write_bytes(PNG)
+        self.report['recipe']['surface_overlay'] = {'counts': {'before_voxels': 30, 'after_voxels': 32}}
+        result = write_preview_report(self.output, self.report, '[recipe]\nsteps = expand, shrink\n')
+        document = (self.output/'report.html').read_text()
+        self.assertEqual(document.count('id="surface-overlay"'), 1)
+        self.assertIn('the final result of the complete recipe', document)
+        self.assertIn('edit-overlay.html', result['embedded_assets'])
+        self.assertIn('edit-overlay.png', result['embedded_assets'])
+        self.assertLess(document.index('id="surface-overlay"'), document.index('Named ROI definitions'))
+
 
 class RecipeFigureTests(unittest.TestCase):
     def test_step_focus_is_in_changed_region_and_uses_preceding_state_semantics(self):

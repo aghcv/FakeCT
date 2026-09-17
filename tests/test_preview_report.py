@@ -323,6 +323,7 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('<td>9</td><td>1185</td><td>30</td>', document)
         self.assertIn('<td>1185</td><td>internal_carotid_left</td><td>140</td>', document)
         self.assertIn('Native 2D inspection — before edit', document)
+
         self.assertIn('Three-dimensional context — before edit', document)
         self.assertIn('What is inside the ROI? — before edit', document)
         self.assertIn('After-edit 3D context', document)
@@ -333,6 +334,25 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('Five reassignment requests remain unresolved.', document)
         self.assertIn('python3 scripts/preview_roi.py --config /path/to/xcat-roi.ini', document)
         self.assertEqual(len(metadata['embedded_assets']), 8)
+
+    def test_registered_surface_overlay_is_portable_and_metadata_is_escaped(self):
+        report = self.morphology_report()
+        payload = '<script>window.UNSAFE=true</script>'
+        report['edit']['surface_overlay'] = {'counts': {'before_voxels': 150, 'after_voxels': 180},
+                                              'description': payload}
+        overlay = self.volume.replace('embedded:true', 'surfaceOverlay:true')
+        (self.output/'edit-overlay.html').write_text(overlay)
+        (self.output/'edit-overlay.png').write_bytes(PNG)
+        metadata, document = self.write(report)
+        self.assertIn('edit-overlay.html', metadata['embedded_assets'])
+        self.assertIn('edit-overlay.png', metadata['embedded_assets'])
+        self.assertEqual(document.count('id="surface-overlay"'), 1)
+        self.assertEqual(document.count('title="Before and after surfaces in one 3D view"'), 1)
+        self.assertLess(document.index('id="surface-overlay"'), document.index('After-edit 3D context'))
+        self.assertIn('15%, 45%, or 80%', document)
+        self.assertIn('full selected anatomy within this crop', document)
+        self.assertNotIn(payload, document)
+        self.assertIn('&lt;script&gt;window.UNSAFE=true&lt;/script&gt;', document)
 
     def test_morphology_assets_are_portable_including_after_frame(self):
         report = self.morphology_report()

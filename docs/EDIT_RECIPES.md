@@ -17,9 +17,9 @@ Run from the integrated checkout:
 python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-recipe.ini
 ```
 
-Open [the recipe report with Global and Local tabs](../outputs/studies/thoracic-aorta/recipe-v3/report.html).
+Open [the recipe report with Global, Local, and before/after overlay views](../outputs/studies/thoracic-aorta/recipe-v4/report.html).
 For subsequent runs, set `[output] directory` to a fresh location such as
-`outputs/studies/thoracic-aorta/recipe-v4`. Add `--validate-only` to check the
+`outputs/studies/thoracic-aorta/recipe-v5`. Add `--validate-only` to check the
 input and crop/search bounds without reading voxel payloads. Native overlap and
 selection counts require the actual preview run.
 
@@ -183,6 +183,20 @@ they do not establish anatomical validity. Inspect the native before/after
 sections as well as the transparent 3D views.
 
 ## What to inspect in the report
+
+The **Edits / recipe** tab starts with a **Before / after surface overlay**:
+blue is the original anatomy and orange is the final result of all recipe
+passes. Both surfaces occupy the same 3D coordinates. Each has its own Show
+checkbox and **15%, 45%, 80%** opacity presets; changing one leaves the other
+surface and camera alone. Drag to rotate, scroll to zoom, or use the legend to
+toggle a surface. The static overlay is available in the expandable fallback.
+
+This comparison uses native voxel surfaces, independently of the coarser
+`preview.volume_stride` used in other 3D context views. It includes the full
+selected anatomy inside the crop, with no additional clipping to the main or
+named ROIs. Changes therefore appear against the unchanged surrounding target.
+Counts describe native additions/removals; overlap colors are not a quantitative
+change map. Browser controls do not change masks or the saved input.
 
 The single HTML file includes colored named-region overlays and local views,
 an execution table, before/after comparisons for every pass, and the final

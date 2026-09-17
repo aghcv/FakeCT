@@ -20,6 +20,14 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.root = Path(temporary.name)
         self.path = self.root / "recipe.ini"
         self.template = (ROOT / "configs/studies/thoracic-aorta-recipe.ini").read_text()
+        # This is an editable user study. Keep this parser fixture's edit levels
+        # stable while leaving the user's actual trial parameters untouched.
+        self.template = re.sub(r"^(distance_mm = ).*?(\s+# NOTE .*)$",
+                               lambda m: m.group(1) + "2.0 " + m.group(2),
+                               self.template, flags=re.MULTILINE)
+        self.template = re.sub(r"^(shape_k = ).*?(\s+# NOTE .*)$",
+                               lambda m: m.group(1) + "6 " + m.group(2),
+                               self.template, flags=re.MULTILINE)
 
     def parser(self):
         parser = configparser.ConfigParser(interpolation=None, inline_comment_prefixes=("#",),
