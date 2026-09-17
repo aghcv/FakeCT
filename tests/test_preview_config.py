@@ -72,6 +72,18 @@ class PreviewConfigurationTests(unittest.TestCase):
         result = self.load(source_ids="-2147483648, -1185, 1185, 2147483647")
         self.assertEqual(result["selection"]["source_ids"], (-2147483648, -1185, 1185, 2147483647))
 
+    def test_original_id_filter_can_be_omitted_for_preview_and_edit(self):
+        templates = (self.template, self.tube_template,
+                     (ROOT / "configs/examples/xcat-edit.ini").read_text())
+        for text in templates:
+            with self.subTest(schema=text.split("schema_version = ")[1].splitlines()[0]):
+                omitted = re.sub(r"^source_ids\s*=.*\n", "", text, flags=re.MULTILINE)
+                blank = re.sub(r"^source_ids\s*=.*$", "source_ids =", text, flags=re.MULTILINE)
+                self.assertEqual(self.load(omitted), self.load(blank))
+                self.assertEqual(self.load(omitted)["selection"]["source_ids"], ())
+                with self.assertRaisesRegex(ValueError, "unknown"):
+                    self.load(omitted.replace("[selection]", "[selection]\nsource_id = 7"))
+
     def test_rejects_unused_settings_sections_duplicates_and_schema_versions(self):
         malformed = [self.template.replace("[study]", "[study]\nunused = 4"),
                      self.template + "\n[morphology]\nscale = 1.2\n",

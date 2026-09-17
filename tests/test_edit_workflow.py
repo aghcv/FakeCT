@@ -86,7 +86,7 @@ directory = {root / 'output'}
             self.assertTrue(report['geometry_edited'])
             self.assertFalse(report['source_volumes_modified'])
             self.assertFalse(report['scalar_recovery_performed'])
-            self.assertEqual(report['schema_version'], 'fakect.roi-preview/3')
+            self.assertEqual(report['schema_version'], 'fakect.roi-preview/5')
             counts = report['edit']['counts']
             self.assertGreater(counts['removed'], 0)
             self.assertEqual(counts['added'], 0)

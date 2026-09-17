@@ -98,6 +98,13 @@ class StudyConfigTests(unittest.TestCase):
                     self.assertEqual(plan, reference)
         self.assertEqual(list(self.root.iterdir()), [])
 
+    def test_optional_edit_selection_does_not_redefine_training_ground_truth(self):
+        blank = self.load(change(self.text, 'selection', 'source_ids', ''))
+        omitted = self.load(change(self.text, 'selection', 'source_ids', None))
+        self.assertEqual(blank, omitted)
+        self.assertEqual(omitted['selection']['source_ids'], ())
+        self.assertEqual(omitted['train']['target_source_ids'], (-1185, 1185))
+
     def test_stage_target_and_list_validation(self):
         for key, value in (
             ('stage', 'train'), ('stage', 'FIT'), ('target_source_ids', ''),

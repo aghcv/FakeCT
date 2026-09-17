@@ -81,6 +81,17 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(permissive["reassignment"]["mode"], "permissive_except_bone_skin")
         self.assertNotIn("stiffness", permissive["reassignment"])
 
+    def test_recipe_needs_no_anatomical_id_inputs(self):
+        parser = self.parser()
+        parser["selection"]["source_ids"] = ""
+        parser.remove_section("stiffness.labels")
+        blank = self.load(parser)
+        parser.remove_option("selection", "source_ids")
+        omitted = self.load(parser)
+        self.assertEqual(blank, omitted)
+        self.assertEqual(omitted["selection"]["source_ids"], ())
+        self.assertEqual(omitted["reassignment"]["stiffness"]["labels"], {})
+
     def test_permissive_mode_rejects_ambiguous_allowlists_unknown_modes_and_missing_fields(self):
         for mode in ("", "permissive", "all", "Allowlist", "permissive_except_bone_skin\nextra"):
             with self.subTest(mode=mode), self.assertRaises(ValueError):

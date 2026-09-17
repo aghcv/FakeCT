@@ -1,3 +1,5 @@
+> Explore without anatomical IDs using [Global and Local report tabs](docs/ROI_EXPLORATION.md)
+> and the [aorta exploration input](configs/studies/thoracic-aorta-explore.ini).
 > Start tissue-only ROI review with the [tube INI input](configs/examples/xcat-roi-tube.ini)
 > and [single HTML report guide](docs/ROI_PREVIEWS.md). Sphere inputs remain supported.
 > Apply bounded erosion/dilation through the [edit INI](configs/examples/xcat-edit.ini)

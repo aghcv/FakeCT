@@ -111,12 +111,69 @@ _STYLE = '''
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--wash);color:var(--ink);font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 header,main,footer{max-width:1240px;margin:auto}header{padding:38px 30px 24px}h1{font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.18;margin:10px 0 14px;overflow-wrap:anywhere}h2{font-size:1.5rem;margin:0 0 14px}h3{font-size:1.1rem;margin:20px 0 8px}p{margin:8px 0 16px}.eyebrow{color:var(--accent);font-size:.8rem;font-weight:750;letter-spacing:.14em;text-transform:uppercase}.subtle,figcaption{color:var(--muted)}
 nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}nav a,button,.download{border:1px solid #b7cad3;background:white;color:var(--accent);border-radius:7px;padding:8px 12px;font:inherit;text-decoration:none;cursor:pointer}nav a:hover,button:hover,.download:hover{background:#e6f3f4}main{padding:0 20px}section{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:28px;margin:0 0 20px;scroll-margin-top:20px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:20px 0}.metric{padding:16px;border:1px solid var(--line);border-radius:8px;background:#f9fbfc}.metric strong{display:block;font-size:1.9rem;line-height:1.25}.metric span{color:var(--muted);font-size:.9rem}.rule{border-left:4px solid var(--accent);background:#eef8f9;padding:14px 18px}.warning{border-left:4px solid #c6841b;background:#fff8e8;padding:12px 18px;margin:12px 0}.status{display:inline-block;border-radius:20px;background:#e2f1eb;color:#23583d;padding:3px 11px;font-size:.85rem;font-weight:650}.table-scroll{max-width:100%;overflow:auto}table{width:100%;border-collapse:collapse;font-size:.92rem;margin:12px 0}th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}th{background:#edf3f6;white-space:nowrap}td{overflow-wrap:anywhere}figure{margin:22px 0 32px}figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:6px}figcaption{font-size:.9rem;margin:8px 0}iframe{width:100%;height:880px;border:1px solid var(--line);border-radius:8px;background:#f4f6f8}details{margin-top:15px}summary{cursor:pointer;font-weight:650;color:var(--accent)}code,pre,textarea{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.86rem}code{overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:15px;border-radius:6px;background:#f2f6f8}textarea{width:100%;min-height:420px;resize:vertical;background:#f8fbfc;color:var(--ink);border:1px solid #b7cad3;border-radius:6px;padding:15px;tab-size:4;line-height:1.5}.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}#input-status{color:var(--muted);font-size:.9rem}footer{padding:12px 30px 38px;font-size:.85rem;color:var(--muted)}.two-column{display:grid;grid-template-columns:1fr 1fr;gap:20px}.hash{word-break:break-all}.legend-key{display:inline-block;width:.85em;height:.85em;margin-right:.4em;border:1px solid #667;vertical-align:baseline}
-@media(max-width:700px){header{padding:25px 20px}main{padding:0 10px}section{padding:18px}.two-column{grid-template-columns:1fr}iframe{height:740px}.metric strong{font-size:1.6rem}th,td{padding:8px}}
+.report-tabs a[aria-selected="true"]{color:white;background:var(--accent);border-color:var(--accent)}.report-tabs a:focus-visible{outline:3px solid #e5a130;outline-offset:3px}.report-panel:focus{outline:none}.section-links{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 20px}.section-links a{color:var(--accent)}.global-view iframe{height:1050px}.report-panel[hidden]{display:none}
+@media(max-width:700px){header{padding:25px 20px}main{padding:0 10px}section{padding:18px}.two-column{grid-template-columns:1fr}iframe{height:740px}.global-view iframe{height:1250px}.metric strong{font-size:1.6rem}th,td{padding:8px}}
 @media print{body{background:#fff}nav,.actions,iframe{display:none}section{break-inside:auto;border:0;padding:15px 0}figure{break-inside:avoid}textarea{height:480px}header,main{max-width:none}details>*{display:block}details{break-inside:avoid}}
+@media print{.report-panel[hidden]{display:block!important}.section-links{display:none}}
+.report-tabs{position:sticky;top:0;z-index:10;max-width:1200px;margin:0 auto 20px;padding:10px;background:var(--wash);border-bottom:1px solid var(--line)}
+.report-panel,section{scroll-margin-top:85px}
+@media(max-width:700px){.report-panel,section{scroll-margin-top:135px}}
 '''
 
 _SCRIPT = '''
 (function(){
+  const tabs = Array.from(document.querySelectorAll('.report-tabs [role="tab"]'));
+  const panels = Array.from(document.querySelectorAll('.report-panel'));
+  function selectPanel(panel, moveFocus) {
+    if (!panel) return;
+    panels.forEach(function(item) { item.hidden = item !== panel; });
+    tabs.forEach(function(tab) {
+      const selected = tab.getAttribute('aria-controls') === panel.id;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      if (selected && moveFocus) tab.focus();
+    });
+  }
+  function followHash() {
+    let target;
+    try { target = document.getElementById(decodeURIComponent(window.location.hash.slice(1))); }
+    catch(error) { target = null; }
+    const panel = target && target.closest('.report-panel');
+    if (!panel) return false;
+    selectPanel(panel, false);
+    requestAnimationFrame(function() { target.scrollIntoView({block:'start'}); });
+    return true;
+  }
+  function activateTab(tab, moveFocus) {
+    const panel = document.getElementById(tab.getAttribute('aria-controls'));
+    selectPanel(panel, moveFocus);
+    // A native fragment navigation focuses the tabpanel in Firefox, which
+    // prevents the next arrow key from reaching the selected tab.
+    history.replaceState(null, '', tab.getAttribute('href'));
+    panel.scrollIntoView({block:'start'});
+  }
+  tabs.forEach(function(tab, index) {
+    tab.addEventListener('click', function(event) {
+      event.preventDefault();
+      activateTab(tab, true);
+    });
+    tab.addEventListener('keydown', function(event) {
+      let next = index;
+      if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+      else if (event.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = tabs.length - 1;
+      else if (event.key === ' ' || event.key === 'Enter') next = index;
+      else return;
+      event.preventDefault();
+      activateTab(tabs[next], true);
+    });
+  });
+  window.addEventListener('hashchange', followHash);
+  if (!followHash()) {
+    const navigation = document.querySelector('.report-tabs');
+    selectPanel(document.getElementById(navigation.dataset.defaultPanel), false);
+  }
   const input = document.getElementById('captured-input');
   const status = document.getElementById('input-status');
   document.getElementById('download-input').addEventListener('click', function(){
@@ -496,6 +553,65 @@ def _training_section(output, report, embedded):
             '<code>stage = fit</code> separately trains from that frozen dataset.</li></ol></section>')
 
 
+def _global_section(output, report, embedded):
+    """Embed bounded whole-phantom sampling separately from native crop results."""
+    metadata = report.get('global_view')
+    metadata = metadata if isinstance(metadata, dict) else {}
+    html_available = (output / 'roi-global.html').is_file()
+    png_available = (output / 'roi-global.png').is_file()
+    instruction = (
+        '<p class="rule"><strong>Start with a tissue type; surface IDs are optional.</strong> '
+        'Choose <code>[selection] tissue</code> and leave <code>source_ids =</code> blank or omit it to '
+        'consider every original label in that tissue group. Use a sphere or a narrow tube '
+        'to isolate the structure you want when nearby vessels share the same tissue type.</p>')
+    workflow = ('<details><summary>Use global coordinates to refine the ROI</summary><ol><li>Explore the whole phantom with the global slice controls. Read native '
+        '<code>i, j, k</code> coordinates and use the temporary ROI guide to estimate a location '
+        'and radius.</li><li>Copy useful coordinates into <code>[roi]</code> or a named '
+        '<code>[roi.NAME]</code> in the <a href="#input">Inputs tab</a>. A tube uses an ordered '
+        'list of center points and one radius for each point.</li><li>Save the INI, choose a '
+        'fresh output directory, and rerun the preview command. Switch to '
+        '<a href="#slices">Local view</a> to refine the ROI against native-resolution '
+        'slices, then repeat as needed.</li></ol>'
+        '<p>Global crosshairs and temporary guides change this browser view only. '
+        'They do not update the INI, the captured ROI, local figures, or applied edits. '
+        'Local views and edit results reflect the captured input until the preview is rerun.</p></details>')
+    viewer = (_embed_volume(output, 'roi-global.html', 'Interactive global phantom exploration', embedded)
+              if html_available else
+              '<p class="subtle">A global phantom view was not generated for this report. '
+              'Regenerate the preview with the current code to add whole-phantom exploration. '
+              'The Local view contains the captured crop.</p>')
+    figure = (_embed_png(output, 'roi-global.png', 'Whole-phantom overview',
+                        'Sampled source views locate the captured ROI within the full phantom. '
+                        'Global sampling can hide thin structures; use local native slices for final placement.',
+                        embedded) if png_available else '')
+    details = ('<details><summary>Global sampling and source metadata</summary><pre>' +
+               _escape(json.dumps(metadata, indent=2, ensure_ascii=False, allow_nan=False)) +
+               '</pre></details>') if metadata else ''
+    return ('<section id="global" class="global-view"><h2>Global phantom view</h2>' + instruction +
+            viewer + workflow + figure + details + '</section>'), bool(html_available or png_available)
+
+
+def _tab_navigation(edit_enabled, recipe_enabled, training_enabled, global_available):
+    items = [('global', 'Global view'), ('local', 'Local view')]
+    if edit_enabled or recipe_enabled:
+        items.append(('edits', 'Edits / recipe' if recipe_enabled else 'Edits'))
+    if training_enabled:
+        items.append(('training', 'Training'))
+    items += [('input', 'Inputs'), ('provenance', 'Provenance')]
+    default = 'global' if global_available else 'local'
+    links = ''.join('<a href="#panel-' + key + '" id="tab-' + key +
+                    '" role="tab" aria-controls="panel-' + key + '" aria-selected="' +
+                    ('true' if key == default else 'false') + '">' + label + '</a>'
+                    for key, label in items)
+    return ('<nav class="report-tabs" role="tablist" aria-label="Report views" '
+            'data-default-panel="panel-' + default + '">' + links + '</nav>')
+
+
+def _panel_start(name):
+    return ('<div class="report-panel" id="panel-' + name + '" role="tabpanel" '
+            'aria-labelledby="tab-' + name + '" tabindex="0">')
+
+
 def write_preview_report(output_dir, report, input_ini_text):
     """Write ``report.html`` with all preview assets embedded, refusing overwrite.
 
@@ -545,6 +661,7 @@ def write_preview_report(output_dir, report, input_ini_text):
                                         ('Before-edit ' if changed_preview else '') + 'Interactive 3D ROI and tissue volume', embedded)
     else:
         volume_content = '<p class="subtle">Interactive 3D preview was not generated.</p>'
+    global_section, global_available = _global_section(output, report, embedded)
     edit_section = _morphology_section(output, report, embedded) if edit_enabled else ''
     recipe_section = _recipe_section(output, report, embedded) if recipe_enabled else ''
     training_section = _training_section(output, report, embedded) if isinstance(report.get('training_plan'), dict) else ''
@@ -593,6 +710,10 @@ def write_preview_report(output_dir, report, input_ini_text):
         edit_nav += '<a href="#recipe">Named-region recipe</a>'
     if training_section:
         edit_nav += '<a href="#training">Training target and plan</a>'
+    tab_navigation = _tab_navigation(edit_enabled, recipe_enabled, bool(training_section), global_available)
+    edit_panel = (_panel_start('edits') + '<div class="section-links">' + edit_nav + '</div>' +
+                  edit_section + recipe_section + '</div>') if changed_preview else ''
+    training_panel = (_panel_start('training') + training_section + '</div>') if training_section else ''
     before_suffix = ' — before edit' if changed_preview else ''
     original_notice = ('<p class="subtle">This overview and the original 2D, 3D and selection-detail sections '
                        'describe the source <strong>before edit</strong>. The ' +
@@ -614,19 +735,18 @@ def write_preview_report(output_dir, report, input_ini_text):
                 '<title>' + _escape(study) + ' — FakeCT ROI report</title><style>' + _STYLE + '</style></head><body>',
                 '<header><div class="eyebrow">FakeCT · ROI planning report</div><h1>' + _escape(study) + '</h1>',
                 '<p class="subtle">' + caption + '</p><span class="status">' + status + '</span>',
-                '<nav aria-label="Report sections"><a href="#overview">Overview</a><a href="#roi">ROI definition</a>' + edit_nav + '<a href="#slices">2D views</a><a href="#volume">3D views</a><a href="#selection">Selection detail</a><a href="#input">Edit input</a><a href="#provenance">Provenance</a></nav></header><main>',
+                '</header>' + tab_navigation + '<main><noscript><p>JavaScript is disabled. All report views are shown below; the links jump between them. Static images remain available.</p></noscript>',
+                _panel_start('global') + global_section + '</div>',
+                _panel_start('local') + '<div class="section-links"><a href="#overview">Overview</a><a href="#roi">ROI definition</a><a href="#slices">2D views</a><a href="#volume">3D views</a><a href="#selection">Selection detail</a></div>',
+                '<section id="slices"><h2>Native 2D inspection' + before_suffix + '</h2><p>Inspect the transparent ROI against the tissue boundaries. Keep the intended target inside the overlay and adjacent structures outside it.</p>' + ''.join(figures[:2]) + '</section>',
                 '<section id="overview"><h2>Selection overview' + before_suffix + '</h2>' + original_notice + '<p class="rule"><strong>Selected target = tissue candidates ∩ ROI.</strong> ' + _escape(selection_filter) +
                 ' A narrow tube can follow one nearby artery while leaving another outside the ROI.</p><div class="metrics">' + metric_html + '</div>' + warning_html,
                 '<p>Unknown or review-required voxels inside the ROI: <strong>' + _number(report.get('unknown_group_voxels_in_roi')) + '</strong>. Inspect magenta regions when reviewing the tissue selection.</p>',
-                '<p>Counts use native voxels in this crop. A single connected component does not prove that only one anatomical vessel is included; nearby vessels may meet or share an original label. Inspect the overlays and original-label table before changing geometry.</p></section>',
+                '<p>Counts use native voxels in this crop. A single connected component does not prove that only one anatomical vessel is included; nearby vessels may meet or share an original label. Inspect the overlays before changing geometry. The original-label table is optional anatomical detail, not required input.</p></section>',
                 '<section id="roi"><h2>ROI definition</h2><p>' + _escape(kind_explanation) + '</p>',
                 _table(['Point in path order', 'i', 'j', 'k', 'Radius (mm)'], nodes),
                 '<div class="two-column"><div><h3>Native coordinates</h3><p>Index order: <code>i, j, k</code>. Spacing (mm): <code>' + _text_value(geometry.get('spacing_ijk_mm')) + '</code>.</p><p class="subtle">' + _escape(geometry.get('orientation', 'Anatomical orientation and physical origin are unverified.')) + '</p></div>',
                 '<div><h3>Crop bounds</h3><p>Lower index: <code>' + _text_value(geometry.get('crop_origin_ijk')) + '</code><br>Upper index (exclusive): <code>' + _text_value(geometry.get('crop_high_ijk_exclusive')) + '</code><br>Array shape (k, j, i): <code>' + _text_value(geometry.get('crop_shape_kji')) + '</code></p></div></div></section>',
-                edit_section,
-                recipe_section,
-                training_section,
-                '<section id="slices"><h2>Native 2D inspection' + before_suffix + '</h2><p>Inspect the transparent ROI against the tissue boundaries. Keep the intended target inside the overlay and adjacent structures outside it.</p>' + ''.join(figures[:2]) + '</section>',
                 '<section id="volume"><h2>Three-dimensional context' + before_suffix + '</h2><p>Drag to rotate, scroll to zoom, click the legend to toggle structures, and use the opacity controls. The interactive figure is embedded in this report and works without a network connection.</p>' + volume_content + figures[2],
                 '<p class="subtle">The volume represents binary label occupancy, not measured attenuation. Display sampling may expand thin structures; native masks determine the reported counts.</p></section>',
                 '<section id="selection"><h2>What is inside the ROI?' + before_suffix + '</h2><p>' + _escape(selected_description) + ' Fine anatomical identity remains available through the original labels and catalog; grouping is a view of those labels.</p>',
@@ -634,17 +754,19 @@ def write_preview_report(output_dir, report, input_ini_text):
                 '<details><summary>Connected components and crop composition</summary><p>Components use six-neighbor connectivity on the selected native mask. They are spatial diagnostics, not vessel identities.</p>',
                 _table(['Component', 'Voxels'], component_rows, 'Component sizes not recorded, or selection is empty.'),
                 '<h3>All tissue groups in the crop</h3><p>These counts include context outside the ROI.</p>', _table(['Tissue group', 'Crop voxels'], group_rows),
-                '<p>Unknown or review-required voxels in the crop: <strong>' + _number(report.get('unknown_group_voxels')) + '</strong>. Missing dictionary IDs: <code>' + _text_value(report.get('missing_dictionary_ids', [])) + '</code>.</p></details></section>',
-                '<section id="input"><h2>Adjust and regenerate</h2><ol><li>Edit <code>center_ijk</code> and <code>radius_mm</code> below. For a tube, keep control points in path order and provide exactly one radius for each point.</li>' + edit_instruction + '<li>Set a new <code>output.directory</code> to preserve this comparison.</li><li>Download the edited INI and run the command below from the FakeCT checkout.</li></ol>',
+                '<p>Unknown or review-required voxels in the crop: <strong>' + _number(report.get('unknown_group_voxels')) + '</strong>. Missing dictionary IDs: <code>' + _text_value(report.get('missing_dictionary_ids', [])) + '</code>.</p></details></section></div>',
+                edit_panel,
+                training_panel,
+                _panel_start('input') + '<section id="input"><h2>Adjust and regenerate</h2><ol><li>Choose a tissue in <code>[selection]</code>. Leave <code>source_ids =</code> blank for tissue-only selection. Original surface IDs are an optional extra filter; individual overrides in <code>[stiffness.labels]</code> are optional too.</li><li>Edit <code>center_ijk</code> and <code>radius_mm</code> below. For a tube, keep control points in path order and provide exactly one radius for each point.</li>' + edit_instruction + '<li>Set a new <code>output.directory</code> to preserve this comparison.</li><li>Download the edited INI and run the command below from the FakeCT checkout.</li></ol>',
                 '<pre>' + _escape(report.get('rerun_command', 'python3 scripts/preview_roi.py --config /path/to/xcat-roi.ini')) + '</pre>',
                 '<p class="subtle">Editing this text does not change the displayed figures. They remain the captured result until the preview command is run again.</p>',
                 '<label for="captured-input"><strong>Captured input, editable for the next run</strong></label><textarea id="captured-input" spellcheck="false" aria-describedby="input-status">\n' + _escape(input_ini_text) + '</textarea>',
-                '<div class="actions"><button type="button" id="download-input">Download edited INI</button><button type="button" id="copy-input">Copy INI</button><span id="input-status" role="status">The figures reflect the original captured input.</span></div></section>',
-                '<section id="provenance"><h2>Source and mapping provenance</h2><p>FakeCT grouping policy: <strong>' + _escape(policy) + '</strong>. Its version identifies the tissue grouping policy, not the DPI atlas. DPI sources are identified separately by their content hashes below.</p><p>Anatomical tissue groups are distinct from attenuation material classes. The original signed labels and anatomical names remain the basis for finer selections.</p>',
+                '<div class="actions"><button type="button" id="download-input">Download edited INI</button><button type="button" id="copy-input">Copy INI</button><span id="input-status" role="status">The figures reflect the original captured input.</span></div></section></div>',
+                _panel_start('provenance') + '<section id="provenance"><h2>Source and mapping provenance</h2><p>FakeCT grouping policy: <strong>' + _escape(policy) + '</strong>. Its version identifies the tissue grouping policy, not the DPI atlas. DPI sources are identified separately by their content hashes below.</p><p>Anatomical tissue groups are distinct from attenuation material classes. The original signed labels and anatomical names remain the basis for finer selections.</p>',
                 _table(['Mapping source', 'Pinned path', 'SHA256'], provenance_rows),
                 '<details><summary>Volume sources and reproducibility hashes</summary>',
                 _table(['Source', 'Path', 'Crop SHA256', 'Integrity scope'], source_rows),
-                '<pre>' + _escape(json.dumps(provenance, indent=2, ensure_ascii=False, allow_nan=False)) + '</pre></details></section></main>',
+                '<pre>' + _escape(json.dumps(provenance, indent=2, ensure_ascii=False, allow_nan=False)) + '</pre></details></section></div></main>',
                 '<footer>Generated ' + _escape(report.get('generated_at_utc', 'at an unrecorded time')) + '. This single HTML file contains its figures and captured input. Source volumes remain at their recorded paths; reversible crop data remain in the output directory.</footer>',
                 '<script>' + _SCRIPT + '</script></body></html>']
     encoded = '\n'.join(document).encode('utf-8')

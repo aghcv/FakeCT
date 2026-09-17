@@ -50,7 +50,6 @@ audit = {root/'audit.json'}
 catalog = {root/'catalog.json'}
 [selection]
 tissue = artery
-source_ids =
 [roi]
 shape = tube
 center_ijk = 6, 6, 3 ; 6, 6, 9
@@ -75,6 +74,10 @@ directory = {root/'output'}
             self.assertEqual(report['selection']['component_count_6'], 1)
             self.assertEqual(report['selection']['selected_original_ids'], [-7])
             self.assertEqual(report['geometry']['roi_kind'], 'tube')
+            self.assertEqual(report['config']['selection']['source_ids'], [])
+            self.assertIn('global_view', report)
+            self.assertTrue((output/'roi-global.html').is_file())
+            self.assertTrue((output/'roi-global.png').is_file())
             self.assertEqual((case/'001_act_1.bin').read_bytes(), source_before)
             with np.load(output/'crop.npz', allow_pickle=False) as crop:
                 np.testing.assert_array_equal(crop['selected_mask'], crop['candidate_mask'] & crop['roi_mask'])
@@ -84,6 +87,8 @@ directory = {root/'output'}
             self.assertIn('srcdoc=', html)
             self.assertIn('data:image/png;base64,', html)
             self.assertIn('parallel-arteries', html)
+            self.assertIn('panel-global', html)
+            self.assertIn('panel-local', html)
             copied = root/'portable.html'
             copied.write_text(html)
             self.assertEqual(copied.read_bytes(), (output/'report.html').read_bytes())

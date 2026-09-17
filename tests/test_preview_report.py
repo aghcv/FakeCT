@@ -21,10 +21,25 @@ class Document(HTMLParser):
     def __init__(self, document):
         super().__init__(convert_charrefs=True)
         self.tags = []
+        self.stack = []
+        self.parent_ids = {}
         self.feed(document)
 
     def handle_starttag(self, tag, attrs):
-        self.tags.append((tag, dict(attrs)))
+        attrs = dict(attrs)
+        self.tags.append((tag, attrs))
+        if attrs.get('id'):
+            self.parent_ids[attrs['id']] = [parent.get('id') for _, parent in self.stack
+                                           if parent.get('id')]
+        if tag not in {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+                       'link', 'meta', 'param', 'source', 'track', 'wbr'}:
+            self.stack.append((tag, attrs))
+
+    def handle_endtag(self, tag):
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.stack[index][0] == tag:
+                del self.stack[index:]
+                break
 
 
 class PreviewReportTests(unittest.TestCase):
@@ -114,6 +129,66 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('provide exactly one radius for each point', document)
         self.assertNotIn('shared radius', document)
 
+    def test_accessible_tab_targets_and_legacy_report_fallback(self):
+        _, document = self.write()
+        parsed = Document(document)
+        tabs = [attrs for _, attrs in parsed.tags if attrs.get('role') == 'tab']
+        panels = {attrs['id']: attrs for _, attrs in parsed.tags
+                  if attrs.get('role') == 'tabpanel'}
+        self.assertEqual([tab['id'] for tab in tabs],
+                         ['tab-global', 'tab-local', 'tab-input', 'tab-provenance'])
+        for tab in tabs:
+            panel = panels[tab['aria-controls']]
+            self.assertEqual(tab['href'], '#' + panel['id'])
+            self.assertEqual(panel['aria-labelledby'], tab['id'])
+            self.assertNotIn('hidden', panel)  # All content accessible without JavaScript.
+        selected = [tab['id'] for tab in tabs if tab['aria-selected'] == 'true']
+        self.assertEqual(selected, ['tab-local'])
+        for section in ('overview', 'roi', 'slices', 'volume', 'selection'):
+            self.assertIn('panel-local', parsed.parent_ids[section])
+        self.assertIn('panel-global', parsed.parent_ids['global'])
+        self.assertIn('panel-input', parsed.parent_ids['input'])
+        self.assertIn('panel-provenance', parsed.parent_ids['provenance'])
+        self.assertIn('A global phantom view was not generated', document)
+        self.assertIn('All report views are shown below', document)
+        self.assertIn('.report-panel[hidden]{display:block!important}', document)
+        self.assertIn('source_ids =</code> blank for tissue-only selection', document)
+        self.assertIn('individual overrides in <code>[stiffness.labels]</code> are optional', document)
+
+    def test_global_view_embeds_once_with_metadata_escaped_and_defaults_to_global(self):
+        (self.output / 'roi-global.html').write_text(self.volume)
+        (self.output / 'roi-global.png').write_bytes(PNG)
+        payload = '<script>window.BAD=true</script>'
+        self.report['global_view'] = {'sampling': {'stride_ijk': [4, 4, 4]},
+                                     'warnings': [payload], 'source_note': payload}
+        metadata, document = self.write()
+        parsed = Document(document)
+        self.assertIn('roi-global.html', metadata['embedded_assets'])
+        self.assertIn('roi-global.png', metadata['embedded_assets'])
+        self.assertEqual(sum(tag == 'iframe' for tag, _ in parsed.tags), 2)
+        self.assertEqual(sum(tag == 'img' for tag, _ in parsed.tags), 4)
+        self.assertEqual(sum(tag == 'script' for tag, _ in parsed.tags), 1)
+        self.assertNotIn(payload, document)
+        selected = [attrs['id'] for _, attrs in parsed.tags
+                    if attrs.get('role') == 'tab' and attrs.get('aria-selected') == 'true']
+        self.assertEqual(selected, ['tab-global'])
+        self.assertIn('Global crosshairs and temporary guides change this browser view only', document)
+        self.assertIn('surface IDs are optional', document)
+        for tag, attrs in parsed.tags:
+            self.assertFalse(attrs.get('src', '').startswith(('http:', 'https:', '/')))
+            if tag == 'a':
+                self.assertTrue(attrs['href'].startswith('#'))
+        moved = Path(self.temp.name) / 'global-report.html'
+        shutil.copyfile(metadata['path'], moved)
+        shutil.rmtree(self.output)
+        self.assertEqual(moved.read_text(), document)
+
+    def test_global_view_rejects_network_resources(self):
+        (self.output / 'roi-global.html').write_text('<img src="https://example.com/image.png">')
+        with self.assertRaisesRegex(ValueError, 'must embed its resources'):
+            self.write()
+        self.assertFalse((self.output / 'report.html').exists())
+
     def test_user_metadata_and_ini_cannot_inject_active_markup(self):
         payload = '</textarea><script>window.BAD=true</script><img src=x onerror="evil()">&'
         report = copy.deepcopy(self.report)
@@ -168,6 +243,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('Original', document)
         self.assertNotIn(payload, document)
         self.assertEqual(sum(tag == 'script' for tag, _ in Document(document).tags), 1)
+        parsed = Document(document)
+        self.assertIn('panel-training', parsed.parent_ids['training'])
+        self.assertIn('panel-local', parsed.parent_ids['selection'])
 
     def test_empty_selection_and_missing_optional_assets_render_explicitly(self):
         report = copy.deepcopy(self.report)
@@ -248,6 +326,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('Three-dimensional context — before edit', document)
         self.assertIn('What is inside the ROI? — before edit', document)
         self.assertIn('After-edit 3D context', document)
+        parsed = Document(document)
+        self.assertIn('panel-edits', parsed.parent_ids['edit'])
+        self.assertIn('panel-local', parsed.parent_ids['slices'])
         self.assertIn('not AI background recovery or a reconstructed CT image', document)
         self.assertIn('Five reassignment requests remain unresolved.', document)
         self.assertIn('python3 scripts/preview_roi.py --config /path/to/xcat-roi.ini', document)

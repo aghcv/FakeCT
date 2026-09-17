@@ -74,7 +74,7 @@ class RecipeWorkflowTests(unittest.TestCase):
         resolved = resolve_preview(config)
         sources = {key: path.read_bytes() for key, path in resolved['source_files'].items()}
         report = self.run_preview()
-        self.assertEqual(report['schema_version'], 'fakect.roi-preview/4')
+        self.assertEqual(report['schema_version'], 'fakect.roi-preview/5')
         self.assertNotIn('edit', report)
         self.assertEqual([s['step_name'] for s in report['recipe']['steps']], ['grow', 'shrink'])
         self.assertFalse((self.output/'INCOMPLETE').exists())
@@ -105,7 +105,7 @@ class RecipeWorkflowTests(unittest.TestCase):
             for key in ('comparison', 'profile'):
                 path = self.output/step['figures'][key]
                 self.assertIn(hashlib.sha256(path.read_bytes()).hexdigest(), embedded)
-        self.assertEqual(len(parsed.frames), 2)
+        self.assertEqual(len(parsed.frames), 3)
         inventory = json.loads((self.output/'artifact-manifest.json').read_text())
         for name, digest in inventory.items():
             self.assertEqual(hashlib.sha256((self.output/name).read_bytes()).hexdigest(), digest)

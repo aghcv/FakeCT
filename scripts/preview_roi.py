@@ -151,7 +151,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
     code_files = [Path(__file__), ROOT/'src/fakect_roi.py', ROOT/'src/fakect_config.py',
                   ROOT/'src/fakect_volume_preview.py', ROOT/'src/fakect_tissues.py', ROOT/'src/fakect_preview_report.py',
                   ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_reassignment.py',
-                  ROOT/'src/fakect_edit_preview.py']
+                  ROOT/'src/fakect_edit_preview.py', ROOT/'src/fakect_global_preview.py']
     code_files += [Path(p) for p in extra_code_files]
     recipe_requested = 'recipe' in config
     if recipe_requested:
@@ -220,6 +220,13 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
         edit_result = apply_recipe(arrays, resolved, config, on_step=capture_step)
     print(f"Read native crop {arrays['act'].shape}; selected voxels={int(arrays['selected'].sum())}", flush=True)
     plot_stats = render_slices(arrays, resolved, config, output)
+    from fakect_global_preview import render_global_preview
+    global_stats = render_global_preview(resolved, config, output)
+    # Whole-phantom context and native local views must come from one source state.
+    for row in sources.values():
+        stat = Path(row['path']).stat()
+        if stat.st_size != row['bytes'] or stat.st_mtime_ns != row['mtime_ns']:
+            raise ValueError('Source changed between local and global rendering; rerun to a new directory')
     if training_plan is not None:
         from fakect_study_preview import render_training_target
         target_stats = render_training_target(arrays, resolved, config, output)
@@ -253,7 +260,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                        np.any(np.max(nodes_mm+radii, axis=0) > (np.asarray(resolved['shape_kji'][::-1])-.5)*spacing))
     if any(digest(p) != code_hashes[str(p.relative_to(ROOT))] for p in code_files):
         raise ValueError('Preview source code changed during rendering; retain these partial outputs and rerun to a new directory')
-    report = {'schema_version': 'fakect.roi-preview/4' if recipe_requested else ('fakect.roi-preview/3' if edit_requested else 'fakect.roi-preview/2'),
+    report = {'schema_version': 'fakect.roi-preview/5',
               'generated_at_utc': datetime.now(timezone.utc).isoformat(),
               'preview_only': True, 'geometry_edited': bool(edit_result is not None and edit_result['changed_mask'].any()),
               'source_volumes_modified': False, 'scalar_recovery_performed': False, 'config': json_value(config),
@@ -278,7 +285,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
               'unknown_group_voxels_in_roi': int(((arrays['tissue'] == unknown) & arrays['roi']).sum()),
               'missing_dictionary_ids': missing,
               'groups': {c['name']: int((arrays['tissue'] == c['id']).sum()) for c in resolved['catalog']['categories']},
-              'slices': plot_stats, 'volume': volume_stats,
+              'slices': plot_stats, 'volume': volume_stats, 'global_view': global_stats,
               'html_report': {'path': 'report.html', 'self_contained': True},
               'code_sha256': code_hashes}
     if training_plan is not None:

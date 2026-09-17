@@ -116,7 +116,8 @@ def load_preview_config(path: Union[str, Path], *,
     Paths *inside* the file use ``repo_root`` (the repository containing this
     module by default). Path values become ``Path`` objects, comma-separated
     fields become tuples, and ``slice_ijk = roi`` becomes ``None``. Blank
-    ``source_ids``, ``context_tissues`` and ``allowed_tissues`` become empty tuples. No files other
+    ``source_ids``, ``context_tissues`` and ``allowed_tissues`` become empty tuples.
+    ``selection.source_ids`` may also be omitted; tissue and ROI then define selection. No files other
     than the INI are read here and nothing is written.
     """
     path = Path(path).expanduser()
@@ -154,15 +155,16 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
     for section, base_fields in fields.items():
         expected = base_fields | ({"shape"} if section == "roi" and version != "fakect.preview/1" else set())
         actual = set(parser[section])
-        if actual != expected:
-            unknown, missing = sorted(actual - expected), sorted(expected - actual)
+        optional = {"source_ids"} if section == "selection" else set()
+        if actual - expected or expected - actual - optional:
+            unknown, missing = sorted(actual - expected), sorted(expected - actual - optional)
             raise ValueError(f"[{section}] invalid settings: unknown={unknown}, missing={missing}")
-        for key in expected:
+        for key in actual:
             if "\n" in parser[section][key]:
                 raise ValueError(f"{section}.{key} must be written on one line")
     read = lambda section, key: parser[section][key].strip()
     source_ids = tuple(_integer(part, "selection.source_ids", minimum=-(2 ** 31), maximum=2 ** 31 - 1)
-                       for part in _parts(read("selection", "source_ids"), "selection.source_ids"))
+                       for part in _parts(parser["selection"].get("source_ids", "").strip(), "selection.source_ids"))
     if len(set(source_ids)) != len(source_ids):
         raise ValueError("selection.source_ids must not contain duplicate IDs")
     contexts = tuple(_name(part, "preview.context_tissues", _TISSUE_NAME)

@@ -1,0 +1,267 @@
+{
+  "generated_at_utc": "2026-09-17T19:50:43.930344+00:00",
+  "schema_version": "fakect.global-exploration-evaluation/1",
+  "reports": {
+    "explore-v1": {
+      "report": "outputs/studies/thoracic-aorta/explore-v1/report.html",
+      "report_sha256": "70499965e2569d50a85dc190ecfb1c372b7d68701e6bdedc5b2f0ae185e4b93d",
+      "report_bytes": 24017137,
+      "input": "configs/studies/thoracic-aorta-explore.ini",
+      "input_sha256": "aedba569c271c1ab6d14af22fc2eca6b312221b89144fcc74a75c7f97722f698",
+      "source_shape_kji": [
+        1860,
+        750,
+        750
+      ],
+      "global_sample_shape_kji": [
+        187,
+        76,
+        76
+      ],
+      "global_sample_voxels": 1080112,
+      "global_stride_ijk": [
+        10,
+        10,
+        10
+      ],
+      "global_covers_both_source_edges": true,
+      "global_selection": {
+        "tissue": "artery",
+        "source_ids_explicit": false,
+        "resolved_source_id_count": 644,
+        "sampled_candidate_voxels": 531
+      },
+      "native_selection": {
+        "candidate_voxels": 106751,
+        "roi_voxels": 83204,
+        "selected_voxels": 52576,
+        "selected_fraction_of_candidates": 0.49251060879991754,
+        "component_count_6": 7,
+        "components_voxels_6": [
+          52569,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "selected_original_ids": [
+          1186,
+          1547,
+          1550,
+          1747,
+          1969,
+          2912,
+          2914,
+          2920,
+          2922
+        ],
+        "selected_original_id_counts": {
+          "1186": 311,
+          "1547": 265,
+          "1550": 657,
+          "1747": 76,
+          "1969": 116,
+          "2912": 59,
+          "2914": 112,
+          "2920": 495,
+          "2922": 50485
+        },
+        "warnings": [
+          "Selection contains 7 disconnected 6-connected components. Inspect nearby structures and narrow or relocate the ROI if needed; components do not necessarily represent distinct vessels."
+        ],
+        "selected_original_names": {
+          "1186": "internal_carotid_right",
+          "1547": "arteries",
+          "1550": "arteries",
+          "1747": "right_pulmonary_arts",
+          "1969": "left_pulmonary_arts",
+          "2912": "dias_rca1",
+          "2914": "dias_lad1",
+          "2920": "dias_pul_art",
+          "2922": "dias_aorta"
+        }
+      },
+      "native_crop_shape_kji": [
+        146,
+        104,
+        65
+      ],
+      "artifact_count": 12,
+      "artifact_and_generating_code_hashes_verified": true,
+      "source_stats_unchanged": true,
+      "code_sha256": {
+        "scripts/preview_roi.py": "b6f95d73c144ecb19976ff7d9040532b84a19c048091b5ae5cb364ac376ed1dc",
+        "src/fakect_roi.py": "004824837f687a837626d2fcc0f03a6f4b89e5129b4d38986693ad51764a8536",
+        "src/fakect_config.py": "35b3d640d5fc9d44a342eaf8093cbbd45f50e7e1dce7eb19eb88ffda2e4fbff2",
+        "src/fakect_volume_preview.py": "63e8cabadcad4a26079684b9203b316bffbcca7669f2d463c0c79ae75c623f3e",
+        "src/fakect_tissues.py": "f6c72d335afa0624c5b4dfe005a38961ade505f8ce3a47d90e047a312cbcdc28",
+        "src/fakect_preview_report.py": "9a017c1fa89c7c3dfa4886ae26b1a263e3b0728920ce510c8d15251ef125b1f9",
+        "src/fakect_morphology.py": "88fc333f56ec2562517f3fb9b08301e2fd27cf790ec13742f2758ad5edb8e014",
+        "src/fakect_reassignment.py": "9e3714e8501d74cb17213e7c5170fe637d17409f701682c77a6eb76efa9d99db",
+        "src/fakect_edit_preview.py": "04cdf2c795fd9c3f06a9a0f2f7c633164fa5ab3fc430ac6bca008c3cb11dbb90",
+        "src/fakect_global_preview.py": "8e42027fe2eaded5421a80d02a3b8121bd5abf27752542d395dd419f6c99020b"
+      },
+      "selected_ids_discovered_automatically": {
+        "1186": 311,
+        "1547": 265,
+        "1550": 657,
+        "1747": 76,
+        "1969": 116,
+        "2912": 59,
+        "2914": 112,
+        "2920": 495,
+        "2922": 50485
+      },
+      "selected_non_aorta_artery_voxels": 2091
+    },
+    "recipe-v3": {
+      "report": "outputs/studies/thoracic-aorta/recipe-v3/report.html",
+      "report_sha256": "c41f279c62426019bfd2b2daff7c01ac8e3e5ac84b6ed09bda9416df487c1e95",
+      "report_bytes": 46702915,
+      "input": "configs/studies/thoracic-aorta-recipe.ini",
+      "input_sha256": "03e51d16b28e8ff56324df55f46d66f775947bec74211e96c18f1db50c065bde",
+      "source_shape_kji": [
+        1860,
+        750,
+        750
+      ],
+      "global_sample_shape_kji": [
+        187,
+        76,
+        76
+      ],
+      "global_sample_voxels": 1080112,
+      "global_stride_ijk": [
+        10,
+        10,
+        10
+      ],
+      "global_covers_both_source_edges": true,
+      "global_selection": {
+        "tissue": "artery",
+        "source_ids_explicit": true,
+        "resolved_source_id_count": 1,
+        "sampled_candidate_voxels": 81
+      },
+      "native_selection": {
+        "candidate_voxels": 55814,
+        "roi_voxels": 83204,
+        "selected_voxels": 50485,
+        "selected_fraction_of_candidates": 0.9045221628981975,
+        "component_count_6": 1,
+        "components_voxels_6": [
+          50485
+        ],
+        "selected_original_ids": [
+          2922
+        ],
+        "selected_original_id_counts": {
+          "2922": 50485
+        },
+        "warnings": [],
+        "selected_original_names": {
+          "2922": "dias_aorta"
+        }
+      },
+      "native_crop_shape_kji": [
+        146,
+        104,
+        65
+      ],
+      "artifact_count": 30,
+      "artifact_and_generating_code_hashes_verified": true,
+      "source_stats_unchanged": true,
+      "code_sha256": {
+        "scripts/preview_roi.py": "b6f95d73c144ecb19976ff7d9040532b84a19c048091b5ae5cb364ac376ed1dc",
+        "src/fakect_roi.py": "004824837f687a837626d2fcc0f03a6f4b89e5129b4d38986693ad51764a8536",
+        "src/fakect_config.py": "35b3d640d5fc9d44a342eaf8093cbbd45f50e7e1dce7eb19eb88ffda2e4fbff2",
+        "src/fakect_volume_preview.py": "63e8cabadcad4a26079684b9203b316bffbcca7669f2d463c0c79ae75c623f3e",
+        "src/fakect_tissues.py": "f6c72d335afa0624c5b4dfe005a38961ade505f8ce3a47d90e047a312cbcdc28",
+        "src/fakect_preview_report.py": "9a017c1fa89c7c3dfa4886ae26b1a263e3b0728920ce510c8d15251ef125b1f9",
+        "src/fakect_morphology.py": "88fc333f56ec2562517f3fb9b08301e2fd27cf790ec13742f2758ad5edb8e014",
+        "src/fakect_reassignment.py": "9e3714e8501d74cb17213e7c5170fe637d17409f701682c77a6eb76efa9d99db",
+        "src/fakect_edit_preview.py": "04cdf2c795fd9c3f06a9a0f2f7c633164fa5ab3fc430ac6bca008c3cb11dbb90",
+        "src/fakect_global_preview.py": "8e42027fe2eaded5421a80d02a3b8121bd5abf27752542d395dd419f6c99020b",
+        "src/fakect_recipe.py": "15d6109191a948804c3a43b7ab82b6183fdc808356a6724129c68ffd35ab747d",
+        "src/fakect_recipe_config.py": "70844b47b9da0469d910ab6a6dbc24d3987820eb6e16bbca86bd7d20be357d26",
+        "src/fakect_recipe_preview.py": "d841ae9ff500cccf29009c961993ec7c9fa36ac77ef20d02c5107915e3f5928b"
+      },
+      "recipe_result_identical_to_previous_stiffness_trial": true,
+      "recipe_counts": {
+        "before": 50485,
+        "after": 49726,
+        "added": 741,
+        "removed": 1500,
+        "changed": 2241,
+        "scalar_changed": 2136,
+        "ever_changed": 2241,
+        "proposed_added": 768,
+        "proposed_removed": 1935,
+        "blocked": 27,
+        "unresolved": 435
+      }
+    }
+  },
+  "browser_verification": {
+    "tabs": [
+      {
+        "id": "tab-global",
+        "selected": "true"
+      },
+      {
+        "id": "tab-local",
+        "selected": "false"
+      },
+      {
+        "id": "tab-input",
+        "selected": "false"
+      },
+      {
+        "id": "tab-provenance",
+        "selected": "false"
+      }
+    ],
+    "initial_readout": "Native center i, j, k = 390, 400, 1410  |  physical index \u00d7 spacing = 390.00, 400.00, 1410.00 mm (source grid origin)",
+    "canvas_boxes": [
+      {
+        "width": 76,
+        "height": 76,
+        "displayWidth": 335.33331298828125,
+        "displayHeight": 335.3333435058594
+      },
+      {
+        "width": 76,
+        "height": 187,
+        "displayWidth": 169.2166748046875,
+        "displayHeight": 420
+      },
+      {
+        "width": 76,
+        "height": 187,
+        "displayWidth": 169.2166748046875,
+        "displayHeight": 420
+      }
+    ],
+    "pixel_content": [
+      true,
+      true,
+      true
+    ],
+    "after_slider": "Native center i, j, k = 390, 400, 0  |  physical index \u00d7 spacing = 390.00, 400.00, 0.00 mm (source grid origin)",
+    "after_go": "# Proposed native point; update the intended sphere center or tube node.\ncenter_ijk = 0, 0, 0\n# Temporary sphere radius; update the matching tube radius separately if needed.\nradius_mm = 10",
+    "after_click": "# Proposed native point; update the intended sphere center or tube node.\ncenter_ijk = 370, 380, 0\n# Temporary sphere radius; update the matching tube radius separately if needed.\nradius_mm = 10",
+    "browser": "Firefox 140.12.0 ESR headless",
+    "checks_passed": [
+      "tab activation and deep links",
+      "canvas render",
+      "slice slider",
+      "native coordinate go",
+      "image click",
+      "tissue switch",
+      "guide radius",
+      "reset"
+    ]
+  }
+}

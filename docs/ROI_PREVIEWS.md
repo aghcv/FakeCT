@@ -1,5 +1,9 @@
 # One HTML report for tissue and ROI review
 
+New reports separate **Global view** (whole-phantom slice navigation) from
+**Local view** (native crop close-ups). Original IDs may be blank or omitted;
+see [finding an ROI without anatomical IDs](ROI_EXPLORATION.md).
+
 Once the ROI is positioned, [the morphology workflow](MORPHOLOGY.md) adds bounded
 erosion/dilation and before/after review through the same command and INI structure.
 

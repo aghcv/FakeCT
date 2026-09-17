@@ -6,15 +6,20 @@ from your third aorta preview iteration. The original study input remains your
 single-edit/cohort input; this additional file uses `fakect.recipe/1` for combined
 edit review.
 
+Anatomical IDs are optional. Blank or omit `[selection] source_ids` to select
+the named tissue by ROI alone; omit `[stiffness.labels]` to use category factors.
+Use the report's Global view to find a neighborhood and Local view to refine
+its native masks. See [exploration without IDs](ROI_EXPLORATION.md).
+
 Run from the integrated checkout:
 
 ```bash
 python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-recipe.ini
 ```
 
-Open [the stiffness recipe report](../outputs/studies/thoracic-aorta/recipe-v2/report.html).
+Open [the recipe report with Global and Local tabs](../outputs/studies/thoracic-aorta/recipe-v3/report.html).
 For subsequent runs, set `[output] directory` to a fresh location such as
-`outputs/studies/thoracic-aorta/recipe-v3`. Add `--validate-only` to check the
+`outputs/studies/thoracic-aorta/recipe-v4`. Add `--validate-only` to check the
 input and crop/search bounds without reading voxel payloads. Native overlap and
 selection counts require the actual preview run.
 
