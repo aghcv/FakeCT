@@ -1,5 +1,7 @@
 > Start tissue-only ROI review with the [tube INI input](configs/examples/xcat-roi-tube.ini)
 > and [single HTML report guide](docs/ROI_PREVIEWS.md). Sphere inputs remain supported.
+> Apply bounded erosion/dilation through the [edit INI](configs/examples/xcat-edit.ini)
+> and [morphology workflow](docs/MORPHOLOGY.md), using the same command.
 > Tissue grouping: [DPI atlas workbench and usage](docs/TISSUE_MAPPING.md).
 
 > Integration branch `fakect.26.09.16`: start with

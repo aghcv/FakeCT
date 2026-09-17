@@ -17,6 +17,16 @@ class PreviewConfigurationTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.path = self.root / "external-input.ini"
         self.template = (ROOT / "configs/examples/xcat-roi.ini").read_text()
+        # The tube INI is a user-editable experiment. Keep test geometry fixed
+        # without changing the user's saved radii, path, or output directory.
+        self.tube_template = (ROOT / "configs/examples/xcat-roi-tube.ini").read_text()
+        fixture_values = {"center_ijk": "404, 360, 1544 ; 404, 363, 1584 ; 401, 362, 1624",
+                          "radius_mm": "2.5, 2.5, 2.3", "source_ids": "",
+                          "context_tissues": "artery, bone, vein", "crop_half_width_mm": "40"}
+        for key, value in fixture_values.items():
+            self.tube_template = re.sub(r"^(" + re.escape(key) + r" = ).*?(\s+# NOTE .*)$",
+                                       lambda match: match.group(1) + value + " " + match.group(2),
+                                       self.tube_template, flags=re.MULTILINE)
 
     def load(self, text=None, **values):
         text = self.template if text is None else text
@@ -125,7 +135,7 @@ class PreviewConfigurationTests(unittest.TestCase):
             self.assertIn(match.group(1), notes)
 
     def test_tube_example_preserves_order_radii_and_tissue_only_selection(self):
-        text = (ROOT / "configs/examples/xcat-roi-tube.ini").read_text()
+        text = self.tube_template
         result = self.load(text)
         self.assertEqual(result["study"]["schema_version"], "fakect.preview/2")
         self.assertEqual(result["selection"]["source_ids"], ())
@@ -156,7 +166,7 @@ class PreviewConfigurationTests(unittest.TestCase):
             self.load(text.replace("shape = sphere\n", ""))
 
     def test_tube_rejects_inconsistent_or_ambiguous_geometry(self):
-        text = (ROOT / "configs/examples/xcat-roi-tube.ini").read_text()
+        text = self.tube_template
         invalid = [("shape", "cylinder"), ("center_ijk", "1,2,3"),
                    ("center_ijk", "1,2,3;1,2,3;4,5,6"),
                    ("center_ijk", "1,2,3;;4,5,6"), ("center_ijk", "1,2,3;4,5,6;"),
@@ -170,6 +180,86 @@ class PreviewConfigurationTests(unittest.TestCase):
         for key, value in invalid:
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 self.load(text, **{key: value})
+
+    def test_edit_example_parses_bounded_morphology_and_reassignment(self):
+        text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
+        result = self.load(text)
+        self.assertEqual(result["study"]["schema_version"], "fakect.edit/1")
+        self.assertEqual(result["roi"]["shape"], "tube")
+        self.assertEqual(result["selection"]["source_ids"], ())
+        self.assertEqual(result["edit"], {"operation": "erosion", "distance_mm": 1.5,
+                         "profile": "gaussian", "profile_axis": "tube", "shape_k": 10.,
+                         "shape_window": (.25, .75)})
+        self.assertEqual(result["reassignment"], {"allowed_tissues": ("soft_tissue", "muscle", "adipose"),
+                         "max_distance_mm": 3., "unresolved": "preserve"})
+        notes = set(re.findall(r"^# NOTE ([0-9]+) --", text, re.MULTILINE))
+        assignments = [line for line in text.splitlines() if line and not line.startswith(("#", "["))]
+        self.assertEqual(len(assignments), 30)
+        for line in assignments:
+            match = re.search(r"# NOTE ([0-9]+):", line)
+            self.assertIsNotNone(match, line)
+            self.assertIn(match.group(1), notes)
+
+    def test_edit_none_uniform_sphere_and_axis_choices(self):
+        text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
+        result = self.load(text, operation="none", distance_mm="0", allowed_tissues="")
+        self.assertEqual(result["edit"]["distance_mm"], 0.)
+        self.assertEqual(result["reassignment"]["allowed_tissues"], ())
+        for axis in ("i", "j", "k"):
+            result = self.load(text, shape="sphere", center_ijk="404.5,363,1584", radius_mm="4.7",
+                               profile_axis=axis, unresolved="error", operation="dilation")
+            self.assertEqual(result["roi"]["center_ijk"], (404.5, 363., 1584.))
+            self.assertEqual(result["edit"]["profile_axis"], axis)
+            self.assertEqual(result["reassignment"]["unresolved"], "error")
+        # Uniform profiles do not use the axis; retain the user's unused setting.
+        result = self.load(text, shape="sphere", center_ijk="404,363,1584", radius_mm="4.7",
+                           profile="uniform", profile_axis="tube", shape_window="0,1")
+        self.assertEqual(result["edit"]["shape_window"], (0., 1.))
+
+    def test_edit_rejects_invalid_parameters_and_unsafe_implicit_defaults(self):
+        text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
+        invalid = [("operation", "stenosis"), ("operation", "Erosion"), ("distance_mm", "0"),
+                   ("distance_mm", "-1"), ("distance_mm", "nan"), ("distance_mm", "inf"),
+                   ("profile", "Gaussian"), ("profile", "linear"), ("profile_axis", "z"),
+                   ("shape_k", "0"), ("shape_k", "-1"), ("shape_k", "nan"),
+                   ("shape_window", ""), ("shape_window", ".5"), ("shape_window", "0,.5,1"),
+                   ("shape_window", ".5,.5"), ("shape_window", ".75,.25"),
+                   ("shape_window", "-.1,.5"), ("shape_window", ".5,1.1"),
+                   ("shape_window", ".5,inf"), ("shape_window", "0,1,"),
+                   ("allowed_tissues", "soft_tissue,muscle,soft_tissue"),
+                   ("allowed_tissues", "bone,"), ("allowed_tissues", "Muscle"),
+                   ("max_distance_mm", "0"), ("max_distance_mm", "-3"),
+                   ("max_distance_mm", "inf"), ("unresolved", "guess"), ("unresolved", "")]
+        for key, value in invalid:
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                self.load(text, **{key: value})
+        with self.assertRaisesRegex(ValueError, "requires roi.shape=tube"):
+            self.load(text, shape="sphere", center_ijk="404,363,1584", radius_mm="4.7")
+        with self.assertRaises(ValueError):
+            self.load(text, operation="none", distance_mm="-1")
+        for section in ("edit", "reassignment"):
+            with self.subTest(section=section), self.assertRaises(ValueError):
+                self.load(text.replace("[" + section + "]", "[unknown_section]"))
+        with self.assertRaises(ValueError):
+            self.load(text.replace("[edit]", "[edit]\nscale = 1"))
+        with self.assertRaises(ValueError):
+            self.load(text.replace("[reassignment]", "[reassignment]\nallow_all = true"))
+        with self.assertRaises(ValueError):
+            self.load(re.sub(r"^max_distance_mm = .*\n", "", text, flags=re.MULTILINE))
+
+    def test_preview_schemas_cannot_silently_accept_edit_settings(self):
+        text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
+        with self.assertRaises(ValueError):
+            self.load(text.replace("fakect.edit/1", "fakect.preview/2"))
+        extra_sections = "\n[edit]\noperation = none\n[reassignment]\nallowed_tissues =\n"
+        with self.assertRaises(ValueError):
+            self.load(self.template + extra_sections)
+        result = self.load(self.template)
+        self.assertNotIn("edit", result)
+        self.assertNotIn("reassignment", result)
+        result = self.load(self.tube_template)
+        self.assertNotIn("edit", result)
+        self.assertNotIn("reassignment", result)
 
 
 if __name__ == "__main__":

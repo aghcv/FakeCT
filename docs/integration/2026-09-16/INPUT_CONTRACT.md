@@ -18,6 +18,14 @@ membership supplies candidate voxels, and the ROI restricts the final selection.
 Reports retain original-ID and six-connected-component counts without treating
 either as definitive vessel identity. These selectors still perform no edits.
 
+The executable extension `fakect.edit/1` now adds `[edit]` and `[reassignment]`
+to that same INI structure and command. See [the edit example](../../../configs/examples/xcat-edit.ini)
+and [morphology guide](../../MORPHOLOGY.md). It supports bounded native-crop erosion/
+dilation, uniform or spatial Gaussian profiles, explicit surrounding tissue
+allowlists, barrier-respecting signed-ID ownership, before/after reports and
+separate scalar-copy proxies. It does not implement the planned full-volume,
+review-promotion, population-sweep or AI-recovery interfaces below.
+
 Historical design example: [`configs/examples/xcat-cohort.v1.draft.json`](../../../configs/examples/xcat-cohort.v1.draft.json).
 The JSON file is a design proposal, **not an input accepted by the existing CLI**.
 Null ROI coordinates, unreviewed orientation, and empty donor/recipient lists are
@@ -95,7 +103,7 @@ job count, output location and cost/memory estimates are printed before submissi
 
 ## Edit and reassignment semantics
 
-The sample edits a single source organ ID. Donor/recipient/protected IDs always refer
+The historical draft sample edits a single source organ ID. Donor/recipient/protected IDs always refer
 to source organ IDs, even when a coarser category map is present. Multi-target/category
 edits need an explicit ownership rule (e.g. nearest original organ with stable ID
 tie-breaking) before assigning newly claimed voxels. `direction=from_scale` means

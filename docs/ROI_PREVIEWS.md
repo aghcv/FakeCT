@@ -1,5 +1,8 @@
 # One HTML report for tissue and ROI review
 
+Once the ROI is positioned, [the morphology workflow](MORPHOLOGY.md) adds bounded
+erosion/dilation and before/after review through the same command and INI structure.
+
 The primary output is now **`report.html`**. It combines the selection summary,
 ROI definition, native-resolution close-ups, neighboring z levels, interactive
 3D volume, static 3D views, selected anatomical labels, component counts, captured
@@ -118,6 +121,6 @@ metadata when comparing historical runs. No source voxels are reassigned here.
 
 The captured INI, resolved JSON, machine report and artifact hashes accompany the
 HTML. Input/catalog snapshots are captured before rendering. Derived images are
-retained for export, but the review entry point is `report.html`. Notebook
-morphology still needs bounded donor/recipient and ownership rules before
-geometry changes become production edits.
+retained for export, but the review entry point is `report.html`. Label
+morphology is now available for bounded native crops under explicit donor/recipient
+and ownership rules in `fakect.edit/1`; full-volume cohort production remains pending.

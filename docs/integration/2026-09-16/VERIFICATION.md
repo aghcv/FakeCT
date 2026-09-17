@@ -114,3 +114,15 @@ the CLI. Native crop, config, catalog, code and artifact hashes were verified.
 Browser/WebGL execution remains untested. This is preview and selection work;
 the previously stated exclusions for geometry editing and cohort generation
 remain in effect.
+
+## Bounded morphology follow-up (2026-09-17)
+
+The [morphology evaluation](../2026-09-17/MORPHOLOGY_EVALUATION.md) adds executable
+native-crop erosion/dilation and explicit multi-label reassignment under the same
+INI command. All 93 tests passed. On the user's current tube, erosion reassigned
+213 voxels; dilation accepted 258 and preserved 14 protected vein voxels. Saved
+arrays, transition accounting, locality, original scalars, source stats, code and
+artifact hashes were verified. Both standalone reports contain before/after 2D
+and 3D views. This updates the earlier geometry-edit exclusion for bounded crops
+only; full-volume edits, physical/AI scalar recovery, jobs and cohort replacement
+remain outside the executed scope.

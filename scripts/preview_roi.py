@@ -147,9 +147,14 @@ def run(config_path, validate_only=False):
     if Path(config_path).read_bytes() != config_bytes:
         raise ValueError('INI changed while loading; rerun with the saved input')
     code_files = [Path(__file__), ROOT/'src/fakect_roi.py', ROOT/'src/fakect_config.py',
-                  ROOT/'src/fakect_volume_preview.py', ROOT/'src/fakect_tissues.py', ROOT/'src/fakect_preview_report.py']
+                  ROOT/'src/fakect_volume_preview.py', ROOT/'src/fakect_tissues.py', ROOT/'src/fakect_preview_report.py',
+                  ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_edit_preview.py']
     code_hashes = {str(p.relative_to(ROOT)): digest(p) for p in code_files}
     resolved = resolve_preview(config)
+    edit_requested = config.get('edit', {}).get('operation', 'none') != 'none'
+    if 'edit' in config:
+        from fakect_morphology import validate_edit_geometry
+        validate_edit_geometry(resolved, config)
     output = config['output']['directory']
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         raise ValueError(f'Output exists and is not empty: {output}; choose a new output.directory')
@@ -160,10 +165,15 @@ def run(config_path, validate_only=False):
                                      'candidate_id_count': len(resolved['source_ids']),
                                      'roi_shape': resolved['roi_kind'], 'roi_nodes_ijk': resolved['roi_nodes_ijk'],
                                      'roi_radii_mm': resolved['roi_radii_mm'], 'slice_ijk': resolved['slice_ijk'],
+                                     'operation': config.get('edit', {}).get('operation', 'none'),
                                      'output': output}), indent=2))
         return
     arrays, sources = prepare_crop(resolved, config)
     selection = selection_diagnostics(arrays, resolved)
+    edit_result = None
+    if edit_requested:
+        from fakect_morphology import apply_morphology
+        edit_result = apply_morphology(arrays, resolved, config)
     output.mkdir(parents=True, exist_ok=True)
     print(f"Read native crop {arrays['act'].shape}; selected voxels={int(arrays['selected'].sum())}", flush=True)
     plot_stats = render_slices(arrays, resolved, config, output)
@@ -175,6 +185,18 @@ def run(config_path, validate_only=False):
         roi_radii_mm=resolved['roi_radii_mm'], roi_mask=arrays['roi'],
         context_tissues=config['preview']['context_tissues'], volume_stride=config['preview']['volume_stride'],
         volume_opacity=config['preview']['volume_opacity'], context_opacity=config['preview']['context_opacity'], output_dir=output)
+    if edit_result is not None:
+        from fakect_edit_preview import render_edit_comparison
+        edit_figures = render_edit_comparison(arrays, edit_result, resolved, config, output)
+        after_volume = render_volume_preview(edit_result['edited_labels'], edit_result['edited_tissue_labels'],
+            resolved['catalog'], edit_result['target_mask_after'],
+            crop_origin_ijk=resolved['crop_low_ijk'], spacing_ijk_mm=resolved['spacing_ijk_mm'],
+            roi_center_ijk=resolved['roi_nodes_ijk'][0], roi_radius_mm=resolved['roi_radii_mm'][0],
+            roi_shape=resolved['roi_kind'], roi_nodes_ijk=resolved['roi_nodes_ijk'],
+            roi_radii_mm=resolved['roi_radii_mm'], roi_mask=arrays['roi'],
+            context_tissues=config['preview']['context_tissues'], volume_stride=config['preview']['volume_stride'],
+            volume_opacity=config['preview']['volume_opacity'], context_opacity=config['preview']['context_opacity'],
+            output_dir=output / 'after')
     unknown = next(c['id'] for c in resolved['catalog']['categories'] if c['name'] == 'unknown')
     missing = sorted(set(map(int, np.unique(arrays['act']))) - {r['original_id'] for r in resolved['catalog']['records']})
     spacing = np.asarray(resolved['spacing_ijk_mm'])
@@ -184,8 +206,10 @@ def run(config_path, validate_only=False):
                        np.any(np.max(nodes_mm+radii, axis=0) > (np.asarray(resolved['shape_kji'][::-1])-.5)*spacing))
     if any(digest(p) != code_hashes[str(p.relative_to(ROOT))] for p in code_files):
         raise ValueError('Preview source code changed during rendering; retain these partial outputs and rerun to a new directory')
-    report = {'schema_version': 'fakect.roi-preview/2', 'generated_at_utc': datetime.now(timezone.utc).isoformat(),
-              'preview_only': True, 'geometry_edited': False, 'config': json_value(config),
+    report = {'schema_version': 'fakect.roi-preview/3' if edit_requested else 'fakect.roi-preview/2',
+              'generated_at_utc': datetime.now(timezone.utc).isoformat(),
+              'preview_only': True, 'geometry_edited': bool(edit_result is not None and edit_result['changed_mask'].any()),
+              'source_volumes_modified': False, 'scalar_recovery_performed': False, 'config': json_value(config),
               'input_config_sha256': hashlib.sha256(config_bytes).hexdigest(), 'catalog_sha256': resolved['catalog_sha256'],
               'policy_version': resolved['catalog']['policy_version'],
               'audit_sha256': resolved['audit_sha256'],
@@ -210,6 +234,16 @@ def run(config_path, validate_only=False):
               'slices': plot_stats, 'volume': volume_stats,
               'html_report': {'path': 'report.html', 'self_contained': True},
               'code_sha256': code_hashes}
+    if edit_result is not None:
+        report['edit'] = {**edit_result['summary'], 'figures': edit_figures, 'after_volume': after_volume,
+                          'scope': 'Derived native crop only; source volumes preserved', 'array_artifact': 'edit.npz'}
+        np.savez_compressed(output / 'edit.npz',
+            **{key: value for key, value in edit_result.items() if isinstance(value, np.ndarray)},
+            original_labels=arrays['act'], original_tissue_labels=arrays['tissue'],
+            original_attenuation_per_pixel=arrays['atn'], roi_mask=arrays['roi'],
+            geometry_json=np.array(json.dumps(json_value(report['geometry']))),
+            edit_json=np.array(json.dumps(json_value(report['edit']), allow_nan=False)),
+            catalog_json=np.array(resolved['catalog_bytes'].decode('utf-8')))
     if not arrays['candidates'].any():
         report['selection_warning'] = 'Tissue candidates are absent from this crop; relocate the ROI or change tissue selection.'
     elif not arrays['selected'].any():
@@ -221,15 +255,16 @@ def run(config_path, validate_only=False):
                         catalog_json=np.array(resolved['catalog_bytes'].decode('utf-8')))
     (output / 'input.ini').write_bytes(config_bytes)
     (output / 'resolved-config.json').write_text(json.dumps(json_value(config), indent=2) + '\n')
-    report['artifacts_sha256'] = {p.name: digest(p) for p in output.iterdir() if p.is_file()}
+    report['artifacts_sha256'] = {str(p.relative_to(output)): digest(p) for p in output.rglob('*') if p.is_file()}
     (output / 'preview-report.json').write_text(json.dumps(json_value(report), indent=2, allow_nan=False) + '\n')
     from fakect_preview_report import write_preview_report
     html = write_preview_report(output, json_value(report), config_bytes.decode('utf-8-sig'))
-    manifest = {p.name: digest(p) for p in output.iterdir() if p.is_file()}
+    manifest = {str(p.relative_to(output)): digest(p) for p in output.rglob('*') if p.is_file()}
     (output / 'artifact-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(json.dumps({'report': html['path'], 'output': str(output), 'selected_voxels': report['selected_voxels'],
                       'candidate_voxels': report['candidate_voxels'], 'connected_components': selection['component_count_6'],
                       'unknown_group_voxels': report['unknown_group_voxels'],
+                      'edit': report.get('edit', {}).get('counts'),
                       'warning': report.get('selection_warning')}, indent=2), flush=True)
 
 

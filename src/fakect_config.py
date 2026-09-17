@@ -1,7 +1,8 @@
-"""Strict, human-editable inputs for the XCAT ROI preview workbench.
+"""Strict, human-editable inputs for the XCAT ROI preview and edit workbench.
 
-Only preview settings are supported. Paths in an INI file are resolved against
-this repository's root, even when the command runs from another directory.
+Preview schemas remain preview-only; ``fakect.edit/1`` adds bounded morphology
+and tissue reassignment. Paths in an INI file are resolved against this
+repository's root, even when the command runs from another directory.
 Anatomical names, source IDs and volume bounds are checked against the selected
 catalog and source geometry by the preview renderer.
 """
@@ -16,7 +17,8 @@ from typing import Any, Dict, Optional, Union
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "fakect.preview/2"
-SUPPORTED_SCHEMAS = {"fakect.preview/1", SCHEMA_VERSION}
+EDIT_SCHEMA_VERSION = "fakect.edit/1"
+SUPPORTED_SCHEMAS = {"fakect.preview/1", SCHEMA_VERSION, EDIT_SCHEMA_VERSION}
 _FIELDS = {
     "study": {"schema_version", "name"},
     "input": {"root", "case_id", "frame", "audit", "catalog"},
@@ -25,6 +27,10 @@ _FIELDS = {
     "preview": {"slice_ijk", "overlay_opacity", "volume_opacity", "context_tissues",
                 "context_opacity", "volume_stride"},
     "output": {"directory"},
+}
+_EDIT_FIELDS = {
+    "edit": {"operation", "distance_mm", "profile", "profile_axis", "shape_k", "shape_window"},
+    "reassignment": {"allowed_tissues", "max_distance_mm", "unresolved"},
 }
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*\Z")
 _CASE_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\Z")
@@ -104,13 +110,13 @@ def _path(value: str, label: str, root: Path) -> Path:
 
 def load_preview_config(path: Union[str, Path], *,
                         repo_root: Optional[Union[str, Path]] = None) -> Dict[str, Dict[str, Any]]:
-    """Load a preview INI into typed sections or raise ``ValueError``.
+    """Load a preview or bounded-edit INI into typed sections or raise ``ValueError``.
 
     ``path`` itself is resolved by the caller's usual working-directory rules.
     Paths *inside* the file use ``repo_root`` (the repository containing this
     module by default). Path values become ``Path`` objects, comma-separated
     fields become tuples, and ``slice_ijk = roi`` becomes ``None``. Blank
-    ``source_ids`` and ``context_tissues`` become empty tuples. No files other
+    ``source_ids``, ``context_tissues`` and ``allowed_tissues`` become empty tuples. No files other
     than the INI are read here and nothing is written.
     """
     path = Path(path).expanduser()
@@ -126,15 +132,18 @@ def load_preview_config(path: Union[str, Path], *,
     if parser.defaults():
         raise ValueError("[DEFAULT] settings are unsupported; put each key in its named section")
     actual_sections = set(parser.sections())
-    if actual_sections != set(_FIELDS):
-        unknown = sorted(actual_sections - set(_FIELDS))
-        missing = sorted(set(_FIELDS) - actual_sections)
-        raise ValueError(f"Invalid preview sections: unknown={unknown}, missing={missing}")
+    if "study" not in actual_sections:
+        raise ValueError("Invalid workbench sections: missing=['study']")
     version = parser["study"].get("schema_version", "").strip()
     if version not in SUPPORTED_SCHEMAS:
         raise ValueError(f"study.schema_version must be one of {sorted(SUPPORTED_SCHEMAS)!r}, received {version!r}")
-    for section, base_fields in _FIELDS.items():
-        expected = base_fields | ({"shape"} if section == "roi" and version == SCHEMA_VERSION else set())
+    fields = _FIELDS | (_EDIT_FIELDS if version == EDIT_SCHEMA_VERSION else {})
+    if actual_sections != set(fields):
+        unknown = sorted(actual_sections - set(fields))
+        missing = sorted(set(fields) - actual_sections)
+        raise ValueError(f"Invalid workbench sections: unknown={unknown}, missing={missing}")
+    for section, base_fields in fields.items():
+        expected = base_fields | ({"shape"} if section == "roi" and version != "fakect.preview/1" else set())
         actual = set(parser[section])
         if actual != expected:
             unknown, missing = sorted(actual - expected), sorted(expected - actual)
@@ -203,4 +212,39 @@ def load_preview_config(path: Union[str, Path], *,
                                                "preview.volume_stride", minimum=1)},
         "output": {"directory": _path(read("output", "directory"), "output.directory", root)},
     }
+    if version == EDIT_SCHEMA_VERSION:
+        operation = read("edit", "operation")
+        if operation not in {"none", "erosion", "dilation"}:
+            raise ValueError("edit.operation must be none, erosion, or dilation")
+        distance = _float(read("edit", "distance_mm"), "edit.distance_mm")
+        if distance < 0 or (operation != "none" and distance == 0):
+            raise ValueError("edit.distance_mm must be nonnegative, and positive for erosion or dilation")
+        profile = read("edit", "profile")
+        if profile not in {"uniform", "gaussian"}:
+            raise ValueError("edit.profile must be uniform or gaussian")
+        axis = read("edit", "profile_axis")
+        if axis not in {"tube", "i", "j", "k"}:
+            raise ValueError("edit.profile_axis must be tube, i, j, or k")
+        if profile == "gaussian" and axis == "tube" and shape != "tube":
+            raise ValueError("Gaussian edit.profile_axis=tube requires roi.shape=tube")
+        window = tuple(_float(part, "edit.shape_window", opacity=True)
+                       for part in _parts(read("edit", "shape_window"), "edit.shape_window"))
+        if len(window) != 2 or window[0] >= window[1]:
+            raise ValueError("edit.shape_window must contain exactly two values with 0 <= start < end <= 1")
+        allowed = tuple(_name(part, "reassignment.allowed_tissues", _TISSUE_NAME)
+                        for part in _parts(read("reassignment", "allowed_tissues"),
+                                           "reassignment.allowed_tissues"))
+        if len(set(allowed)) != len(allowed):
+            raise ValueError("reassignment.allowed_tissues must not contain duplicate names")
+        unresolved = read("reassignment", "unresolved")
+        if unresolved not in {"preserve", "error"}:
+            raise ValueError("reassignment.unresolved must be preserve or error")
+        result["edit"] = {"operation": operation, "distance_mm": distance,
+                          "profile": profile, "profile_axis": axis,
+                          "shape_k": _float(read("edit", "shape_k"), "edit.shape_k", positive=True),
+                          "shape_window": window}
+        result["reassignment"] = {"allowed_tissues": allowed,
+                                  "max_distance_mm": _float(read("reassignment", "max_distance_mm"),
+                                                             "reassignment.max_distance_mm", positive=True),
+                                  "unresolved": unresolved}
     return result

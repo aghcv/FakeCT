@@ -55,6 +55,41 @@ def _table(headers, rows, empty='No entries recorded.'):
     return '<div class="table-scroll"><table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>'
 
 
+def _measurement(value):
+    if value is None:
+        return 'Not recorded'
+    try:
+        return format(float(value), ',.6g')
+    except (ValueError, TypeError, OverflowError):
+        return _escape(value)
+
+
+def _embed_png(output, filename, heading, caption, embedded):
+    path = output / filename
+    if not path.is_file():
+        return '<p class="subtle">' + _escape(heading) + ': preview not generated.</p>'
+    raw = path.read_bytes()
+    encoded = base64.b64encode(raw).decode('ascii')
+    embedded[filename] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+    return ('<figure><h3>' + _escape(heading) + '</h3><img loading="lazy" src="data:image/png;base64,' +
+            encoded + '" alt="' + _escape(heading) + '"><figcaption>' + _escape(caption) + '</figcaption></figure>')
+
+
+def _embed_volume(output, filename, title, embedded):
+    path = output / filename
+    if not path.is_file():
+        return '<p class="subtle">' + _escape(title) + ' was not generated.</p>'
+    raw = path.read_bytes()
+    document = raw.decode('utf-8')
+    parser = _AssetReferences()
+    parser.feed(document)
+    if parser.references:
+        raise ValueError('The 3D document must embed its resources; external or relative asset links were found')
+    embedded[filename] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+    return ('<iframe title="' + _escape(title) + '" sandbox="allow-scripts" loading="lazy" srcdoc="' +
+            _escape(document) + '"></iframe>')
+
+
 class _AssetReferences(HTMLParser):
     """Reject linked resources in the otherwise trusted generated 3D document."""
     def __init__(self):
@@ -163,12 +198,88 @@ def _selected_rows(report, selection):
             for label, count in pairs], 'Original signed IDs observed in the selected tissue–ROI intersection.'
 
 
+def _morphology_section(output, report, embedded):
+    """Render applied label changes without treating a scalar proxy as recovered CT."""
+    edit = report['edit']
+    config = report.get('config', {})
+    edit_config = config.get('edit', {})
+    reassignment = config.get('reassignment', {})
+    counts = edit.get('counts', {})
+    volumes = edit.get('volume_mm3', {})
+    operation = edit.get('operation', edit_config.get('operation', 'Not recorded'))
+    metrics = ''.join('<div class="metric"><strong>' + _number(counts.get(key)) + '</strong><span>' + label + '</span></div>'
+                      for key, label in (('before', 'Target voxels before edit'), ('after', 'Target voxels after edit'),
+                                         ('added', 'Applied additions'), ('removed', 'Applied removals')))
+    change_rows = [[label, _number(counts.get(key))] for key, label in (
+        ('proposed_added', 'Proposed additions'), ('proposed_removed', 'Proposed removals'),
+        ('added', 'Applied additions'), ('removed', 'Applied removals'),
+        ('blocked', 'Blocked changes'), ('unresolved', 'Unresolved reassignments'))]
+    volume_rows = [[label, _measurement(volumes.get(key))] for key, label in (
+        ('before', 'Target volume before edit'), ('after', 'Target volume after edit'),
+        ('added', 'Applied added volume'), ('removed', 'Applied removed volume'))]
+    transition_rows = [[_text_value(row.get('original_id')), _text_value(row.get('new_id')), _number(row.get('count'))]
+                       for row in edit.get('transitions', [])]
+    settings = []
+    for key, label in (('operation', 'Operation'), ('distance_mm', 'Distance (mm)'),
+                       ('profile', 'Profile'), ('profile_axis', 'Profile axis'),
+                       ('shape_k', 'Profile shape k'), ('shape_window', 'Profile window')):
+        value = edit.get(key, edit_config.get(key))
+        if value is not None:
+            settings.append([label, _text_value(value)])
+    for key, label in (('allowed_tissues', 'Allowed reassignment tissues'),
+                       ('max_distance_mm', 'Maximum reassignment distance (mm)'),
+                       ('unresolved', 'Unresolved reassignment policy')):
+        if key in reassignment:
+            settings.append([label, _text_value(reassignment[key])])
+    components = _table(['Mask', 'Components'], [
+        ['Target before edit', _text_value(edit.get('components_before'))],
+        ['Target after edit', _text_value(edit.get('components_after'))]])
+    warnings = ''.join('<p class="warning">' + _escape(warning) + '</p>' for warning in edit.get('warnings', []))
+    figures = _embed_png(output, 'edit-comparison.png', 'Before, after and difference',
+                         'Compare the original target and edited result at the same native coordinates. '
+                         'Read the difference legend for applied additions and removals; source images remain preserved.', embedded)
+    figures += _embed_png(output, 'edit-profile.png', 'Achieved cross-sections and edit profile',
+                          'Measured cross-sections describe this edited crop. A requested distance or profile is an '
+                          'input to the trial; assess the achieved change shown here before using it for a cohort.', embedded)
+    after = ''
+    if (output / 'after/roi-volume.html').is_file() or (output / 'after/roi-surfaces.png').is_file():
+        after = '<h3>After-edit 3D context</h3><p>The target and tissue context below use the edited labels. '
+        after += 'Display sampling may widen thin structures; native masks determine the measurements.</p>'
+        if (output / 'after/roi-volume.html').is_file():
+            after += _embed_volume(output, 'after/roi-volume.html', 'After-edit interactive 3D ROI and tissue volume', embedded)
+        if (output / 'after/roi-surfaces.png').is_file():
+            after += _embed_png(output, 'after/roi-surfaces.png', 'After-edit static 3D context',
+                                'Transparent surfaces of the edited labels, with the same ROI planning overlay.', embedded)
+    return ('<section id="edit"><h2>Morphology trial: ' + _escape(operation) + '</h2>'
+            '<p class="rule">Target counts and volumes below refer to the target <strong>inside the ROI</strong>, '
+            'before and after this trial. Applied additions and removals describe actual label changes.</p>'
+            '<div class="metrics">' + metrics + '</div>' + warnings +
+            '<p><strong>Strength:</strong> ' + _text_value(edit.get('strength_semantics')) + '</p>' +
+            '<p><strong>Scalar image status:</strong> ' + _text_value(edit.get('scalar_status')) + '</p>'
+            '<p>Any edited scalar image is a provisional attenuation proxy. It is <strong>not AI background recovery '
+            'or a reconstructed CT image</strong>. Original source arrays are preserved alongside the separate '
+            'edited result in <code>edit.npz</code>; source volumes remain at their recorded paths.</p>' + figures + after +
+            '<div class="two-column"><div><h3>Change accounting</h3>' +
+            _table(['Change', 'Voxels'], change_rows) + '</div><div><h3>Physical volumes</h3>' +
+            _table(['Quantity inside ROI', 'Volume (mm³)'], volume_rows) + '</div></div>' +
+            '<h3>Applied original-label transitions</h3><p>Each row records how many voxels changed from one '
+            'original signed label to another. The before-edit anatomical identities remain available in the '
+            'original selection table below and in the preserved catalog.</p>' +
+            _table(['Original signed ID', 'New signed ID', 'Changed voxels'], transition_rows,
+                   'No original-label transitions were recorded.') +
+            '<details><summary>Trial settings and component counts</summary>' +
+            _table(['Setting', 'Value'], settings) + components +
+            '<p>Engine: <code>' + _text_value(edit.get('engine')) + '</code>. Component counts are spatial '
+            'diagnostics, not anatomical vessel counts.</p></details></section>')
+
+
 def write_preview_report(output_dir, report, input_ini_text):
     """Write ``report.html`` with all preview assets embedded, refusing overwrite.
 
     ``report.selection`` may contain candidate/ROI/selected voxel counts,
     six-connected component sizes and selected original-ID counts. Geometry
     accepts ``roi_kind``, ``nodes_ijk`` and ``radii_mm`` or legacy sphere fields.
+    Optional ``report.edit`` adds morphology accounting and before/after figures.
     Missing optional assets/diagnostics are shown as unavailable, not invented.
     The report can be copied alone and opened without a server or network.
     """
@@ -180,6 +291,7 @@ def write_preview_report(output_dir, report, input_ini_text):
         raise TypeError('input_ini_text must be the captured INI text')
     if not isinstance(report, dict):
         raise TypeError('report must be a dictionary')
+    edit_enabled = isinstance(report.get('edit'), dict)
     config = report.get('config', {})
     study = config.get('study', {}).get('name', 'XCAT ROI preview')
     case = config.get('input', {}).get('case_id', 'Not recorded')
@@ -201,28 +313,14 @@ def write_preview_report(output_dir, report, input_ini_text):
     if component_count is not None and component_count > 1 and not any('component' in w.lower() for w in warnings):
         warnings.append('The selected mask has multiple six-connected components. Inspect them before treating the selection as one target.')
     embedded = {}
-    figures = []
-    for filename, heading, caption in _ASSETS:
-        path = output / filename
-        if path.is_file():
-            raw = path.read_bytes()
-            encoded = base64.b64encode(raw).decode('ascii')
-            embedded[filename] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
-            figures.append('<figure><h3>' + _escape(heading) + '</h3><img loading="lazy" src="data:image/png;base64,' + encoded + '" alt="' + _escape(heading) + '"><figcaption>' + _escape(caption) + '</figcaption></figure>')
-        else:
-            figures.append('<p class="subtle">' + _escape(heading) + ': preview not generated.</p>')
-    volume_path = output / 'roi-volume.html'
-    if volume_path.is_file():
-        volume_bytes = volume_path.read_bytes()
-        volume_document = volume_bytes.decode('utf-8')
-        parser = _AssetReferences()
-        parser.feed(volume_document)
-        if parser.references:
-            raise ValueError('The 3D document must embed its resources; external or relative asset links were found')
-        embedded[volume_path.name] = {'bytes': len(volume_bytes), 'sha256': hashlib.sha256(volume_bytes).hexdigest()}
-        volume_content = '<iframe title="Interactive 3D ROI and tissue volume" sandbox="allow-scripts" loading="lazy" srcdoc="' + _escape(volume_document) + '"></iframe>'
+    figures = [_embed_png(output, filename, heading + (' — before edit' if edit_enabled else ''),
+                          caption, embedded) for filename, heading, caption in _ASSETS]
+    if (output / 'roi-volume.html').is_file():
+        volume_content = _embed_volume(output, 'roi-volume.html',
+                                        ('Before-edit ' if edit_enabled else '') + 'Interactive 3D ROI and tissue volume', embedded)
     else:
         volume_content = '<p class="subtle">Interactive 3D preview was not generated.</p>'
+    edit_section = _morphology_section(output, report, embedded) if edit_enabled else ''
     selected_rows, selected_description = _selected_rows(report, selection)
     components = selection.get('components_voxels_6', [])
     component_rows = []
@@ -259,6 +357,14 @@ def write_preview_report(output_dir, report, input_ini_text):
     policy = report.get('policy_version', report.get('catalog_policy_version', 'See pinned policy source below'))
     caption = ('Case ' + _escape(case) + ' · frame ' + _escape(frame) + ' · ' + _escape(tissue.replace('_', ' ')) +
                ' · ' + _escape(kind) + ' ROI')
+    status = 'Morphology trial · source volumes preserved' if edit_enabled else 'Preview only · source labels preserved'
+    edit_nav = '<a href="#edit">Morphology trial</a>' if edit_enabled else ''
+    before_suffix = ' — before edit' if edit_enabled else ''
+    original_notice = ('<p class="subtle">This overview and the original 2D, 3D and selection-detail sections '
+                       'describe the source <strong>before edit</strong>. The morphology section shows the applied trial.</p>'
+                       if edit_enabled else '')
+    edit_instruction = ('<li>Adjust <code>[edit]</code> operation, distance and profile, and review '
+                        '<code>[reassignment]</code> rules before the next trial.</li>' if edit_enabled else '')
     # Plotly's bundled regl compiler constructs functions dynamically. Its inline
     # WebGL renderer therefore needs unsafe-eval as well as inline scripts.
     # The iframe stays sandboxed without same-origin access; network requests
@@ -268,9 +374,9 @@ def write_preview_report(output_dir, report, input_ini_text):
                 '<meta http-equiv="Content-Security-Policy" content="' + _escape(csp) + '">',
                 '<title>' + _escape(study) + ' — FakeCT ROI report</title><style>' + _STYLE + '</style></head><body>',
                 '<header><div class="eyebrow">FakeCT · ROI planning report</div><h1>' + _escape(study) + '</h1>',
-                '<p class="subtle">' + caption + '</p><span class="status">Preview only · source labels preserved</span>',
-                '<nav aria-label="Report sections"><a href="#overview">Overview</a><a href="#roi">ROI definition</a><a href="#slices">2D views</a><a href="#volume">3D views</a><a href="#selection">Selection detail</a><a href="#input">Edit input</a><a href="#provenance">Provenance</a></nav></header><main>',
-                '<section id="overview"><h2>Selection overview</h2><p class="rule"><strong>Selected target = tissue candidates ∩ ROI.</strong> ' + _escape(selection_filter) +
+                '<p class="subtle">' + caption + '</p><span class="status">' + status + '</span>',
+                '<nav aria-label="Report sections"><a href="#overview">Overview</a><a href="#roi">ROI definition</a>' + edit_nav + '<a href="#slices">2D views</a><a href="#volume">3D views</a><a href="#selection">Selection detail</a><a href="#input">Edit input</a><a href="#provenance">Provenance</a></nav></header><main>',
+                '<section id="overview"><h2>Selection overview' + before_suffix + '</h2>' + original_notice + '<p class="rule"><strong>Selected target = tissue candidates ∩ ROI.</strong> ' + _escape(selection_filter) +
                 ' A narrow tube can follow one nearby artery while leaving another outside the ROI.</p><div class="metrics">' + metric_html + '</div>' + warning_html,
                 '<p>Unknown or review-required voxels inside the ROI: <strong>' + _number(report.get('unknown_group_voxels_in_roi')) + '</strong>. Inspect magenta regions when reviewing the tissue selection.</p>',
                 '<p>Counts use native voxels in this crop. A single connected component does not prove that only one anatomical vessel is included; nearby vessels may meet or share an original label. Inspect the overlays and original-label table before changing geometry.</p></section>',
@@ -278,16 +384,17 @@ def write_preview_report(output_dir, report, input_ini_text):
                 _table(['Point in path order', 'i', 'j', 'k', 'Radius (mm)'], nodes),
                 '<div class="two-column"><div><h3>Native coordinates</h3><p>Index order: <code>i, j, k</code>. Spacing (mm): <code>' + _text_value(geometry.get('spacing_ijk_mm')) + '</code>.</p><p class="subtle">' + _escape(geometry.get('orientation', 'Anatomical orientation and physical origin are unverified.')) + '</p></div>',
                 '<div><h3>Crop bounds</h3><p>Lower index: <code>' + _text_value(geometry.get('crop_origin_ijk')) + '</code><br>Upper index (exclusive): <code>' + _text_value(geometry.get('crop_high_ijk_exclusive')) + '</code><br>Array shape (k, j, i): <code>' + _text_value(geometry.get('crop_shape_kji')) + '</code></p></div></div></section>',
-                '<section id="slices"><h2>Native 2D inspection</h2><p>Inspect the transparent ROI against the tissue boundaries. Keep the intended target inside the overlay and adjacent structures outside it.</p>' + ''.join(figures[:2]) + '</section>',
-                '<section id="volume"><h2>Three-dimensional context</h2><p>Drag to rotate, scroll to zoom, click the legend to toggle structures, and use the opacity controls. The interactive figure is embedded in this report and works without a network connection.</p>' + volume_content + figures[2],
+                edit_section,
+                '<section id="slices"><h2>Native 2D inspection' + before_suffix + '</h2><p>Inspect the transparent ROI against the tissue boundaries. Keep the intended target inside the overlay and adjacent structures outside it.</p>' + ''.join(figures[:2]) + '</section>',
+                '<section id="volume"><h2>Three-dimensional context' + before_suffix + '</h2><p>Drag to rotate, scroll to zoom, click the legend to toggle structures, and use the opacity controls. The interactive figure is embedded in this report and works without a network connection.</p>' + volume_content + figures[2],
                 '<p class="subtle">The volume represents binary label occupancy, not measured attenuation. Display sampling may expand thin structures; native masks determine the reported counts.</p></section>',
-                '<section id="selection"><h2>What is inside the ROI?</h2><p>' + _escape(selected_description) + ' Fine anatomical identity remains available through the original labels and catalog; grouping is a view of those labels.</p>',
+                '<section id="selection"><h2>What is inside the ROI?' + before_suffix + '</h2><p>' + _escape(selected_description) + ' Fine anatomical identity remains available through the original labels and catalog; grouping is a view of those labels.</p>',
                 _table(['Original signed ID', 'Original anatomical name', 'Selected voxels inside ROI'], selected_rows, 'No original IDs recorded inside the ROI.'),
                 '<details><summary>Connected components and crop composition</summary><p>Components use six-neighbor connectivity on the selected native mask. They are spatial diagnostics, not vessel identities.</p>',
                 _table(['Component', 'Voxels'], component_rows, 'Component sizes not recorded, or selection is empty.'),
                 '<h3>All tissue groups in the crop</h3><p>These counts include context outside the ROI.</p>', _table(['Tissue group', 'Crop voxels'], group_rows),
                 '<p>Unknown or review-required voxels in the crop: <strong>' + _number(report.get('unknown_group_voxels')) + '</strong>. Missing dictionary IDs: <code>' + _text_value(report.get('missing_dictionary_ids', [])) + '</code>.</p></details></section>',
-                '<section id="input"><h2>Adjust and regenerate</h2><ol><li>Edit <code>center_ijk</code> and <code>radius_mm</code> below. For a tube, keep control points in path order and provide exactly one radius for each point.</li><li>Set a new <code>output.directory</code> to preserve this comparison.</li><li>Download the edited INI and run the command below from the FakeCT checkout.</li></ol>',
+                '<section id="input"><h2>Adjust and regenerate</h2><ol><li>Edit <code>center_ijk</code> and <code>radius_mm</code> below. For a tube, keep control points in path order and provide exactly one radius for each point.</li>' + edit_instruction + '<li>Set a new <code>output.directory</code> to preserve this comparison.</li><li>Download the edited INI and run the command below from the FakeCT checkout.</li></ol>',
                 '<pre>python3 scripts/preview_roi.py --config /path/to/xcat-roi.ini</pre>',
                 '<p class="subtle">Editing this text does not change the displayed figures. They remain the captured result until the preview command is run again.</p>',
                 '<label for="captured-input"><strong>Captured input, editable for the next run</strong></label><textarea id="captured-input" spellcheck="false" aria-describedby="input-status">\n' + _escape(input_ini_text) + '</textarea>',

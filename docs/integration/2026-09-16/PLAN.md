@@ -2,8 +2,8 @@
 
 Branch: **`fakect.26.09.16`**. This is an evaluated integration baseline, not a
 finished cohort generator. It assembles the phantom GUI/VTI implementation,
-newer TensorFlow trainer and existing XCAT utilities; the unified configuration,
-headless edits and population pipeline below remain development milestones.
+newer TensorFlow trainer and existing XCAT utilities. Bounded INI previews/edits
+are executable; the broader population pipeline remains a development milestone.
 The original checkout, user environment edits and source datasets are preserved.
 Worktree: `/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16`.
 The local branch has no remote upstream yet.
@@ -14,10 +14,15 @@ commented INI input, bounded native XCAT crop reads, transparent sphere overlays
 neighboring z levels and selected-label 3D volume/surface views. The
 [atlas currency check](DPI_ATLAS_CURRENCY.md) confirms the latest accessible DPI
 source and v6 campaign use the copied source classifications. This advances M1/M2;
-GUI roundtrip, before/after edits, reassignment and cohort execution remain pending.
+GUI roundtrip and cohort execution remain pending.
 The subsequent tube/report extension adds tissue-only candidates, ordered
 variable-radius tube ROIs, final tissue–ROI intersection masks, component/ID
 diagnostics, and one portable HTML report with captured editable input.
+The [bounded morphology extension](../../MORPHOLOGY.md) now advances M3 with
+native-crop erosion/dilation, physical six-neighbor distance, spatial Gaussian
+profiles, deterministic donor/recipient rules and before/after 2D/3D reports.
+Its scalar-copy proxy is not AI recovery. GUI parity, calibrated diameter targets,
+full-volume edits and population sweeps remain pending.
 
 ## Baseline and reproducibility
 

@@ -183,6 +183,108 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('<td>-5</td><td>tiny_artery</td><td>10</td>', document)
         self.assertIn('<td>1</td><td>140</td>', document)
 
+    def morphology_report(self, after_assets=True):
+        report = copy.deepcopy(self.report)
+        report['config']['study']['schema_version'] = 'fakect.edit/1'
+        report['config']['edit'] = {'operation': 'dilation', 'distance_mm': .5, 'profile': 'gaussian',
+                                    'profile_axis': 'k', 'shape_k': 2.0, 'shape_window': .8}
+        report['config']['reassignment'] = {'allowed_tissues': ['soft_tissue', 'adipose'],
+                                            'max_distance_mm': 3.0, 'unresolved': 'retain'}
+        report['edit'] = {'engine': 'native-morphology-trial', 'operation': 'dilation',
+                           'strength_semantics': 'Maximum physical boundary displacement in mm.',
+                           'counts': {'before': 150, 'after': 180, 'proposed_added': 40, 'proposed_removed': 0,
+                                      'added': 30, 'removed': 0, 'blocked': 5, 'unresolved': 5},
+                           'volume_mm3': {'before': 18.75, 'after': 22.5, 'added': 3.75, 'removed': 0},
+                           'transitions': [{'original_id': 9, 'new_id': 1185, 'count': 30}],
+                           'warnings': ['Five reassignment requests remain unresolved.'],
+                           'scalar_status': 'Provisional local scalar proxy',
+                           'components_before': 2, 'components_after': 2}
+        for name in ('edit-comparison.png', 'edit-profile.png'):
+            (self.output / name).write_bytes(PNG)
+        if after_assets:
+            (self.output / 'after').mkdir()
+            (self.output / 'after/roi-volume.html').write_text(self.volume.replace('embedded:true', 'edited:true'))
+            (self.output / 'after/roi-surfaces.png').write_bytes(PNG)
+        return report
+
+    def test_morphology_counts_transitions_and_original_views_are_distinct(self):
+        report = self.morphology_report()
+        metadata, document = self.write(report)
+        self.assertIn('Morphology trial · source volumes preserved', document)
+        self.assertIn('<a href="#edit">Morphology trial</a>', document)
+        self.assertIn('<h2>Morphology trial: dilation</h2>', document)
+        self.assertIn('Target voxels after edit', document)
+        self.assertIn('target <strong>inside the ROI</strong>', document)
+        self.assertIn('<td>Proposed additions</td><td>40</td>', document)
+        self.assertIn('<td>Applied additions</td><td>30</td>', document)
+        self.assertIn('<td>Target volume before edit</td><td>18.75</td>', document)
+        self.assertIn('<td>9</td><td>1185</td><td>30</td>', document)
+        self.assertIn('<td>1185</td><td>internal_carotid_left</td><td>140</td>', document)
+        self.assertIn('Native 2D inspection — before edit', document)
+        self.assertIn('Three-dimensional context — before edit', document)
+        self.assertIn('What is inside the ROI? — before edit', document)
+        self.assertIn('After-edit 3D context', document)
+        self.assertIn('not AI background recovery or a reconstructed CT image', document)
+        self.assertIn('Five reassignment requests remain unresolved.', document)
+        self.assertIn('python3 scripts/preview_roi.py --config /path/to/xcat-roi.ini', document)
+        self.assertEqual(len(metadata['embedded_assets']), 8)
+
+    def test_morphology_assets_are_portable_including_after_frame(self):
+        report = self.morphology_report()
+        metadata, document = self.write(report)
+        parsed = Document(document)
+        frames = [attrs for tag, attrs in parsed.tags if tag == 'iframe']
+        images = [attrs for tag, attrs in parsed.tags if tag == 'img']
+        self.assertEqual(len(frames), 2)
+        self.assertEqual(len(images), 6)
+        self.assertIn(self.volume, [frame['srcdoc'] for frame in frames])
+        self.assertIn(self.volume.replace('embedded:true', 'edited:true'), [frame['srcdoc'] for frame in frames])
+        for frame in frames:
+            self.assertEqual(frame['sandbox'], 'allow-scripts')
+            self.assertEqual(frame['loading'], 'lazy')
+            self.assertNotIn('src', frame)
+        for image in images:
+            self.assertEqual(base64.b64decode(image['src'].split(',', 1)[1]), PNG)
+        copied = Path(self.temp.name) / 'standalone-edit.html'
+        shutil.copyfile(metadata['path'], copied)
+        shutil.rmtree(self.output)
+        self.assertEqual(copied.read_text(), document)
+        self.assertIn('after/roi-volume.html', metadata['embedded_assets'])
+
+    def test_morphology_rejects_external_assets_in_after_view(self):
+        report = self.morphology_report()
+        (self.output / 'after/roi-volume.html').write_text('<script src="https://example.test/plotly.js"></script>')
+        with self.assertRaisesRegex(ValueError, 'must embed its resources'):
+            self.write(report)
+        self.assertFalse((self.output / 'report.html').exists())
+
+    def test_morphology_metadata_is_escaped_and_missing_optional_views_are_explicit(self):
+        report = self.morphology_report(after_assets=False)
+        payload = '</p><script>window.BAD=true</script>'
+        report['edit']['warnings'] = [payload]
+        report['edit']['scalar_status'] = payload
+        report['edit']['engine'] = payload
+        report['edit']['transitions'][0]['new_id'] = payload
+        report['config']['edit']['profile'] = payload
+        (self.output / 'edit-comparison.png').unlink()
+        (self.output / 'edit-profile.png').unlink()
+        _, document = self.write(report)
+        self.assertNotIn(payload, document)
+        self.assertIn('&lt;script&gt;window.BAD=true&lt;/script&gt;', document)
+        self.assertEqual(sum(tag == 'script' for tag, _ in Document(document).tags), 1)
+        self.assertIn('Before, after and difference: preview not generated.', document)
+        self.assertIn('Achieved cross-sections and edit profile: preview not generated.', document)
+        self.assertNotIn('After-edit 3D context', document)
+
+    def test_no_edit_summary_keeps_preview_mode_even_if_extra_files_exist(self):
+        self.morphology_report()
+        metadata, document = self.write()
+        self.assertIn('Preview only · source labels preserved', document)
+        self.assertNotIn('<section id="edit">', document)
+        self.assertNotIn('<a href="#edit">', document)
+        self.assertNotIn('edit-comparison.png', metadata['embedded_assets'])
+        self.assertNotIn('after/roi-volume.html', metadata['embedded_assets'])
+
 
 if __name__ == '__main__':
     unittest.main()
