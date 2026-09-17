@@ -1,5 +1,5 @@
-> Start ROI review with the [commented INI input](configs/examples/xcat-roi.ini)
-> and [ROI close-up / 3D preview guide](docs/ROI_PREVIEWS.md).
+> Start tissue-only ROI review with the [tube INI input](configs/examples/xcat-roi-tube.ini)
+> and [single HTML report guide](docs/ROI_PREVIEWS.md). Sphere inputs remain supported.
 > Tissue grouping: [DPI atlas workbench and usage](docs/TISSUE_MAPPING.md).
 
 > Integration branch `fakect.26.09.16`: start with

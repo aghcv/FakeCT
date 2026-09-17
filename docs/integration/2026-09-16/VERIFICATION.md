@@ -100,3 +100,17 @@ provenance were checked. Empty selection and zero opacity remain valid discovery
 states. PNGs were visually inspected; standalone interactive HTML structure was
 checked, but browser/WebGL interaction was not automated. Current DPI source and
 v6 campaign hashes match the reference copies. Source data and DPI were not edited.
+
+## Structured report and tube follow-up
+
+The [tube report evaluation](TUBE_REPORT_EVALUATION.md) records 66 passing tests,
+including a full report workflow that isolates one of two nearby arteries sharing
+the same original ID. The real tissue-only tube selects 1,352 voxels of original
+ID 1185 without specifying that ID in the input. A wider tube also selected 82
+generic arterial voxels while remaining one connected component, demonstrating
+why counts and original-label inspection both matter. The report embeds its 2D
+and 3D views and captures an editable INI; regeneration still requires rerunning
+the CLI. Native crop, config, catalog, code and artifact hashes were verified.
+Browser/WebGL execution remains untested. This is preview and selection work;
+the previously stated exclusions for geometry editing and cohort generation
+remain in effect.

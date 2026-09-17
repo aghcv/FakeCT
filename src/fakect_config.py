@@ -15,7 +15,8 @@ from typing import Any, Dict, Optional, Union
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-SCHEMA_VERSION = "fakect.preview/1"
+SCHEMA_VERSION = "fakect.preview/2"
+SUPPORTED_SCHEMAS = {"fakect.preview/1", SCHEMA_VERSION}
 _FIELDS = {
     "study": {"schema_version", "name"},
     "input": {"root", "case_id", "frame", "audit", "catalog"},
@@ -74,6 +75,16 @@ def _indices(value: str, label: str):
     return tuple(_integer(part, label, minimum=0) for part in parts)
 
 
+def _coordinates(value: str, label: str):
+    parts = _parts(value, label)
+    if len(parts) != 3:
+        raise ValueError(f"{label} must contain exactly three coordinates: i, j, k")
+    coordinates = tuple(_float(part, label) for part in parts)
+    if any(coordinate < 0 for coordinate in coordinates):
+        raise ValueError(f"{label} coordinates must be nonnegative")
+    return coordinates
+
+
 def _name(value: str, label: str, pattern: re.Pattern) -> str:
     if not pattern.fullmatch(value):
         raise ValueError(f"{label} contains an invalid name: {value!r}")
@@ -119,7 +130,11 @@ def load_preview_config(path: Union[str, Path], *,
         unknown = sorted(actual_sections - set(_FIELDS))
         missing = sorted(set(_FIELDS) - actual_sections)
         raise ValueError(f"Invalid preview sections: unknown={unknown}, missing={missing}")
-    for section, expected in _FIELDS.items():
+    version = parser["study"].get("schema_version", "").strip()
+    if version not in SUPPORTED_SCHEMAS:
+        raise ValueError(f"study.schema_version must be one of {sorted(SUPPORTED_SCHEMAS)!r}, received {version!r}")
+    for section, base_fields in _FIELDS.items():
+        expected = base_fields | ({"shape"} if section == "roi" and version == SCHEMA_VERSION else set())
         actual = set(parser[section])
         if actual != expected:
             unknown, missing = sorted(actual - expected), sorted(expected - actual)
@@ -128,9 +143,6 @@ def load_preview_config(path: Union[str, Path], *,
             if "\n" in parser[section][key]:
                 raise ValueError(f"{section}.{key} must be written on one line")
     read = lambda section, key: parser[section][key].strip()
-    version = read("study", "schema_version")
-    if version != SCHEMA_VERSION:
-        raise ValueError(f"study.schema_version must be {SCHEMA_VERSION!r}, received {version!r}")
     source_ids = tuple(_integer(part, "selection.source_ids", minimum=-(2 ** 31), maximum=2 ** 31 - 1)
                        for part in _parts(read("selection", "source_ids"), "selection.source_ids"))
     if len(set(source_ids)) != len(source_ids):
@@ -142,10 +154,29 @@ def load_preview_config(path: Union[str, Path], *,
     reviewed = read("roi", "coordinate_reviewed")
     if reviewed not in {"true", "false"}:
         raise ValueError("roi.coordinate_reviewed must be true or false")
-    radius = _float(read("roi", "radius_mm"), "roi.radius_mm", positive=True)
+    shape = "sphere" if version == "fakect.preview/1" else read("roi", "shape")
+    if shape not in {"sphere", "tube"}:
+        raise ValueError("roi.shape must be sphere or tube")
+    if shape == "sphere":
+        coordinate_parser = _indices if version == "fakect.preview/1" else _coordinates
+        center = coordinate_parser(read("roi", "center_ijk"), "roi.center_ijk")
+        radius = _float(read("roi", "radius_mm"), "roi.radius_mm", positive=True)
+        largest_radius = radius
+    else:
+        center = tuple(_coordinates(node.strip(), "roi.center_ijk")
+                       for node in read("roi", "center_ijk").split(";"))
+        radius = tuple(_float(part, "roi.radius_mm", positive=True)
+                       for part in _parts(read("roi", "radius_mm"), "roi.radius_mm"))
+        if len(center) < 2:
+            raise ValueError("A tube requires at least two center_ijk nodes separated by semicolons")
+        if len(radius) != len(center):
+            raise ValueError("A tube requires one radius_mm value per center_ijk node")
+        if any(first == second for first, second in zip(center, center[1:])):
+            raise ValueError("Consecutive tube center_ijk nodes must be distinct")
+        largest_radius = max(radius)
     half_width = _float(read("roi", "crop_half_width_mm"), "roi.crop_half_width_mm", positive=True)
-    if half_width < radius:
-        raise ValueError("roi.crop_half_width_mm must be >= roi.radius_mm to contain the ROI")
+    if half_width < largest_radius:
+        raise ValueError("roi.crop_half_width_mm must be >= the largest roi.radius_mm to contain the ROI")
     slice_value = read("preview", "slice_ijk")
     result = {
         "study": {"schema_version": version,
@@ -157,7 +188,7 @@ def load_preview_config(path: Union[str, Path], *,
                   "catalog": _path(read("input", "catalog"), "input.catalog", root)},
         "selection": {"tissue": _name(read("selection", "tissue"), "selection.tissue", _TISSUE_NAME),
                       "source_ids": source_ids},
-        "roi": {"center_ijk": _indices(read("roi", "center_ijk"), "roi.center_ijk"),
+        "roi": {"shape": shape, "center_ijk": center,
                 "radius_mm": radius, "crop_half_width_mm": half_width,
                 "coordinate_reviewed": reviewed == "true"},
         "preview": {"slice_ijk": None if slice_value == "roi" else _indices(slice_value, "preview.slice_ijk"),

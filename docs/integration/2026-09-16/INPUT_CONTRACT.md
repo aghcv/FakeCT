@@ -2,12 +2,21 @@
 
 The executable preview authoring standard is now a commented **INI file**:
 [`configs/examples/xcat-roi.ini`](../../../configs/examples/xcat-roi.ini).
-Run it with `python3 scripts/preview_roi.py --config configs/examples/xcat-roi.ini`.
-See the [ROI guide](../../ROI_PREVIEWS.md) for overlays, 3D views and iteration.
+The newer [tube example](../../../configs/examples/xcat-roi-tube.ini) supports
+ordered center/radius lists with tissue-only selection. Run either with
+`python3 scripts/preview_roi.py --config PATH.ini` and open its `report.html`.
+See the [ROI guide](../../ROI_PREVIEWS.md) for integrated 2D/3D review and iteration.
 The INI uses one setting per line, short note references beside the parameters,
 and detailed numbered NOTES at the bottom. Its strict typed loader rejects
 unsupported keys. It covers current preview operations; the broader cohort
 operations below remain a design proposal.
+
+Preview schema `/2` supports `roi.shape = sphere | tube`; schema `/1` remains a
+legacy sphere input. Tube segments use physical distances and linearly
+interpolated centers/radii with round caps. `source_ids` can be blank: tissue
+membership supplies candidate voxels, and the ROI restricts the final selection.
+Reports retain original-ID and six-connected-component counts without treating
+either as definitive vessel identity. These selectors still perform no edits.
 
 Historical design example: [`configs/examples/xcat-cohort.v1.draft.json`](../../../configs/examples/xcat-cohort.v1.draft.json).
 The JSON file is a design proposal, **not an input accepted by the existing CLI**.

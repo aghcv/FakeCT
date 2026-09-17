@@ -100,6 +100,76 @@ class VolumePreviewTests(unittest.TestCase):
             self.assertIn('Selected: absent from crop', html)
             self.assertTrue(Path(result['png_path']).stat().st_size > 10_000)
 
+    def test_tube_overlay_uses_native_mask_and_physical_control_points(self):
+        source = np.zeros((7, 8, 9), dtype=np.int32)
+        source[:, 3, 4] = 123
+        source[:, 3, 6] = 124  # An adjacent artery remains outside the selected tube.
+        tissues = np.where(source != 0, 5, 0).astype(np.uint8)
+        roi = np.zeros(source.shape, dtype=bool)
+        roi[1:6, 2:5, 3:6] = True
+        selected = (tissues == 5) & roi
+        catalog = {'categories': [{'id': 0, 'name': 'background'}, {'id': 5, 'name': 'artery'}],
+                   'records': [{'original_id': 123, 'original_name': 'target artery'},
+                               {'original_id': 124, 'original_name': 'nearby artery'}]}
+        before = source.copy(), roi.copy()
+        with tempfile.TemporaryDirectory() as temporary:
+            result = render_volume_preview(source, tissues, catalog, selected,
+                      crop_origin_ijk=(10, 20, 30), spacing_ijk_mm=(1, 2, 3),
+                      roi_shape='tube', roi_mask=roi,
+                      roi_nodes_ijk=((14, 23, 31), (14, 23, 35)), roi_radii_mm=(2, 3),
+                      context_tissues=['artery'], volume_stride=3,
+                      volume_opacity=.25, context_opacity=.08, output_dir=temporary)
+            self.assertEqual(result['roi_shape'], 'tube')
+            self.assertEqual(result['roi_nodes_ijk'], [[14., 23., 31.], [14., 23., 35.]])
+            self.assertEqual(result['roi_radii_mm'], [2., 3.])
+            self.assertEqual(result['roi_native_voxels'], 45)
+            self.assertEqual(result['original_selected_labels'],
+                             [{'original_id': 123, 'original_name': 'target artery', 'voxel_count': 5}])
+            self.assertEqual(result['traces'][1]['source_voxels'], 9)
+            # Native voxel boundaries: independently calculated before pooling.
+            np.testing.assert_allclose(result['roi_surface_bounds_ijk_relative_mm'],
+                                       [[12.5, 15.5], [43., 49.], [91.5, 106.5]])
+            self.assertEqual(result['display_shape_kji'], [3, 3, 3])
+            html = Path(result['html_path']).read_text()
+            self.assertIn('Editable ROI tube', html)
+            self.assertIn('Ordered tube centerline', html)
+            self.assertNotIn('Editable ROI sphere', html)
+            self.assertIsNone(result['roi_center_ijk'])
+        np.testing.assert_array_equal(source, before[0])
+        np.testing.assert_array_equal(roi, before[1])
+
+    def test_tube_rejects_missing_or_sampled_mask_and_bad_nodes(self):
+        source = np.zeros((5, 5, 5), dtype=np.int32)
+        kwargs = dict(crop_origin_ijk=(0, 0, 0), spacing_ijk_mm=(1, 1, 1),
+                      roi_shape='tube', roi_mask=source == 0,
+                      roi_nodes_ijk=((2, 2, 1), (2, 2, 3)), roi_radii_mm=(1, 2),
+                      context_tissues=[], volume_stride=2, volume_opacity=.2, context_opacity=.1)
+        invalid = [{'roi_mask': None}, {'roi_mask': np.zeros((3, 3, 3), dtype=bool)},
+                   {'roi_mask': np.zeros(source.shape, dtype=np.uint8)},
+                   {'roi_nodes_ijk': ((2, 2, 1), (2, 2, 1))},
+                   {'roi_nodes_ijk': ((2, 2, 1),)}, {'roi_radii_mm': (1,)},
+                   {'roi_radii_mm': (1, float('inf'))}]
+        with tempfile.TemporaryDirectory() as temporary:
+            for override in invalid:
+                with self.subTest(override=override), self.assertRaises(ValueError):
+                    render_volume_preview(source, source, {'categories': [], 'records': []},
+                                          source == 1, output_dir=temporary, **(kwargs | override))
+
+    def test_subvoxel_tube_with_empty_native_mask_retains_centerline(self):
+        source = np.zeros((4, 4, 4), dtype=np.int32)
+        with tempfile.TemporaryDirectory() as temporary:
+            result = render_volume_preview(source, source, {'categories': [], 'records': []},
+                      source == 1, crop_origin_ijk=(0, 0, 0), spacing_ijk_mm=(1, 1, 1),
+                      roi_shape='tube', roi_mask=source == 1,
+                      roi_nodes_ijk=((1.5, 1.5, 1), (1.5, 1.5, 2)), roi_radii_mm=(.1, .1),
+                      context_tissues=[], volume_stride=2, volume_opacity=.25, context_opacity=.1,
+                      output_dir=temporary)
+            self.assertEqual(result['roi_native_voxels'], 0)
+            self.assertEqual(result['roi_surface_triangles'], 0)
+            self.assertIsNone(result['roi_surface_bounds_ijk_relative_mm'])
+            self.assertTrue(any('no voxel centers' in warning for warning in result['warnings']))
+            self.assertIn('Ordered tube centerline', Path(result['html_path']).read_text())
+
 
 if __name__ == '__main__':
     unittest.main()

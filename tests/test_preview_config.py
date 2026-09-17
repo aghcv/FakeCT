@@ -36,6 +36,7 @@ class PreviewConfigurationTests(unittest.TestCase):
         self.assertEqual(result["input"]["root"], Path("/home/aghorban/slurm/xcat"))
         self.assertEqual(result["selection"]["source_ids"], (1185,))
         self.assertEqual(result["roi"]["center_ijk"], (404, 363, 1584))
+        self.assertEqual(result["roi"]["shape"], "sphere")
         self.assertEqual(result["roi"]["radius_mm"], 12.0)
         self.assertIs(result["roi"]["coordinate_reviewed"], False)
         self.assertIsNone(result["preview"]["slice_ijk"])
@@ -122,6 +123,53 @@ class PreviewConfigurationTests(unittest.TestCase):
             match = re.search(r"# NOTE ([0-9]+):", line)
             self.assertIsNotNone(match, line)
             self.assertIn(match.group(1), notes)
+
+    def test_tube_example_preserves_order_radii_and_tissue_only_selection(self):
+        text = (ROOT / "configs/examples/xcat-roi-tube.ini").read_text()
+        result = self.load(text)
+        self.assertEqual(result["study"]["schema_version"], "fakect.preview/2")
+        self.assertEqual(result["selection"]["source_ids"], ())
+        self.assertEqual(result["roi"]["shape"], "tube")
+        self.assertEqual(result["roi"]["center_ijk"],
+                         ((404., 360., 1544.), (404., 363., 1584.), (401., 362., 1624.)))
+        self.assertEqual(result["roi"]["radius_mm"], (2.5, 2.5, 2.3))
+        self.assertEqual(result["preview"]["context_tissues"], ("artery", "bone", "vein"))
+        fractional = self.load(text, center_ijk="10.5, 20, 30 ; 9.25, 21, 28", radius_mm="1, 2")
+        self.assertEqual(fractional["roi"]["center_ijk"], ((10.5, 20., 30.), (9.25, 21., 28.)))
+        notes = set(re.findall(r"^# NOTE ([0-9]+) --", text, re.MULTILINE))
+        assignments = [line for line in text.splitlines() if line and not line.startswith(("#", "["))]
+        self.assertEqual(len(assignments), 21)
+        for line in assignments:
+            match = re.search(r"# NOTE ([0-9]+):", line)
+            self.assertIsNotNone(match, line)
+            self.assertIn(match.group(1), notes)
+
+    def test_v2_sphere_accepts_fractional_center_but_legacy_schema_rejects_shape(self):
+        text = self.template.replace("fakect.preview/1", "fakect.preview/2")
+        text = text.replace("[roi]\n", "[roi]\nshape = sphere\n")
+        result = self.load(text, center_ijk="404.25, 363.5, 1584")
+        self.assertEqual(result["roi"]["shape"], "sphere")
+        self.assertEqual(result["roi"]["center_ijk"], (404.25, 363.5, 1584.))
+        with self.assertRaises(ValueError):
+            self.load(text.replace("fakect.preview/2", "fakect.preview/1"))
+        with self.assertRaises(ValueError):
+            self.load(text.replace("shape = sphere\n", ""))
+
+    def test_tube_rejects_inconsistent_or_ambiguous_geometry(self):
+        text = (ROOT / "configs/examples/xcat-roi-tube.ini").read_text()
+        invalid = [("shape", "cylinder"), ("center_ijk", "1,2,3"),
+                   ("center_ijk", "1,2,3;1,2,3;4,5,6"),
+                   ("center_ijk", "1,2,3;;4,5,6"), ("center_ijk", "1,2,3;4,5,6;"),
+                   ("center_ijk", "1,2,3;4,5;7,8,9"),
+                   ("center_ijk", "1,2,3;-4,5,6;7,8,9"),
+                   ("center_ijk", "1,2,3;nan,5,6;7,8,9"),
+                   ("radius_mm", "4"), ("radius_mm", ""), ("radius_mm", "4,4,"),
+                   ("radius_mm", "4,0,3"), ("radius_mm", "4,-2,3"),
+                   ("radius_mm", "4,inf,3"), ("radius_mm", "4,nan,3"),
+                   ("crop_half_width_mm", "2.4")]
+        for key, value in invalid:
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                self.load(text, **{key: value})
 
 
 if __name__ == "__main__":

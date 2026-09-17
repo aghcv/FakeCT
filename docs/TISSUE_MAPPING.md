@@ -8,8 +8,9 @@ This implements the label-grouping part of M1; GUI integration and cohort editin
 remain later milestones.
 
 The [ROI preview workbench](ROI_PREVIEWS.md) now reads a commented INI file and
-produces full-resolution close-ups with transparent ROI overlays, neighboring
-z levels, and transparent interactive 3D views. The
+produces one standalone HTML report containing full-resolution ROI close-ups,
+neighboring z levels, transparent interactive 3D, selection tables and provenance.
+It supports tissue-only selection inside a sphere or variable-radius tube. The
 [DPI currency check](integration/2026-09-16/DPI_ATLAS_CURRENCY.md) confirms that the
 pinned source atlas matches the latest accessible local DPI source and v6 campaign.
 

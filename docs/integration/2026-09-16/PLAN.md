@@ -15,6 +15,9 @@ neighboring z levels and selected-label 3D volume/surface views. The
 [atlas currency check](DPI_ATLAS_CURRENCY.md) confirms the latest accessible DPI
 source and v6 campaign use the copied source classifications. This advances M1/M2;
 GUI roundtrip, before/after edits, reassignment and cohort execution remain pending.
+The subsequent tube/report extension adds tissue-only candidates, ordered
+variable-radius tube ROIs, final tissue–ROI intersection masks, component/ID
+diagnostics, and one portable HTML report with captured editable input.
 
 ## Baseline and reproducibility
 

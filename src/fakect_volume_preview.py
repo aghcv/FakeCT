@@ -93,14 +93,18 @@ def _box_coordinates(bounds):
 
 
 def render_volume_preview(original_labels, tissue_labels, catalog, selection_mask, *,
-                          crop_origin_ijk, spacing_ijk_mm, roi_center_ijk, roi_radius_mm,
+                          crop_origin_ijk, spacing_ijk_mm, roi_center_ijk=None, roi_radius_mm=None,
                           context_tissues, volume_stride, volume_opacity, context_opacity,
-                          output_dir):
+                          output_dir, roi_mask=None, roi_nodes_ijk=None, roi_radii_mm=None,
+                          roi_shape='sphere'):
     """Write self-contained HTML Volume rendering and a static surface PNG.
 
     ``context_tissues`` accepts category names or numeric IDs. The selected mask
     is excluded from contextual groups before pooling. Hover coordinates and all
     axes use native index * spacing, without asserting patient orientation.
+    Tube overlays use the full-resolution Boolean ``roi_mask`` supplied by the
+    ROI geometry engine; only anatomy display fields are max pooled. Ordered
+    ``roi_nodes_ijk`` and ``roi_radii_mm`` retain the editable tube definition.
     """
     import plotly.graph_objects as go
     original = np.asarray(original_labels)
@@ -117,13 +121,31 @@ def render_volume_preview(original_labels, tissue_labels, catalog, selection_mas
     for value, name in ((volume_opacity, 'volume_opacity'), (context_opacity, 'context_opacity')):
         if not np.isfinite(value) or not 0 <= value <= 1:
             raise ValueError(f'{name} must be in [0, 1]')
-    center = np.asarray(roi_center_ijk, dtype=float)
     origin = np.asarray(crop_origin_ijk, dtype=float)
     spacing = np.asarray(spacing_ijk_mm, dtype=float)
-    if center.shape != (3,) or not np.all(np.isfinite(center)):
-        raise ValueError('ROI center must have three finite index coordinates')
-    if not np.isfinite(roi_radius_mm) or roi_radius_mm <= 0:
-        raise ValueError('ROI radius must be finite and positive')
+    if roi_shape not in {'sphere', 'tube'}:
+        raise ValueError('roi_shape must be sphere or tube')
+    if roi_shape == 'sphere':
+        center = np.asarray(roi_center_ijk, dtype=float)
+        if center.shape != (3,) or not np.all(np.isfinite(center)):
+            raise ValueError('ROI center must have three finite index coordinates')
+        if roi_radius_mm is None or not np.isfinite(roi_radius_mm) or roi_radius_mm <= 0:
+            raise ValueError('ROI radius must be finite and positive')
+        nodes = center[None, :]
+        radii = np.asarray([roi_radius_mm], dtype=float)
+    else:
+        center = None
+        nodes = np.asarray(roi_nodes_ijk, dtype=float)
+        radii = np.asarray(roi_radii_mm, dtype=float)
+        if nodes.ndim != 2 or nodes.shape[1] != 3 or len(nodes) < 2 or not np.all(np.isfinite(nodes)):
+            raise ValueError('A tube requires at least two finite i, j, k control points')
+        if np.any(nodes < 0) or np.any(np.all(np.diff(nodes, axis=0) == 0, axis=1)):
+            raise ValueError('Tube nodes must be nonnegative and consecutive nodes must be distinct')
+        if radii.shape != (len(nodes),) or not np.all(np.isfinite(radii)) or np.any(radii <= 0):
+            raise ValueError('A tube requires one finite positive radius per control point')
+        roi_mask = np.asarray(roi_mask)
+        if roi_mask.dtype != np.bool_ or roi_mask.shape != original.shape:
+            raise ValueError('Tube roi_mask must be a Boolean array matching the native source crop')
     pooled, axes = occupancy_grid(selected, volume_stride, origin, spacing)
     if any(n < 2 for n in pooled.shape):
         raise ValueError('volume_stride leaves fewer than two blocks on an axis; reduce it')
@@ -192,11 +214,26 @@ def render_volume_preview(original_labels, tissue_labels, catalog, selection_mas
                       caps=dict(x_show=False, y_show=False, z_show=False),
                       hovertemplate='i-relative mm: %{x:.2f}<br>j-relative mm: %{y:.2f}'
                                     '<br>k-relative mm: %{z:.2f}<extra>%{fullData.name}</extra>'))
-    sphere_vertices, sphere_faces = _sphere(center * spacing, roi_radius_mm)
-    fig.add_trace(go.Mesh3d(x=sphere_vertices[:, 0], y=sphere_vertices[:, 1], z=sphere_vertices[:, 2],
-                  i=sphere_faces[:, 0], j=sphere_faces[:, 1], k=sphere_faces[:, 2],
-                  color=ROI_COLOR, opacity=.16, name='Editable ROI sphere', showlegend=True,
+    if roi_shape == 'sphere':
+        roi_vertices, roi_faces = _sphere(center * spacing, roi_radius_mm)
+    else:
+        native_roi, native_axes = occupancy_grid(roi_mask, 1, origin, spacing)
+        roi_vertices, roi_faces = _surface(native_roi, native_axes, bounds)
+        if not np.any(roi_mask):
+            warnings.append('The tube contains no voxel centers in this crop; review its radius and placement.')
+    roi_name = f'Editable ROI {roi_shape}'
+    fig.add_trace(go.Mesh3d(x=roi_vertices[:, 0], y=roi_vertices[:, 1], z=roi_vertices[:, 2],
+                  i=roi_faces[:, 0], j=roi_faces[:, 1], k=roi_faces[:, 2],
+                  color=ROI_COLOR, opacity=.16, name=roi_name, showlegend=True,
                   hoverinfo='name', flatshading=False))
+    if roi_shape == 'tube':
+        node_mm = nodes * spacing
+        fig.add_trace(go.Scatter3d(x=node_mm[:, 0], y=node_mm[:, 1], z=node_mm[:, 2],
+                      mode='lines+markers', line=dict(color=ROI_COLOR, width=5),
+                      marker=dict(color=ROI_COLOR, size=4), name='Ordered tube centerline',
+                      text=[f'Node {index + 1}: i,j,k={tuple(node)}; radius={radius:g} mm'
+                            for index, (node, radius) in enumerate(zip(nodes, radii))],
+                      hovertemplate='%{text}<extra></extra>'))
     bx, by, bz = _box_coordinates(bounds)
     fig.add_trace(go.Scatter3d(x=bx, y=by, z=bz, mode='lines', line=dict(color='#687783', width=2),
                              name='Crop boundary', showlegend=True, hoverinfo='skip'))
@@ -208,6 +245,8 @@ def render_volume_preview(original_labels, tissue_labels, catalog, selection_mas
     annotation = ('Binary occupancy volume; legend toggles individual labels. Drag to orbit; wheel to zoom.'
                   f'<br>Max-pool stride {volume_stride}: thin labels survive, but displayed support expands.'
                   '<br>Native relative mm; anatomical orientation is unverified. ROI is a planning overlay.')
+    if roi_shape == 'tube':
+        annotation += '<br>Tube boundary uses native voxel occupancy; orange nodes retain their input order.'
     if warnings:
         annotation += '<br>' + warnings[0]
     fig.update_layout(title=dict(text='Selected-label 3D volume preview', x=.02),
@@ -252,22 +291,27 @@ def render_volume_preview(original_labels, tissue_labels, catalog, selection_mas
             mesh = Poly3DCollection(vertices[faces], facecolor=field['color'], edgecolor='none',
                                     alpha=alpha, linewidth=0, rasterized=True)
             ax.add_collection3d(mesh)
-        roi_mesh = Poly3DCollection(sphere_vertices[sphere_faces], facecolor=ROI_COLOR,
-                                   edgecolor='none', alpha=.12, linewidth=0, rasterized=True)
-        ax.add_collection3d(roi_mesh)
-        # Great-circle outlines make the transparent ROI boundary visible even
-        # when a vessel crosses its front/back surface.
-        angle = np.linspace(0, 2 * np.pi, 97)
-        for fixed_axis in range(3):
-            circle = np.zeros((len(angle), 3))
-            varying_axes = [axis for axis in range(3) if axis != fixed_axis]
-            circle[:, varying_axes[0]] = roi_radius_mm * np.cos(angle)
-            circle[:, varying_axes[1]] = roi_radius_mm * np.sin(angle)
-            circle += center * spacing
-            ax.plot(*circle.T, color=ROI_COLOR, alpha=.55, linewidth=.8)
+        if len(roi_faces):
+            roi_mesh = Poly3DCollection(roi_vertices[roi_faces], facecolor=ROI_COLOR,
+                                       edgecolor='none', alpha=.12, linewidth=0, rasterized=True)
+            ax.add_collection3d(roi_mesh)
+        if roi_shape == 'sphere':
+            # Great-circle outlines keep the analytic sphere boundary legible.
+            angle = np.linspace(0, 2 * np.pi, 97)
+            for fixed_axis in range(3):
+                circle = np.zeros((len(angle), 3))
+                varying_axes = [axis for axis in range(3) if axis != fixed_axis]
+                circle[:, varying_axes[0]] = roi_radius_mm * np.cos(angle)
+                circle[:, varying_axes[1]] = roi_radius_mm * np.sin(angle)
+                circle += center * spacing
+                ax.plot(*circle.T, color=ROI_COLOR, alpha=.55, linewidth=.8)
+        else:
+            ax.plot(*(nodes * spacing).T, color=ROI_COLOR, alpha=.9, linewidth=1.5,
+                    marker='o', markersize=3)
         ax.plot(*(np.asarray(a, dtype=float) for a in (bx, by, bz)),
                 color='#687783', alpha=.65, linewidth=.6)
-        ax.scatter(*(center * spacing), color=ROI_COLOR, s=25, marker='+', depthshade=False)
+        if roi_shape == 'sphere':
+            ax.scatter(*(center * spacing), color=ROI_COLOR, s=25, marker='+', depthshade=False)
         ax.set(xlim=bounds[0], ylim=bounds[1], zlim=bounds[2], xlabel='i × spacing (relative mm)',
                ylabel='j × spacing (relative mm)', zlabel='k × spacing (relative mm)')
         ax.set_box_aspect(bounds[:, 1] - bounds[:, 0])
@@ -275,7 +319,7 @@ def render_volume_preview(original_labels, tissue_labels, catalog, selection_mas
         ax.set_title(panel_titles[panel], pad=22)
         handles = [Patch(color=f['color'], alpha=.8, label=f['name']) for f in fields
                    if panel == 1 or f['kind'] == 'selection']
-        handles.append(Patch(color=ROI_COLOR, alpha=.35, label='Editable ROI sphere'))
+        handles.append(Patch(color=ROI_COLOR, alpha=.35, label=roi_name))
         ax.legend(handles=handles, loc='upper left', bbox_to_anchor=(-.01, 1.02), fontsize=8)
     static.suptitle('Translucent surface rendering of the same crop\n'
                     'Static marching-cubes preview; interactive HTML uses occupancy Volume traces', fontsize=15, y=.97)
@@ -292,8 +336,19 @@ def render_volume_preview(original_labels, tissue_labels, catalog, selection_mas
                 'source_shape_kji': list(original.shape), 'display_shape_kji': list(pooled.shape),
                 'volume_render_shape_kji': [n + 2 for n in pooled.shape],
                 'crop_origin_ijk': origin.tolist(), 'spacing_ijk_mm': spacing.tolist(),
-                'crop_bounds_ijk_relative_mm': bounds.tolist(), 'roi_center_ijk': center.tolist(),
-                'roi_radius_mm': float(roi_radius_mm), 'volume_stride': int(volume_stride),
+                'crop_bounds_ijk_relative_mm': bounds.tolist(),
+                'roi_shape': roi_shape,
+                'roi_center_ijk': center.tolist() if center is not None else None,
+                'roi_radius_mm': float(roi_radius_mm) if roi_shape == 'sphere' else None,
+                'roi_nodes_ijk': nodes.tolist(), 'roi_radii_mm': radii.tolist(),
+                'roi_surface_triangles': len(roi_faces),
+                'roi_surface_bounds_ijk_relative_mm': (
+                    np.column_stack((roi_vertices.min(axis=0), roi_vertices.max(axis=0))).tolist()
+                    if len(roi_vertices) else None),
+                'roi_surface_sampling': ('analytic sphere' if roi_shape == 'sphere' else
+                                         'full native Boolean ROI mask; voxel-boundary marching cubes'),
+                'roi_native_voxels': int(np.count_nonzero(roi_mask)) if roi_shape == 'tube' else None,
+                'volume_stride': int(volume_stride),
                 'sampling': 'block maximum binary occupancy; occupied display blocks may enlarge anatomy',
                 'volume_boundary': 'one zero occupancy block around crop; .5 boundary intersects crop edge',
                 'coordinates': 'native index times spacing in mm; physical origin and orientation unverified',

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Edit one commented INI file, then render full-resolution ROI and 3D previews."""
+"""Edit one commented INI file, then generate a complete standalone ROI report."""
 import argparse
 from datetime import datetime, timezone
 import hashlib
@@ -13,7 +13,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from fakect_config import load_preview_config
-from fakect_roi import COLORS, digest, prepare_crop, resolve_preview
+from fakect_roi import COLORS, digest, prepare_crop, resolve_preview, selection_diagnostics
 
 
 def json_value(value):
@@ -32,13 +32,15 @@ def render_slices(arrays, resolved, config, output):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     from matplotlib.colors import ListedColormap, to_rgba
-    from matplotlib.patches import Ellipse, Patch
+    from matplotlib.patches import Patch
     from matplotlib.lines import Line2D
 
     low, high = resolved['crop_low_ijk'], resolved['crop_high_ijk_exclusive']
     spacing = resolved['spacing_ijk_mm']
-    center = config['roi']['center_ijk']
-    radius = config['roi']['radius_mm']
+    center = resolved['focus_ijk']
+    nodes = np.asarray(resolved['roi_nodes_ijk'], dtype=float)
+    radii = np.asarray(resolved['roi_radii_mm'], dtype=float)
+    roi_kind = resolved['roi_kind']
     catalog = resolved['catalog']
     lut = np.tile(to_rgba(COLORS['unknown']), (256, 1))
     for cat in catalog['categories']:
@@ -56,43 +58,52 @@ def render_slices(arrays, resolved, config, output):
         raw = arrays['attenuation_cm_inverse'] if row == 0 else arrays['tissue']
         image = np.take(raw, n, axis=2 - fixed_axis)
         selected = np.take(arrays['selected'], n, axis=2 - fixed_axis)
+        candidates = np.take(arrays['candidates'], n, axis=2 - fixed_axis)
         roi = np.take(arrays['roi'], n, axis=2 - fixed_axis)
         extent = (low[xaxis] - .5, high[xaxis] - .5, low[yaxis] - .5, high[yaxis] - .5)
         im = ax.imshow(image, origin='lower', extent=extent,
                        aspect=spacing[yaxis] / spacing[xaxis], interpolation='nearest',
                        cmap='gray' if row == 0 else tissue_cmap,
                        vmin=window[0] if row == 0 else 0, vmax=window[1] if row == 0 else 255)
+        if candidates.any() and not candidates.all():
+            ax.contour(np.arange(low[xaxis], high[xaxis]), np.arange(low[yaxis], high[yaxis]),
+                       candidates.astype(float), levels=[.5], colors=['#7ad8e0'], linewidths=.6,
+                       linestyles='dotted', alpha=.7)
         if selected.any() and not selected.all():
             ax.contour(np.arange(low[xaxis], high[xaxis]), np.arange(low[yaxis], high[yaxis]),
                        selected.astype(float), levels=[.5], colors=['#00ffff'], linewidths=1.2)
-        distance_mm = (fixed_value - center[fixed_axis]) * spacing[fixed_axis]
-        section_squared = radius ** 2 - distance_mm ** 2
-        if section_squared >= 0:
-            section_radius = np.sqrt(section_squared)
-            ellipse = dict(xy=(center[xaxis], center[yaxis]),
-                           width=2 * section_radius / spacing[xaxis], height=2 * section_radius / spacing[yaxis])
-            ax.add_patch(Ellipse(**ellipse, facecolor='#ff9800', edgecolor='none', alpha=config['preview']['overlay_opacity']))
-            ax.add_patch(Ellipse(**ellipse, facecolor='none', edgecolor='#ffb300', linewidth=1.5))
+        if roi.any():
+            overlay = np.zeros((*roi.shape, 4), dtype=float)
+            overlay[..., :3] = to_rgba('#ff9800')[:3]
+            overlay[..., 3] = roi * config['preview']['overlay_opacity']
+            ax.imshow(overlay, origin='lower', extent=extent, aspect=spacing[yaxis] / spacing[xaxis], interpolation='nearest')
+            if not roi.all():
+                ax.contour(np.arange(low[xaxis], high[xaxis]), np.arange(low[yaxis], high[yaxis]),
+                           roi.astype(float), levels=[.5], colors=['#ffb300'], linewidths=1.1)
         ax.axvline(center[xaxis], color='#ffb300', lw=.7, ls='--', alpha=.9)
         ax.axhline(center[yaxis], color='#ffb300', lw=.7, ls='--', alpha=.9)
         axis_names = 'ijk'
         ax.set(xlim=extent[:2], ylim=extent[2:], xlabel=f'{axis_names[xaxis]} (native voxel index)',
                ylabel=f'{axis_names[yaxis]} (native voxel index)',
                title=f'{name}: {axis_names[fixed_axis]}={fixed_value} ({fixed_value * spacing[fixed_axis]:g} relative mm)\n'
-                     f'Target: {int(selected.sum())} voxels; inside ROI: {int((selected & roi).sum())}')
+                     f'Tissue candidates: {int(candidates.sum())}; selected in ROI: {int(selected.sum())}')
         ax.secondary_xaxis('top', functions=(lambda v, s=spacing[xaxis]: v * s,
                                              lambda v, s=spacing[xaxis]: v / s)).set_xlabel('relative mm')
         if row == 0:
             selections.append({'view': name, 'fixed_axis': axis_names[fixed_axis], 'index': fixed_value,
                                'selected_voxels': int(selected.sum()), 'selected_in_roi_voxels': int((selected & roi).sum()),
-                               'roi_intersects_plane': bool(section_squared >= 0)})
+                               'candidate_voxels': int(candidates.sum()), 'roi_intersects_plane': bool(roi.any())})
         return im
 
-    legend = [Patch(facecolor='#ff9800', alpha=.3, edgecolor='#ffb300', label='ROI sphere intersection'),
-              Line2D([0], [0], color='#00ffff', label='selected original label boundary')]
+    legend = [Patch(facecolor='#ff9800', alpha=.3, edgecolor='#ffb300', label=f'{roi_kind} ROI voxel mask'),
+              Line2D([0], [0], color='#00ffff', label='selected tissue inside ROI'),
+              Line2D([0], [0], color='#7ad8e0', ls=':', label='tissue candidates in crop')]
     legend += [Patch(facecolor=COLORS.get(c['name'], '#999999'), edgecolor='#777777', label=c['name'].replace('_', ' ')) for c in catalog['categories']]
-    ids = ','.join(map(str, resolved['source_ids']))
-    target_title = f"{config['selection']['tissue']}; original IDs {ids if len(ids) < 70 else ids[:67] + '...'}"
+    ids = ','.join(map(str, config['selection']['source_ids']))
+    selector = f'original IDs {ids if len(ids) < 55 else ids[:52] + "..."}' if ids else 'all source IDs in group'
+    target_title = f"{config['selection']['tissue']}; {selector}; bounded by ROI"
+    roi_description = (f'Sphere center i,j,k={tuple(nodes[0])}; radius={radii[0]:g} mm' if roi_kind == 'sphere'
+                       else f'Tube: {len(nodes)} ordered center points; radii {radii.min():g}–{radii.max():g} mm; focus i,j,k={center}')
     source_hash = catalog['sources']['atlas']['sha256'][:12] if 'atlas' in catalog['sources'] else 'see provenance'
     fig, axes = plt.subplots(2, 3, figsize=(17, 12))
     fig.subplots_adjust(left=.07, right=.94, bottom=.16, top=.80, hspace=.55, wspace=.32)
@@ -102,39 +113,41 @@ def render_slices(arrays, resolved, config, output):
             if row == 0:
                 fig.colorbar(im, ax=axes[row, col], shrink=.55, pad=.025, label='1/cm')
     fig.suptitle(f"{config['study']['name']} | XCAT {config['input']['case_id']}, frame {config['input']['frame']} | {target_title}\n"
-                 f"ROI center i,j,k={center}; radius={radius:g} mm. Native crop, no resampling.\n"
+                 f"{roi_description}. Native crop, no resampling.\n"
                  f"Top: attenuation + ROI. Bottom: proposed tissue groups + ROI.\n"
                  f"FakeCT policy {catalog['policy_version']} | DPI source atlas SHA256 {source_hash}", y=.98, fontsize=14)
     fig.legend(handles=legend, loc='lower center', bbox_to_anchor=(.5, .045), ncol=5, frameon=False, fontsize=9)
-    fig.text(.5, .015, 'Move roi.center_ijk in the INI to relocate the sphere; change preview.slice_ijk to inspect other planes.\n'
+    fig.text(.5, .015, 'Edit roi.center_ijk and radius_mm to relocate or reshape the ROI; slice_ijk controls the displayed planes.\n'
              'Coordinates are native indices / relative mm; anatomical orientation remains unverified. Magenta labels require review.', ha='center', fontsize=10)
     fig.savefig(output / 'roi-closeups.png', dpi=160)
     plt.close(fig)
 
-    # Five neighboring axial planes within the ROI diameter, rounded to native centers.
-    offsets = np.rint(np.linspace(-radius, radius, 5) / spacing[2]).astype(int)
-    levels = sorted(set(int(np.clip(center[2] + v, low[2], high[2] - 1)) for v in offsets))
+    # Sample five axial planes over the physical ROI envelope, including caps.
+    first_k = np.min(nodes[:, 2] - radii / spacing[2])
+    last_k = np.max(nodes[:, 2] + radii / spacing[2])
+    levels = sorted(set(int(np.clip(round(v), low[2], high[2] - 1)) for v in np.linspace(first_k, last_k, 5)))
     fig, axes = plt.subplots(2, len(levels), figsize=(4.4 * len(levels), 10), squeeze=False)
     fig.subplots_adjust(left=.05, right=.98, bottom=.12, top=.80, wspace=.4, hspace=.5)
     for col, k in enumerate(levels):
         for row in range(2):
             panel(axes[row, col], 2, 0, 1, k, row, 'Axial')
-    fig.suptitle(f"ROI z-level close-ups | {target_title}\nOrange: true sphere cross-section; cyan: selected original IDs\n"
-                 f"Full-resolution native crop; center i,j,k={center}, radius={radius:g} mm. Top attenuation, bottom proposed groups.", y=.98, fontsize=14)
-    fig.text(.5, .045, 'The spherical overlay narrows away from its center; at the two tips its cross-section becomes a point.\n'
-             'Move center_ijk or radius_mm in the INI and use a new output directory to compare versions.', ha='center', fontsize=11)
+    fig.suptitle(f"ROI z-level close-ups | {target_title}\nOrange: native {roi_kind} ROI mask; cyan: final tissue selection\n"
+                 f"{roi_description}. Top attenuation, bottom proposed groups.", y=.98, fontsize=14)
+    fig.text(.5, .045, 'ROI sections are evaluated on the native grid using physical distances; these views apply no geometry edit.\n'
+             'Adjust ordered tube points/radii or sphere settings in the INI and compare a new report.', ha='center', fontsize=11)
     fig.savefig(output / 'roi-z-stack.png', dpi=150)
     plt.close(fig)
     return {'planes': selections, 'z_stack_k': levels, 'attenuation_window_cm_inverse': window}
 
 
 def run(config_path, validate_only=False):
+    config_path = Path(config_path).expanduser().resolve()
     config_bytes = Path(config_path).read_bytes()
     config = load_preview_config(config_path)
     if Path(config_path).read_bytes() != config_bytes:
         raise ValueError('INI changed while loading; rerun with the saved input')
     code_files = [Path(__file__), ROOT/'src/fakect_roi.py', ROOT/'src/fakect_config.py',
-                  ROOT/'src/fakect_volume_preview.py', ROOT/'src/fakect_tissues.py']
+                  ROOT/'src/fakect_volume_preview.py', ROOT/'src/fakect_tissues.py', ROOT/'src/fakect_preview_report.py']
     code_hashes = {str(p.relative_to(ROOT)): digest(p) for p in code_files}
     resolved = resolve_preview(config)
     output = config['output']['directory']
@@ -144,58 +157,78 @@ def run(config_path, validate_only=False):
         print(json.dumps(json_value({'status': 'metadata_valid; source voxel presence not checked',
                                      'crop_low_ijk': resolved['crop_low_ijk'],
                                      'crop_high_ijk_exclusive': resolved['crop_high_ijk_exclusive'],
-                                     'source_ids': resolved['source_ids'], 'slice_ijk': resolved['slice_ijk'],
+                                     'candidate_id_count': len(resolved['source_ids']),
+                                     'roi_shape': resolved['roi_kind'], 'roi_nodes_ijk': resolved['roi_nodes_ijk'],
+                                     'roi_radii_mm': resolved['roi_radii_mm'], 'slice_ijk': resolved['slice_ijk'],
                                      'output': output}), indent=2))
         return
     arrays, sources = prepare_crop(resolved, config)
+    selection = selection_diagnostics(arrays, resolved)
     output.mkdir(parents=True, exist_ok=True)
     print(f"Read native crop {arrays['act'].shape}; selected voxels={int(arrays['selected'].sum())}", flush=True)
     plot_stats = render_slices(arrays, resolved, config, output)
     from fakect_volume_preview import render_volume_preview
     volume_stats = render_volume_preview(arrays['act'], arrays['tissue'], resolved['catalog'], arrays['selected'],
         crop_origin_ijk=resolved['crop_low_ijk'], spacing_ijk_mm=resolved['spacing_ijk_mm'],
-        roi_center_ijk=config['roi']['center_ijk'], roi_radius_mm=config['roi']['radius_mm'],
+        roi_center_ijk=resolved['roi_nodes_ijk'][0], roi_radius_mm=resolved['roi_radii_mm'][0],
+        roi_shape=resolved['roi_kind'], roi_nodes_ijk=resolved['roi_nodes_ijk'],
+        roi_radii_mm=resolved['roi_radii_mm'], roi_mask=arrays['roi'],
         context_tissues=config['preview']['context_tissues'], volume_stride=config['preview']['volume_stride'],
         volume_opacity=config['preview']['volume_opacity'], context_opacity=config['preview']['context_opacity'], output_dir=output)
     unknown = next(c['id'] for c in resolved['catalog']['categories'] if c['name'] == 'unknown')
     missing = sorted(set(map(int, np.unique(arrays['act']))) - {r['original_id'] for r in resolved['catalog']['records']})
-    roi_clipped = any(config['roi']['center_ijk'][a] * resolved['spacing_ijk_mm'][a] - config['roi']['radius_mm'] < -.5 * resolved['spacing_ijk_mm'][a]
-                      or (config['roi']['center_ijk'][a] * resolved['spacing_ijk_mm'][a] + config['roi']['radius_mm'] >
-                          (resolved['shape_kji'][2-a] - .5) * resolved['spacing_ijk_mm'][a]) for a in range(3))
+    spacing = np.asarray(resolved['spacing_ijk_mm'])
+    nodes_mm = np.asarray(resolved['roi_nodes_ijk']) * spacing
+    radii = np.asarray(resolved['roi_radii_mm'])[:, None]
+    roi_clipped = bool(np.any(np.min(nodes_mm-radii, axis=0) < -.5*spacing) or
+                       np.any(np.max(nodes_mm+radii, axis=0) > (np.asarray(resolved['shape_kji'][::-1])-.5)*spacing))
     if any(digest(p) != code_hashes[str(p.relative_to(ROOT))] for p in code_files):
         raise ValueError('Preview source code changed during rendering; retain these partial outputs and rerun to a new directory')
-    report = {'schema_version': 'fakect.roi-preview/1', 'generated_at_utc': datetime.now(timezone.utc).isoformat(),
+    report = {'schema_version': 'fakect.roi-preview/2', 'generated_at_utc': datetime.now(timezone.utc).isoformat(),
               'preview_only': True, 'geometry_edited': False, 'config': json_value(config),
               'input_config_sha256': hashlib.sha256(config_bytes).hexdigest(), 'catalog_sha256': resolved['catalog_sha256'],
+              'policy_version': resolved['catalog']['policy_version'],
               'audit_sha256': resolved['audit_sha256'],
               'atlas_sources': resolved['catalog']['sources'], 'source_files': sources,
               'source_ids': list(resolved['source_ids']), 'source_names': resolved['source_names'],
+              'source_ids_semantics': 'Candidate dictionary IDs; final selected mask is candidate tissue AND ROI',
+              'selection': selection,
               'geometry': {'array_order': 'kji', 'source_shape_kji': resolved['shape_kji'],
                            'crop_origin_ijk': resolved['crop_low_ijk'], 'crop_high_ijk_exclusive': resolved['crop_high_ijk_exclusive'],
                            'crop_shape_kji': list(arrays['act'].shape), 'spacing_ijk_mm': resolved['spacing_ijk_mm'],
-                           'roi_center_ijk': config['roi']['center_ijk'], 'roi_radius_mm': config['roi']['radius_mm'],
+                           'roi_kind': resolved['roi_kind'], 'nodes_ijk': resolved['roi_nodes_ijk'],
+                           'radii_mm': resolved['roi_radii_mm'], 'focus_ijk': resolved['focus_ijk'],
+                           'roi_semantics': 'Sphere, or union of balls whose centers and radii interpolate linearly along each ordered segment; round caps',
                            'orientation': 'native array interpretation; anatomical orientation and physical origin unverified'},
               'roi_clipped_by_source_boundary': roi_clipped, 'crop_voxels': int(arrays['act'].size),
+              'candidate_voxels': int(arrays['candidates'].sum()),
               'selected_voxels': int(arrays['selected'].sum()), 'selected_in_roi_voxels': int((arrays['selected'] & arrays['roi']).sum()),
               'roi_voxels': int(arrays['roi'].sum()), 'unknown_group_voxels': int((arrays['tissue'] == unknown).sum()),
+              'unknown_group_voxels_in_roi': int(((arrays['tissue'] == unknown) & arrays['roi']).sum()),
               'missing_dictionary_ids': missing,
               'groups': {c['name']: int((arrays['tissue'] == c['id']).sum()) for c in resolved['catalog']['categories']},
               'slices': plot_stats, 'volume': volume_stats,
+              'html_report': {'path': 'report.html', 'self_contained': True},
               'code_sha256': code_hashes}
-    if not arrays['selected'].any():
-        report['selection_warning'] = 'Selected original IDs are absent from this crop; relocate the ROI. No geometry was edited.'
-    elif not (arrays['selected'] & arrays['roi']).any():
-        report['selection_warning'] = 'Selected IDs are present in the crop but outside the ROI sphere; relocate or resize the ROI.'
+    if not arrays['candidates'].any():
+        report['selection_warning'] = 'Tissue candidates are absent from this crop; relocate the ROI or change tissue selection.'
+    elif not arrays['selected'].any():
+        report['selection_warning'] = 'Tissue candidates are present in the crop but outside the ROI; relocate or resize the ROI.'
     np.savez_compressed(output / 'crop.npz', original_labels=arrays['act'], tissue_labels=arrays['tissue'],
-                        attenuation_per_pixel=arrays['atn'], selected_mask=arrays['selected'], roi_mask=arrays['roi'],
+                        attenuation_per_pixel=arrays['atn'], candidate_mask=arrays['candidates'],
+                        selected_mask=arrays['selected'], roi_mask=arrays['roi'],
                         geometry_json=np.array(json.dumps(json_value(report['geometry']))), catalog_sha256=np.array(report['catalog_sha256']),
                         catalog_json=np.array(resolved['catalog_bytes'].decode('utf-8')))
     (output / 'input.ini').write_bytes(config_bytes)
     (output / 'resolved-config.json').write_text(json.dumps(json_value(config), indent=2) + '\n')
     report['artifacts_sha256'] = {p.name: digest(p) for p in output.iterdir() if p.is_file()}
     (output / 'preview-report.json').write_text(json.dumps(json_value(report), indent=2, allow_nan=False) + '\n')
-    print(json.dumps({'output': str(output), 'selected_voxels': report['selected_voxels'],
-                      'selected_in_roi_voxels': report['selected_in_roi_voxels'],
+    from fakect_preview_report import write_preview_report
+    html = write_preview_report(output, json_value(report), config_bytes.decode('utf-8-sig'))
+    manifest = {p.name: digest(p) for p in output.iterdir() if p.is_file()}
+    (output / 'artifact-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    print(json.dumps({'report': html['path'], 'output': str(output), 'selected_voxels': report['selected_voxels'],
+                      'candidate_voxels': report['candidate_voxels'], 'connected_components': selection['component_count_6'],
                       'unknown_group_voxels': report['unknown_group_voxels'],
                       'warning': report.get('selection_warning')}, indent=2), flush=True)
 
