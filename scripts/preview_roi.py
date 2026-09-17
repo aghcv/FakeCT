@@ -140,15 +140,18 @@ def render_slices(arrays, resolved, config, output):
     return {'planes': selections, 'z_stack_k': levels, 'attenuation_window_cm_inverse': window}
 
 
-def run(config_path, validate_only=False):
+def run(config_path, validate_only=False, *, config_override=None, training_plan=None, extra_code_files=(), expected_input_bytes=None):
     config_path = Path(config_path).expanduser().resolve()
     config_bytes = Path(config_path).read_bytes()
-    config = load_preview_config(config_path)
+    if expected_input_bytes is not None and config_bytes != expected_input_bytes:
+        raise ValueError('Input changed before rendering; rerun from the saved file')
+    config = load_preview_config(config_path) if config_override is None else config_override
     if Path(config_path).read_bytes() != config_bytes:
         raise ValueError('INI changed while loading; rerun with the saved input')
     code_files = [Path(__file__), ROOT/'src/fakect_roi.py', ROOT/'src/fakect_config.py',
                   ROOT/'src/fakect_volume_preview.py', ROOT/'src/fakect_tissues.py', ROOT/'src/fakect_preview_report.py',
                   ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_edit_preview.py']
+    code_files += [Path(p) for p in extra_code_files]
     code_hashes = {str(p.relative_to(ROOT)): digest(p) for p in code_files}
     resolved = resolve_preview(config)
     edit_requested = config.get('edit', {}).get('operation', 'none') != 'none'
@@ -177,6 +180,9 @@ def run(config_path, validate_only=False):
     output.mkdir(parents=True, exist_ok=True)
     print(f"Read native crop {arrays['act'].shape}; selected voxels={int(arrays['selected'].sum())}", flush=True)
     plot_stats = render_slices(arrays, resolved, config, output)
+    if training_plan is not None:
+        from fakect_study_preview import render_training_target
+        target_stats = render_training_target(arrays, resolved, config, output)
     from fakect_volume_preview import render_volume_preview
     volume_stats = render_volume_preview(arrays['act'], arrays['tissue'], resolved['catalog'], arrays['selected'],
         crop_origin_ijk=resolved['crop_low_ijk'], spacing_ijk_mm=resolved['spacing_ijk_mm'],
@@ -234,6 +240,9 @@ def run(config_path, validate_only=False):
               'slices': plot_stats, 'volume': volume_stats,
               'html_report': {'path': 'report.html', 'self_contained': True},
               'code_sha256': code_hashes}
+    if training_plan is not None:
+        report['training_plan'] = {**training_plan, 'target_preview': target_stats}
+        report['rerun_command'] = 'python3 scripts/train_study.py --config /path/to/study.ini --stage preview'
     if edit_result is not None:
         report['edit'] = {**edit_result['summary'], 'figures': edit_figures, 'after_volume': after_volume,
                           'scope': 'Derived native crop only; source volumes preserved', 'array_artifact': 'edit.npz'}
@@ -266,6 +275,7 @@ def run(config_path, validate_only=False):
                       'unknown_group_voxels': report['unknown_group_voxels'],
                       'edit': report.get('edit', {}).get('counts'),
                       'warning': report.get('selection_warning')}, indent=2), flush=True)
+    return report
 
 
 def main():

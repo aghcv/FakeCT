@@ -3,9 +3,13 @@
 **First study:** thoracic aorta segmentation across synthetic aortic arch
 hypoplasia, coarctation-like narrowing, and combined geometries.  
 **Date:** 2026-09-17. **Development branch:** `fakect.26.09.16`.  
-**Status:** project proposal built on the working ROI/edit/report pipeline.
-The four-method interface, cohort builder and segmentation trainer described
-below are planned work; this document does not launch generation or training.
+**Status:** the first staged training-study prototype now supports aorta preview,
+parameter planning, paired-data preparation and a 2D segmentation trainer.
+Start with the [practical study guide](TRAINING_STUDIES.md) and
+[aorta INI](../configs/studies/thoracic-aorta.ini). The actual aorta input remains
+unreviewed: only its preview is generated; no aorta cohort or GPU training has
+been launched. The broader multi-anatomy benchmark, `[test]` and `[generate]`
+methods below remain planned work.
 
 ## 1. Objective and first research question
 
@@ -56,7 +60,7 @@ declared order. Preserve existing preview/edit inputs through versioned adapters
 | Sphere/tube ROIs, native slice views and portable HTML reports | Aorta-specific centerlines, vessel-normal area measurements and lesion-specific QA |
 | Bounded erosion/dilation, spatial Gaussian profiles, protected tissue rules and deterministic reassignment | Ordered multi-operation recipes, geometry calibration and cohort sweeps |
 | Original/edited crop labels, transition masks and a separate attenuation-copy proxy | Accepted image formation/reconstruction for training pairs and consistent volumetric export |
-| Confirmed Wahab TensorFlow 2.17 container launch pattern | A new attenuation-to-mask segmentation training/evaluation/inference path |
+| Staged paired-data prototype, 2D segmentation baseline and Wahab TensorFlow 2.17 launch wrapper | GPU validation, independent-anatomy evaluation and a production inference path |
 
 The existing `fakenoise.py` is a **mask-to-image reconstruction** experiment, not
 an image-to-mask segmentation trainer. Its audit also found train/validation
@@ -68,8 +72,14 @@ See the [training audit](integration/2026-09-16/TRAINING_AUDIT.md).
 ## 4. First case and anatomical definition
 
 Use **case 260602, frame 1 as the proposed engineering pilot**, since its source
-geometry and current crop workflow have already been exercised. This does not
-mean its thoracic aorta has been located or its aortic labels accepted yet.
+geometry and current crop workflow have already been exercised. Source label
+2922 (`dias_aorta`) is now located through native scans and corroborating
+dictionary/atlas/surface evidence; see the
+[localization record](integration/2026-09-17/aorta-localization.json).
+The provisional report covers an arch crop, with the complete defined target
+inside that crop shown separately from the edit tube. Target scope, landmarks
+and ROI still require anatomical review; generic artery contacts are not
+automatically included as aortic continuations.
 The available cases are 260602 and 260611–260621 under
 `/home/aghorban/slurm/xcat/`; use their `.par`/log metadata and matching non-averaged
 `act`/`atn` volumes. A later age-specific study may require a different seed case.
@@ -201,8 +211,8 @@ QA, storage/runtime measurement and a learning-curve study.
 
 ## 8. TensorFlow segmentation experiments on Wahab
 
-Implement a separate segmentation model registry and data loader. Proposed model
-sequence: simple threshold/region-growing baseline, 2D U-Net, 2.5D U-Net using
+Extend the initial 2D segmentation model and bounded loader into a model registry.
+Proposed comparison sequence: simple threshold/region-growing baseline, 2D U-Net, 2.5D U-Net using
 physical through-plane context, and a compact patch-based 3D U-Net when memory
 permits. TensorFlow provides a U-Net segmentation tutorial; the original 3D U-Net
 paper provides a volumetric architectural reference. These are starting points
@@ -217,10 +227,11 @@ evaluate full volumes so patch sampling does not inflate the reported performanc
 Apply spatial augmentation identically to image and label, with appropriate
 label interpolation, and specify context/patch dimensions in physical units.
 
-Reuse the confirmed `container_env tensorflow-gpu/2.17` and `crun -p ~/envs/fakect`
-environment pattern. Add a segmentation-specific entry point and SLURM launcher;
-the current fakenoise wrapper still runs a reconstruction model. First demonstrate
-one GPU batch, a tiny-set overfit, and save/reload prediction agreement. Record
+The segmentation entry point and SLURM wrapper now use the confirmed
+`container_env tensorflow-gpu/2.17` and `crun -p ~/envs/fakect` environment pattern;
+the separate fakenoise wrapper still runs a reconstruction model. The initial
+CPU synthetic-fixture fit/reload check is separate from demonstrating one GPU
+batch, a tiny-set overfit, and GPU save/reload prediction agreement. Record
 GPU placement, versions, host/GPU peak memory, throughput, seed and preprocessing.
 
 Use bounded loading, shuffle sample metadata before expanding volume patches,
@@ -290,20 +301,23 @@ Do not scale cohort generation before the image-pair and lineage checks pass.
 
 ## 12. Immediate next work package
 
-1. Locate and review the thoracic aorta in case 260602/frame 1; choose a different
-   case if its labels, resolution or intended age group are unsuitable.
-2. Save a dedicated aorta input and report, retaining fine anatomical identity.
+1. Review the located aorta and provisional ROI in case 260602/frame 1; choose a
+   different case if its labels, resolution or intended age group are unsuitable.
+2. Iterate the dedicated aorta INI/report and record the accepted anatomy/ROI,
+   retaining fine anatomical identity.
 3. Produce one control, one extended narrowing, one focal narrowing and one
    combined example; measure achieved geometry and review branch preservation.
 4. Export a small aligned image/binary-mask set with its image-fidelity label.
-5. Implement the segmentation-only TensorFlow smoke test and tiny-set overfit.
+5. Validate the segmentation baseline on Wahab after review, extending the CPU
+   synthetic-fixture fit/reload check to a small accepted set and GPU overfit.
 6. Audit all available phantom lineages and freeze the development/test allocation
    before the main virtual population is generated.
 
-Suggested future artifact locations are `configs/studies/thoracic-aorta/`,
-`data/synthetic/thoracic-aorta/v001/`, `outputs/studies/thoracic-aorta/`, and
-`models/thoracic-aorta/`. They are proposed locations, not datasets created by
-this outline. Keep large arrays/model weights outside ordinary Git tracking;
+The implemented study input is `configs/studies/thoracic-aorta.ini`; its preview,
+future prepared pairs and model outputs use separate versioned directories under
+`outputs/studies/thoracic-aorta/`. The initial aorta dataset/model directories are
+planned destinations, not generated cohorts or fitted models. Keep large
+arrays/model weights outside ordinary Git tracking;
 version the INIs, manifests, hashes and reports. Preserve the current dataset
 while the synthetic benchmark is developed.
 

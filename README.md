@@ -2,14 +2,17 @@
 > and [single HTML report guide](docs/ROI_PREVIEWS.md). Sphere inputs remain supported.
 > Apply bounded erosion/dilation through the [edit INI](configs/examples/xcat-edit.ini)
 > and [morphology workflow](docs/MORPHOLOGY.md), using the same command.
-> Next project: [thoracic-aorta segmentation and the four-method workflow](docs/THORACIC_AORTA_PROJECT.md).
+> Aorta study: [editable input](configs/studies/thoracic-aorta.ini) and
+> [preview → paired data → training guide](docs/TRAINING_STUDIES.md).
+> Broader project: [thoracic-aorta segmentation and the four-method workflow](docs/THORACIC_AORTA_PROJECT.md).
 > Tissue grouping: [DPI atlas workbench and usage](docs/TISSUE_MAPPING.md).
 
 > Integration branch `fakect.26.09.16`: start with
 > [the evaluation and milestone plan](docs/integration/2026-09-16/PLAN.md).
 > This branch assembles the existing phantom GUI, TensorFlow trainer, and XCAT
-> utilities. The unified cohort configuration is a **design draft**; the planned
-> headless cohort pipeline is not implemented yet.
+> utilities. A bounded, one-anatomy training-study prototype is available; its
+> aorta ROI is awaiting review. The broad unified cohort configuration remains a
+> **design draft**, and multi-anatomy benchmark/inference work is still planned.
 
 # FakeCT — Minimal synthetic CT / voxelization toolkit
 

@@ -1,0 +1,365 @@
+{
+  "schema_version": "fakect.aorta-study-evaluation/1",
+  "generated_at_utc": "2026-09-17T18:25:23.812745+00:00",
+  "input": "configs/studies/thoracic-aorta.ini",
+  "report": "outputs/studies/thoracic-aorta/preview-v1/report.html",
+  "report_sha256": "5b506b345c4807d2e9d1a3f6ee6c781077247f0dfe5dd1e8932c28057a6e5681",
+  "report_bytes": 17830996,
+  "input_config_sha256": "0140bd81cbb4e709f5d84e42df05ff45acedf58961a97e576ac61ae7e2a05d5f",
+  "geometry": {
+    "array_order": "kji",
+    "source_shape_kji": [
+      1860,
+      750,
+      750
+    ],
+    "crop_origin_ijk": [
+      351,
+      338,
+      1314
+    ],
+    "crop_high_ijk_exclusive": [
+      416,
+      442,
+      1434
+    ],
+    "crop_shape_kji": [
+      120,
+      104,
+      65
+    ],
+    "spacing_ijk_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "roi_kind": "tube",
+    "nodes_ijk": [
+      [
+        387.0,
+        360.0,
+        1352.0
+      ],
+      [
+        378.0,
+        365.0,
+        1363.0
+      ],
+      [
+        373.0,
+        362.0,
+        1374.0
+      ],
+      [
+        373.0,
+        363.0,
+        1389.0
+      ],
+      [
+        376.0,
+        366.0,
+        1402.0
+      ],
+      [
+        385.0,
+        375.0,
+        1410.0
+      ],
+      [
+        392.0,
+        386.0,
+        1411.0
+      ],
+      [
+        393.0,
+        398.0,
+        1405.0
+      ],
+      [
+        390.0,
+        408.0,
+        1394.0
+      ],
+      [
+        387.0,
+        414.0,
+        1383.0
+      ],
+      [
+        387.0,
+        419.0,
+        1370.0
+      ],
+      [
+        387.0,
+        419.0,
+        1356.0
+      ],
+      [
+        389.0,
+        419.0,
+        1341.0
+      ],
+      [
+        389.0,
+        419.0,
+        1336.0
+      ]
+    ],
+    "radii_mm": [
+      10.0,
+      10.0,
+      10.0,
+      12.0,
+      11.0,
+      10.0,
+      10.0,
+      13.0,
+      12.0,
+      11.0,
+      11.0,
+      11.0,
+      11.0,
+      11.0
+    ],
+    "focus_ijk": [
+      393,
+      398,
+      1405
+    ],
+    "roi_semantics": "Sphere, or union of balls whose centers and radii interpolate linearly along each ordered segment; round caps",
+    "orientation": "native array interpretation; anatomical orientation and physical origin unverified"
+  },
+  "target": {
+    "target_source_ids": [
+      2922
+    ],
+    "target_voxels_in_crop": 51688,
+    "target_voxels_in_roi": 44874,
+    "target_voxels_outside_roi": 6814,
+    "target_components_6": 2,
+    "target_definition": "Membership in specified original IDs over the entire exported crop, not intersected with edit ROI",
+    "scope": "Specified source IDs within this exported crop; no complete-anatomy coverage claim",
+    "coordinate_reviewed": false,
+    "image_units": "cm^-1",
+    "source_image_only": true
+  },
+  "selection": {
+    "candidate_voxels": 51688,
+    "roi_voxels": 71130,
+    "selected_voxels": 44874,
+    "selected_fraction_of_candidates": 0.8681705618325337,
+    "component_count_6": 2,
+    "components_voxels_6": [
+      44873,
+      1
+    ],
+    "selected_original_ids": [
+      2922
+    ],
+    "selected_original_id_counts": {
+      "2922": 44874
+    },
+    "warnings": [
+      "Selection contains 2 disconnected 6-connected components. Inspect nearby structures and narrow or relocate the ROI if needed; components do not necessarily represent distinct vessels."
+    ],
+    "selected_original_names": {
+      "2922": "dias_aorta"
+    }
+  },
+  "source_files": {
+    "act": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_act_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328260487208000,
+      "source_bytes_read": 270000000,
+      "crop_sha256": "8cffd93f745e52fe7e46744a3e4050a4ae614c811f21d004debb3392893da62c",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    },
+    "atn": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_atn_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328328749713000,
+      "source_bytes_read": 270000000,
+      "crop_sha256": "ce5afe46600b2536692c034050fd4caf6c03bd13f69d6cfb2c2006884a4e3829",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    }
+  },
+  "code_sha256": {
+    "scripts/preview_roi.py": "88bf916a0a62166a53dfbfc5315f526ad04accb36c6a828ef4f9ed78cc935235",
+    "src/fakect_roi.py": "004824837f687a837626d2fcc0f03a6f4b89e5129b4d38986693ad51764a8536",
+    "src/fakect_config.py": "ef41c069ce6d80feb1a57ebbe6d80ca540b9bdc4defecb4b9cce5f1c9fff023f",
+    "src/fakect_volume_preview.py": "63e8cabadcad4a26079684b9203b316bffbcca7669f2d463c0c79ae75c623f3e",
+    "src/fakect_tissues.py": "f6c72d335afa0624c5b4dfe005a38961ade505f8ce3a47d90e047a312cbcdc28",
+    "src/fakect_preview_report.py": "d73bd564b4f5835c98f690c432e9eb9c16eb8e627b201e4228d39024bb4fd53b",
+    "src/fakect_morphology.py": "3c86d3bc6440b85bca0d997c2952dc8bc852c822e05e0ba653fa57de16864505",
+    "src/fakect_edit_preview.py": "3d2b2c756cf8b1d30861b81ff89c5e7327d72ab8b5cef8117f0efc91eadb5b10",
+    "scripts/train_study.py": "8cd3c5bdbaaf464aeec499ecd801097cf49f101c7e7aa541e0ee550bea4be536",
+    "src/fakect_study_config.py": "c780dd4f543ae024cc6cdc8b891cd3a9c0b1afcdc6d29a96e29d004c9a40d18e",
+    "src/fakect_study_preview.py": "9143bf81511f49b45d9da0f6e05f615af0b47f6fad21f08aa0588005faa891df",
+    "src/fakect_training_data.py": "5eafd67026893c252b5e79d5613facd909847085c0b3f1494cb1aa4cea4518e6",
+    "src/fakect_segmentation.py": "7d1509e330cc56d49415cbbe8187a44f5300a8195863ef7fe1b510dc556f4eb1"
+  },
+  "planned_variants": [
+    {
+      "case_id": "260602",
+      "frame": 1,
+      "anatomy_family": "xcat_260602_unverified_family",
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_window": [
+        0.25,
+        0.75
+      ],
+      "variant_id": "baseline",
+      "operation": "none",
+      "distance_mm": 0.0,
+      "shape_k": 10.0,
+      "split": "train"
+    },
+    {
+      "case_id": "260602",
+      "frame": 1,
+      "anatomy_family": "xcat_260602_unverified_family",
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_window": [
+        0.25,
+        0.75
+      ],
+      "operation": "dilation",
+      "distance_mm": 0.5,
+      "shape_k": 10.0,
+      "variant_id": "dilation-3c9f71d9f79ae625",
+      "split": "train"
+    },
+    {
+      "case_id": "260602",
+      "frame": 1,
+      "anatomy_family": "xcat_260602_unverified_family",
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_window": [
+        0.25,
+        0.75
+      ],
+      "operation": "dilation",
+      "distance_mm": 1.0,
+      "shape_k": 10.0,
+      "variant_id": "dilation-20bcaab4901f1e1b",
+      "split": "test"
+    },
+    {
+      "case_id": "260602",
+      "frame": 1,
+      "anatomy_family": "xcat_260602_unverified_family",
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_window": [
+        0.25,
+        0.75
+      ],
+      "operation": "dilation",
+      "distance_mm": 1.5,
+      "shape_k": 10.0,
+      "variant_id": "dilation-4c7f2219046f5a73",
+      "split": "train"
+    },
+    {
+      "case_id": "260602",
+      "frame": 1,
+      "anatomy_family": "xcat_260602_unverified_family",
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_window": [
+        0.25,
+        0.75
+      ],
+      "operation": "dilation",
+      "distance_mm": 2.0,
+      "shape_k": 10.0,
+      "variant_id": "dilation-70c112882670d150",
+      "split": "validation"
+    },
+    {
+      "case_id": "260602",
+      "frame": 1,
+      "anatomy_family": "xcat_260602_unverified_family",
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_window": [
+        0.25,
+        0.75
+      ],
+      "operation": "erosion",
+      "distance_mm": 0.5,
+      "shape_k": 10.0,
+      "variant_id": "erosion-c48fbdfe3151ddfa",
+      "split": "train"
+    },
+    {
+      "case_id": "260602",
+      "frame": 1,
+      "anatomy_family": "xcat_260602_unverified_family",
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_window": [
+        0.25,
+        0.75
+      ],
+      "operation": "erosion",
+      "distance_mm": 1.0,
+      "shape_k": 10.0,
+      "variant_id": "erosion-1ba246dd2210418c",
+      "split": "train"
+    },
+    {
+      "case_id": "260602",
+      "frame": 1,
+      "anatomy_family": "xcat_260602_unverified_family",
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_window": [
+        0.25,
+        0.75
+      ],
+      "operation": "erosion",
+      "distance_mm": 1.5,
+      "shape_k": 10.0,
+      "variant_id": "erosion-6c0fe5b8658e9fac",
+      "split": "train"
+    },
+    {
+      "case_id": "260602",
+      "frame": 1,
+      "anatomy_family": "xcat_260602_unverified_family",
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_window": [
+        0.25,
+        0.75
+      ],
+      "operation": "erosion",
+      "distance_mm": 2.0,
+      "shape_k": 10.0,
+      "variant_id": "erosion-86a0e4c3a43a34cf",
+      "split": "train"
+    }
+  ],
+  "planned_split_counts": {
+    "train": 7,
+    "test": 1,
+    "validation": 1
+  },
+  "unknown_group_voxels": 270675,
+  "unknown_group_voxels_in_roi": 4142,
+  "artifact_count": 11,
+  "all_artifact_and_code_hashes_verified": true,
+  "source_size_mtime_unchanged": true,
+  "source_volumes_modified": false,
+  "real_aorta_dataset_prepared": false,
+  "real_aorta_model_fitted": false,
+  "embedded_png_count": 4,
+  "embedded_interactive_frame_count": 1,
+  "browser_webgl_execution_tested": false
+}

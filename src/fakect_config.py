@@ -129,6 +129,12 @@ def load_preview_config(path: Union[str, Path], *,
             parser.read_file(handle)
     except configparser.Error as error:
         raise ValueError(f"Invalid preview input {path}: {error}") from error
+    return parse_preview_sections(parser, root)
+
+
+def parse_preview_sections(parser, root=REPOSITORY_ROOT):
+    """Validate already-read workbench sections; shared by the study INI loader."""
+    root = Path(root).expanduser().resolve()
     if parser.defaults():
         raise ValueError("[DEFAULT] settings are unsupported; put each key in its named section")
     actual_sections = set(parser.sections())
