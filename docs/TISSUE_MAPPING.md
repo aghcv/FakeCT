@@ -7,6 +7,12 @@ policy, and profiles attenuation from the previously collected paired XCAT sampl
 This implements the label-grouping part of M1; GUI integration and cohort editing
 remain later milestones.
 
+The [ROI preview workbench](ROI_PREVIEWS.md) now reads a commented INI file and
+produces full-resolution close-ups with transparent ROI overlays, neighboring
+z levels, and transparent interactive 3D views. The
+[DPI currency check](integration/2026-09-16/DPI_ATLAS_CURRENCY.md) confirms that the
+pinned source atlas matches the latest accessible local DPI source and v6 campaign.
+
 ## Keep anatomy and material separate
 
 The source atlas is useful, but a surface's anatomical boundary does not always name

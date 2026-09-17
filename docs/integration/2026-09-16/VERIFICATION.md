@@ -89,3 +89,14 @@ contiguous axial planes per channel (1,111,500,000 requested bytes in total),
 materializing only the selected views and histogram samples. The full-resolution
 axial image and decimated orthogonal images are for preview, not full-volume
 validation or proof of anatomical orientation.
+
+## ROI and 3D follow-up
+
+The [ROI preview evaluation](ROI_PREVIEW_EVALUATION.md) records 43 passing tests,
+a native 81³ signed-label/scalar crop, transparent sphere intersections and
+selected-label 3D artifacts. Exact crop hashes, center-voxel alignment, 482
+selected voxels within the ROI, the complete catalog snapshot and config/code
+provenance were checked. Empty selection and zero opacity remain valid discovery
+states. PNGs were visually inspected; standalone interactive HTML structure was
+checked, but browser/WebGL interaction was not automated. Current DPI source and
+v6 campaign hashes match the reference copies. Source data and DPI were not edited.

@@ -1,15 +1,25 @@
-# Proposed terminal input contract (draft, not executable yet)
+# Terminal input contract and remaining cohort design
 
-Example: [`configs/examples/xcat-cohort.v1.draft.json`](../../../configs/examples/xcat-cohort.v1.draft.json).
+The executable preview authoring standard is now a commented **INI file**:
+[`configs/examples/xcat-roi.ini`](../../../configs/examples/xcat-roi.ini).
+Run it with `python3 scripts/preview_roi.py --config configs/examples/xcat-roi.ini`.
+See the [ROI guide](../../ROI_PREVIEWS.md) for overlays, 3D views and iteration.
+The INI uses one setting per line, short note references beside the parameters,
+and detailed numbered NOTES at the bottom. Its strict typed loader rejects
+unsupported keys. It covers current preview operations; the broader cohort
+operations below remain a design proposal.
+
+Historical design example: [`configs/examples/xcat-cohort.v1.draft.json`](../../../configs/examples/xcat-cohort.v1.draft.json).
 The JSON file is a design proposal, **not an input accepted by the existing CLI**.
 Null ROI coordinates, unreviewed orientation, and empty donor/recipient lists are
 intentional: preprocessing can run, but geometry changes must fail validation until
 these are resolved. The example left carotid ID comes from the supplied organ table; its
 presence and position must be checked for the chosen case/frame.
 
-Use one versioned JSON document as the canonical representation; YAML can later be
-an optional authoring format that resolves to exactly the same JSON. M1 will add a
-strict JSON Schema, typed loader, and CLI validation. Reject unknown keys, ambiguous
+Use the versioned INI document for human authoring and generated JSON for the
+resolved machine representation and provenance. The preview loader implements
+typed validation; the planned cohort schema still needs to cover generation,
+reassignment and sweeps. Reject unknown keys, ambiguous
 units, contradictory selectors, overlapping tissue bins, absent target IDs, and
 unresolved source geometry. Absent target IDs block apply/run; discovery previews
 must remain available so the user can select another label. Do not silently supply
@@ -20,12 +30,12 @@ anatomy or ROI choices.
 These are **planned interfaces**, not runnable commands on this baseline:
 
 ```text
-fakect validate --config run.json
-fakect preprocess --config run.json
-fakect preview --config run.json
+fakect validate --config run.ini
+fakect preprocess --config run.ini
+fakect preview --config run.ini
 # edit bins, target label IDs, slice locations, ROI, donor/recipient rules; repeat
-fakect apply --config run.json --reviewed-config-hash HASH
-fakect plan --config run.json --out manifest.jsonl
+fakect apply --config run.ini --reviewed-config-hash HASH
+fakect plan --config run.ini --out manifest.jsonl
 fakect run --manifest manifest.jsonl --task-index N
 fakect export-training --manifest accepted.jsonl
 ```

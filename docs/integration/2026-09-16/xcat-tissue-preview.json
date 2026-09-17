@@ -1,6 +1,6 @@
 {
   "schema_version": "fakect.tissue-preview.v1",
-  "generated_at_utc": "2026-09-16T20:57:43.859578+00:00",
+  "generated_at_utc": "2026-09-17T00:18:58.715796+00:00",
   "case_id": "260602",
   "frame": 1,
   "crosshair_kji": [
@@ -45,10 +45,25 @@
     8
   ],
   "attenuation_conversion": "atn per-pixel divided by pixel_width_cm; not HU",
+  "tissue_policy_version": "1.0.0-proposed",
+  "classification_sources": {
+    "atlas": {
+      "path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/dpi/anatomy_atlas.csv",
+      "sha256": "59268c0e15f787a19938ff66c195e7845b6ba2780fcefe757ddc42575c7e64a1"
+    },
+    "hierarchy": {
+      "path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/dpi/xcat_anatomy_hierarchy.yml",
+      "sha256": "6013555161631a65158e27318de1b6260539539f1f40d1317a9793700d1ca888"
+    },
+    "policy": {
+      "path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/tissues/tissue-policy.v1.json",
+      "sha256": "98eb67c48460b09750b46bec36c73a1a5ff0482b4e0d908c8b851827960eca8c"
+    }
+  },
   "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
   "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
-  "script_sha256": "7cadaf126806a32372373ed4c3643a3018306b9612159a4573338c19593176ff",
-  "figure_sha256": "5ca115cb1eec7e4ff7cb3ec43a2a8e8bf9633676df5a97dafec7259983c9f55c",
+  "script_sha256": "8aa12227da0a74f5f36c9aa768743ee38c949aac405d7b2c7a6c389c87fe13c0",
+  "figure_sha256": "64557b666bce13b5784cc1d43e24453c1651ef755a593a3a3b696e6bf6ca5fd0",
   "sources": [
     {
       "path": "/home/aghorban/slurm/xcat/260602/260602_atn_1.bin",

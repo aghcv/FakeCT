@@ -31,6 +31,15 @@
       "sha256": "6013555161631a65158e27318de1b6260539539f1f40d1317a9793700d1ca888",
       "bytes": 31720,
       "differs_from_dpi_head": false
+    },
+    {
+      "source_path": "/home/aghorban/repo/dpi/config/atlas/vascular_routing_atlas_v1.csv",
+      "snapshot": "references/atlas/dpi/vascular_routing_atlas_v1.csv",
+      "sha256": "b13687d85a3e37a534ec9621d72f1d4b9e0532982c6d2f522bafd402b963eb4c",
+      "bytes": 7710,
+      "differs_from_dpi_head": false,
+      "purpose": "Reference-only downstream vascular circuit routing atlas; not used to assign FakeCT tissue groups."
     }
-  ]
+  ],
+  "currency_audit": "references/atlas/dpi/CURRENCY.json"
 }

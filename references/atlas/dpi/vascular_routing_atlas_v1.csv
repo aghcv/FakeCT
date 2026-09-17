@@ -1,0 +1,48 @@
+routing_schema,routing_version,priority,rule_id,record_type,match_field,match_operator,match_value,left_allowed,right_allowed,territory,description
+dpi.vascular_routing_atlas.v1,1.0.0,2200,exclude_myocardium,circuit_rule,BlockName,contains,myocardium,false,false,,Exclude myocardial surfaces from blood-path routing
+dpi.vascular_routing_atlas.v1,1.0.0,2200,exclude_papillary,circuit_rule,BlockName,contains,papillary,false,false,,Exclude papillary muscles from blood-path routing
+dpi.vascular_routing_atlas.v1,1.0.0,2200,exclude_muscle,circuit_rule,BlockName,contains,muscle,false,false,,Exclude other explicit muscle surfaces from blood-path routing
+dpi.vascular_routing_atlas.v1,1.0.0,2000,left_ventricle,circuit_rule,ModelRole,prefix,cardiovascular.heart.left_ventricle,true,false,,Left ventricular delivery circuit
+dpi.vascular_routing_atlas.v1,1.0.0,2000,left_atrium,circuit_rule,ModelRole,prefix,cardiovascular.heart.left_atrium,true,false,,Left atrial delivery circuit
+dpi.vascular_routing_atlas.v1,1.0.0,2000,right_ventricle,circuit_rule,ModelRole,prefix,cardiovascular.heart.right_ventricle,false,true,,Right ventricular return circuit
+dpi.vascular_routing_atlas.v1,1.0.0,2000,right_atrium,circuit_rule,ModelRole,prefix,cardiovascular.heart.right_atrium,false,true,,Right atrial return circuit
+dpi.vascular_routing_atlas.v1,1.0.0,1950,pulmonary_central_artery,circuit_rule,ModelRole,prefix,cardiovascular.pulmonary.central_artery,false,true,,Pulmonary trunk belongs to right circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1940,pulmonary_peripheral_arteries,circuit_rule,ModelRole,prefix,cardiovascular.pulmonary.arteries,false,true,,Pulmonary arteries belong to right circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1940,pulmonary_veins,circuit_rule,ModelRole,prefix,cardiovascular.pulmonary.veins,true,false,,Pulmonary veins belong to left circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1900,systemic_aorta,circuit_rule,ModelRole,prefix,cardiovascular.systemic.aorta,true,false,,Aorta belongs to left delivery circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1890,systemic_arteries,circuit_rule,ModelRole,prefix,cardiovascular.systemic.arteries,true,false,,Systemic arteries belong to left delivery circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1890,cerebrovascular_arteries,circuit_rule,ModelRole,prefix,cardiovascular.cerebrovascular.arteries,true,false,,Cerebral arteries belong to left delivery circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1890,coronary_arteries,circuit_rule,ModelRole,prefix,cardiovascular.coronary.arteries,true,false,,Coronary arteries belong to left delivery circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1900,superior_vena_cava,circuit_rule,ModelRole,prefix,cardiovascular.systemic.superior_vena_cava,false,true,,SVC belongs to right return circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1900,inferior_vena_cava,circuit_rule,ModelRole,prefix,cardiovascular.systemic.inferior_vena_cava,false,true,,IVC belongs to right return circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1890,systemic_veins,circuit_rule,ModelRole,prefix,cardiovascular.systemic.veins,false,true,,Systemic veins belong to right return circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1890,cerebrovascular_veins,circuit_rule,ModelRole,prefix,cardiovascular.cerebrovascular.veins,false,true,,Cerebral veins belong to right return circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1890,coronary_veins,circuit_rule,ModelRole,prefix,cardiovascular.coronary.veins,false,true,,Coronary veins belong to right return circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1890,portal_hepatic_veins,circuit_rule,ModelRole,prefix,cardiovascular.portal_hepatic.veins,false,true,,Portal and hepatic veins belong to right return circulation
+dpi.vascular_routing_atlas.v1,1.0.0,100,great_vessels,circuit_rule,ModelRole,prefix,cardiovascular.great_vessels,true,true,,Unresolved great vessels remain visible in both candidate circuits
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_lower_femoral,territory_rule,BlockName,contains,femoral,,,lower_extremity,Femoral territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_lower_popliteal,territory_rule,BlockName,contains,popliteal,,,lower_extremity,Popliteal territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_lower_tibial,territory_rule,BlockName,contains,tibial,,,lower_extremity,Tibial territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_lower_peroneal,territory_rule,BlockName,contains,peroneal,,,lower_extremity,Peroneal territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_lower_plantar,territory_rule,BlockName,contains,plantar,,,lower_extremity,Plantar territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_lower_iliac,territory_rule,BlockName,contains,iliac,,,lower_extremity,Iliac territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_upper_subclavian,territory_rule,BlockName,contains,subclavian,,,upper_extremity,Subclavian territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_upper_axillary,territory_rule,BlockName,contains,axillary,,,upper_extremity,Axillary territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_upper_brachial,territory_rule,BlockName,contains,brachial,,,upper_extremity,Brachial territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_upper_radial,territory_rule,BlockName,contains,radial,,,upper_extremity,Radial territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_upper_ulnar,territory_rule,BlockName,contains,ulnar,,,upper_extremity,Ulnar territory
+dpi.vascular_routing_atlas.v1,1.0.0,2100,territory_upper_palmar,territory_rule,BlockName,contains,palmar,,,upper_extremity,Palmar territory
+dpi.vascular_routing_atlas.v1,1.0.0,2000,territory_lung,territory_rule,ModelRole,prefix,cardiovascular.pulmonary.,,,lung,Pulmonary circulation
+dpi.vascular_routing_atlas.v1,1.0.0,2000,territory_head,territory_rule,ModelRole,prefix,cardiovascular.cerebrovascular.,,,head,Cerebrovascular circulation
+dpi.vascular_routing_atlas.v1,1.0.0,2000,territory_heart_coronary,territory_rule,ModelRole,prefix,cardiovascular.coronary.,,,heart,Coronary circulation
+dpi.vascular_routing_atlas.v1,1.0.0,2000,territory_heart_chambers,territory_rule,ModelRole,prefix,cardiovascular.heart.,,,heart,Cardiac chambers
+dpi.vascular_routing_atlas.v1,1.0.0,2000,territory_abdomen_portal,territory_rule,ModelRole,prefix,cardiovascular.portal_hepatic.,,,abdomen,Portal and hepatic circulation
+dpi.vascular_routing_atlas.v1,1.0.0,1900,territory_abdomen_renal,territory_rule,BlockName,contains,renal,,,abdomen,Renal territory
+dpi.vascular_routing_atlas.v1,1.0.0,1900,territory_abdomen_mesenteric,territory_rule,BlockName,contains,mesenteric,,,abdomen,Mesenteric territory
+dpi.vascular_routing_atlas.v1,1.0.0,1900,territory_abdomen_hepatic,territory_rule,BlockName,contains,hepatic,,,abdomen,Hepatic territory
+dpi.vascular_routing_atlas.v1,1.0.0,1900,territory_abdomen_splenic,territory_rule,BlockName,contains,splenic,,,abdomen,Splenic territory
+dpi.vascular_routing_atlas.v1,1.0.0,1900,territory_abdomen_celiac,territory_rule,BlockName,contains,celiac,,,abdomen,Celiac territory
+dpi.vascular_routing_atlas.v1,1.0.0,1000,territory_aorta,territory_rule,ModelRole,prefix,cardiovascular.systemic.aorta,,,central,Aortic trunk
+dpi.vascular_routing_atlas.v1,1.0.0,1000,territory_svc,territory_rule,ModelRole,prefix,cardiovascular.systemic.superior_vena_cava,,,central,Central venous trunk
+dpi.vascular_routing_atlas.v1,1.0.0,1000,territory_ivc,territory_rule,ModelRole,prefix,cardiovascular.systemic.inferior_vena_cava,,,central,Central venous trunk
+dpi.vascular_routing_atlas.v1,1.0.0,10,territory_systemic,territory_rule,ModelRole,prefix,cardiovascular.systemic.,,,systemic,Unresolved systemic territory

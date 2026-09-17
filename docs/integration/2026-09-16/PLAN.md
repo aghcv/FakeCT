@@ -9,6 +9,13 @@ Worktree: `/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16`.
 The local branch has no remote upstream yet.
 No training job, XCAT generation job or SLURM submission was started.
 
+The [ROI preview follow-up](../../ROI_PREVIEWS.md) now implements a strict,
+commented INI input, bounded native XCAT crop reads, transparent sphere overlays,
+neighboring z levels and selected-label 3D volume/surface views. The
+[atlas currency check](DPI_ATLAS_CURRENCY.md) confirms the latest accessible DPI
+source and v6 campaign use the copied source classifications. This advances M1/M2;
+GUI roundtrip, before/after edits, reassignment and cohort execution remain pending.
+
 ## Baseline and reproducibility
 
 - Base: `origin/phantom` at `c6a5c2c9c47ebcbee116c8ade18269eef4ac09ff`.
@@ -100,7 +107,7 @@ historical baselines, not evidence of accurate multi-label or HU recovery.
 | Milestone | Deliverable | Required evidence to finish |
 |---|---|---|
 | **M0 — Integration baseline (this change)** | Versioned source provenance, existing GUI/trainer/XCAT tools together, launcher references, reproducible bounded audits, draft input contract and preview | CLI/import and VTI smoke checks pass; original data/checkouts preserved; observed defects recorded rather than hidden |
-| **M1 — Volume and configuration foundation** | Strict versioned JSON schema and validator; common volume record; XCAT act/atn/.par/log adapter; VTI and mesh adapters; signed labels, units, transforms, category mapping | All 12 case headers and file sizes validate; matched frame geometry; crop read/write roundtrip; negative IDs preserved; nonfinite/unknown labels rejected; orientation landmarks and unknown-ID mapping reviewed; no full-volume allocation for metadata/preview |
+| **M1 — Volume and configuration foundation** | Commented INI authoring with strict typed validation and resolved JSON provenance; common volume record; XCAT act/atn/.par/log adapter; VTI and mesh adapters; signed labels, units, transforms, category mapping | All 12 case headers and file sizes validate; matched frame geometry; crop read/write roundtrip; negative IDs preserved; nonfinite/unknown labels rejected for production edits; orientation landmarks and unknown-ID mapping reviewed; no full-volume allocation for metadata/preview |
 | **M2 — Iterative preprocessing and preview** | `validate → preprocess → preview`; cached histograms/category tables; axial/coronal/sagittal slices with native i/j/k and relative mm; editable ROI/config; before/after/difference preview; GUI config import/export | ROI roundtrip between preview, GUI and config selects identical native voxels; decimation never shifts saved coordinates; missing target still permits discovery preview; config changes invalidate review hashes |
 | **M3 — Bounded 3D morphology and reassignment** | Shared pure geometry engine; physical ROI/profile semantics; n-D donor rules; 3D recipient policy with explicit allowed/protected IDs, barriers and unresolved handling | Identity exact; no outside-domain/protected changes; single label per voxel; signed IDs safe; borrowed/released and transition counts balance; deterministic output; anisotropic and crop/full equivalence; achieved geometry monotonic or unmet targets rejected/reported |
 | **M4 — Scalar reconstruction and one-case acceptance** | Deterministic scalar/material reassignment first; preserve original/scalar/labels/change mask separately; optional AI interface; one reviewed case/frame/ROI pilot | Labels and scalar align; untouched voxels identical; no unresolved reassignment; units/calibration explicit; target geometry and tissue transitions reviewed; output reopens in GUI; measured runtime/RSS fits chosen job allocation |

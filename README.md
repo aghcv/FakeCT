@@ -1,4 +1,6 @@
-> Tissue grouping is now available: [DPI atlas workbench and usage](docs/TISSUE_MAPPING.md).
+> Start ROI review with the [commented INI input](configs/examples/xcat-roi.ini)
+> and [ROI close-up / 3D preview guide](docs/ROI_PREVIEWS.md).
+> Tissue grouping: [DPI atlas workbench and usage](docs/TISSUE_MAPPING.md).
 
 > Integration branch `fakect.26.09.16`: start with
 > [the evaluation and milestone plan](docs/integration/2026-09-16/PLAN.md).

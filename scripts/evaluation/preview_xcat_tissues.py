@@ -115,7 +115,7 @@ def draw(case, catalog, channels, crosshair, context_step, inplane_step, output)
                 (shape[2], shape[0], spacing[0], spacing[2], 'Coronal', 'i', 'k', j, 'j', spacing[1], i, k, inplane_step, context_step),
                 (shape[1], shape[0], spacing[1], spacing[2], 'Sagittal', 'j', 'k', i, 'i', spacing[0], j, k, inplane_step, context_step)]
     fig = plt.figure(figsize=(21, 17), facecolor='white')
-    grid = fig.add_gridspec(3, 4, left=.12, right=.96, bottom=.10, top=.89,
+    grid = fig.add_gridspec(3, 4, left=.12, right=.96, bottom=.10, top=.86,
                            width_ratios=[1.2, 1.3, 1, 1], hspace=.54, wspace=.35)
     axes = [[fig.add_subplot(grid[row, col]) for col in range(4)] for row in range(3)]
     values, frequencies = np.unique(hist_atn, return_counts=True)
@@ -165,7 +165,10 @@ def draw(case, catalog, channels, crosshair, context_step, inplane_step, output)
                            'original_ids': len(np.unique(original[col - 1])),
                            'group_counts': {str(key): value for key, value in sorted(Counter(map(int, tissue.ravel())).items())},
                            'unknown_voxels': int(np.count_nonzero(tissue == unknown_code))})
-    fig.suptitle(f"XCAT {case['case_id']}, frame {channels['frame']} | {case['organ_file']} | atlas policy {catalog['policy_version']}\n"
+    atlas_hash = catalog.get('sources', {}).get('atlas', {}).get('sha256', 'unrecorded')
+    hierarchy_hash = catalog.get('sources', {}).get('hierarchy', {}).get('sha256', 'unrecorded')
+    fig.suptitle(f"XCAT {case['case_id']}, frame {channels['frame']} | {case['organ_file']} | FakeCT tissue policy {catalog['policy_version']}\n"
+                 f"DPI source atlas SHA256 {atlas_hash[:12]} | hierarchy SHA256 {hierarchy_hash[:12]} (independent of tissue-policy version)\n"
                  f"Crosshair: i={i}, j={j}, k={k}. Axial: full resolution. Whole-body context: k stride {context_step}, in-plane stride {inplane_step}.\n"
                  'Native array [k,j,i]; anatomical orientation and physical origin unverified. Coarse groups preserve original labels.',
                  fontsize=15, y=.98)
@@ -224,6 +227,8 @@ def main():
               'context_step_k': args.context_step, 'context_inplane_step': args.inplane_step,
               'histogram_planes_k': case['sample_planes_k'], 'histogram_stride_ji': case['sample_stride_ji'],
               'attenuation_conversion': 'atn per-pixel divided by pixel_width_cm; not HU',
+              'tissue_policy_version': catalog['policy_version'],
+              'classification_sources': catalog.get('sources', {}),
               'catalog_sha256': sha256(args.catalog), 'audit_sha256': sha256(args.audit),
               'script_sha256': sha256(__file__), 'figure_sha256': sha256(args.out),
               'sources': sources, 'source_integrity_scope': 'Source stat checked before/after; sampled values hashed, full volumes not hashed',

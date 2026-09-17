@@ -1,0 +1,121 @@
+{
+  "schema_version": "fakect.dpi-atlas-currency.v1",
+  "checked_at_utc": "2026-09-17T00:06:15.385643+00:00",
+  "scope": "Latest accessible local DPI checkout, its configured atlas paths, latest accessible frozen v6 campaign, and actual case260602/frame001 output provenance. No remote fetch.",
+  "source_repository": "/home/aghorban/repo/dpi",
+  "dpi_head": "c7532cfd3c0230cb6cf76f83afe924ed6d791edf",
+  "dpi_branch": "generic-anatomy-model-s1",
+  "classification_changing_update_found": false,
+  "files": [
+    {
+      "name": "anatomy_atlas.csv",
+      "role": "source anatomical overrides",
+      "declared_version": null,
+      "source_path": "/home/aghorban/repo/dpi/config/atlas/anatomy_atlas.csv",
+      "frozen_run_path": "/scratch/aghorban/dpi/xcat-anatomy-instance-all-frames-four-quarter-v6-20260822-r1/campaign_inputs/anatomy_atlas.csv",
+      "snapshot_path": "references/atlas/dpi/anatomy_atlas.csv",
+      "sha256": "59268c0e15f787a19938ff66c195e7845b6ba2780fcefe757ddc42575c7e64a1",
+      "source_matches_dpi_head": true,
+      "snapshot_matches_source": true,
+      "frozen_run_matches_source": true,
+      "last_change": {
+        "commit": "1e70249f84388bcb184de3985505a7f07bac3ea4",
+        "date": "2026-07-30T09:18:01-04:00",
+        "subject": "\"centerlin detection algorithm added\""
+      }
+    },
+    {
+      "name": "xcat_anatomy_hierarchy.yml",
+      "role": "source aliases and hierarchy rules",
+      "declared_version": null,
+      "source_path": "/home/aghorban/repo/dpi/config/source/xcat_anatomy_hierarchy.yml",
+      "frozen_run_path": "/scratch/aghorban/dpi/xcat-anatomy-instance-all-frames-four-quarter-v6-20260822-r1/campaign_inputs/xcat_anatomy_hierarchy.yml",
+      "snapshot_path": "references/atlas/dpi/xcat_anatomy_hierarchy.yml",
+      "sha256": "6013555161631a65158e27318de1b6260539539f1f40d1317a9793700d1ca888",
+      "source_matches_dpi_head": true,
+      "snapshot_matches_source": true,
+      "frozen_run_matches_source": true,
+      "last_change": {
+        "commit": "3a75ffed7692edbf660d40eca568c86edde0bbbe",
+        "date": "2026-08-18T16:00:27-04:00",
+        "subject": "\"full recovery of 4 sided CV connectivity\""
+      }
+    },
+    {
+      "name": "cardiovascular_atlas_v1_1.csv",
+      "role": "downstream cardiovascular roles",
+      "declared_version": "1.1.0",
+      "source_path": "/home/aghorban/repo/dpi/config/atlas/cardiovascular_atlas_v1_1.csv",
+      "frozen_run_path": "/scratch/aghorban/dpi/xcat-anatomy-instance-all-frames-four-quarter-v6-20260822-r1/campaign_inputs/cardiovascular_atlas_v1_1.csv",
+      "snapshot_path": "references/atlas/dpi/cardiovascular_atlas_v1_1.csv",
+      "sha256": "e80e03c811aecf46d47f5fe7bc1af979bcab393a1ade212c68bce6cac0f20080",
+      "source_matches_dpi_head": true,
+      "snapshot_matches_source": true,
+      "frozen_run_matches_source": true,
+      "last_change": {
+        "commit": "b294a88965cf98070fea69e80dbbd04b93fd5e3d",
+        "date": "2026-08-02T00:26:05-04:00",
+        "subject": "\"first stable\""
+      }
+    },
+    {
+      "name": "vascular_routing_atlas_v1.csv",
+      "role": "downstream vascular circuit routing",
+      "declared_version": "1.0.0",
+      "source_path": "/home/aghorban/repo/dpi/config/atlas/vascular_routing_atlas_v1.csv",
+      "frozen_run_path": "/scratch/aghorban/dpi/xcat-anatomy-instance-all-frames-four-quarter-v6-20260822-r1/campaign_inputs/vascular_routing_atlas_v1.csv",
+      "snapshot_path": "references/atlas/dpi/vascular_routing_atlas_v1.csv",
+      "sha256": "b13687d85a3e37a534ec9621d72f1d4b9e0532982c6d2f522bafd402b963eb4c",
+      "source_matches_dpi_head": true,
+      "snapshot_matches_source": true,
+      "frozen_run_matches_source": true,
+      "last_change": {
+        "commit": "1e70249f84388bcb184de3985505a7f07bac3ea4",
+        "date": "2026-07-30T09:18:01-04:00",
+        "subject": "\"centerlin detection algorithm added\""
+      }
+    }
+  ],
+  "classifier_reference": {
+    "path": "/home/aghorban/repo/dpi/src/source/adapters/xcat/AnatomyClassifier.cpp",
+    "sha256": "5b1c7a14c6c2f31addc6a5098215575c081cc5f004b22c4c54e10977f62129a8",
+    "working_tree_modified": false,
+    "used_by_fakect": false,
+    "note": "Native C++ behavior inspected; FakeCT implements an explicit-file subset with documented conservative guards."
+  },
+  "latest_frozen_campaign": {
+    "root": "/scratch/aghorban/dpi/xcat-anatomy-instance-all-frames-four-quarter-v6-20260822-r1",
+    "execution_policy_version": 6,
+    "classification_inputs_match_current_dpi": true,
+    "checksum_inventory": {
+      "path": "/scratch/aghorban/dpi/xcat-anatomy-instance-all-frames-four-quarter-v6-20260822-r1/campaign_inputs/FROZEN_SHA256SUMS",
+      "sha256": "6c669a786d05a09525a969198a3c8c0c35957ccc10b6248d3612e3c74ac4b027"
+    },
+    "actual_output_sample": {
+      "case": "260602",
+      "frame": 1,
+      "cardiovascular_selection": {
+        "path": "/scratch/aghorban/dpi/xcat-anatomy-instance-all-frames-four-quarter-v6-20260822-r1/cases/260602/frames/frame_001/topology/cardiovascular_selection.json",
+        "sha256": "66796337202981cbb4b3cb127db95892a76c353a7850358c58aede570a440f3f",
+        "cardiovascular_atlas_version": "1.1.0"
+      },
+      "anatomy_instance_manifest": {
+        "path": "/scratch/aghorban/dpi/xcat-anatomy-instance-all-frames-four-quarter-v6-20260822-r1/cases/260602/frames/frame_001/topology/anatomy_instance_manifest.json",
+        "sha256": "9a6025ed7cf296ea44c4188e6060585fc144bc499d80efa0ba7acaa40520fed5"
+      },
+      "classification_sha256": {
+        "anatomy_hierarchy_config_sha256": "6013555161631a65158e27318de1b6260539539f1f40d1317a9793700d1ca888",
+        "source_anatomy_atlas_sha256": "59268c0e15f787a19938ff66c195e7845b6ba2780fcefe757ddc42575c7e64a1",
+        "cardiovascular_atlas_sha256": "e80e03c811aecf46d47f5fe7bc1af979bcab393a1ade212c68bce6cac0f20080",
+        "routing_atlas_sha256": "b13687d85a3e37a534ec9621d72f1d4b9e0532982c6d2f522bafd402b963eb4c"
+      }
+    }
+  },
+  "version_interpretation": {
+    "fakect_tissue_policy": "1.0.0-proposed is the editable ten-group FakeCT policy, not an upstream DPI atlas release.",
+    "source_atlas": "No release version field; identify by content SHA256 and DPI commit.",
+    "source_hierarchy": "No release version field; identify by content SHA256 and DPI commit.",
+    "cardiovascular_atlas": "1.1.0 is the latest local downstream role atlas.",
+    "v6_campaign": "Connectivity/recovery policy version; does not denote a newer source anatomy atlas."
+  }
+}

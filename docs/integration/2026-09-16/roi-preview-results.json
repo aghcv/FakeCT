@@ -1,0 +1,352 @@
+{
+  "schema_version": "fakect.roi-preview/1",
+  "generated_at_utc": "2026-09-17T00:14:55.374639+00:00",
+  "preview_only": true,
+  "geometry_edited": false,
+  "config": {
+    "study": {
+      "schema_version": "fakect.preview/1",
+      "name": "xcat-carotid-roi"
+    },
+    "input": {
+      "root": "/home/aghorban/slurm/xcat",
+      "case_id": "260602",
+      "frame": 1,
+      "audit": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/docs/integration/2026-09-16/xcat-results.json",
+      "catalog": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/tissues/atlas-v1/label-catalog.json"
+    },
+    "selection": {
+      "tissue": "artery",
+      "source_ids": [
+        1185
+      ]
+    },
+    "roi": {
+      "center_ijk": [
+        404,
+        363,
+        1584
+      ],
+      "radius_mm": 12.0,
+      "crop_half_width_mm": 40.0,
+      "coordinate_reviewed": false
+    },
+    "preview": {
+      "slice_ijk": null,
+      "overlay_opacity": 0.22,
+      "volume_opacity": 0.25,
+      "context_tissues": [
+        "bone",
+        "vein"
+      ],
+      "context_opacity": 0.08,
+      "volume_stride": 2
+    },
+    "output": {
+      "directory": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/roi/carotid-v2"
+    }
+  },
+  "input_config_sha256": "a7bfd514285f8a6f5e31e4708c2ecdadc95d1d33ebb84861c8a7e8b41f52aa26",
+  "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+  "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+  "atlas_sources": {
+    "atlas": {
+      "path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/dpi/anatomy_atlas.csv",
+      "sha256": "59268c0e15f787a19938ff66c195e7845b6ba2780fcefe757ddc42575c7e64a1"
+    },
+    "hierarchy": {
+      "path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/dpi/xcat_anatomy_hierarchy.yml",
+      "sha256": "6013555161631a65158e27318de1b6260539539f1f40d1317a9793700d1ca888"
+    },
+    "policy": {
+      "path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/tissues/tissue-policy.v1.json",
+      "sha256": "98eb67c48460b09750b46bec36c73a1a5ff0482b4e0d908c8b851827960eca8c"
+    }
+  },
+  "source_files": {
+    "act": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_act_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328260487208000,
+      "source_bytes_read": 182250000,
+      "crop_sha256": "3733df32afee410a681931254bd5a6da694117a51279e3e140026b7a8b318b8c",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    },
+    "atn": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_atn_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328328749713000,
+      "source_bytes_read": 182250000,
+      "crop_sha256": "31de79bc4af0e51e9440c124628d936421ded4392ea5aa08275cdac369d3fa15",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    }
+  },
+  "source_ids": [
+    1185
+  ],
+  "source_names": {
+    "1185": "internal_carotid_left"
+  },
+  "geometry": {
+    "array_order": "kji",
+    "source_shape_kji": [
+      1860,
+      750,
+      750
+    ],
+    "crop_origin_ijk": [
+      364,
+      323,
+      1544
+    ],
+    "crop_high_ijk_exclusive": [
+      445,
+      404,
+      1625
+    ],
+    "crop_shape_kji": [
+      81,
+      81,
+      81
+    ],
+    "spacing_ijk_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "roi_center_ijk": [
+      404,
+      363,
+      1584
+    ],
+    "roi_radius_mm": 12.0,
+    "orientation": "native array interpretation; anatomical orientation and physical origin unverified"
+  },
+  "roi_clipped_by_source_boundary": false,
+  "crop_voxels": 531441,
+  "selected_voxels": 1568,
+  "selected_in_roi_voxels": 482,
+  "roi_voxels": 7153,
+  "unknown_group_voxels": 63731,
+  "missing_dictionary_ids": [
+    -816
+  ],
+  "groups": {
+    "background": 65225,
+    "soft_tissue": 165435,
+    "bone": 49963,
+    "cartilage": 1527,
+    "muscle": 167557,
+    "artery": 4221,
+    "vein": 2069,
+    "lung": 0,
+    "adipose": 0,
+    "nervous_tissue": 11713,
+    "fluid": 0,
+    "unknown": 63731
+  },
+  "slices": {
+    "planes": [
+      {
+        "view": "Axial",
+        "fixed_axis": "k",
+        "index": 1584,
+        "selected_voxels": 19,
+        "selected_in_roi_voxels": 19,
+        "roi_intersects_plane": true
+      },
+      {
+        "view": "Coronal",
+        "fixed_axis": "j",
+        "index": 363,
+        "selected_voxels": 284,
+        "selected_in_roi_voxels": 115,
+        "roi_intersects_plane": true
+      },
+      {
+        "view": "Sagittal",
+        "fixed_axis": "i",
+        "index": 404,
+        "selected_voxels": 328,
+        "selected_in_roi_voxels": 114,
+        "roi_intersects_plane": true
+      },
+      {
+        "view": "Axial",
+        "fixed_axis": "k",
+        "index": 1572,
+        "selected_voxels": 20,
+        "selected_in_roi_voxels": 1,
+        "roi_intersects_plane": true
+      },
+      {
+        "view": "Axial",
+        "fixed_axis": "k",
+        "index": 1578,
+        "selected_voxels": 19,
+        "selected_in_roi_voxels": 19,
+        "roi_intersects_plane": true
+      },
+      {
+        "view": "Axial",
+        "fixed_axis": "k",
+        "index": 1584,
+        "selected_voxels": 19,
+        "selected_in_roi_voxels": 19,
+        "roi_intersects_plane": true
+      },
+      {
+        "view": "Axial",
+        "fixed_axis": "k",
+        "index": 1590,
+        "selected_voxels": 22,
+        "selected_in_roi_voxels": 22,
+        "roi_intersects_plane": true
+      },
+      {
+        "view": "Axial",
+        "fixed_axis": "k",
+        "index": 1596,
+        "selected_voxels": 22,
+        "selected_in_roi_voxels": 1,
+        "roi_intersects_plane": true
+      }
+    ],
+    "z_stack_k": [
+      1572,
+      1578,
+      1584,
+      1590,
+      1596
+    ],
+    "attenuation_window_cm_inverse": [
+      0.0,
+      0.2130010575056076
+    ]
+  },
+  "volume": {
+    "schema_version": "fakect-volume-preview-1",
+    "html_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/roi/carotid-v2/roi-volume.html",
+    "png_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/roi/carotid-v2/roi-surfaces.png",
+    "metadata_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/roi/carotid-v2/roi-volume.json",
+    "source_shape_kji": [
+      81,
+      81,
+      81
+    ],
+    "display_shape_kji": [
+      41,
+      41,
+      41
+    ],
+    "volume_render_shape_kji": [
+      43,
+      43,
+      43
+    ],
+    "crop_origin_ijk": [
+      364.0,
+      323.0,
+      1544.0
+    ],
+    "spacing_ijk_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "crop_bounds_ijk_relative_mm": [
+      [
+        363.5,
+        444.5
+      ],
+      [
+        322.5,
+        403.5
+      ],
+      [
+        1543.5,
+        1624.5
+      ]
+    ],
+    "roi_center_ijk": [
+      404.0,
+      363.0,
+      1584.0
+    ],
+    "roi_radius_mm": 12.0,
+    "volume_stride": 2,
+    "sampling": "block maximum binary occupancy; occupied display blocks may enlarge anatomy",
+    "volume_boundary": "one zero occupancy block around crop; .5 boundary intersects crop edge",
+    "coordinates": "native index times spacing in mm; physical origin and orientation unverified",
+    "interactive_renderer": "Plotly Volume (binary occupancy, not attenuation)",
+    "static_renderer": "marching-cubes translucent surfaces of the same occupancy grid",
+    "static_panels": [
+      "Selected original labels + ROI",
+      "Selected labels + tissue context + ROI"
+    ],
+    "static_opacity": "selected surfaces enhanced up to .8; context retains configured opacity; zero stays zero",
+    "original_selected_labels": [
+      {
+        "original_id": 1185,
+        "voxel_count": 1568,
+        "original_name": "internal_carotid_left"
+      }
+    ],
+    "traces": [
+      {
+        "name": "Selected: 1185 internal_carotid_left",
+        "color": "#00bcd4",
+        "opacity": 0.25,
+        "source_voxels": 1568,
+        "kind": "selection",
+        "occupied_display_blocks": 316,
+        "surface_triangles": 1024,
+        "static_surface_opacity": 0.625
+      },
+      {
+        "name": "bone",
+        "color": "#fff0bc",
+        "opacity": 0.08,
+        "source_voxels": 49963,
+        "kind": "context",
+        "tissue_id": 2,
+        "occupied_display_blocks": 9737,
+        "surface_triangles": 27176,
+        "static_surface_opacity": 0.08
+      },
+      {
+        "name": "vein",
+        "color": "#367bf5",
+        "opacity": 0.08,
+        "source_voxels": 2069,
+        "kind": "context",
+        "tissue_id": 6,
+        "occupied_display_blocks": 412,
+        "surface_triangles": 1438,
+        "static_surface_opacity": 0.08
+      }
+    ],
+    "empty_context_tissues": [],
+    "warnings": [],
+    "html_bytes": 9089001,
+    "standalone_plotly_javascript": true,
+    "source_arrays_modified": false
+  },
+  "code_sha256": {
+    "scripts/preview_roi.py": "fd12f9875c1ca3b07e4dd48a819ca18cc352118a0950ef520e8eface3abb1bf4",
+    "src/fakect_roi.py": "a58402b5eaa0c49e5bfe17307a033ed4c0e1e8d10f4e9b96e3b95d15e15b535c",
+    "src/fakect_config.py": "fa99a4932fa29a2e21644efad0a2d506fb496559e52e34aebd69b15d6a21215d",
+    "src/fakect_volume_preview.py": "913c31bf5998de20962948a363bee12aa04f2d3773f3bc80f5a74c8da7518a42",
+    "src/fakect_tissues.py": "f6c72d335afa0624c5b4dfe005a38961ade505f8ce3a47d90e047a312cbcdc28"
+  },
+  "artifacts_sha256": {
+    "roi-surfaces.png": "5a78999a283e5033442cc39cbadac023d32d2220fb7ebf513ccb84230e83e8a0",
+    "roi-volume.json": "8cdbe6b22d5583a9f9581f1be0adaa671123ef4cf715d16335d9290035e543e7",
+    "roi-volume.html": "c4d8fe44c3ebdc3c64628f64675eed10eba3795ec10184c1a79108fab017d6bb",
+    "roi-closeups.png": "ef31efeb1bfaa1389929ac6c3df630c3d839656dbb1135176eb63ee4064fafca",
+    "roi-z-stack.png": "093d7f3ab6ab9b5ab6c8dcfe76c55ee41ff08308738c8db3949813f03f5bd027",
+    "crop.npz": "799aa0479eacc2a05a4e7b2491594a8e24ef158b8a799d22c083601177d73f23",
+    "input.ini": "a7bfd514285f8a6f5e31e4708c2ecdadc95d1d33ebb84861c8a7e8b41f52aa26",
+    "resolved-config.json": "6a47e496cba5963e9d6a5f638414d46598490b9afd22e4ed7b62ac920a2a3424"
+  }
+}
