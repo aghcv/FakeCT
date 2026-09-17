@@ -11,6 +11,11 @@ The `fakect.study/1` INI extends the existing ROI/edit input with `[train]` and
 Relative paths inside the INI are resolved from the integrated FakeCT checkout.
 The original input text is captured with outputs.
 
+To combine edits in several regions of one anatomy, use the separate
+[named ROI recipe guide](EDIT_RECIPES.md). That preview workflow supports ordered
+operations and repeated passes; the training sweep described here still uses
+one independent edit per cohort variant.
+
 ## What each stage does
 
 | Stage | Action | Destination |

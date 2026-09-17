@@ -1,0 +1,389 @@
+{
+  "schema_version": "fakect.recipe-evaluation/1",
+  "generated_at_utc": "2026-09-17T19:22:13.143347+00:00",
+  "report": "outputs/studies/thoracic-aorta/recipe-v2/report.html",
+  "report_sha256": "b131f1d950b6de54e5db96c16c4a23c45b248198ab51fcf24d89b394df45a5a6",
+  "report_bytes": 42150998,
+  "input": "configs/studies/thoracic-aorta-recipe.ini",
+  "input_config_sha256": "425c8d5f8cd26b50a00efb78704b373deb68b5e6da32c9df9c87a12bb51de6f5",
+  "copied_parent_input": "configs/studies/thoracic-aorta.ini",
+  "copied_parent_input_sha256": "1d63f99ccae526cbb4ac9dc8ad0beff89cce6167a330966c01740c8bfce7f289",
+  "parent_roi_geometry_matches_user_revision": true,
+  "geometry": {
+    "array_order": "kji",
+    "source_shape_kji": [
+      1860,
+      750,
+      750
+    ],
+    "crop_origin_ijk": [
+      351,
+      338,
+      1294
+    ],
+    "crop_high_ijk_exclusive": [
+      416,
+      442,
+      1440
+    ],
+    "crop_shape_kji": [
+      146,
+      104,
+      65
+    ],
+    "spacing_ijk_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "roi_kind": "tube",
+    "nodes_ijk": [
+      [
+        387.0,
+        360.0,
+        1352.0
+      ],
+      [
+        378.0,
+        365.0,
+        1363.0
+      ],
+      [
+        373.0,
+        362.0,
+        1374.0
+      ],
+      [
+        373.0,
+        363.0,
+        1389.0
+      ],
+      [
+        376.0,
+        366.0,
+        1409.0
+      ],
+      [
+        385.0,
+        375.0,
+        1415.0
+      ],
+      [
+        392.0,
+        386.0,
+        1417.0
+      ],
+      [
+        393.0,
+        398.0,
+        1409.0
+      ],
+      [
+        390.0,
+        408.0,
+        1394.0
+      ],
+      [
+        387.0,
+        414.0,
+        1383.0
+      ],
+      [
+        387.0,
+        419.0,
+        1370.0
+      ],
+      [
+        387.0,
+        419.0,
+        1356.0
+      ],
+      [
+        389.0,
+        419.0,
+        1341.0
+      ],
+      [
+        391.0,
+        416.0,
+        1316.0
+      ]
+    ],
+    "radii_mm": [
+      10.0,
+      10.0,
+      10.0,
+      12.0,
+      11.0,
+      10.0,
+      10.0,
+      13.0,
+      12.0,
+      11.0,
+      11.0,
+      11.0,
+      11.0,
+      11.0
+    ],
+    "focus_ijk": [
+      393,
+      398,
+      1409
+    ],
+    "roi_semantics": "Sphere, or union of balls whose centers and radii interpolate linearly along each ordered segment; round caps",
+    "orientation": "native array interpretation; anatomical orientation and physical origin unverified"
+  },
+  "counts": {
+    "before": 50485,
+    "after": 49726,
+    "added": 741,
+    "removed": 1500,
+    "changed": 2241,
+    "scalar_changed": 2136,
+    "ever_changed": 2241,
+    "proposed_added": 768,
+    "proposed_removed": 1935,
+    "blocked": 27,
+    "unresolved": 435
+  },
+  "activity_counts": {
+    "added": 741,
+    "removed": 1500,
+    "changed": 2241
+  },
+  "roi_coverage": {
+    "ascending": {
+      "native_roi_voxels_in_crop": 20080,
+      "effective_roi_voxels": 20080,
+      "clipped_by_outer_roi_voxels": 0,
+      "original_target_voxels": 15376
+    },
+    "descending": {
+      "native_roi_voxels_in_crop": 37568,
+      "effective_roi_voxels": 37568,
+      "clipped_by_outer_roi_voxels": 0,
+      "original_target_voxels": 20726
+    },
+    "arch": {
+      "native_roi_voxels_in_crop": 39862,
+      "effective_roi_voxels": 39862,
+      "clipped_by_outer_roi_voxels": 0,
+      "original_target_voxels": 24062
+    }
+  },
+  "roi_overlaps": [
+    {
+      "roi_a": "ascending",
+      "roi_b": "descending",
+      "effective_overlap_voxels": 0,
+      "native_overlap_voxels_in_crop": 0
+    }
+  ],
+  "full_target_before": 55814,
+  "full_target_after": 55055,
+  "full_target_components_before": 2,
+  "full_target_components_after": 2,
+  "steps": [
+    {
+      "step_name": "ascending_expand",
+      "roi_name": "ascending",
+      "iteration": 1,
+      "status": "applied",
+      "counts": {
+        "before": 15376,
+        "after": 16117,
+        "proposed_added": 768,
+        "proposed_removed": 0,
+        "added": 741,
+        "removed": 0,
+        "blocked": 27,
+        "unresolved": 0,
+        "changed": 741,
+        "requested_removed_before_stiffness": 0,
+        "release_suppressed_by_target_stiffness": 0
+      },
+      "blocked_input_labels": [
+        {
+          "original_id": 2897,
+          "original_name": "dias_pericardium",
+          "tissue_name": "unknown",
+          "count": 27
+        }
+      ],
+      "array_artifact": "steps/01-ascending_expand-iteration-01/step.npz",
+      "labels_before_sha256": "ee01b0c75f1cb065de7d25a3db2073a217aeb3ef37104d3f7df5196d39786c04",
+      "labels_after_sha256": "5666727ee799aaab953843a4da9ae8373bd5bb66575c2813bd6df1081eb085e8"
+    },
+    {
+      "step_name": "descending_narrow",
+      "roi_name": "descending",
+      "iteration": 1,
+      "status": "applied",
+      "counts": {
+        "before": 20726,
+        "after": 19226,
+        "proposed_added": 0,
+        "proposed_removed": 1935,
+        "added": 0,
+        "removed": 1500,
+        "blocked": 0,
+        "unresolved": 435,
+        "changed": 1500,
+        "requested_removed_before_stiffness": 1997,
+        "release_suppressed_by_target_stiffness": 62
+      },
+      "blocked_input_labels": [],
+      "array_artifact": "steps/02-descending_narrow-iteration-01/step.npz",
+      "labels_before_sha256": "5666727ee799aaab953843a4da9ae8373bd5bb66575c2813bd6df1081eb085e8",
+      "labels_after_sha256": "ea9fb16aea18f75c58cfd8fe93b9cbdbfb0e293ec0214aa25369be36c01a58eb"
+    },
+    {
+      "step_name": "arch_refine",
+      "roi_name": "arch",
+      "iteration": 1,
+      "status": "no_change",
+      "counts": {
+        "before": 24062,
+        "after": 24062,
+        "proposed_added": 0,
+        "proposed_removed": 0,
+        "added": 0,
+        "removed": 0,
+        "blocked": 0,
+        "unresolved": 0,
+        "changed": 0,
+        "requested_removed_before_stiffness": 0,
+        "release_suppressed_by_target_stiffness": 0
+      },
+      "blocked_input_labels": [],
+      "array_artifact": "steps/03-arch_refine-iteration-01/step.npz",
+      "labels_before_sha256": "ea9fb16aea18f75c58cfd8fe93b9cbdbfb0e293ec0214aa25369be36c01a58eb",
+      "labels_after_sha256": "ea9fb16aea18f75c58cfd8fe93b9cbdbfb0e293ec0214aa25369be36c01a58eb"
+    }
+  ],
+  "transitions": [
+    {
+      "original_id": 2897,
+      "new_id": 2922,
+      "count": 636
+    },
+    {
+      "original_id": 2912,
+      "new_id": 2922,
+      "count": 42
+    },
+    {
+      "original_id": 2914,
+      "new_id": 2922,
+      "count": 63
+    },
+    {
+      "original_id": 2922,
+      "new_id": 204,
+      "count": 290
+    },
+    {
+      "original_id": 2922,
+      "new_id": 653,
+      "count": 23
+    },
+    {
+      "original_id": 2922,
+      "new_id": 654,
+      "count": 40
+    },
+    {
+      "original_id": 2922,
+      "new_id": 1225,
+      "count": 987
+    },
+    {
+      "original_id": 2922,
+      "new_id": 1231,
+      "count": 160
+    }
+  ],
+  "reassignment_mode": "stiffness",
+  "stiffness": {
+    "default": 0.05,
+    "tissues": {
+      "bone": 1.0,
+      "skin": 0.95,
+      "soft_tissue": 0.05,
+      "muscle": 0.1,
+      "artery": 0.05,
+      "vein": 0.05,
+      "lung": 0.02,
+      "cartilage": 0.2,
+      "adipose": 0.02,
+      "nervous_tissue": 0.1,
+      "fluid": 0.02,
+      "unknown": 0.05
+    },
+    "labels": {
+      "2897": 0.05
+    }
+  },
+  "verified_anatomical_preservation": {
+    "bone": {
+      "catalogued_ids": 616,
+      "original_voxels_in_crop": 110136,
+      "original_voxels_in_main_roi": 1519,
+      "changed_labels": 0,
+      "changed_attenuation_values": 0,
+      "factor": 1.0
+    },
+    "skin": {
+      "catalogued_ids": 32,
+      "original_voxels_in_crop": 82734,
+      "original_voxels_in_main_roi": 9442,
+      "changed_labels": 0,
+      "changed_attenuation_values": 0,
+      "factor": 0.95
+    }
+  },
+  "artifact_count": 28,
+  "embedded_png_count": 15,
+  "embedded_interactive_frame_count": 2,
+  "all_artifact_and_code_hashes_verified": true,
+  "per_pass_state_chain_verified": true,
+  "net_change_masks_verified": true,
+  "source_size_mtime_unchanged": true,
+  "source_crop_equals_restrictive_trial": true,
+  "outside_active_rois_unchanged": true,
+  "browser_webgl_execution_tested": false,
+  "source_files": {
+    "act": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_act_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328260487208000,
+      "source_bytes_read": 328500000,
+      "crop_sha256": "0ddcbf97a950d15e91e598eb58fe313177d64232a83de0449ce19b4aaa67b697",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    },
+    "atn": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_atn_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328328749713000,
+      "source_bytes_read": 328500000,
+      "crop_sha256": "bf7d09ecb7c7af5d3052738d9101626505a118ee866a435be7da214062c63ebb",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    }
+  },
+  "code_sha256": {
+    "scripts/preview_roi.py": "8fecfe8b77d0e220cdad87835c269a8c3cacc61c9bcdf8b29d36aa39e5805f6c",
+    "src/fakect_roi.py": "004824837f687a837626d2fcc0f03a6f4b89e5129b4d38986693ad51764a8536",
+    "src/fakect_config.py": "7f60d2b0409a4f950b02c3b0aac780b5bd6539055ca955d474baa1ad9a6cd83c",
+    "src/fakect_volume_preview.py": "63e8cabadcad4a26079684b9203b316bffbcca7669f2d463c0c79ae75c623f3e",
+    "src/fakect_tissues.py": "f6c72d335afa0624c5b4dfe005a38961ade505f8ce3a47d90e047a312cbcdc28",
+    "src/fakect_preview_report.py": "84ce63803780fff860099f15bb2e2628c8dc5e3f80e56f23db8401251cde273f",
+    "src/fakect_morphology.py": "88fc333f56ec2562517f3fb9b08301e2fd27cf790ec13742f2758ad5edb8e014",
+    "src/fakect_reassignment.py": "9e3714e8501d74cb17213e7c5170fe637d17409f701682c77a6eb76efa9d99db",
+    "src/fakect_edit_preview.py": "04cdf2c795fd9c3f06a9a0f2f7c633164fa5ab3fc430ac6bca008c3cb11dbb90",
+    "src/fakect_recipe.py": "15d6109191a948804c3a43b7ab82b6183fdc808356a6724129c68ffd35ab747d",
+    "src/fakect_recipe_config.py": "70844b47b9da0469d910ab6a6dbc24d3987820eb6e16bbca86bd7d20be357d26",
+    "src/fakect_recipe_preview.py": "d841ae9ff500cccf29009c961993ec7c9fa36ac77ef20d02c5107915e3f5928b"
+  },
+  "training_cohort_prepared": false,
+  "model_trained": false
+}

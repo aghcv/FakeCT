@@ -273,6 +273,181 @@ def _morphology_section(output, report, embedded):
             'diagnostics, not anatomical vessel counts.</p></details></section>')
 
 
+def _recipe_section(output, report, embedded):
+    """Account for ordered passes separately from original-to-final changes."""
+    recipe = report['recipe']
+    config = report.get('config', {})
+    figures = recipe.get('figures', {})
+    counts = recipe.get('counts', {})
+    activity = recipe.get('activity_counts', {})
+    policy = recipe.get('reassignment_policy', {})
+    policy_content = '<h3>Tissue resistance and reassignment</h3><p>Mode: <code>' + _text_value(
+        policy.get('mode', config.get('reassignment', {}).get('mode', 'allowlist'))) + '</code>. ' + _text_value(
+        policy.get('eligibility_semantics', '')) + '</p>'
+    if policy.get('mode') == 'stiffness':
+        spec = policy.get('stiffness', {})
+        factors = [['Default', _measurement(spec.get('default'))]]
+        factors += [[_text_value(name), _measurement(value)] for name, value in spec.get('tissues', {}).items()]
+        factors += [['Original ID ' + _text_value(name), _measurement(value)]
+                    for name, value in spec.get('labels', {}).items()]
+        effective = [[_text_value(row.get('original_id')), _text_value(row.get('original_name')),
+                      _text_value(row.get('tissue_name')), _text_value(row.get('stiffness_group')),
+                      _measurement(row.get('stiffness')), _text_value(row.get('stiffness_basis')),
+                      _number(row.get('count'))] for row in policy.get('effective_input_labels', [])]
+        policy_content += ('<p>' + _text_value(policy.get('stiffness_semantics')) + '</p>' +
+                           _table(['INI tissue or override', 'Factor (0–1)'], factors) +
+                           '<p><strong>How factors affect edits:</strong> ' + _text_value(policy.get('stiffness_math')) + '</p>' +
+                           '<p>For example, at skin = 0.95, only 5% of the requested distance remains. With a 2 mm request '
+                           'and 1 mm voxels this is below one voxel step. Larger requests or smaller voxels '
+                           'can change skin; a factor of 1 makes a label rigid. Skin identity conservatively '
+                           'covers the whole surface-associated original label, not an isolated dermal layer.</p>' +
+                           '<details><summary>Effective factors for original labels present in the crop</summary>' +
+                           _table(['Original ID', 'Anatomical name', 'Coarse tissue', 'Resistance group',
+                                   'Factor', 'Factor source', 'Original voxels'], effective) + '</details>')
+    steps = recipe.get('steps', [])
+    roi_rows = []
+    for row in figures.get('rois', []):
+        coverage = recipe.get('roi_coverage', {}).get(row.get('name'), {})
+        roi_rows.append([_text_value(row.get('name')), _text_value(row.get('shape')),
+                         _text_value(row.get('nodes_ijk')), _text_value(row.get('radii_mm')),
+                         _number(row.get('effective_voxels')), _number(row.get('target_voxels')),
+                         _number(coverage.get('clipped_by_outer_roi_voxels'))])
+    step_rows = []
+    details = []
+    for position, step in enumerate(steps, 1):
+        summary = step.get('summary', step)
+        current_counts = summary.get('counts', {})
+        name = step.get('name', step.get('step_name'))
+        roi = step.get('roi', step.get('roi_name'))
+        operation = summary.get('requested_operation', summary.get('operation'))
+        step_rows.append([_number(step.get('index', position)), _text_value(name), _text_value(roi),
+                          _number(step.get('iteration')), _text_value(operation),
+                          _number(current_counts.get('before')) + ' → ' + _number(current_counts.get('after')),
+                          _number(current_counts.get('added')), _number(current_counts.get('removed')),
+                          _number(current_counts.get('blocked')), _number(current_counts.get('unresolved'))])
+        step_figures = step.get('figures', {})
+        content = []
+        for key, title, caption in (
+                ('comparison', 'Input state, output state and changes',
+                 'The input state includes preceding passes. The difference overlay uses the input-state '
+                 'attenuation proxy. These views are focused within this named ROI; coordinates may differ between passes.'),
+                ('profile', 'Requested profile and achieved axial areas',
+                 'Areas belong to this effective named ROI for this pass; they are not vessel-normal lumen areas.')):
+            if step_figures.get(key):
+                content.append(_embed_png(output, step_figures[key], title, caption, embedded))
+        metadata_rows = [[label, _text_value(value)] for label, value in (
+            ('Status', step.get('status', summary.get('status'))),
+            ('Distance per pass (mm)', summary.get('distance_mm')),
+            ('Profile', summary.get('profile')), ('Profile axis', summary.get('profile_axis')),
+            ('Requested release before target resistance (voxels)', current_counts.get('requested_removed_before_stiffness')),
+            ('Release suppressed by target resistance (voxels)', current_counts.get('release_suppressed_by_target_stiffness')),
+            ('Components inside this named ROI: before', summary.get('components_before')),
+            ('Components inside this named ROI: after', summary.get('components_after')),
+            ('Components of full-crop target: before', summary.get('full_target_components_before')),
+            ('Components of full-crop target: after', summary.get('full_target_components_after')),
+            ('Display focus (i, j, k)', step_figures.get('focus_ijk')),
+            ('Input label SHA256', step.get('labels_before_sha256')),
+            ('Output label SHA256', step.get('labels_after_sha256')),
+            ('Pass arrays', step.get('artifact', step.get('array_artifact')))) if value is not None]
+        warnings = ''.join('<p class="warning">'+_escape(w)+' </p>' for w in summary.get('warnings', []))
+        blocked_rows = [[_text_value(row.get('original_id')), _text_value(row.get('original_name')),
+                         _text_value(row.get('tissue_name')), _number(row.get('count'))]
+                        for row in summary.get('blocked_input_labels', [])]
+        blocked_labels = ('<h4>Blocked proposals by input-state label</h4>' +
+                          _table(['Original label ID', 'Anatomical name', 'Tissue group', 'Blocked voxels'], blocked_rows) +
+                          '<p>These are the labels encountered by blocked growth proposals. Tissue eligibility, '
+                          'protected barriers and accepted-path budgets determine whether growth can reach them.</p>'
+                          if blocked_rows else '')
+        details.append('<details><summary>Pass ' + _number(step.get('index', position)) + ': ' +
+                       _text_value(name) + ' · ROI ' + _text_value(roi) + ' · iteration ' +
+                       _number(step.get('iteration')) + '</summary>' +
+                       _table(['Pass setting', 'Value'], metadata_rows) + warnings + blocked_labels + ''.join(content) + '</details>')
+    visualizations = []
+    for key, heading, caption in (
+            ('overview', 'Named regions at the study crosshair',
+             'Colored overlays show each named ROI intersected with the main ROI. Cyan outlines the original '
+             'target throughout the crop. Multiple regions can overlap.'),
+            ('closeups', 'Per-region close-ups',
+             'Each row uses a native target voxel near that region’s centroid. Read the i, j and k '
+             'coordinates in each title before moving the corresponding named ROI.'),
+            ('surfaces', 'Named regions in 3D',
+             'Transparent colored surfaces show effective named regions around the original full-crop target. '
+             'Display sampling can widen structures; native masks determine measurements.')):
+        if figures.get(key):
+            visualizations.append(_embed_png(output, figures[key], heading, caption, embedded))
+    final_figures = recipe.get('final_figures', {})
+    final = ''
+    for key, heading, caption in (
+            ('comparison', 'Original anatomy versus final recipe result',
+             'Net additions and removals compare the original source with the final result. A later pass can '
+             'reverse an earlier label change; this figure does not sum intermediate changes. Net changes take '
+             'visual precedence over earlier blocked/unresolved proposals at the same voxel.'),
+            ('profile', 'Final axial geometry and recipe activity',
+             'Original and final target areas are measured within the main ROI. Blocked and unresolved '
+             'masks are unions across passes; the requested profile is the maximum per-pass request, not a sum.')):
+        if final_figures.get(key):
+            final += _embed_png(output, final_figures[key], heading, caption, embedded)
+    if (output/'after/roi-volume.html').is_file():
+        final += '<h3>Final interactive 3D context</h3>' + _embed_volume(
+            output, 'after/roi-volume.html', 'Final recipe target and tissue volume', embedded)
+    if (output/'after/roi-surfaces.png').is_file():
+        final += _embed_png(output, 'after/roi-surfaces.png', 'Final static 3D context',
+                            'Final edited labels and tissue context within the original main ROI.', embedded)
+    net_rows = [[label, _number(counts.get(key))] for key, label in (
+        ('before', 'Original target inside main ROI'), ('after', 'Final target inside main ROI'),
+        ('added', 'Net target additions'), ('removed', 'Net target removals'),
+        ('changed', 'Original-to-final label differences'), ('ever_changed', 'Unique voxels changed in any pass'),
+        ('scalar_changed', 'Original-to-final attenuation proxy differences'))]
+    net_rows += [[label, _number(activity.get(key))] for key, label in (
+        ('added', 'Sum of additions across passes'), ('removed', 'Sum of removals across passes'),
+        ('changed', 'Sum of label changes across passes'))]
+    component_rows = [[label, _number(recipe.get(key))] for key, label in (
+        ('components_before', 'Original target inside main ROI'),
+        ('components_after', 'Final target inside main ROI'),
+        ('full_target_components_before', 'Original full-crop target'),
+        ('full_target_components_after', 'Final full-crop target')) if key in recipe]
+    overlaps = [[_text_value(row.get('roi_a')), _text_value(row.get('roi_b')),
+                 _number(row.get('effective_overlap_voxels'))] for row in recipe.get('roi_overlaps', [])]
+    transition_rows = [[_text_value(row.get('original_id')), _text_value(row.get('new_id')), _number(row.get('count'))]
+                       for row in recipe.get('transitions', [])]
+    warnings = ''.join('<p class="warning">'+_escape(w)+'</p>' for w in recipe.get('warnings', []))
+    return ('<section id="recipe"><h2>Named-region edit recipe</h2>'
+            '<p class="rule">Each pass consumes the previous pass’s labels and attenuation proxy. '
+            '<strong>Every named ROI is clipped to the fixed main ROI.</strong> '
+            'The source arrays remain preserved; regions stay at their configured native coordinates.</p>'
+            '<p>Configured order: <code>' + _text_value(config.get('recipe', {}).get('steps', [])) +
+            '</code>. Overlap policy: <code>' + _text_value(recipe.get('overlap')) + '</code>. '
+            'With <code>sequential</code>, later edits operate on earlier results in overlapping regions. '
+            'With <code>error</code>, overlapping active regions prevent execution.</p>'
+            '<p>Region names such as “ascending” and “descending” are working labels; they do not establish '
+            'anatomical orientation. Confirm placement from the native coordinates and source anatomy.</p>' + warnings +
+            policy_content +
+            '<h3>Named ROI definitions</h3>' +
+            _table(['Name', 'Shape', 'Ordered centers (i, j, k)', 'Radii (mm)', 'Effective ROI voxels',
+                    'Original target voxels', 'Voxels clipped by main ROI'], roi_rows) + ''.join(visualizations) +
+            '<h3>Execution order and per-pass accounting</h3>' +
+            _table(['Pass', 'Edit', 'ROI', 'Iteration', 'Operation', 'Target before → after',
+                    'Added', 'Removed', 'Blocked', 'Unresolved'], step_rows) +
+            '<p>Per-pass counts refer to that effective named ROI. Repeating an edit recomputes distances '
+            'from the current geometry; multiple small passes need not equal one larger pass.</p>' + ''.join(details) +
+            '<h3>Final result versus original</h3><p>Net changes, unique changed voxels, and sums across passes '
+            'answer different questions. A voxel can be edited more than once or restored by a later pass.</p>' +
+            _table(['Quantity', 'Voxels'], net_rows) + final +
+            '<p><strong>Geometry status:</strong> ' + _text_value(recipe.get('topology_status')) + '</p>'
+            '<p>Six-neighbor component counts below are spatial diagnostics. Clipping a target to a '
+            'named ROI or crop can split it into pieces; components do not identify anatomical vessels '
+            'and do not establish preservation of all topological properties.</p>' +
+            _table(['Target scope', 'Connected components'], component_rows) +
+            '<p><strong>Image status:</strong> ' + _text_value(recipe.get('scalar_status')) + '</p>'
+            '<p>Original and final arrays: <code>' + _text_value(recipe.get('array_artifact', 'edit.npz')) + '</code>. '
+            'Per-pass snapshots remain in the output directory. This report embeds the visualizations, not the voxel arrays.</p>'
+            '<details><summary>Overlap counts and final original-label transitions</summary>' +
+            _table(['ROI A', 'ROI B', 'Effective overlap (voxels)'], overlaps) +
+            _table(['Original signed ID', 'Final signed ID', 'Changed voxels'], transition_rows) + '</details>'
+            '<p class="warning">This recipe is an edit preview. Recipe sweeps are not yet connected to '
+            'training-cohort preparation; no paired population or model is generated by this run.</p></section>')
+
+
 def _training_section(output, report, embedded):
     plan = report['training_plan']
     target = plan.get('target_preview', {})
@@ -340,6 +515,8 @@ def write_preview_report(output_dir, report, input_ini_text):
     if not isinstance(report, dict):
         raise TypeError('report must be a dictionary')
     edit_enabled = isinstance(report.get('edit'), dict)
+    recipe_enabled = isinstance(report.get('recipe'), dict)
+    changed_preview = edit_enabled or recipe_enabled
     config = report.get('config', {})
     study = config.get('study', {}).get('name', 'XCAT ROI preview')
     case = config.get('input', {}).get('case_id', 'Not recorded')
@@ -361,14 +538,15 @@ def write_preview_report(output_dir, report, input_ini_text):
     if component_count is not None and component_count > 1 and not any('component' in w.lower() for w in warnings):
         warnings.append('The selected mask has multiple six-connected components. Inspect them before treating the selection as one target.')
     embedded = {}
-    figures = [_embed_png(output, filename, heading + (' — before edit' if edit_enabled else ''),
+    figures = [_embed_png(output, filename, heading + (' — before edit' if changed_preview else ''),
                           caption, embedded) for filename, heading, caption in _ASSETS]
     if (output / 'roi-volume.html').is_file():
         volume_content = _embed_volume(output, 'roi-volume.html',
-                                        ('Before-edit ' if edit_enabled else '') + 'Interactive 3D ROI and tissue volume', embedded)
+                                        ('Before-edit ' if changed_preview else '') + 'Interactive 3D ROI and tissue volume', embedded)
     else:
         volume_content = '<p class="subtle">Interactive 3D preview was not generated.</p>'
     edit_section = _morphology_section(output, report, embedded) if edit_enabled else ''
+    recipe_section = _recipe_section(output, report, embedded) if recipe_enabled else ''
     training_section = _training_section(output, report, embedded) if isinstance(report.get('training_plan'), dict) else ''
     selected_rows, selected_description = _selected_rows(report, selection)
     components = selection.get('components_voxels_6', [])
@@ -406,18 +584,26 @@ def write_preview_report(output_dir, report, input_ini_text):
     policy = report.get('policy_version', report.get('catalog_policy_version', 'See pinned policy source below'))
     caption = ('Case ' + _escape(case) + ' · frame ' + _escape(frame) + ' · ' + _escape(tissue.replace('_', ' ')) +
                ' · ' + _escape(kind) + ' ROI')
-    status = 'Morphology trial · source volumes preserved' if edit_enabled else 'Preview only · source labels preserved'
+    status = ('Named-region recipe preview · source volumes preserved' if recipe_enabled else
+              ('Morphology trial · source volumes preserved' if edit_enabled else 'Preview only · source labels preserved'))
     if training_section:
         status += ' · cohort not prepared'
     edit_nav = '<a href="#edit">Morphology trial</a>' if edit_enabled else ''
+    if recipe_enabled:
+        edit_nav += '<a href="#recipe">Named-region recipe</a>'
     if training_section:
         edit_nav += '<a href="#training">Training target and plan</a>'
-    before_suffix = ' — before edit' if edit_enabled else ''
+    before_suffix = ' — before edit' if changed_preview else ''
     original_notice = ('<p class="subtle">This overview and the original 2D, 3D and selection-detail sections '
-                       'describe the source <strong>before edit</strong>. The morphology section shows the applied trial.</p>'
-                       if edit_enabled else '')
+                       'describe the source <strong>before edit</strong>. The ' +
+                       ('recipe' if recipe_enabled else 'morphology') + ' section shows the applied trial.</p>'
+                       if changed_preview else '')
     edit_instruction = ('<li>Adjust <code>[edit]</code> operation, distance and profile, and review '
                         '<code>[reassignment]</code> rules before the next trial.</li>' if edit_enabled else '')
+    if recipe_enabled:
+        edit_instruction = ('<li>Adjust named <code>[roi.NAME]</code> regions and <code>[edit.NAME]</code> '
+                            'operations. Set their order in <code>[recipe] steps</code>; '
+                            '<code>iterations</code> repeats one edit before the next named step.</li>')
     # Plotly's bundled regl compiler constructs functions dynamically. Its inline
     # WebGL renderer therefore needs unsafe-eval as well as inline scripts.
     # The iframe stays sandboxed without same-origin access; network requests
@@ -438,6 +624,7 @@ def write_preview_report(output_dir, report, input_ini_text):
                 '<div class="two-column"><div><h3>Native coordinates</h3><p>Index order: <code>i, j, k</code>. Spacing (mm): <code>' + _text_value(geometry.get('spacing_ijk_mm')) + '</code>.</p><p class="subtle">' + _escape(geometry.get('orientation', 'Anatomical orientation and physical origin are unverified.')) + '</p></div>',
                 '<div><h3>Crop bounds</h3><p>Lower index: <code>' + _text_value(geometry.get('crop_origin_ijk')) + '</code><br>Upper index (exclusive): <code>' + _text_value(geometry.get('crop_high_ijk_exclusive')) + '</code><br>Array shape (k, j, i): <code>' + _text_value(geometry.get('crop_shape_kji')) + '</code></p></div></div></section>',
                 edit_section,
+                recipe_section,
                 training_section,
                 '<section id="slices"><h2>Native 2D inspection' + before_suffix + '</h2><p>Inspect the transparent ROI against the tissue boundaries. Keep the intended target inside the overlay and adjacent structures outside it.</p>' + ''.join(figures[:2]) + '</section>',
                 '<section id="volume"><h2>Three-dimensional context' + before_suffix + '</h2><p>Drag to rotate, scroll to zoom, click the legend to toggle structures, and use the opacity controls. The interactive figure is embedded in this report and works without a network connection.</p>' + volume_content + figures[2],

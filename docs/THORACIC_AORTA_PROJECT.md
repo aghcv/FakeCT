@@ -6,8 +6,10 @@ hypoplasia, coarctation-like narrowing, and combined geometries.
 **Status:** the first staged training-study prototype now supports aorta preview,
 parameter planning, paired-data preparation and a 2D segmentation trainer.
 Start with the [practical study guide](TRAINING_STUDIES.md) and
-[aorta INI](../configs/studies/thoracic-aorta.ini). The actual aorta input remains
-unreviewed: only its preview is generated; no aorta cohort or GPU training has
+[aorta INI](../configs/studies/thoracic-aorta.ini). The user has reviewed the
+overall ROI through three iterations. [Named ROI recipes](EDIT_RECIPES.md) now
+support sequential regional edits and combined previews; their local regions
+and edit strengths are the next review step. No aorta cohort or GPU training has
 been launched. The broader multi-anatomy benchmark, `[test]` and `[generate]`
 methods below remain planned work.
 
@@ -46,11 +48,12 @@ cohort, split, normalization and model settings when their implementations exist
 An explicit method selector should run one method; merely including several
 sections must not silently run all of them.
 
-Current `fakect.edit/1` supports one crop-level edit. A future schema should
-reference an ordered, human-editable recipe for multiple operations, including
-overlap rules and operation order. Every independent cohort member starts from
-the immutable source; operations within a combined-lesion recipe act in the
-declared order. Preserve existing preview/edit inputs through versioned adapters.
+Current `fakect.edit/1` supports one crop-level edit; `fakect.recipe/1` supports
+named regions, ordered operations, bounded repetition and explicit overlap rules
+for combined edit review. Connecting recipe parameter sweeps to `[train]` is the
+next cohort extension. Every independent cohort member must start from the
+immutable source; operations within its recipe act on the evolving result in
+declared order. Existing preview/edit inputs remain supported.
 
 ## 3. What we can reuse and what must be added
 
@@ -58,7 +61,7 @@ declared order. Preserve existing preview/edit inputs through versioned adapters
 | --- | --- |
 | Audited XCAT sources, signed organ labels and DPI atlas tissue grouping | A reviewed thoracic-aorta selector, anatomical landmarks and complete target coverage |
 | Sphere/tube ROIs, native slice views and portable HTML reports | Aorta-specific centerlines, vessel-normal area measurements and lesion-specific QA |
-| Bounded erosion/dilation, spatial Gaussian profiles, protected tissue rules and deterministic reassignment | Ordered multi-operation recipes, geometry calibration and cohort sweeps |
+| Bounded erosion/dilation, named ROI recipes, spatial Gaussian profiles, protected tissue rules and deterministic reassignment | Geometry calibration and multi-operation cohort sweeps |
 | Original/edited crop labels, transition masks and a separate attenuation-copy proxy | Accepted image formation/reconstruction for training pairs and consistent volumetric export |
 | Staged paired-data prototype, 2D segmentation baseline and Wahab TensorFlow 2.17 launch wrapper | GPU validation, independent-anatomy evaluation and a production inference path |
 

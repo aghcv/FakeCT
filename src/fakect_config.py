@@ -110,7 +110,7 @@ def _path(value: str, label: str, root: Path) -> Path:
 
 def load_preview_config(path: Union[str, Path], *,
                         repo_root: Optional[Union[str, Path]] = None) -> Dict[str, Dict[str, Any]]:
-    """Load a preview or bounded-edit INI into typed sections or raise ``ValueError``.
+    """Load a preview, bounded-edit or named-recipe INI into typed sections.
 
     ``path`` itself is resolved by the caller's usual working-directory rules.
     Paths *inside* the file use ``repo_root`` (the repository containing this
@@ -129,6 +129,9 @@ def load_preview_config(path: Union[str, Path], *,
             parser.read_file(handle)
     except configparser.Error as error:
         raise ValueError(f"Invalid preview input {path}: {error}") from error
+    if parser.has_section("study") and parser["study"].get("schema_version", "").strip() == "fakect.recipe/1":
+        from fakect_recipe_config import parse_recipe_sections
+        return parse_recipe_sections(parser, root)
     return parse_preview_sections(parser, root)
 
 

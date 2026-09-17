@@ -150,11 +150,20 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
         raise ValueError('INI changed while loading; rerun with the saved input')
     code_files = [Path(__file__), ROOT/'src/fakect_roi.py', ROOT/'src/fakect_config.py',
                   ROOT/'src/fakect_volume_preview.py', ROOT/'src/fakect_tissues.py', ROOT/'src/fakect_preview_report.py',
-                  ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_edit_preview.py']
+                  ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_reassignment.py',
+                  ROOT/'src/fakect_edit_preview.py']
     code_files += [Path(p) for p in extra_code_files]
+    recipe_requested = 'recipe' in config
+    if recipe_requested:
+        code_files += [ROOT/'src/fakect_recipe.py', ROOT/'src/fakect_recipe_config.py',
+                       ROOT/'src/fakect_recipe_preview.py']
     code_hashes = {str(p.relative_to(ROOT)): digest(p) for p in code_files}
     resolved = resolve_preview(config)
     edit_requested = config.get('edit', {}).get('operation', 'none') != 'none'
+    recipe_plan = None
+    if recipe_requested:
+        from fakect_recipe import validate_recipe
+        recipe_plan = validate_recipe(config, resolved)
     if 'edit' in config:
         from fakect_morphology import validate_edit_geometry
         validate_edit_geometry(resolved, config)
@@ -169,15 +178,46 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                                      'roi_shape': resolved['roi_kind'], 'roi_nodes_ijk': resolved['roi_nodes_ijk'],
                                      'roi_radii_mm': resolved['roi_radii_mm'], 'slice_ijk': resolved['slice_ijk'],
                                      'operation': config.get('edit', {}).get('operation', 'none'),
+                                     'recipe': recipe_plan,
                                      'output': output}), indent=2))
         return
     arrays, sources = prepare_crop(resolved, config)
     selection = selection_diagnostics(arrays, resolved)
     edit_result = None
+    recipe_steps = []
+    recipe_figures = None
     if edit_requested:
         from fakect_morphology import apply_morphology
         edit_result = apply_morphology(arrays, resolved, config)
     output.mkdir(parents=True, exist_ok=True)
+    if recipe_requested:
+        (output / 'INCOMPLETE').write_text('Recipe preview is incomplete; no final report has been published.\n')
+        from fakect_recipe import apply_recipe, recipe_masks
+        from fakect_recipe_preview import render_recipe_rois, render_recipe_step
+        masks = recipe_masks(arrays, resolved, config)
+        recipe_figures = render_recipe_rois(arrays, resolved, config, masks, output)
+
+        def capture_step(event):
+            relative = f"steps/{event['index']:02d}-{event['step_name']}-iteration-{event['iteration']:02d}"
+            event['artifact_directory'] = relative
+            figures = render_recipe_step(event, output)
+            before, result = event['before_arrays'], event['result']
+            record = {**event['pass_summary'],
+                      **{key: event[key] for key in ('index', 'step_name', 'roi_name', 'iteration')}}
+            record.update(summary=result['summary'], figures=figures,
+                          array_artifact=relative+'/step.npz')
+            np.savez_compressed(output / record['array_artifact'],
+                                **{key: value for key, value in result.items() if isinstance(value, np.ndarray)},
+                                before_labels=before['act'], before_attenuation_per_pixel=before['atn'],
+                                before_tissue_labels=before['tissue'], roi_mask=before['roi'],
+                                step_json=np.array(json.dumps(json_value(record), allow_nan=False)),
+                                input_config_sha256=np.array(hashlib.sha256(config_bytes).hexdigest()))
+            recipe_steps.append(record)
+            counts = result['summary']['counts']
+            print(f"Recipe pass {event['index']}: {event['step_name']} / {event['roi_name']} / "
+                  f"iteration {event['iteration']}; added={counts['added']}, removed={counts['removed']}", flush=True)
+
+        edit_result = apply_recipe(arrays, resolved, config, on_step=capture_step)
     print(f"Read native crop {arrays['act'].shape}; selected voxels={int(arrays['selected'].sum())}", flush=True)
     plot_stats = render_slices(arrays, resolved, config, output)
     if training_plan is not None:
@@ -193,7 +233,8 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
         volume_opacity=config['preview']['volume_opacity'], context_opacity=config['preview']['context_opacity'], output_dir=output)
     if edit_result is not None:
         from fakect_edit_preview import render_edit_comparison
-        edit_figures = render_edit_comparison(arrays, edit_result, resolved, config, output)
+        figure_config = config if not recipe_requested else {**config, 'edit': {'operation': 'recipe'}}
+        edit_figures = render_edit_comparison(arrays, edit_result, resolved, figure_config, output)
         after_volume = render_volume_preview(edit_result['edited_labels'], edit_result['edited_tissue_labels'],
             resolved['catalog'], edit_result['target_mask_after'],
             crop_origin_ijk=resolved['crop_low_ijk'], spacing_ijk_mm=resolved['spacing_ijk_mm'],
@@ -212,7 +253,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                        np.any(np.max(nodes_mm+radii, axis=0) > (np.asarray(resolved['shape_kji'][::-1])-.5)*spacing))
     if any(digest(p) != code_hashes[str(p.relative_to(ROOT))] for p in code_files):
         raise ValueError('Preview source code changed during rendering; retain these partial outputs and rerun to a new directory')
-    report = {'schema_version': 'fakect.roi-preview/3' if edit_requested else 'fakect.roi-preview/2',
+    report = {'schema_version': 'fakect.roi-preview/4' if recipe_requested else ('fakect.roi-preview/3' if edit_requested else 'fakect.roi-preview/2'),
               'generated_at_utc': datetime.now(timezone.utc).isoformat(),
               'preview_only': True, 'geometry_edited': bool(edit_result is not None and edit_result['changed_mask'].any()),
               'source_volumes_modified': False, 'scalar_recovery_performed': False, 'config': json_value(config),
@@ -244,14 +285,21 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
         report['training_plan'] = {**training_plan, 'target_preview': target_stats}
         report['rerun_command'] = 'python3 scripts/train_study.py --config /path/to/study.ini --stage preview'
     if edit_result is not None:
-        report['edit'] = {**edit_result['summary'], 'figures': edit_figures, 'after_volume': after_volume,
-                          'scope': 'Derived native crop only; source volumes preserved', 'array_artifact': 'edit.npz'}
+        if recipe_requested:
+            report['recipe'] = {**edit_result['summary'], 'figures': recipe_figures,
+                                'engine_steps': edit_result['summary'].get('steps', []), 'steps': recipe_steps,
+                                'final_figures': edit_figures, 'after_volume': after_volume,
+                                'array_artifact': 'edit.npz', 'plan': recipe_plan}
+        else:
+            report['edit'] = {**edit_result['summary'], 'figures': edit_figures, 'after_volume': after_volume,
+                              'scope': 'Derived native crop only; source volumes preserved', 'array_artifact': 'edit.npz'}
+        metadata_key = 'recipe' if recipe_requested else 'edit'
         np.savez_compressed(output / 'edit.npz',
             **{key: value for key, value in edit_result.items() if isinstance(value, np.ndarray)},
             original_labels=arrays['act'], original_tissue_labels=arrays['tissue'],
             original_attenuation_per_pixel=arrays['atn'], roi_mask=arrays['roi'],
             geometry_json=np.array(json.dumps(json_value(report['geometry']))),
-            edit_json=np.array(json.dumps(json_value(report['edit']), allow_nan=False)),
+            edit_json=np.array(json.dumps(json_value(report[metadata_key]), allow_nan=False)),
             catalog_json=np.array(resolved['catalog_bytes'].decode('utf-8')))
     if not arrays['candidates'].any():
         report['selection_warning'] = 'Tissue candidates are absent from this crop; relocate the ROI or change tissue selection.'
@@ -264,16 +312,19 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                         catalog_json=np.array(resolved['catalog_bytes'].decode('utf-8')))
     (output / 'input.ini').write_bytes(config_bytes)
     (output / 'resolved-config.json').write_text(json.dumps(json_value(config), indent=2) + '\n')
-    report['artifacts_sha256'] = {str(p.relative_to(output)): digest(p) for p in output.rglob('*') if p.is_file()}
+    report['artifacts_sha256'] = {str(p.relative_to(output)): digest(p) for p in output.rglob('*') if p.is_file() and p.name != 'INCOMPLETE'}
     (output / 'preview-report.json').write_text(json.dumps(json_value(report), indent=2, allow_nan=False) + '\n')
     from fakect_preview_report import write_preview_report
     html = write_preview_report(output, json_value(report), config_bytes.decode('utf-8-sig'))
+    if recipe_requested:
+        (output / 'INCOMPLETE').unlink()
     manifest = {str(p.relative_to(output)): digest(p) for p in output.rglob('*') if p.is_file()}
     (output / 'artifact-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(json.dumps({'report': html['path'], 'output': str(output), 'selected_voxels': report['selected_voxels'],
                       'candidate_voxels': report['candidate_voxels'], 'connected_components': selection['component_count_6'],
                       'unknown_group_voxels': report['unknown_group_voxels'],
                       'edit': report.get('edit', {}).get('counts'),
+                      'recipe': report.get('recipe', {}).get('counts'),
                       'warning': report.get('selection_warning')}, indent=2), flush=True)
     return report
 

@@ -4,6 +4,9 @@
 > and [morphology workflow](docs/MORPHOLOGY.md), using the same command.
 > Aorta study: [editable input](configs/studies/thoracic-aorta.ini) and
 > [preview → paired data → training guide](docs/TRAINING_STUDIES.md).
+> Combine regional changes with [named ROI recipes](docs/EDIT_RECIPES.md)
+> and the [aorta recipe input](configs/studies/thoracic-aorta-recipe.ini).
+> Tissue resistance is editable through `[stiffness]` and original-ID overrides.
 > Broader project: [thoracic-aorta segmentation and the four-method workflow](docs/THORACIC_AORTA_PROJECT.md).
 > Tissue grouping: [DPI atlas workbench and usage](docs/TISSUE_MAPPING.md).
 
@@ -11,7 +14,7 @@
 > [the evaluation and milestone plan](docs/integration/2026-09-16/PLAN.md).
 > This branch assembles the existing phantom GUI, TensorFlow trainer, and XCAT
 > utilities. A bounded, one-anatomy training-study prototype is available; its
-> aorta ROI is awaiting review. The broad unified cohort configuration remains a
+> overall aorta ROI has been reviewed; local edit regions are being refined. The broad unified cohort configuration remains a
 > **design draft**, and multi-anatomy benchmark/inference work is still planned.
 
 # FakeCT — Minimal synthetic CT / voxelization toolkit

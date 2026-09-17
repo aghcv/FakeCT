@@ -11,6 +11,7 @@ import numpy as np
 from scipy import ndimage
 
 from fakect_tissues import _validated_labels, coarse_labels
+from fakect_reassignment import reassignment_masks, stiffness_field, validate_reassignment_policy
 
 
 ENGINE = 'weighted_6_neighbor_mm_v1'
@@ -52,12 +53,10 @@ def _edit_spec(resolved, config):
     categories = {c['name']: c['id'] for c in resolved['catalog']['categories']}
     target = config['selection']['tissue']
     allowed = tuple(policy.get('allowed_tissues', ()))
-    if len(set(allowed)) != len(allowed):
-        raise ValueError('reassignment.allowed_tissues must not repeat a tissue')
-    if any(name not in categories or name == 'unknown' for name in allowed):
-        raise ValueError('Allowed tissues must be known catalog groups; unknown can never be reassigned')
-    if target in allowed:
-        raise ValueError('Allowed reassignment tissues must be disjoint from the target tissue')
+    target_ids = resolved.get('source_ids') or config['selection'].get('source_ids') or tuple(
+        record['original_id'] for record in resolved['catalog']['records']
+        if record['classification']['tissue_name'] == target)
+    validate_reassignment_policy(resolved['catalog'], policy, target, target_ids)
     if target not in categories or (operation != 'none' and target in ('unknown', 'background')):
         raise ValueError('The edit target must be a known anatomical tissue, not unknown/background')
     return {'operation': operation, 'distance': distance, 'search': search, 'profile': profile,
@@ -190,15 +189,20 @@ def _distances(domain, seeds, spacing, maximum, initial=None):
     return distances.reshape(domain.shape)
 
 
-def _owned_paths(domain, seeds, spacing, maximum, labels, budgets=None):
+def _owned_paths(domain, seeds, spacing, maximum, labels, budgets=None, initial=None):
     """Accepted frontier propagation; ties use original signed ID then seed index."""
     flat_domain, flat_labels, flat_seeds = domain.ravel(), labels.ravel(), seeds.ravel()
     limit = None if budgets is None else budgets.ravel()
     distances = np.full(domain.size, np.inf)
     owners = np.full(domain.size, -1, dtype=np.int32)
     ids = np.flatnonzero(seeds)
-    heap = [(0.0, int(flat_labels[p]), int(p), int(p)) for p in ids]
-    distances[ids], owners[ids] = 0., ids
+    values = np.zeros(len(ids)) if initial is None else np.asarray(initial).ravel()[ids]
+    if not np.all(np.isfinite(values)) or np.any(values < 0):
+        raise ValueError('Recipient seed costs must be finite and nonnegative')
+    accepted = values <= maximum + _TOL
+    ids, values = ids[accepted], values[accepted]
+    heap = [(float(cost), int(flat_labels[p]), int(p), int(p)) for p, cost in zip(ids, values)]
+    distances[ids], owners[ids] = values, ids
     heapq.heapify(heap)
     while heap:
         distance, owner_label, owner, index = heapq.heappop(heap)
@@ -237,8 +241,8 @@ def _erosion_boundary(candidates, spacing):
 def apply_morphology(arrays, resolved, config):
     """Return edited copies, exact audit masks, and a scalar COPY proxy.
 
-    Unknown/unlisted donors are never modified. Empty eligible tissue lists mean
-    no reassignment. Release propagation traverses only requested release voxels;
+    The configured policy determines eligible current-state donors/recipients.
+    Release propagation traverses only requested release voxels;
     dilation traverses only accepted target/proposed eligible donor voxels.
     """
     labels = _validated_labels(arrays['act'])
@@ -273,18 +277,22 @@ def apply_morphology(arrays, resolved, config):
     spacing = tuple(map(float, resolved['spacing_ijk_mm']))
     strength = strength_field_mm(labels.shape, resolved, config)
     strength[~roi] = 0
+    resistance = (stiffness_field(labels, resolved['catalog'], config['reassignment'])
+                  if config.get('reassignment', {}).get('mode') == 'stiffness' else None)
+    effective_strength = strength if resistance is None else strength * (1 - resistance)
     proposed_added = np.zeros_like(before)
     proposed_removed = np.zeros_like(before)
+    requested_removed = np.zeros_like(before)
     added, removed, blocked, unresolved = (np.zeros_like(before) for _ in range(4))
     edited = labels.copy()
     proxy = attenuation.copy()
-    eligible = np.isin(tissue, spec['allowed_codes'])
+    eligible, protected, reassignment_policy = reassignment_masks(labels, candidates, resolved['catalog'], config.get('reassignment', {}))
     warnings = []
     if spec['operation'] == 'dilation' and spec['distance'] > 0:
         distance = _distances(roi, before, spacing, spec['distance'])
         proposed_added = roi & ~candidates & (distance <= strength + _TOL) & (strength > 0)
         domain = before | (proposed_added & eligible)
-        _, owners = _owned_paths(domain, before, spacing, spec['distance'], labels, strength)
+        _, owners = _owned_paths(domain, before, spacing, spec['distance'], labels, effective_strength)
         added = proposed_added & (owners >= 0)
         blocked = proposed_added & ~added
         edited[added] = labels.ravel()[owners[added]]
@@ -292,10 +300,12 @@ def apply_morphology(arrays, resolved, config):
     elif spec['operation'] == 'erosion' and spec['distance'] > 0:
         seeds, boundary_distance = _erosion_boundary(candidates, spacing)
         distance = _distances(candidates, seeds, spacing, spec['distance'], boundary_distance)
-        proposed_removed = before & (distance <= strength + _TOL) & (strength > 0)
+        requested_removed = before & (distance <= strength + _TOL) & (strength > 0)
+        proposed_removed = before & (distance <= effective_strength + _TOL) & (effective_strength > 0)
         recipient_seeds = eligible & ndimage.binary_dilation(proposed_removed, structure=_STRUCTURE)
         domain = proposed_removed | recipient_seeds
-        _, owners = _owned_paths(domain, recipient_seeds, spacing, spec['search'], labels)
+        initial = None if resistance is None else resistance * spec['search']
+        _, owners = _owned_paths(domain, recipient_seeds, spacing, spec['search'], labels, initial=initial)
         removed = proposed_removed & (owners >= 0)
         unresolved = proposed_removed & ~removed
         if np.any(unresolved) and spec['unresolved'] == 'error':
@@ -330,9 +340,24 @@ def apply_morphology(arrays, resolved, config):
                'ownership_tie_break': 'Shortest accepted six-edge physical path, then lowest signed original ID, then earliest original source k,j,i coordinate.',
                'allowed_tissues': list(spec['allowed_tissues']), 'recipient_max_distance_mm': spec['search'],
                'unresolved_policy': spec['unresolved'], 'halo': halo}
-    return {'edited_labels': edited, 'edited_tissue_labels': coarse_labels(edited, resolved['catalog']),
+    summary['reassignment_policy'] = reassignment_policy
+    if resistance is not None:
+        summary['counts']['requested_removed_before_stiffness'] = int(requested_removed.sum())
+        summary['counts']['release_suppressed_by_target_stiffness'] = int((requested_removed & ~proposed_removed).sum())
+        summary['stiffness_count_semantics'] = ('Dilation proposed_added uses the original requested distance; blocked includes resistance and other eligibility/path limits. Erosion proposed_removed is after target resistance; requested_removed_before_stiffness records the unscaled request. Unresolved counts failed recipient assignments after that release selection.')
+        summary['effective_distance_mm_range_in_roi'] = ([float(effective_strength[roi].min()), float(effective_strength[roi].max())]
+                                                        if roi.any() else [0., 0.])
+        summary['ownership_tie_break'] = ('Recipient: minimum seed stiffness penalty plus physical six-edge path distance; '
+                                         'then lowest signed original ID and earliest seed coordinate. Dilation: physical path with local donor budgets.')
+    if np.any(changed & protected) or np.any((proxy != attenuation) & protected):
+        raise RuntimeError('Morphology changed a protected input label/scalar')
+    result = {'edited_labels': edited, 'edited_tissue_labels': coarse_labels(edited, resolved['catalog']),
             'target_mask_before': before.copy(), 'target_mask_after': after,
             'proposed_added_mask': proposed_added, 'proposed_removed_mask': proposed_removed,
             'added_mask': added, 'removed_mask': removed, 'blocked_mask': blocked,
             'unresolved_mask': unresolved, 'changed_mask': changed,
             'attenuation_proxy_per_pixel': proxy, 'strength_mm': strength, 'summary': summary}
+    if resistance is not None:
+        result.update(stiffness_field=resistance, effective_strength_mm=effective_strength,
+                      requested_removed_mask=requested_removed)
+    return result
