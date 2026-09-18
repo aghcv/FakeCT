@@ -372,6 +372,44 @@ class RecipeFigureTests(unittest.TestCase):
             for key in ('overview', 'closeups', 'surfaces'):
                 self.assertTrue((Path(tmp)/result[key]).read_bytes().startswith(b'\x89PNG\r\n'))
 
+    def test_tube_step_exports_parent_arc_profile_and_keeps_axial_diagnostic(self):
+        shape = (20, 12, 12)
+        k, j, i = np.indices(shape)
+        before = ((i-5)**2+(j-5)**2 <= 4) & (k >= 5) & (k <= 10)
+        added = (i == 8) & (j == 5) & (k >= 5) & (k <= 10)
+        after = before | added
+        roi = ((i-5)**2+(j-5)**2 <= 9) & (k >= 5) & (k <= 10)
+        footprint = ((i-5)**2+(j-5)**2 <= 16) & (k >= 4) & (k <= 11)
+        empty = np.zeros(shape, dtype=bool)
+        edit = {'target_mask_before': before, 'target_mask_after': after,
+                'added_mask': added, 'removed_mask': empty, 'blocked_mask': empty,
+                'unresolved_mask': empty, 'edited_tissue_labels': np.where(after, 6, 1),
+                'strength_mm': np.where(footprint, 2., 0.),
+                'summary': {'counts': {'added': 6, 'removed': 0, 'blocked': 0, 'unresolved': 0}}}
+        event = {'before_arrays': {'roi': roi, 'edit_region': footprint, 'selected': before,
+                                  'tissue': np.where(before, 6, 1), 'atn': np.where(before, .2, .05)},
+                 'result': edit,
+                 'resolved': {'crop_low_ijk': (0, 0, 0), 'crop_high_ijk_exclusive': (12, 12, 20),
+                              'spacing_ijk_mm': (1, 1, 1), 'slice_ijk': (5, 5, 7),
+                              'roi_kind': 'tube', 'roi_nodes_ijk': [[5, 5, 5], [5, 5, 10]],
+                              'range_parent_nodes_ijk': [[5, 5, 0], [5, 5, 19]],
+                              'range_interval_mm': [5, 10],
+                              'catalog': {'categories': [{'id': 1, 'name': 'soft_tissue'}, {'id': 6, 'name': 'artery'}]}},
+                 'config': {'study': {'name': 'Tube distance fixture'}, 'edit': {'operation': 'dilation'},
+                            'recipe': {'roi_role': 'selection'}},
+                 'pass_summary': {'parent_roi': 'aorta'},
+                 'index': 1, 'iteration': 1, 'step_name': 'grow', 'roi_name': 'edit:grow'}
+        with tempfile.TemporaryDirectory() as tmp:
+            figures = render_recipe_step(event, tmp)
+            self.assertEqual(figures['profile_coordinate'], 'centerline_arc_length_mm')
+            self.assertEqual(figures['profile_roi_name'], 'aorta')
+            self.assertEqual(figures['profile_length_mm'], 19.)
+            self.assertEqual(figures['arc_profile']['range_interval_mm'], [5, 10])
+            self.assertEqual(sum(figures['arc_profile']['volume_mm3']['added']), 6.)
+            for key in ('comparison', 'profile', 'axial_profile'):
+                self.assertTrue((Path(tmp)/figures[key]).read_bytes().startswith(b'\x89PNG\r\n'))
+            self.assertIn('center_percent', (Path(tmp)/figures['profile_data']).read_text())
+
     def test_range_region_renderer_uses_resolved_definitions_and_preserves_mask_keys(self):
         k, j, i = np.indices((8, 8, 8))
         target = ((i-3)**2+(j-3)**2 < 4)

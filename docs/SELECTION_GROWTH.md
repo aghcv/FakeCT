@@ -15,8 +15,10 @@ roi_role = selection
 
 The ROI and path interval select original artery voxels. Their edited offspring
 may extend beyond both the tube wall and the main ROI. You do not need to widen
-the selector to provide growth space. The output is
-[recipe-v8/report.html](../outputs/studies/thoracic-aorta/recipe-v8/report.html).
+the selector to provide growth space. The original evaluation is
+[recipe-v8/report.html](../outputs/studies/thoracic-aorta/recipe-v8/report.html);
+[recipe-v9](../outputs/studies/thoracic-aorta/recipe-v9/report.html) retains the
+same edits with [centerline-distance profiles](CENTERLINE_PROFILES.md).
 Omitting `roi_role`, or setting it to `boundary`, retains the earlier behavior
 that clips every edit to its ROI.
 
@@ -94,7 +96,7 @@ k,j,i crop; -1 indicates a non-target voxel. The saved geometry converts them
 to native coordinates. Final counts include offspring outside the main ROI;
 `changed_outside_selection_roi` identifies those changes explicitly.
 
-After editing the INI, choose a fresh output directory such as `recipe-v9`, then
+After editing the INI, choose a fresh output directory such as `recipe-v10`, then
 run from the integrated worktree:
 
 ```bash

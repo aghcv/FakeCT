@@ -91,6 +91,57 @@ def _embed_volume(output, filename, title, embedded):
             _escape(document) + '"></iframe>')
 
 
+def _embed_edit_profile(output, figures, filename, legacy_heading, legacy_caption,
+                        arc_heading, arc_context, embedded):
+    """Describe the recorded profile coordinate, retaining legacy axial reports."""
+    heading, caption = legacy_heading, legacy_caption
+    if figures.get('profile_coordinate') == 'centerline_arc_length_mm':
+        heading = arc_heading
+        reference = figures.get('profile_roi_name')
+        caption = ('The horizontal axis is physical distance in millimeters from the start of the full '
+                   'parent ROI, following its original unsmoothed control-point polyline. This is the '
+                   'same path used by path_percent; it is not the smoothed direction-reference spline. ')
+        if reference is not None:
+            caption += 'Profile ROI: ' + str(reference) + '. '
+        length = figures.get('profile_length_mm')
+        if length is not None:
+            try:
+                length = format(float(length), ',.6g')
+            except (TypeError, ValueError, OverflowError):
+                length = str(length)
+            caption += 'Full parent path length: ' + length + ' mm. '
+        caption += ('Voxels are grouped by their nearest centerline arc bin; assigned voxel volume divided '
+                    'by bin length gives an area equivalent (mm²), not a vessel-normal cross-section. ')
+        if figures.get('profile_area_semantics'):
+            caption += str(figures['profile_area_semantics']) + ' '
+        caption += arc_context
+    content = _embed_png(output, filename, heading, caption, embedded)
+    endpoint_volumes = figures.get('arc_profile', {}).get('endpoint_volume_mm3', {})
+    if endpoint_volumes:
+        labels = {'before': 'Target before', 'after': 'Target after', 'added': 'Added target',
+                  'removed': 'Removed target', 'blocked': 'Blocked proposals', 'unresolved': 'Unresolved proposals'}
+        rows = [[_escape(labels.get(key, key)), _measurement(values[0]), _measurement(values[1])]
+                for key, values in endpoint_volumes.items() if isinstance(values, (list, tuple)) and len(values) == 2]
+        content += ('<details><summary>Endpoint-projected volumes excluded from the curves</summary>'
+                    '<p>Voxels whose nearest path coordinate is exactly the start or end have no resolved '
+                    'longitudinal span. These volumes are kept separate from the interior bin curves; '
+                    'interior bins plus both endpoint totals conserve each mask’s volume.</p>' +
+                    _table(['Quantity', 'Start endpoint (mm³)', 'End endpoint (mm³)'], rows) + '</details>')
+    if figures.get('profile_data'):
+        content += ('<p class="subtle">Plotted bin data: <code>' + _text_value(figures['profile_data']) +
+                    '</code> in the output directory. The CSV contains the interior bin values; '
+                    'endpoint totals are recorded separately in the profile metadata.</p>')
+    if figures.get('axial_profile'):
+        primary_note = (' The primary plot above follows distance along the ROI centerline.'
+                        if figures.get('profile_coordinate') == 'centerline_arc_length_mm' else '')
+        content += ('<details><summary>Native axial diagnostic (k slices)</summary>' +
+                    _embed_png(output, figures['axial_profile'], 'Native axial profile diagnostic',
+                               'This saved diagnostic uses native k-index slices. Its areas are intersections '
+                               'with fixed axial planes, not vessel-normal cross-sections.' + primary_note,
+                               embedded) + '</details>')
+    return content
+
+
 class _AssetReferences(HTMLParser):
     """Reject linked resources in the otherwise trusted generated 3D document."""
     def __init__(self):
@@ -423,9 +474,13 @@ def _morphology_section(output, report, embedded):
     figures = _embed_png(output, 'edit-comparison.png', 'Before, after and difference',
                          'Compare the original target and edited result at the same native coordinates. '
                          'Read the difference legend for applied additions and removals; source images remain preserved.', embedded)
-    figures += _embed_png(output, 'edit-profile.png', 'Achieved cross-sections and edit profile',
-                          'Measured cross-sections describe this edited crop. A requested distance or profile is an '
-                          'input to the trial; assess the achieved change shown here before using it for a cohort.', embedded)
+    figures += _embed_edit_profile(output, edit.get('figures', {}), 'edit-profile.png',
+                                   'Achieved cross-sections and edit profile',
+                                   'Measured cross-sections describe this edited crop. A requested distance or profile is an '
+                                   'input to the trial; assess the achieved change shown here before using it for a cohort.',
+                                   'Edit profile and achieved geometry along the ROI centerline',
+                                   'A requested edit distance is an input to the trial; assess the achieved change '
+                                   'before using it for a cohort.', embedded)
     after = ''
     if (output / 'after/roi-volume.html').is_file() or (output / 'after/roi-surfaces.png').is_file():
         after = '<h3>After-edit 3D context</h3><p>The target and tissue context below use the edited labels. '
@@ -545,7 +600,12 @@ def _recipe_section(output, report, embedded):
                   'they are not vessel-normal lumen areas.' if selection_role else
                   'Areas belong to this effective named ROI for this pass; they are not vessel-normal lumen areas.'))):
             if step_figures.get(key):
-                content.append(_embed_png(output, step_figures[key], title, caption, embedded))
+                if key == 'profile':
+                    content.append(_embed_edit_profile(output, step_figures, step_figures[key], title, caption,
+                                                       'Requested profile and achieved geometry along the ROI centerline',
+                                                       caption, embedded))
+                else:
+                    content.append(_embed_png(output, step_figures[key], title, caption, embedded))
         metadata_rows = [[label, _text_value(value)] for label, value in (
             ('Status', step.get('status', summary.get('status'))),
             ('Base ROI', parent_roi),
@@ -628,7 +688,12 @@ def _recipe_section(output, report, embedded):
               if selection_role else 'Original and final target areas are measured within the main ROI. ') + 'Blocked and unresolved '
              'masks are unions across passes; the requested profile is the maximum per-pass request, not a sum.')):
         if final_figures.get(key):
-            final += _embed_png(output, final_figures[key], heading, caption, embedded)
+            if key == 'profile':
+                final += _embed_edit_profile(output, final_figures, final_figures[key], heading, caption,
+                                             'Final geometry and recipe activity along the ROI centerline',
+                                             caption, embedded)
+            else:
+                final += _embed_png(output, final_figures[key], heading, caption, embedded)
     if (output/'after/roi-volume.html').is_file():
         final += '<h3>Final interactive 3D context</h3>' + _embed_volume(
             output, 'after/roi-volume.html', 'Final recipe target and tissue volume', embedded)

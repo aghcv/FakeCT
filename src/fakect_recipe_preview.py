@@ -218,10 +218,15 @@ def render_recipe_step(event, output):
         focus = _focus(display_mask, changed, resolved['crop_low_ijk'])
     resolved['slice_ijk'] = focus
     resolved['focus_ijk'] = focus
-    figures = render_edit_comparison(arrays, edit, resolved, event['config'], destination,
+    figure_config = {**event['config'],
+                     'profile_roi_name': event.get('pass_summary', {}).get('parent_roi', event['roi_name'])}
+    figures = render_edit_comparison(arrays, edit, resolved, figure_config, destination,
                                      before_is_source=False)
     figures['comparison'] = str(Path(directory)/figures['comparison'])
     figures['profile'] = str(Path(directory)/figures['profile'])
+    for key in ('axial_profile', 'profile_data'):
+        if key in figures:
+            figures[key] = str(Path(directory)/figures[key])
     figures['artifact_directory'] = str(directory)
     figures['focus_ijk'] = list(focus)
     figures['focus_semantics'] = ('A changed voxel near the changed-region centroid, including growth outside the original selector; otherwise a tracked target voxel'

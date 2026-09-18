@@ -145,7 +145,9 @@ def render_edit_comparison(arrays, edit, resolved, config, output_dir, *, before
              'Six-neighbor distances are weighted by voxel spacing; subvoxel changes may produce no changed labels.',
              ha='center', fontsize=10)
     fig.tight_layout(rect=(0, .065, 1, .955))
-    fig.savefig(output / 'edit-profile.png', dpi=145)
+    from fakect_arc_profile import build_arc_profile, render_arc_profile
+    arc_profile = build_arc_profile(edit, resolved, config, edit_region if selection_role else arrays['roi'])
+    fig.savefig(output / ('edit-profile-axial.png' if arc_profile else 'edit-profile.png'), dpi=145)
     plt.close(fig)
     result = {'comparison': 'edit-comparison.png', 'profile': 'edit-profile.png',
             'axial_k': k.tolist(), 'before_roi_axial_area_mm2': before.tolist(),
@@ -161,4 +163,8 @@ def render_edit_comparison(arrays, edit, resolved, config, output_dir, *, before
                       before_tracked_axial_area_mm2=before.tolist(), after_tracked_axial_area_mm2=after.tolist(),
                       roi_area_semantics='Fixed original-selector intersections, separate from the displayed complete tracked-target areas',
                       mask_semantics='Solid orange is the fixed original selector; dashed blue is the permitted edit footprint; cyan is the tracked target')
+    if arc_profile:
+        result.update(arc_profile)
+        result['axial_profile'] = 'edit-profile-axial.png'
+        result.update(render_arc_profile(arc_profile, config, names, colors, output))
     return result

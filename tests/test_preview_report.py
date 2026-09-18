@@ -335,6 +335,71 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('python3 scripts/preview_roi.py --config /path/to/xcat-roi.ini', document)
         self.assertEqual(len(metadata['embedded_assets']), 8)
 
+    def test_single_edit_arc_profile_labels_and_optional_axial_diagnostic(self):
+        report = self.morphology_report()
+        report['edit']['figures'] = {
+            'profile_coordinate': 'centerline_arc_length_mm', 'profile_roi_name': 'main',
+            'profile_length_mm': 205.25, 'profile_area_semantics': 'Endpoint volumes are reported separately.',
+            'axial_profile': 'edit-profile-axial.png', 'profile_data': 'edit-profile.csv',
+            'arc_profile': {'endpoint_volume_mm3': {'before': [12.5, 3], 'after': [14, 2]}}}
+        (self.output/'edit-profile-axial.png').write_bytes(PNG)
+        metadata, document = self.write(report)
+        self.assertIn('Edit profile and achieved geometry along the ROI centerline', document)
+        self.assertNotIn('<h3>Achieved cross-sections and edit profile</h3>', document)
+        self.assertIn('physical distance in millimeters from the start of the full parent ROI', document)
+        self.assertIn('original unsmoothed control-point polyline', document)
+        self.assertIn('same path used by path_percent', document)
+        self.assertIn('Profile ROI: main. Full parent path length: 205.25 mm.', document)
+        self.assertIn('area equivalent (mm²), not a vessel-normal cross-section', document)
+        self.assertIn('Endpoint volumes are reported separately.', document)
+        self.assertIn('<td>Target before</td><td>12.5</td><td>3</td>', document)
+        self.assertIn('<td>Target after</td><td>14</td><td>2</td>', document)
+        self.assertIn('Plotted bin data: <code>edit-profile.csv</code>', document)
+        self.assertNotIn('edit-profile.csv', metadata['embedded_assets'])
+        self.assertIn('edit-profile-axial.png', metadata['embedded_assets'])
+        self.assertEqual(document.count('<summary>Native axial diagnostic (k slices)</summary>'), 1)
+
+    def test_recipe_profiles_can_mix_recorded_arc_and_legacy_axial_coordinates(self):
+        arc = {'profile_coordinate': 'centerline_arc_length_mm', 'profile_roi_name': 'main',
+               'profile_length_mm': 100, 'profile_area_semantics': 'Interior voxel volume per bin length.'}
+        first_figures = dict(arc, profile='steps/01-grow/edit-profile.png',
+                             axial_profile='steps/01-grow/edit-profile-axial.png')
+        final_figures = dict(arc, profile='edit-profile.png', axial_profile='edit-profile-axial.png')
+        paths = ['steps/01-grow/edit-profile.png', 'steps/01-grow/edit-profile-axial.png',
+                 'steps/02-legacy/edit-profile.png', 'edit-profile.png', 'edit-profile-axial.png']
+        for name in paths:
+            path = self.output/name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(PNG)
+        self.report['config']['recipe'] = {'steps': ['grow', 'legacy'], 'roi_role': 'selection'}
+        self.report['recipe'] = {
+            'roi_role': 'selection', 'counts': {}, 'figures': {}, 'steps': [
+                {'step_name': 'grow', 'roi_name': 'main', 'iteration': 1, 'operation': 'dilation',
+                 'figures': first_figures},
+                {'step_name': 'legacy', 'roi_name': 'main', 'iteration': 1, 'operation': 'erosion',
+                 'figures': {'profile': 'steps/02-legacy/edit-profile.png'}}],
+            'final_figures': final_figures}
+        metadata, document = self.write()
+        self.assertIn('Requested profile and achieved geometry along the ROI centerline', document)
+        self.assertIn('Final geometry and recipe activity along the ROI centerline', document)
+        self.assertIn('Requested profile and achieved axial areas', document)
+        self.assertNotIn('Final axial geometry and recipe activity', document)
+        self.assertIn('offspring outside the original selector', document)
+        self.assertIn('requested profile is the maximum per-pass request, not a sum', document)
+        self.assertEqual(document.count('<summary>Native axial diagnostic (k slices)</summary>'), 2)
+        self.assertTrue(set(paths).issubset(metadata['embedded_assets']))
+
+    def test_profile_coordinate_metadata_cannot_inject_markup(self):
+        report = self.morphology_report(after_assets=False)
+        payload = '<script>window.BAD=true</script><img src=x onerror="evil()">'
+        report['edit']['figures'] = {'profile_coordinate': 'centerline_arc_length_mm',
+                                     'profile_roi_name': payload, 'profile_length_mm': payload,
+                                     'profile_area_semantics': payload}
+        _, document = self.write(report)
+        self.assertNotIn(payload, document)
+        self.assertIn('&lt;script&gt;window.BAD=true&lt;/script&gt;', document)
+        self.assertEqual(sum(tag == 'script' for tag, _ in Document(document).tags), 1)
+
     def test_registered_surface_overlay_is_portable_and_metadata_is_escaped(self):
         report = self.morphology_report()
         payload = '<script>window.UNSAFE=true</script>'

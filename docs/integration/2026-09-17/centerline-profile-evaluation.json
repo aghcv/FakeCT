@@ -1,0 +1,171 @@
+{
+  "output": "outputs/studies/thoracic-aorta/recipe-v9",
+  "all_numeric_crop_and_edit_arrays_equal_recipe_v8": {
+    "crop.npz": 6,
+    "edit.npz": 26,
+    "steps/01-arch_outer_expand-iteration-01/step.npz": 29,
+    "steps/02-arch_inner_narrow-iteration-01/step.npz": 29
+  },
+  "manifest_artifacts_verified": 40,
+  "generating_code_hashes_verified": 20,
+  "morphology_counts_unchanged": {
+    "before": 52576,
+    "after": 54286,
+    "added": 1710,
+    "removed": 0,
+    "changed": 1710,
+    "scalar_changed": 1710,
+    "ever_changed": 1710,
+    "proposed_added": 1812,
+    "proposed_removed": 35,
+    "blocked": 102,
+    "unresolved": 35,
+    "changed_outside_selection_roi": 1020,
+    "added_outside_selection_roi": 1020,
+    "removed_outside_selection_roi": 0,
+    "changed_outside_edit_selectors": 1020
+  },
+  "profiles": [
+    {
+      "figure": "edit-profile.png",
+      "roi": "main",
+      "length_mm": 204.1933106999441,
+      "bin_count": 103,
+      "bin_width_mm": 1.9824593271839233,
+      "range_interval_mm": [
+        0.0,
+        204.1933106999441
+      ],
+      "native_volume_mm3_interior_plus_endpoints": {
+        "before": 52576.0,
+        "after": 54286.0,
+        "added": 1710.0,
+        "removed": 0.0,
+        "blocked": 102.0,
+        "unresolved": 35.0
+      },
+      "endpoint_volume_mm3": {
+        "before": [
+          1679.0,
+          1893.0
+        ],
+        "after": [
+          1679.0,
+          1893.0
+        ],
+        "added": [
+          0.0,
+          0.0
+        ],
+        "removed": [
+          0.0,
+          0.0
+        ],
+        "blocked": [
+          0.0,
+          0.0
+        ],
+        "unresolved": [
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "figure": "steps/01-arch_outer_expand-iteration-01/edit-profile.png",
+      "roi": "main",
+      "length_mm": 204.1933106999441,
+      "bin_count": 103,
+      "bin_width_mm": 1.9824593271839233,
+      "range_interval_mm": [
+        6.125799320998323,
+        40.83866213998883
+      ],
+      "native_volume_mm3_interior_plus_endpoints": {
+        "before": 9375.0,
+        "after": 11085.0,
+        "added": 1710.0,
+        "removed": 0.0,
+        "blocked": 102.0,
+        "unresolved": 0.0
+      },
+      "endpoint_volume_mm3": {
+        "before": [
+          0.0,
+          0.0
+        ],
+        "after": [
+          0.0,
+          0.0
+        ],
+        "added": [
+          0.0,
+          0.0
+        ],
+        "removed": [
+          0.0,
+          0.0
+        ],
+        "blocked": [
+          0.0,
+          0.0
+        ],
+        "unresolved": [
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "figure": "steps/02-arch_inner_narrow-iteration-01/edit-profile.png",
+      "roi": "main",
+      "length_mm": 204.1933106999441,
+      "bin_count": 103,
+      "bin_width_mm": 1.9824593271839233,
+      "range_interval_mm": [
+        51.04832767498603,
+        71.46765874498043
+      ],
+      "native_volume_mm3_interior_plus_endpoints": {
+        "before": 4946.0,
+        "after": 4946.0,
+        "added": 0.0,
+        "removed": 0.0,
+        "blocked": 0.0,
+        "unresolved": 35.0
+      },
+      "endpoint_volume_mm3": {
+        "before": [
+          0.0,
+          0.0
+        ],
+        "after": [
+          0.0,
+          0.0
+        ],
+        "added": [
+          0.0,
+          0.0
+        ],
+        "removed": [
+          0.0,
+          0.0
+        ],
+        "blocked": [
+          0.0,
+          0.0
+        ],
+        "unresolved": [
+          0.0,
+          0.0
+        ]
+      }
+    }
+  ],
+  "volume_conservation_and_before_after_identity": true,
+  "tests_passed": 303,
+  "input_settings_change": "Output directory only; added explanatory comments",
+  "source_volumes_modified": false,
+  "html_profile_count": 3,
+  "schema": "fakect.centerline-profile-evaluation/1"
+}

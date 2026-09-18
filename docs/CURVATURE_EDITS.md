@@ -2,7 +2,7 @@
 
 The [curvature INI](../configs/studies/thoracic-aorta-curvature.ini) reuses the
 reviewed parent tube saved with recipe-v6 and now writes a
-[recipe-v8 report](../outputs/studies/thoracic-aorta/recipe-v8/report.html).
+[recipe-v9 report](../outputs/studies/thoracic-aorta/recipe-v9/report.html).
 The user's current trial applies 9 mm outward dilation over parent 3–20% with
 local Gaussian window 0.1–0.8, then 7 mm inward erosion over 25–35% with window
 0.3–0.9. Selection uses the
@@ -11,6 +11,8 @@ ROI participate without requiring XCAT ID knowledge. No per-ID stiffness
 overrides are used. Both steps use one pass and the existing resistance factors.
 With `roi_role=selection`, offspring may grow beyond the original selector;
 see [selection and growth regions](SELECTION_GROWTH.md).
+Edit profiles now use physical distance along the original ROI centerline;
+see [centerline profiles](CENTERLINE_PROFILES.md) for measurement details.
 
 ```bash
 cd /home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16
@@ -19,7 +21,7 @@ python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-curvature
 ```
 
 After changing the file, choose a fresh `[output] directory`, such as
-`outputs/studies/thoracic-aorta/recipe-v9`. Each invocation starts from the
+`outputs/studies/thoracic-aorta/recipe-v10`. Each invocation starts from the
 original phantom. The two steps within a run consume each other's results.
 The curvature INI retains the user's edit parameters. Other recipe and study
 INIs retain their previous state.
