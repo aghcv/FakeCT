@@ -1,0 +1,1768 @@
+{
+  "sample_count": 16,
+  "unique_geometry_count": 16,
+  "split_counts": {
+    "train": 10,
+    "validation": 3,
+    "test": 3
+  },
+  "geometry_group_counts": {
+    "train": 10,
+    "validation": 3,
+    "test": 3
+  },
+  "source_target_voxels": 52576,
+  "dataset_fingerprint": "ed629b8a1e00b240f98b62d5602af03ca6b76af8bcc81fba8f1017b072925c9c",
+  "manifest_sha256": "cc41d34ddac7395b811b4aa056fa66bdef0be3af0208d3ba2a99296e7d1017d7",
+  "preflight_artifact_hashes_verified": 9,
+  "dataset_artifact_hashes_verified": 26,
+  "preflight_matches_prepared_native_outcomes": true,
+  "all_pair_masks_match_selected_ancestry": true,
+  "sources_and_original_user_INIs_unchanged": true,
+  "training_patch_batch_shape": [
+    4,
+    64,
+    64,
+    1
+  ],
+  "tensorflow_fitted": false,
+  "test_payloads_used_for_fitting": false,
+  "integrity_audit_note": "All pair payloads, including test masks, were inspected for engineering integrity; no model fitting, hyperparameter selection or test-performance evaluation was performed.",
+  "samples": [
+    {
+      "variant_id": "baseline",
+      "parameters": {},
+      "split": "train",
+      "foreground_voxels": 52576,
+      "changed_voxels": 0,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "none",
+          "status": "no_change",
+          "requested_distance_mm": 0.0,
+          "accepted_distance_mm": 0.0,
+          "added_voxels": 0,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "none",
+          "status": "no_change",
+          "requested_distance_mm": 0.0,
+          "accepted_distance_mm": 0.0,
+          "added_voxels": 0,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "none",
+          "status": "no_change",
+          "requested_distance_mm": 0.0,
+          "accepted_distance_mm": 0.0,
+          "added_voxels": 0,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-dde9e95e79a4440d",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 3.0
+        },
+        "coa_narrow": {
+          "distance_mm": 2.0
+        }
+      },
+      "split": "test",
+      "foreground_voxels": 52304,
+      "changed_voxels": 426,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 3.0,
+          "accepted_distance_mm": 3.0,
+          "added_voxels": 77,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 956,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 879,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 2.0,
+          "accepted_distance_mm": 2.0,
+          "added_voxels": 0,
+          "removed_voxels": 290,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 396,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 106,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 3346,
+            "retained_volume_ratio": 0.9202420242024203,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 141967,
+                "surviving_voxels": 141677,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 2.0,
+            "accepted_distance_mm": 2.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 3346.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 2.0,
+                "retained_target_voxels": 3346,
+                "retained_volume_ratio": 0.9202420242024203,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 141967,
+                    "surviving_voxels": 141677,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-b8a8d7434eb31e3c",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 3.0
+        },
+        "coa_narrow": {
+          "distance_mm": 4.0
+        }
+      },
+      "split": "train",
+      "foreground_voxels": 51963,
+      "changed_voxels": 767,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 3.0,
+          "accepted_distance_mm": 3.0,
+          "added_voxels": 77,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 956,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 879,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 4.0,
+          "accepted_distance_mm": 4.0,
+          "added_voxels": 0,
+          "removed_voxels": 631,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 1080,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 449,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 3005,
+            "retained_volume_ratio": 0.8264576457645765,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 141967,
+                "surviving_voxels": 141336,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 4.0,
+            "accepted_distance_mm": 4.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 3005.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 4.0,
+                "retained_target_voxels": 3005,
+                "retained_volume_ratio": 0.8264576457645765,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 141967,
+                    "surviving_voxels": 141336,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-93d642ea54bbb3a3",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 3.0
+        },
+        "coa_narrow": {
+          "distance_mm": 6.0
+        }
+      },
+      "split": "train",
+      "foreground_voxels": 51843,
+      "changed_voxels": 887,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 3.0,
+          "accepted_distance_mm": 3.0,
+          "added_voxels": 77,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 956,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 879,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 6.0,
+          "accepted_distance_mm": 6.0,
+          "added_voxels": 0,
+          "removed_voxels": 751,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 1686,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 935,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2885,
+            "retained_volume_ratio": 0.7934543454345434,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 141967,
+                "surviving_voxels": 141216,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 6.0,
+            "accepted_distance_mm": 6.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2885.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 6.0,
+                "retained_target_voxels": 2885,
+                "retained_volume_ratio": 0.7934543454345434,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 141967,
+                    "surviving_voxels": 141216,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-2250f589ee689169",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 3.0
+        },
+        "coa_narrow": {
+          "distance_mm": 8.0
+        }
+      },
+      "split": "validation",
+      "foreground_voxels": 51820,
+      "changed_voxels": 910,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 3.0,
+          "accepted_distance_mm": 3.0,
+          "added_voxels": 77,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 956,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 879,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 8.0,
+          "accepted_distance_mm": 8.0,
+          "added_voxels": 0,
+          "removed_voxels": 774,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 2077,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 1303,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2862,
+            "retained_volume_ratio": 0.7871287128712872,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 141967,
+                "surviving_voxels": 141193,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 8.0,
+            "accepted_distance_mm": 8.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2862.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 8.0,
+                "retained_target_voxels": 2862,
+                "retained_volume_ratio": 0.7871287128712872,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 141967,
+                    "surviving_voxels": 141193,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-5d051b9ac91be9b6",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 3.0
+        },
+        "coa_narrow": {
+          "distance_mm": 10.0
+        }
+      },
+      "split": "train",
+      "foreground_voxels": 51749,
+      "changed_voxels": 981,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 3.0,
+          "accepted_distance_mm": 3.0,
+          "added_voxels": 77,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 956,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 879,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 10.0,
+          "accepted_distance_mm": 10.0,
+          "added_voxels": 0,
+          "removed_voxels": 845,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 2390,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 1545,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2791,
+            "retained_volume_ratio": 0.7676017601760176,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 141967,
+                "surviving_voxels": 141122,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 10.0,
+            "accepted_distance_mm": 10.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2791.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 10.0,
+                "retained_target_voxels": 2791,
+                "retained_volume_ratio": 0.7676017601760176,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 141967,
+                    "surviving_voxels": 141122,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-68e8daee6d085e18",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 6.0
+        },
+        "coa_narrow": {
+          "distance_mm": 2.0
+        }
+      },
+      "split": "train",
+      "foreground_voxels": 52545,
+      "changed_voxels": 667,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 6.0,
+          "accepted_distance_mm": 6.0,
+          "added_voxels": 318,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 2744,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 2426,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 2.0,
+          "accepted_distance_mm": 2.0,
+          "added_voxels": 0,
+          "removed_voxels": 290,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 396,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 106,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 3346,
+            "retained_volume_ratio": 0.9202420242024203,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142208,
+                "surviving_voxels": 141918,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 2.0,
+            "accepted_distance_mm": 2.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 3346.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 2.0,
+                "retained_target_voxels": 3346,
+                "retained_volume_ratio": 0.9202420242024203,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142208,
+                    "surviving_voxels": 141918,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-039e716c3938bd49",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 6.0
+        },
+        "coa_narrow": {
+          "distance_mm": 4.0
+        }
+      },
+      "split": "train",
+      "foreground_voxels": 52204,
+      "changed_voxels": 1008,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 6.0,
+          "accepted_distance_mm": 6.0,
+          "added_voxels": 318,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 2744,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 2426,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 4.0,
+          "accepted_distance_mm": 4.0,
+          "added_voxels": 0,
+          "removed_voxels": 631,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 1080,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 449,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 3005,
+            "retained_volume_ratio": 0.8264576457645765,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142208,
+                "surviving_voxels": 141577,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 4.0,
+            "accepted_distance_mm": 4.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 3005.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 4.0,
+                "retained_target_voxels": 3005,
+                "retained_volume_ratio": 0.8264576457645765,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142208,
+                    "surviving_voxels": 141577,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-8dc5f578a2cecb7a",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 6.0
+        },
+        "coa_narrow": {
+          "distance_mm": 6.0
+        }
+      },
+      "split": "train",
+      "foreground_voxels": 52084,
+      "changed_voxels": 1128,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 6.0,
+          "accepted_distance_mm": 6.0,
+          "added_voxels": 318,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 2744,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 2426,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 6.0,
+          "accepted_distance_mm": 6.0,
+          "added_voxels": 0,
+          "removed_voxels": 751,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 1686,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 935,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2885,
+            "retained_volume_ratio": 0.7934543454345434,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142208,
+                "surviving_voxels": 141457,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 6.0,
+            "accepted_distance_mm": 6.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2885.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 6.0,
+                "retained_target_voxels": 2885,
+                "retained_volume_ratio": 0.7934543454345434,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142208,
+                    "surviving_voxels": 141457,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-2d47c262b2308b7d",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 6.0
+        },
+        "coa_narrow": {
+          "distance_mm": 8.0
+        }
+      },
+      "split": "train",
+      "foreground_voxels": 52061,
+      "changed_voxels": 1151,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 6.0,
+          "accepted_distance_mm": 6.0,
+          "added_voxels": 318,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 2744,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 2426,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 8.0,
+          "accepted_distance_mm": 8.0,
+          "added_voxels": 0,
+          "removed_voxels": 774,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 2077,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 1303,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2862,
+            "retained_volume_ratio": 0.7871287128712872,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142208,
+                "surviving_voxels": 141434,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 8.0,
+            "accepted_distance_mm": 8.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2862.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 8.0,
+                "retained_target_voxels": 2862,
+                "retained_volume_ratio": 0.7871287128712872,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142208,
+                    "surviving_voxels": 141434,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-a7d81a412dd35ce3",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 6.0
+        },
+        "coa_narrow": {
+          "distance_mm": 10.0
+        }
+      },
+      "split": "test",
+      "foreground_voxels": 51990,
+      "changed_voxels": 1222,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 6.0,
+          "accepted_distance_mm": 6.0,
+          "added_voxels": 318,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 2744,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 2426,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 10.0,
+          "accepted_distance_mm": 10.0,
+          "added_voxels": 0,
+          "removed_voxels": 845,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 2390,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 1545,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2791,
+            "retained_volume_ratio": 0.7676017601760176,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142208,
+                "surviving_voxels": 141363,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 10.0,
+            "accepted_distance_mm": 10.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2791.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 10.0,
+                "retained_target_voxels": 2791,
+                "retained_volume_ratio": 0.7676017601760176,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142208,
+                    "surviving_voxels": 141363,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-218de10f4d322816",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 9.0
+        },
+        "coa_narrow": {
+          "distance_mm": 2.0
+        }
+      },
+      "split": "train",
+      "foreground_voxels": 52862,
+      "changed_voxels": 984,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 9.0,
+          "accepted_distance_mm": 9.0,
+          "added_voxels": 635,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 4858,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 4223,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 2.0,
+          "accepted_distance_mm": 2.0,
+          "added_voxels": 0,
+          "removed_voxels": 290,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 396,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 106,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 3346,
+            "retained_volume_ratio": 0.9202420242024203,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142525,
+                "surviving_voxels": 142235,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 2.0,
+            "accepted_distance_mm": 2.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 3346.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 2.0,
+                "retained_target_voxels": 3346,
+                "retained_volume_ratio": 0.9202420242024203,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142525,
+                    "surviving_voxels": 142235,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-48cad1fe79292e3b",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 9.0
+        },
+        "coa_narrow": {
+          "distance_mm": 4.0
+        }
+      },
+      "split": "train",
+      "foreground_voxels": 52521,
+      "changed_voxels": 1325,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 9.0,
+          "accepted_distance_mm": 9.0,
+          "added_voxels": 635,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 4858,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 4223,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 4.0,
+          "accepted_distance_mm": 4.0,
+          "added_voxels": 0,
+          "removed_voxels": 631,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 1080,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 449,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 3005,
+            "retained_volume_ratio": 0.8264576457645765,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142525,
+                "surviving_voxels": 141894,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 4.0,
+            "accepted_distance_mm": 4.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 3005.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 4.0,
+                "retained_target_voxels": 3005,
+                "retained_volume_ratio": 0.8264576457645765,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142525,
+                    "surviving_voxels": 141894,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-f852ffe04d89fdd2",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 9.0
+        },
+        "coa_narrow": {
+          "distance_mm": 6.0
+        }
+      },
+      "split": "test",
+      "foreground_voxels": 52401,
+      "changed_voxels": 1445,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 9.0,
+          "accepted_distance_mm": 9.0,
+          "added_voxels": 635,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 4858,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 4223,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 6.0,
+          "accepted_distance_mm": 6.0,
+          "added_voxels": 0,
+          "removed_voxels": 751,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 1686,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 935,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2885,
+            "retained_volume_ratio": 0.7934543454345434,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142525,
+                "surviving_voxels": 141774,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 6.0,
+            "accepted_distance_mm": 6.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2885.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 6.0,
+                "retained_target_voxels": 2885,
+                "retained_volume_ratio": 0.7934543454345434,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142525,
+                    "surviving_voxels": 141774,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-c61d46ed490dfc3e",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 9.0
+        },
+        "coa_narrow": {
+          "distance_mm": 8.0
+        }
+      },
+      "split": "validation",
+      "foreground_voxels": 52378,
+      "changed_voxels": 1468,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 9.0,
+          "accepted_distance_mm": 9.0,
+          "added_voxels": 635,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 4858,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 4223,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 8.0,
+          "accepted_distance_mm": 8.0,
+          "added_voxels": 0,
+          "removed_voxels": 774,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 2077,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 1303,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2862,
+            "retained_volume_ratio": 0.7871287128712872,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142525,
+                "surviving_voxels": 141751,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 8.0,
+            "accepted_distance_mm": 8.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2862.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 8.0,
+                "retained_target_voxels": 2862,
+                "retained_volume_ratio": 0.7871287128712872,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142525,
+                    "surviving_voxels": 141751,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "variant_id": "recipe-2b32627cf8d68694",
+      "parameters": {
+        "arch_outer_expand": {
+          "distance_mm": 9.0
+        },
+        "coa_narrow": {
+          "distance_mm": 10.0
+        }
+      },
+      "split": "validation",
+      "foreground_voxels": 52307,
+      "changed_voxels": 1539,
+      "duplicate_of": null,
+      "step_outcomes": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "status": "applied",
+          "requested_distance_mm": 9.0,
+          "accepted_distance_mm": 9.0,
+          "added_voxels": 635,
+          "removed_voxels": 0,
+          "proposed_added_voxels": 4858,
+          "proposed_removed_voxels": 0,
+          "blocked_voxels": 4223,
+          "unresolved_voxels": 0,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 7.0,
+          "accepted_distance_mm": 7.0,
+          "added_voxels": 0,
+          "removed_voxels": 59,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 754,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 695,
+          "erosion_safeguard": null
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "status": "applied",
+          "requested_distance_mm": 10.0,
+          "accepted_distance_mm": 10.0,
+          "added_voxels": 0,
+          "removed_voxels": 845,
+          "proposed_added_voxels": 0,
+          "proposed_removed_voxels": 2390,
+          "blocked_voxels": 0,
+          "unresolved_voxels": 1545,
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2791,
+            "retained_volume_ratio": 0.7676017601760176,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142525,
+                "surviving_voxels": 141680,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 10.0,
+            "accepted_distance_mm": 10.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2791.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 10.0,
+                "retained_target_voxels": 2791,
+                "retained_volume_ratio": 0.7676017601760176,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142525,
+                    "surviving_voxels": 141680,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

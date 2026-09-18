@@ -12,9 +12,10 @@ Relative paths inside the INI are resolved from the integrated FakeCT checkout.
 The original input text is captured with outputs.
 
 To combine edits in several regions of one anatomy, use the separate
-[named ROI recipe guide](EDIT_RECIPES.md). That preview workflow supports ordered
-operations and repeated passes; the training sweep described here still uses
-one independent edit per cohort variant.
+[named ROI recipe guide](EDIT_RECIPES.md) and the [recipe cohort workflow](RECIPE_COHORTS.md).
+The newer `fakect.recipe-study/1` input supports Cartesian sweeps over named
+edits, native preflight and paired export. This page describes the original
+`fakect.study/1` workflow with one independent edit per cohort variant.
 
 ## What each stage does
 

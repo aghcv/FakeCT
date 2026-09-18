@@ -1,0 +1,968 @@
+{
+  "created_at_utc": "2026-09-18T18:23:18.701814+00:00",
+  "input_config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/studies/thoracic-aorta-curvature.ini",
+  "input_config_sha256": "46b32ea1d06c184b88f354eab77bfb8b36240639187f1cd5e2557621d6b3f59c",
+  "reused_crop": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v12/crop.npz",
+  "verification": "Exact saved INI/config/catalog match; source metadata digest checked by resolve_preview; source byte sizes and mtimes match; saved native crop hashes, geometry, candidate labels and ROI masks verified. Full 4.185 GB source channels were not rehashed.",
+  "source_files": {
+    "act": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_act_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328260487208000,
+      "source_bytes_read": 378000000,
+      "crop_sha256": "effd235742d126fb0c002acbabaa14ec5ad7fcd887dcf95bd841523fef63d586",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    },
+    "atn": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_atn_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328328749713000,
+      "source_bytes_read": 378000000,
+      "crop_sha256": "3930649ed15b664a356921c3c40d6c7e2b1e506a73be43e9915fcf1697920b87",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    }
+  },
+  "geometry": {
+    "array_order": "kji",
+    "source_shape_kji": [
+      1860,
+      750,
+      750
+    ],
+    "crop_origin_ijk": [
+      340,
+      327,
+      1283
+    ],
+    "crop_high_ijk_exclusive": [
+      427,
+      453,
+      1451
+    ],
+    "crop_shape_kji": [
+      168,
+      126,
+      87
+    ],
+    "spacing_ijk_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "roi_kind": "tube",
+    "nodes_ijk": [
+      [
+        387.0,
+        360.0,
+        1352.0
+      ],
+      [
+        378.0,
+        365.0,
+        1363.0
+      ],
+      [
+        373.0,
+        362.0,
+        1374.0
+      ],
+      [
+        373.0,
+        363.0,
+        1389.0
+      ],
+      [
+        376.0,
+        366.0,
+        1409.0
+      ],
+      [
+        385.0,
+        375.0,
+        1415.0
+      ],
+      [
+        392.0,
+        386.0,
+        1417.0
+      ],
+      [
+        393.0,
+        398.0,
+        1409.0
+      ],
+      [
+        390.0,
+        408.0,
+        1394.0
+      ],
+      [
+        387.0,
+        414.0,
+        1383.0
+      ],
+      [
+        387.0,
+        419.0,
+        1370.0
+      ],
+      [
+        387.0,
+        419.0,
+        1356.0
+      ],
+      [
+        389.0,
+        419.0,
+        1341.0
+      ],
+      [
+        391.0,
+        416.0,
+        1316.0
+      ]
+    ],
+    "radii_mm": [
+      10.0,
+      10.0,
+      10.0,
+      12.0,
+      11.0,
+      10.0,
+      10.0,
+      13.0,
+      12.0,
+      11.0,
+      11.0,
+      11.0,
+      11.0,
+      11.0
+    ],
+    "focus_ijk": [
+      393,
+      398,
+      1409
+    ],
+    "roi_semantics": "Sphere, or union of balls whose centers and radii interpolate linearly along each ordered segment; round caps",
+    "orientation": "native array interpretation; anatomical orientation and physical origin unverified"
+  },
+  "selection": {
+    "tissue": "artery",
+    "source_ids_filter": [],
+    "selected_voxels": 52576,
+    "candidate_voxels_in_crop": 144232,
+    "original_selected_labels": [
+      {
+        "original_id": 1186,
+        "original_name": "internal_carotid_right",
+        "count": 311
+      },
+      {
+        "original_id": 1547,
+        "original_name": "arteries",
+        "count": 265
+      },
+      {
+        "original_id": 1550,
+        "original_name": "arteries",
+        "count": 657
+      },
+      {
+        "original_id": 1747,
+        "original_name": "right_pulmonary_arts",
+        "count": 76
+      },
+      {
+        "original_id": 1969,
+        "original_name": "left_pulmonary_arts",
+        "count": 116
+      },
+      {
+        "original_id": 2912,
+        "original_name": "dias_rca1",
+        "count": 59
+      },
+      {
+        "original_id": 2914,
+        "original_name": "dias_lad1",
+        "count": 112
+      },
+      {
+        "original_id": 2920,
+        "original_name": "dias_pul_art",
+        "count": 495
+      },
+      {
+        "original_id": 2922,
+        "original_name": "dias_aorta",
+        "count": 50485
+      }
+    ],
+    "semantics": "Original artery-category voxels inside the main selection ROI and their surviving descendants, including growth outside ROI. This is a spatially selected artery lineage, not a complete anatomical aorta annotation. Same-category neighbors inside ROI are included; branches/outside-ROI aorta can be excluded; atlas classification accuracy is inherited."
+  },
+  "stiffness_unchanged": {
+    "default": 0.05,
+    "tissues": {
+      "bone": 1.0,
+      "skin": 0.95,
+      "soft_tissue": 0.05,
+      "muscle": 0.1,
+      "artery": 0.05,
+      "vein": 0.05,
+      "lung": 0.02,
+      "cartilage": 0.2,
+      "adipose": 0.02,
+      "nervous_tissue": 0.1,
+      "fluid": 0.02,
+      "unknown": 0.05
+    },
+    "labels": {}
+  },
+  "runs": {
+    "diagnostic_original": {
+      "assign_surrounding_tissue": false,
+      "runtime_seconds": 24.3861262826249,
+      "steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "configured_distance_mm": 9.0,
+          "executed_distance_mm": 9.0,
+          "counts": {
+            "before": 21581,
+            "after": 22216,
+            "proposed_added": 4858,
+            "proposed_removed": 0,
+            "added": 635,
+            "removed": 0,
+            "blocked": 4223,
+            "unresolved": 0,
+            "changed": 635,
+            "changed_outside_selection_roi": 52,
+            "added_outside_selection_roi": 52,
+            "removed_outside_selection_roi": 0,
+            "unselected_target_contact_voxels": 0,
+            "requested_removed_before_stiffness": 0,
+            "release_suppressed_by_target_stiffness": 0,
+            "diagnostic_released": 0,
+            "released": 0,
+            "attenuation_unassigned": 0
+          },
+          "transitions": [
+            {
+              "original_id": 1225,
+              "new_id": 2922,
+              "count": 587
+            },
+            {
+              "original_id": 2897,
+              "new_id": 2922,
+              "count": 48
+            }
+          ],
+          "erosion_safeguard": null,
+          "target_components_before": 6,
+          "target_components_after": 6,
+          "full_target_components_before": 31,
+          "full_target_components_after": 31,
+          "scalar_status": "Copies winning INPUT-STATE target/recipient scalars. Earlier recipe passes may already have copied these values. Pass hashes record the state chain; this is a display proxy, not fresh AI recovery or a physical CT reconstruction. Original source arrays remain unchanged."
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "configured_distance_mm": 7.0,
+          "executed_distance_mm": 7.0,
+          "counts": {
+            "before": 16458,
+            "after": 15704,
+            "proposed_added": 0,
+            "proposed_removed": 754,
+            "added": 0,
+            "removed": 754,
+            "blocked": 0,
+            "unresolved": 0,
+            "changed": 754,
+            "changed_outside_selection_roi": 0,
+            "added_outside_selection_roi": 0,
+            "removed_outside_selection_roi": 0,
+            "unselected_target_contact_voxels": 0,
+            "requested_removed_before_stiffness": 813,
+            "release_suppressed_by_target_stiffness": 59,
+            "diagnostic_released": 754,
+            "released": 754,
+            "attenuation_unassigned": 754
+          },
+          "transitions": [
+            {
+              "original_id": 2922,
+              "new_id": -2147483648,
+              "count": 754
+            }
+          ],
+          "erosion_safeguard": null,
+          "target_components_before": 5,
+          "target_components_after": 5,
+          "full_target_components_before": 31,
+          "full_target_components_after": 42,
+          "scalar_status": "Diagnostic erosion assigns released target voxels a synthetic released label; their input-state attenuation values are retained, not reassigned or reconstructed. attenuation_unassigned_mask identifies every current released voxel. This is a geometry diagnostic, not a completed synthetic CT. Source arrays remain unchanged. Released voxels retain their input-state attenuation only as an unassigned placeholder. No surrounding tissue or attenuation has been inferred; use attenuation_unassigned_mask to identify them.",
+          "proposed_surrounding_labels": [
+            {
+              "original_id": 4,
+              "original_name": "chest_surface",
+              "tissue_name": "soft_tissue",
+              "count": 268,
+              "stiffness": 0.95,
+              "stiffness_group": "skin",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 0.15000000000000013,
+              "one_native_face_step_fits_budget": false
+            },
+            {
+              "original_id": 1428,
+              "original_name": "trachea",
+              "tissue_name": "unknown",
+              "count": 27,
+              "stiffness": 0.05,
+              "stiffness_group": "unknown",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": true
+            },
+            {
+              "original_id": 2922,
+              "original_name": "dias_aorta",
+              "tissue_name": "artery",
+              "count": 477,
+              "stiffness": 0.05,
+              "stiffness_group": "artery",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": true,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": false
+            }
+          ],
+          "proposed_surrounding_semantics": "Unique input-state voxels sharing a face with a newly released voxel, excluding the released set; includes remaining target. Catalog classifications are observations, not verified material identities.",
+          "unresolved_surrounding_labels": [],
+          "unresolved_surrounding_semantics": "Unique input-state voxels sharing a face with a newly released voxel, excluding the released set; includes remaining target. Catalog classifications are observations, not verified material identities."
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "configured_distance_mm": 10.0,
+          "executed_distance_mm": 5.0,
+          "counts": {
+            "before": 4042,
+            "after": 2624,
+            "proposed_added": 0,
+            "proposed_removed": 1418,
+            "added": 0,
+            "removed": 1418,
+            "blocked": 0,
+            "unresolved": 0,
+            "changed": 1418,
+            "changed_outside_selection_roi": 0,
+            "added_outside_selection_roi": 0,
+            "removed_outside_selection_roi": 0,
+            "unselected_target_contact_voxels": 0,
+            "requested_removed_before_stiffness": 1452,
+            "release_suppressed_by_target_stiffness": 34,
+            "diagnostic_released": 1418,
+            "released": 2172,
+            "attenuation_unassigned": 2172
+          },
+          "transitions": [
+            {
+              "original_id": 2922,
+              "new_id": -2147483648,
+              "count": 1418
+            }
+          ],
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2218,
+            "retained_volume_ratio": 0.61001100110011,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 141776,
+                "surviving_voxels": 140358,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "reduced",
+            "requested_distance_mm": 10.0,
+            "accepted_distance_mm": 5.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2218.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 10.0,
+                "retained_target_voxels": 1246,
+                "retained_volume_ratio": 0.3426842684268427,
+                "connectivity_ok": false,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 141776,
+                    "surviving_voxels": 139386,
+                    "surviving_components": 2,
+                    "ok": false
+                  }
+                ],
+                "reasons": [
+                  "affected_component_split_or_lost"
+                ],
+                "accepted": false
+              },
+              {
+                "distance_mm": 5.0,
+                "retained_target_voxels": 2218,
+                "retained_volume_ratio": 0.61001100110011,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 141776,
+                    "surviving_voxels": 140358,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          },
+          "target_components_before": 1,
+          "target_components_after": 1,
+          "full_target_components_before": 42,
+          "full_target_components_after": 42,
+          "scalar_status": "Diagnostic erosion assigns released target voxels a synthetic released label; their input-state attenuation values are retained, not reassigned or reconstructed. attenuation_unassigned_mask identifies every current released voxel. This is a geometry diagnostic, not a completed synthetic CT. Source arrays remain unchanged. Released voxels retain their input-state attenuation only as an unassigned placeholder. No surrounding tissue or attenuation has been inferred; use attenuation_unassigned_mask to identify them.",
+          "proposed_surrounding_labels": [
+            {
+              "original_id": 4,
+              "original_name": "chest_surface",
+              "tissue_name": "soft_tissue",
+              "count": 213,
+              "stiffness": 0.95,
+              "stiffness_group": "skin",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 0.15000000000000013,
+              "one_native_face_step_fits_budget": false
+            },
+            {
+              "original_id": 204,
+              "original_name": "musc444",
+              "tissue_name": "muscle",
+              "count": 55,
+              "stiffness": 0.1,
+              "stiffness_group": "muscle",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 2.7,
+              "one_native_face_step_fits_budget": true
+            },
+            {
+              "original_id": 746,
+              "original_name": "T6_vertebrae",
+              "tissue_name": "bone",
+              "count": 18,
+              "stiffness": 1.0,
+              "stiffness_group": "bone",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 0.0,
+              "one_native_face_step_fits_budget": false
+            },
+            {
+              "original_id": 1225,
+              "original_name": "llung",
+              "tissue_name": "lung",
+              "count": 309,
+              "stiffness": 0.02,
+              "stiffness_group": "lung",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 2.94,
+              "one_native_face_step_fits_budget": true
+            },
+            {
+              "original_id": 1231,
+              "original_name": "esophagus",
+              "tissue_name": "soft_tissue",
+              "count": 70,
+              "stiffness": 0.05,
+              "stiffness_group": "soft_tissue",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": true
+            },
+            {
+              "original_id": 2922,
+              "original_name": "dias_aorta",
+              "tissue_name": "artery",
+              "count": 538,
+              "stiffness": 0.05,
+              "stiffness_group": "artery",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": true,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": false
+            }
+          ],
+          "proposed_surrounding_semantics": "Unique input-state voxels sharing a face with a newly released voxel, excluding the released set; includes remaining target. Catalog classifications are observations, not verified material identities.",
+          "unresolved_surrounding_labels": [],
+          "unresolved_surrounding_semantics": "Unique input-state voxels sharing a face with a newly released voxel, excluding the released set; includes remaining target. Catalog classifications are observations, not verified material identities."
+        }
+      ],
+      "counts": {
+        "before": 52576,
+        "after": 51039,
+        "added": 635,
+        "removed": 2172,
+        "changed": 2807,
+        "scalar_changed": 635,
+        "ever_changed": 2807,
+        "proposed_added": 4858,
+        "proposed_removed": 2172,
+        "blocked": 4223,
+        "unresolved": 0,
+        "changed_outside_selection_roi": 52,
+        "added_outside_selection_roi": 52,
+        "removed_outside_selection_roi": 0,
+        "changed_outside_edit_selectors": 52,
+        "diagnostic_released": 2172,
+        "released": 2172,
+        "attenuation_unassigned": 2172
+      },
+      "activity_counts": {
+        "added": 635,
+        "removed": 2172,
+        "changed": 2807
+      },
+      "final_target_voxels": 51039,
+      "final_target_outside_main_roi": 52,
+      "unassigned_attenuation_voxels": 2172,
+      "target_mask_semantics": "Before: original target inside main selection ROI. After: its surviving ancestry and offspring, including outside the ROI. Counts include all outside-ROI growth.",
+      "final_selected_lineage_verified": true,
+      "scalar_status": "Ordinary accepted edits copy current-state target/recipient attenuation. Diagnostic erosion leaves released positions unchanged in the scalar array. Released voxels retain their input-state attenuation only as an unassigned placeholder. No surrounding tissue or attenuation has been inferred; use attenuation_unassigned_mask to identify them. This is a geometry/label trial, not a reconstructed CT. Original source arrays remain unchanged.",
+      "final_labels_sha256": "e72d5cd6302d6f6eb0de4e34ce7359eeab5845824c20b14ed750f45b677158b3",
+      "final_attenuation_sha256": "004c0fa107902f7867fe827796217c6eb131fbf08e1418f1614bf12f612624ab"
+    },
+    "assign_surrounding_tissue": {
+      "assign_surrounding_tissue": true,
+      "runtime_seconds": 18.942309072241187,
+      "steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "iteration": 1,
+          "operation": "dilation",
+          "configured_distance_mm": 9.0,
+          "executed_distance_mm": 9.0,
+          "counts": {
+            "before": 21581,
+            "after": 22216,
+            "proposed_added": 4858,
+            "proposed_removed": 0,
+            "added": 635,
+            "removed": 0,
+            "blocked": 4223,
+            "unresolved": 0,
+            "changed": 635,
+            "changed_outside_selection_roi": 52,
+            "added_outside_selection_roi": 52,
+            "removed_outside_selection_roi": 0,
+            "unselected_target_contact_voxels": 0,
+            "requested_removed_before_stiffness": 0,
+            "release_suppressed_by_target_stiffness": 0
+          },
+          "transitions": [
+            {
+              "original_id": 1225,
+              "new_id": 2922,
+              "count": 587
+            },
+            {
+              "original_id": 2897,
+              "new_id": 2922,
+              "count": 48
+            }
+          ],
+          "erosion_safeguard": null,
+          "target_components_before": 6,
+          "target_components_after": 6,
+          "full_target_components_before": 31,
+          "full_target_components_after": 31,
+          "scalar_status": "Copies winning INPUT-STATE target/recipient scalars. Earlier recipe passes may already have copied these values. Pass hashes record the state chain; this is a display proxy, not fresh AI recovery or a physical CT reconstruction. Original source arrays remain unchanged."
+        },
+        {
+          "step_name": "arch_inner_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "configured_distance_mm": 7.0,
+          "executed_distance_mm": 7.0,
+          "counts": {
+            "before": 16458,
+            "after": 16399,
+            "proposed_added": 0,
+            "proposed_removed": 754,
+            "added": 0,
+            "removed": 59,
+            "blocked": 0,
+            "unresolved": 695,
+            "changed": 59,
+            "changed_outside_selection_roi": 0,
+            "added_outside_selection_roi": 0,
+            "removed_outside_selection_roi": 0,
+            "unselected_target_contact_voxels": 0,
+            "requested_removed_before_stiffness": 813,
+            "release_suppressed_by_target_stiffness": 59
+          },
+          "transitions": [
+            {
+              "original_id": 2922,
+              "new_id": 1428,
+              "count": 59
+            }
+          ],
+          "erosion_safeguard": null,
+          "target_components_before": 5,
+          "target_components_after": 5,
+          "full_target_components_before": 31,
+          "full_target_components_after": 32,
+          "scalar_status": "Copies winning INPUT-STATE target/recipient scalars. Earlier recipe passes may already have copied these values. Pass hashes record the state chain; this is a display proxy, not fresh AI recovery or a physical CT reconstruction. Original source arrays remain unchanged.",
+          "proposed_surrounding_labels": [
+            {
+              "original_id": 4,
+              "original_name": "chest_surface",
+              "tissue_name": "soft_tissue",
+              "count": 268,
+              "stiffness": 0.95,
+              "stiffness_group": "skin",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 0.15000000000000013,
+              "one_native_face_step_fits_budget": false
+            },
+            {
+              "original_id": 1428,
+              "original_name": "trachea",
+              "tissue_name": "unknown",
+              "count": 27,
+              "stiffness": 0.05,
+              "stiffness_group": "unknown",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": true
+            },
+            {
+              "original_id": 2922,
+              "original_name": "dias_aorta",
+              "tissue_name": "artery",
+              "count": 477,
+              "stiffness": 0.05,
+              "stiffness_group": "artery",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": true,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": false
+            }
+          ],
+          "proposed_surrounding_semantics": "Unique input-state voxels sharing a face with a newly released voxel, excluding the released set; includes remaining target. Catalog classifications are observations, not verified material identities.",
+          "unresolved_surrounding_labels": [
+            {
+              "original_id": 4,
+              "original_name": "chest_surface",
+              "tissue_name": "soft_tissue",
+              "count": 261,
+              "stiffness": 0.95,
+              "stiffness_group": "skin",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 0.15000000000000013,
+              "one_native_face_step_fits_budget": false
+            },
+            {
+              "original_id": 2922,
+              "original_name": "dias_aorta",
+              "tissue_name": "artery",
+              "count": 471,
+              "stiffness": 0.05,
+              "stiffness_group": "artery",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": true,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": false
+            }
+          ],
+          "unresolved_surrounding_semantics": "Unique input-state voxels sharing a face with a newly released voxel, excluding the released set; includes remaining target. Catalog classifications are observations, not verified material identities."
+        },
+        {
+          "step_name": "coa_narrow",
+          "iteration": 1,
+          "operation": "erosion",
+          "configured_distance_mm": 10.0,
+          "executed_distance_mm": 10.0,
+          "counts": {
+            "before": 4042,
+            "after": 3197,
+            "proposed_added": 0,
+            "proposed_removed": 2390,
+            "added": 0,
+            "removed": 845,
+            "blocked": 0,
+            "unresolved": 1545,
+            "changed": 845,
+            "changed_outside_selection_roi": 0,
+            "added_outside_selection_roi": 0,
+            "removed_outside_selection_roi": 0,
+            "unselected_target_contact_voxels": 0,
+            "requested_removed_before_stiffness": 2429,
+            "release_suppressed_by_target_stiffness": 39
+          },
+          "transitions": [
+            {
+              "original_id": 2922,
+              "new_id": 204,
+              "count": 136
+            },
+            {
+              "original_id": 2922,
+              "new_id": 1225,
+              "count": 592
+            },
+            {
+              "original_id": 2922,
+              "new_id": 1231,
+              "count": 117
+            }
+          ],
+          "erosion_safeguard": {
+            "min_volume_ratio": 0.1,
+            "backoff_factor": 0.5,
+            "preserve_connectivity": true,
+            "max_backoff_steps": 8,
+            "enabled": true,
+            "retained_target_voxels": 2791,
+            "retained_volume_ratio": 0.7676017601760176,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 142525,
+                "surviving_voxels": 141680,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true,
+            "status": "accepted",
+            "requested_distance_mm": 10.0,
+            "accepted_distance_mm": 10.0,
+            "baseline_target_voxels": 3636,
+            "baseline_volume_mm3": 3636.0,
+            "retained_volume_mm3": 2791.0,
+            "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+            "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+            "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+            "attempts": [
+              {
+                "distance_mm": 10.0,
+                "retained_target_voxels": 2791,
+                "retained_volume_ratio": 0.7676017601760176,
+                "connectivity_ok": true,
+                "affected_components": 1,
+                "component_details": [
+                  {
+                    "component_id": 1,
+                    "before_voxels": 142525,
+                    "surviving_voxels": 141680,
+                    "surviving_components": 1,
+                    "ok": true
+                  }
+                ],
+                "reasons": [],
+                "accepted": true
+              }
+            ]
+          },
+          "target_components_before": 1,
+          "target_components_after": 1,
+          "full_target_components_before": 32,
+          "full_target_components_after": 32,
+          "scalar_status": "Copies winning INPUT-STATE target/recipient scalars. Earlier recipe passes may already have copied these values. Pass hashes record the state chain; this is a display proxy, not fresh AI recovery or a physical CT reconstruction. Original source arrays remain unchanged.",
+          "proposed_surrounding_labels": [
+            {
+              "original_id": 4,
+              "original_name": "chest_surface",
+              "tissue_name": "soft_tissue",
+              "count": 246,
+              "stiffness": 0.95,
+              "stiffness_group": "skin",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 0.15000000000000013,
+              "one_native_face_step_fits_budget": false
+            },
+            {
+              "original_id": 204,
+              "original_name": "musc444",
+              "tissue_name": "muscle",
+              "count": 64,
+              "stiffness": 0.1,
+              "stiffness_group": "muscle",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 2.7,
+              "one_native_face_step_fits_budget": true
+            },
+            {
+              "original_id": 746,
+              "original_name": "T6_vertebrae",
+              "tissue_name": "bone",
+              "count": 25,
+              "stiffness": 1.0,
+              "stiffness_group": "bone",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 0.0,
+              "one_native_face_step_fits_budget": false
+            },
+            {
+              "original_id": 1225,
+              "original_name": "llung",
+              "tissue_name": "lung",
+              "count": 337,
+              "stiffness": 0.02,
+              "stiffness_group": "lung",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 2.94,
+              "one_native_face_step_fits_budget": true
+            },
+            {
+              "original_id": 1231,
+              "original_name": "esophagus",
+              "tissue_name": "soft_tissue",
+              "count": 78,
+              "stiffness": 0.05,
+              "stiffness_group": "soft_tissue",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": true
+            },
+            {
+              "original_id": 2922,
+              "original_name": "dias_aorta",
+              "tissue_name": "artery",
+              "count": 447,
+              "stiffness": 0.05,
+              "stiffness_group": "artery",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": true,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": false
+            }
+          ],
+          "proposed_surrounding_semantics": "Unique input-state voxels sharing a face with a newly released voxel, excluding the released set; includes remaining target. Catalog classifications are observations, not verified material identities.",
+          "unresolved_surrounding_labels": [
+            {
+              "original_id": 4,
+              "original_name": "chest_surface",
+              "tissue_name": "soft_tissue",
+              "count": 199,
+              "stiffness": 0.95,
+              "stiffness_group": "skin",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 0.15000000000000013,
+              "one_native_face_step_fits_budget": false
+            },
+            {
+              "original_id": 746,
+              "original_name": "T6_vertebrae",
+              "tissue_name": "bone",
+              "count": 24,
+              "stiffness": 1.0,
+              "stiffness_group": "bone",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": false,
+              "recipient_path_budget_after_seed_penalty_mm": 0.0,
+              "one_native_face_step_fits_budget": false
+            },
+            {
+              "original_id": 2922,
+              "original_name": "dias_aorta",
+              "tissue_name": "artery",
+              "count": 667,
+              "stiffness": 0.05,
+              "stiffness_group": "artery",
+              "stiffness_basis": "anatomical_group",
+              "is_target_tissue_recipient_excluded": true,
+              "recipient_path_budget_after_seed_penalty_mm": 2.8499999999999996,
+              "one_native_face_step_fits_budget": false
+            }
+          ],
+          "unresolved_surrounding_semantics": "Unique input-state voxels sharing a face with a newly released voxel, excluding the released set; includes remaining target. Catalog classifications are observations, not verified material identities."
+        }
+      ],
+      "counts": {
+        "before": 52576,
+        "after": 52307,
+        "added": 635,
+        "removed": 904,
+        "changed": 1539,
+        "scalar_changed": 1539,
+        "ever_changed": 1539,
+        "proposed_added": 4858,
+        "proposed_removed": 3144,
+        "blocked": 4223,
+        "unresolved": 2240,
+        "changed_outside_selection_roi": 52,
+        "added_outside_selection_roi": 52,
+        "removed_outside_selection_roi": 0,
+        "changed_outside_edit_selectors": 52
+      },
+      "activity_counts": {
+        "added": 635,
+        "removed": 904,
+        "changed": 1539
+      },
+      "final_target_voxels": 52307,
+      "final_target_outside_main_roi": 52,
+      "unassigned_attenuation_voxels": 0,
+      "target_mask_semantics": "Before: original target inside main selection ROI. After: its surviving ancestry and offspring, including outside the ROI. Counts include all outside-ROI growth.",
+      "final_selected_lineage_verified": true,
+      "scalar_status": "Each pass copies a winning CURRENT target/recipient scalar. The final attenuation-copy proxy may differ even where the original label is restored; scalar_changed_mask records this. This is not AI recovery or a physical CT reconstruction.",
+      "final_labels_sha256": "5fb5bfbdc81b4b309bcacb4759597569a4962e514539137bc2bb7ea23a6f2289",
+      "final_attenuation_sha256": "055f0537d1b5fc96a7eb62cb2a9015e4c32d4ebf89f99aae76cf530e221dcd9b"
+    }
+  },
+  "source_arrays_and_user_ini_unchanged": true
+}

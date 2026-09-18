@@ -29,6 +29,10 @@ _DATA_TRAIN_KEYS = ('target_source_ids', 'anatomy_family', 'operations', 'distan
 _EROSION_GUARD_FIELDS = ('min_volume_ratio', 'preserve_connectivity', 'backoff_factor', 'max_backoff_steps')
 
 
+def _recipe_study(config):
+    return config.get('study', {}).get('schema_version') == 'fakect.recipe-study/1'
+
+
 def _json_value(value):
     if isinstance(value, Path):
         return str(value)
@@ -81,6 +85,9 @@ def plan_variants(config):
     During preparation, equal masks become one split group; baseline-equivalent
     masks stay in training. All slices and patches inherit their crop's split.
     """
+    if _recipe_study(config):
+        from fakect_recipe_study_config import plan_recipe_variants
+        return plan_recipe_variants(config)
     train = config['train']
     if train['split_mode'] != 'scenario_only':
         raise ValueError('Only explicit scenario_only splitting is implemented')
@@ -167,6 +174,9 @@ def _geometry(resolved):
 
 
 def _provenance(config, resolved):
+    if _recipe_study(config):
+        from fakect_recipe_training import recipe_provenance
+        return recipe_provenance(config, resolved)
     sources = {}
     for channel, path in sorted(resolved['source_files'].items()):
         path = Path(path)
@@ -224,6 +234,9 @@ def validate_study_plan(config, resolved):
     The returned whole-variant splits remain provisional until native geometry
     duplicates can be identified during preparation.
     """
+    if _recipe_study(config):
+        from fakect_recipe_study_config import validate_recipe_study_plan
+        return validate_recipe_study_plan(config, resolved)
     if config.get('edit', {}).get('assign_surrounding_tissue', True) is False:
         raise ValueError('Diagnostic released labels have unassigned attenuation and cannot form training pairs; use preview_roi.py for diagnostic edits or set assign_surrounding_tissue=true')
     variants = plan_variants(config)
@@ -258,6 +271,9 @@ def prepare_training_dataset(config, resolved, *, input_bytes=None):
     it into the artifact inventory; no newline, encoding, or comment rewriting
     occurs. The caller supplies bytes corresponding to the parsed configuration.
     """
+    if _recipe_study(config):
+        from fakect_recipe_training import prepare_recipe_dataset
+        return prepare_recipe_dataset(config, resolved, input_bytes=input_bytes)
     if input_bytes is not None and not isinstance(input_bytes, bytes):
         raise ValueError('input_bytes must contain the exact captured input bytes')
     variants = validate_study_plan(config, resolved)

@@ -1,4 +1,4 @@
-"""Display the full training target separately from the editable ROI."""
+"""Display the source training target with its configured ROI or lineage scope."""
 import os
 from pathlib import Path
 
@@ -14,7 +14,9 @@ def render_training_target(arrays, resolved, config, output):
     from matplotlib.lines import Line2D
     from scipy.ndimage import label
 
-    target = np.isin(arrays['act'], config['train']['target_source_ids'])
+    recipe_study = config.get('study', {}).get('schema_version') == 'fakect.recipe-study/1'
+    target = (np.asarray(arrays['selected'], dtype=bool) if recipe_study else
+              np.isin(arrays['act'], config['train']['target_source_ids']))
     roi = arrays['roi']
     lo, hi = resolved['crop_low_ijk'], resolved['crop_high_ijk_exclusive']
     spacing = resolved['spacing_ijk_mm']
@@ -40,21 +42,27 @@ def render_training_target(arrays, resolved, config, output):
                 ax.contour(np.arange(lo[x], hi[x]), np.arange(lo[y], hi[y]), mask,
                            levels=[.5], colors=['#00d9ef'], linewidths=1)
             ax.set(title=f'{name}: {"ijk"[fixed]}={resolved["slice_ijk"][fixed]}\n'
-                         + ('Source attenuation (1/cm)' if row == 0 else 'Binary target over the FULL crop'),
+                         + ('Source attenuation (1/cm)' if row == 0 else
+                            'Original ROI-selected binary target' if recipe_study else 'Binary target over the FULL crop'),
                    xlabel=f'{"ijk"[x]} (native index)', ylabel=f'{"ijk"[y]} (native index)')
+    selection = (f"ROI-selected {config['selection']['tissue']} lineage" if recipe_study else
+                 f"Target source IDs {config['train']['target_source_ids']}")
     fig.suptitle(f"{config['study']['name']} | Pair design before cohort preparation\n"
-                 f"Target source IDs {config['train']['target_source_ids']} | "
+                 f"{selection} | "
                  f"{int(target.sum()):,} target voxels in crop; {int((target & roi).sum()):,} inside edit ROI",
                  fontsize=14)
-    fig.legend(handles=[Line2D([0],[0],color='#00d9ef',label='Full training-target boundary'),
-                        Patch(facecolor='orange',alpha=.3,label='ROI: limits geometry edits only')],
+    fig.legend(handles=[Line2D([0],[0],color='#00d9ef',label='Original selected target boundary' if recipe_study else 'Full training-target boundary'),
+                        Patch(facecolor='orange',alpha=.3,label='ROI: selects original target ancestors' if recipe_study else 'ROI: limits geometry edits only')],
                loc='lower center', bbox_to_anchor=(.5,.04), ncol=2, frameon=False)
-    fig.text(.5,.015,'Target is restricted to this exported crop; review source ID coverage and ROI placement. '
-             'No complete-anatomy coverage is implied.',ha='center',fontsize=10)
+    caption = ('Source selection only. Final pairs retain surviving ancestors and their grown descendants, including outside the ROI.\n'
+               'Unselected same-category arteries remain negative; this is not a complete anatomical aorta annotation.' if recipe_study else
+               'Target is restricted to this exported crop; review source ID coverage and ROI placement. '
+               'No complete-anatomy coverage is implied.')
+    fig.text(.5,.015,caption,ha='center',fontsize=10)
     fig.tight_layout(rect=(0,.09,1,.92))
     fig.savefig(Path(output)/'training-target.png',dpi=145)
     plt.close(fig)
-    return {'target_source_ids': list(config['train']['target_source_ids']),
+    metadata = {
             'target_voxels_in_crop': int(target.sum()), 'target_voxels_in_roi': int((target & roi).sum()),
             'target_voxels_outside_roi': int((target & ~roi).sum()),
             'target_components_6': int(label(target)[1]),
@@ -62,3 +70,10 @@ def render_training_target(arrays, resolved, config, output):
             'scope': 'Specified source IDs within this exported crop; no complete-anatomy coverage claim',
             'coordinate_reviewed': config['roi']['coordinate_reviewed'],
             'image_units': 'cm^-1', 'source_image_only': True}
+    if recipe_study:
+        metadata.update(target_scope='selected_lineage',
+                        target_definition='Original tissue-category voxels selected by the main ROI; final pairs track their surviving ancestors and grown descendants, including outside the original ROI.',
+                        scope='ROI-defined artery/tissue selection in this crop, including any same-category branches inside the ROI. Unselected anatomy stays negative; no complete or anatomically exclusive aorta annotation is implied.')
+    else:
+        metadata['target_source_ids'] = list(config['train']['target_source_ids'])
+    return metadata

@@ -30,6 +30,9 @@ def load_study_config(path, *, repo_root=None):
         raise ValueError(f'Invalid study input: {error}') from error
     if parser.defaults():
         raise ValueError('[DEFAULT] settings are unsupported')
+    if 'study' in parser and parser['study'].get('schema_version') == 'fakect.recipe-study/1':
+        from fakect_recipe_study_config import parse_recipe_study_sections
+        return parse_recipe_study_sections(parser, root)
     if 'study' not in parser or parser['study'].get('schema_version') != SCHEMA:
         raise ValueError(f'study.schema_version must be {SCHEMA}')
     for section, expected in [('train', TRAIN_FIELDS), ('model', MODEL_FIELDS)]:
@@ -87,6 +90,12 @@ def load_study_config(path, *, repo_root=None):
         'validation_fraction': val, 'test_fraction': test,
         'split_seed': _integer(train['split_seed'], 'train.split_seed', 0, 2**31-1),
     }
+    config['model'] = parse_model_settings(model)
+    return config
+
+
+def parse_model_settings(model):
+    """Shared typed model contract for single-edit and recipe studies."""
     if model['architecture'] != 'unet2d' or model['slice_axis'] != 'k':
         raise ValueError('The initial model supports architecture=unet2d and slice_axis=k')
     if model['normalization'] != 'fixed_clip':
@@ -95,7 +104,7 @@ def load_study_config(path, *, repo_root=None):
     if len(patch) != 2 or any(v % 4 for v in patch):
         raise ValueError('model.patch_size needs two sizes divisible by four, in j,i order')
     clip_min, clip_max = validate_clip_bounds(model['clip_min'], model['clip_max'])
-    config['model'] = {
+    return {
         'architecture': model['architecture'], 'patch_size': patch, 'slice_axis': model['slice_axis'],
         'normalization': model['normalization'], 'clip_min': clip_min, 'clip_max': clip_max,
         'epochs': _integer(model['epochs'], 'model.epochs', 1, 10000),
@@ -103,4 +112,3 @@ def load_study_config(path, *, repo_root=None):
         'learning_rate': _float(model['learning_rate'], 'model.learning_rate', positive=True),
         'seed': _integer(model['seed'], 'model.seed', 0, 2**31-1),
     }
-    return config

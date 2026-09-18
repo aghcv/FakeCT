@@ -304,10 +304,11 @@ remains available for comparison; see the
 
 ## Connection to training
 
-This recipe interface currently reviews one combined anatomy. The existing
-`fakect.study/1` train/prepare workflow remains a single-edit parameter sweep;
-it does not silently interpret a recipe as that sweep. Once region placement,
-order and ranges are settled, the cohort builder can use `apply_recipe` inside
-its population loop. Each cohort member must restart from the original phantom;
-only the operations within that member share evolving state. Full-crop binary
-targets and source-label provenance remain the pairing contract.
+The [recipe cohort workflow](RECIPE_COHORTS.md) adds `fakect.recipe-study/1`,
+with `[train]` and `[sweep.NAME]` sections for independent ranges on named edits.
+It supports metadata validation, native preflight, and paired image/mask export.
+Each cohort member restarts from the original phantom; only operations within
+that member share evolving state. Its target follows the tissue originally
+selected by the main ROI and its descendants, including growth outside the ROI.
+Source anatomical labels and ancestry remain available. The original
+`fakect.study/1` workflow retains its single-edit sweep and full-crop ID target.
