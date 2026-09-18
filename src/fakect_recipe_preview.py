@@ -43,6 +43,7 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
     from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    from fakect_recipe import recipe_regions
     from fakect_volume_preview import occupancy_grid, _surface
 
     output = Path(output)
@@ -53,13 +54,17 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
     target = np.asarray(arrays['candidates'], dtype=bool)
     image = arrays['attenuation_cm_inverse']
     window = (float(image.min()), max(float(image.max()), float(image.min()) + .001))
+    definitions = recipe_regions(config, resolved)
     rows = []
     for index, (name, mask) in enumerate(masks.items()):
-        definition = config['rois'][name]
+        definition = definitions[name]
         nodes, radii = _nodes(definition)
         focus = (_focus(mask, target, low) if mask.any() else
                  tuple(int(v) for v in np.clip(np.rint(nodes.mean(axis=0)), low, high-1)))
         rows.append({'name': name, 'color': ROI_COLORS[index % len(ROI_COLORS)],
+                     'display_name': definition.get('display_name', name),
+                     'parent_roi': definition.get('parent_roi'),
+                     'range_metadata': definition.get('range_metadata', {}),
                      'shape': definition['shape'], 'nodes_ijk': nodes.tolist(),
                      'radii_mm': radii.tolist(), 'effective_voxels': int(mask.sum()),
                      'target_voxels': int((mask & target).sum()),
@@ -96,7 +101,7 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
             if highlighted is None or highlighted == row['name']:
                 points = np.argwhere(region)
                 center = points.mean(axis=0)
-                ax.text(low[x]+center[1], low[y]+center[0], row['name'], fontsize=8,
+                ax.text(low[x]+center[1], low[y]+center[0], row['display_name'], fontsize=8,
                         ha='center', color='white', bbox={'facecolor': row['color'], 'alpha': .7, 'pad': 2})
         ax.axvline(focus[x], color='white', lw=.55, ls=':')
         ax.axhline(focus[y], color='white', lw=.55, ls=':')
@@ -108,7 +113,7 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
 
     legend = [Line2D([0], [0], color='#00b8c9', label='Original full-crop target'),
               Line2D([0], [0], color='#888888', ls='--', label='Main ROI: hard edit boundary')]
-    legend += [Patch(facecolor=row['color'], alpha=.5, label=row['name']) for row in rows]
+    legend += [Patch(facecolor=row['color'], alpha=.5, label=row['display_name']) for row in rows]
     fig, axes = plt.subplots(1, 3, figsize=(17, 7))
     for ax, spec in zip(axes, _PLANES):
         panel(ax, spec, resolved['slice_ijk'])
@@ -129,7 +134,7 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
                   np.minimum(high, points.max(axis=0)+margin+1))
         for ax, spec in zip(axes[r], _PLANES):
             panel(ax, spec, row['focus_ijk'], bounds, row['name'])
-            ax.set_title(row['name'] + ' | ' + ax.get_title() + '\n'
+            ax.set_title(row['display_name'] + ' | ' + ax.get_title() + '\n'
                          + 'Focus i,j,k=' + ','.join(map(str, row['focus_ijk'])))
     fig.suptitle('Per-region native close-ups | Source anatomy before all edits', fontsize=14)
     fig.legend(handles=legend, loc='lower center', bbox_to_anchor=(.5, .015), ncol=min(5, len(legend)), frameon=False)
@@ -154,7 +159,7 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
             nodes = np.asarray(row['nodes_ijk'])
             ax.plot(nodes[:, 0], nodes[:, 1], nodes[:, 2], color=row['color'], linewidth=2)
             center = row['focus_ijk']
-            ax.text(*center, row['name']+'\n'+','.join(map(str, center)), color=row['color'], fontsize=8)
+            ax.text(*center, row['display_name']+'\n'+','.join(map(str, center)), color=row['color'], fontsize=8)
         ax.set(xlim=bounds[0], ylim=bounds[1], zlim=bounds[2], xlabel='i (native index)',
                ylabel='j (native index)', zlabel='k (native index)')
         ax.set_box_aspect((high-low)*spacing)
@@ -174,7 +179,7 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
     return {'overview': 'recipe-rois.png', 'closeups': 'recipe-roi-closeups.png',
             'surfaces': 'recipe-roi-surfaces.png', 'rois': rows,
             'target_voxels_in_crop': int(target.sum()), 'display_stride': stride,
-            'mask_semantics': 'Each named region is intersected with the immutable main ROI',
+            'mask_semantics': 'Each region is intersected with the immutable main ROI; selected tube ranges are also clipped by the parent path coordinate',
             'name_semantics': 'Region names are working labels; anatomical orientation remains unverified'}
 
 

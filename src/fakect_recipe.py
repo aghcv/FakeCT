@@ -11,15 +11,61 @@ import numpy as np
 from scipy import ndimage
 
 from fakect_morphology import (ENGINE, MAX_MORPHOLOGY_VOXELS, apply_morphology,
-                               validate_edit_geometry)
+                               validate_edit_geometry, tube_position_mm)
 from fakect_roi import _tube_nodes, sphere_mask, tube_mask
 from fakect_tissues import _validated_labels, coarse_labels
 from fakect_reassignment import reassignment_masks, stiffness_field
+from fakect_tube_range import resolve_tube_range
 
 
 RECIPE_ENGINE = 'ordered_named_roi_v1'
 MAX_RECIPE_PASSES = 20
 _STRUCTURE = ndimage.generate_binary_structure(3, 1)
+
+
+def _region_key(name, edit):
+    if edit['roi'] == 'main' or 'point_range' in edit or 'path_percent' in edit:
+        return 'edit:' + name
+    return edit['roi']
+
+
+def recipe_regions(config, resolved):
+    """Materialize per-edit path ranges without changing the input definitions.
+
+    Explicit named regions remain available as planning overlays. Compact edit
+    regions inherit coordinates and radii from their parent ROI; percentages are
+    resolved with physical spacing, not by the number of control points.
+    """
+    regions = dict(config.get('rois', {}))
+    for name, edit in config.get('edits', {}).items():
+        key = _region_key(name, edit)
+        if key == edit['roi']:
+            continue
+        parent_name = edit['roi']
+        parent = config['roi'] if parent_name == 'main' else config['rois'].get(parent_name)
+        if parent is None:
+            raise ValueError(f'Edit {name} refers to missing ROI: {parent_name}')
+        region = {k: v for k, v in parent.items() if k != 'crop_half_width_mm'}
+        region.update(display_name=name, parent_roi=parent_name)
+        has_range = 'point_range' in edit or 'path_percent' in edit
+        if has_range:
+            # Reviewing the parent centerline does not record review of every
+            # new interval subsequently chosen for an edit.
+            region['coordinate_reviewed'] = False
+        if has_range and parent['shape'] != 'tube':
+            raise ValueError(f'Edit {name}: path ranges require a tube ROI')
+        if parent['shape'] == 'tube':
+            selected = resolve_tube_range(parent['center_ijk'], parent['radius_mm'],
+                                          resolved['spacing_ijk_mm'],
+                                          point_range=edit.get('point_range'),
+                                          path_percent=edit.get('path_percent'))
+            region.update(center_ijk=selected['nodes_ijk'], radius_mm=selected['radii_mm'],
+                          range_metadata={**selected['metadata'],
+                              'mask_semantics': 'Selected subpath tube intersected with parent tube, parent arc interval, and main ROI',
+                              'local_coordinate': 'u=(parent arc distance - range start)/(range end - range start)'},
+                          range_parent=parent)
+        regions[key] = region
+    return regions
 
 
 def _roi_geometry(roi, resolved):
@@ -38,17 +84,23 @@ def _roi_geometry(roi, resolved):
     if 'shape_kji' in resolved and np.any(nodes > np.asarray(resolved['shape_kji'])[::-1] - 1):
         raise ValueError('Named ROI control point lies outside source dimensions')
     focus = tuple(map(int, np.rint(nodes[len(nodes) // 2])))
-    return {**resolved, 'roi_kind': kind,
+    geometry = {**resolved, 'roi_kind': kind,
             'roi_nodes_ijk': tuple(tuple(map(float, n)) for n in nodes),
             'roi_radii_mm': tuple(map(float, radii)), 'focus_ijk': focus,
             'roi_node_low_ijk': tuple(map(float, nodes.min(axis=0))),
             'roi_node_high_ijk': tuple(map(float, nodes.max(axis=0)))}
+    if 'range_metadata' in roi:
+        metadata = roi['range_metadata']
+        geometry.update(range_parent_nodes_ijk=roi['range_parent']['center_ijk'],
+                        range_interval_mm=(metadata['start_distance_mm'], metadata['end_distance_mm']))
+    return geometry
 
 
-def _step_config(config, name):
+def _step_config(config, name, regions):
     edit = config['edits'][name]
-    return {**config, 'roi': {**config['roi'], **config['rois'][edit['roi']]},
-            'edit': {key: value for key, value in edit.items() if key not in ('roi', 'iterations')}}
+    return {**config, 'roi': {**config['roi'], **regions[_region_key(name, edit)]},
+            'edit': {key: value for key, value in edit.items()
+                     if key not in ('roi', 'iterations', 'point_range', 'path_percent')}}
 
 
 def validate_recipe(config, resolved):
@@ -72,14 +124,16 @@ def validate_recipe(config, resolved):
         raise ValueError('Recipe requires valid integral common crop bounds')
     if int(np.prod(high - low)) > MAX_MORPHOLOGY_VOXELS:
         raise ValueError(f'Recipe crop exceeds {MAX_MORPHOLOGY_VOXELS:,} voxels')
-    geometries = {name: _roi_geometry(roi, resolved) for name, roi in config['rois'].items()}
+    regions = recipe_regions(config, resolved)
+    geometries = {name: _roi_geometry(roi, resolved) for name, roi in regions.items()}
     steps, passes = [], 0
     for name in names:
         if name not in config['edits']:
             raise ValueError(f'Recipe refers to missing edit: {name}')
         edit = config['edits'][name]
         roi_name = edit.get('roi')
-        if roi_name not in geometries:
+        region_key = _region_key(name, edit)
+        if region_key not in geometries:
             raise ValueError(f'Edit {name} refers to missing ROI: {roi_name}')
         iterations = edit.get('iterations', 1)
         if isinstance(iterations, bool) or not isinstance(iterations, (int, np.integer)) or not 1 <= iterations <= 10:
@@ -87,14 +141,16 @@ def validate_recipe(config, resolved):
         passes += int(iterations)
         if passes > MAX_RECIPE_PASSES:
             raise ValueError(f'Recipe requires more than {MAX_RECIPE_PASSES} total passes')
-        geometry = geometries[roi_name]
+        geometry = geometries[region_key]
         try:
-            halo = validate_edit_geometry(geometry, _step_config(config, name))
+            halo = validate_edit_geometry(geometry, _step_config(config, name, regions))
         except ValueError as exc:
-            raise ValueError(f'[edit.{name}] using [roi.{roi_name}]: {exc}') from exc
-        steps.append({'name': name, 'roi': roi_name, 'iterations': int(iterations),
+            parent_section = 'roi' if roi_name == 'main' else f'roi.{roi_name}'
+            raise ValueError(f'[edit.{name}] using [{parent_section}]: {exc}') from exc
+        steps.append({'name': name, 'roi': roi_name, 'region_key': region_key, 'iterations': int(iterations),
                       'edit': {k: v for k, v in edit.items() if k not in ('roi', 'iterations')},
                       'geometry': {k: geometry[k] for k in ('roi_kind', 'roi_nodes_ijk', 'roi_radii_mm', 'focus_ijk')},
+                      'range_metadata': regions[region_key].get('range_metadata'),
                       'halo': halo})
     return {'engine': RECIPE_ENGINE, 'morphology_engine': ENGINE,
             'steps': steps, 'total_passes': passes, 'overlap': recipe['overlap'],
@@ -108,7 +164,7 @@ def _native_masks(arrays, resolved, config):
         raise ValueError('Recipe requires a nonempty 3D crop within the morphology size limit')
     origin, spacing = resolved['crop_low_ijk'], resolved['spacing_ijk_mm']
     result = {}
-    for name, roi in config['rois'].items():
+    for name, roi in recipe_regions(config, resolved).items():
         geometry = _roi_geometry(roi, resolved)
         if geometry['roi_kind'] == 'sphere':
             result[name] = sphere_mask(shape, origin, geometry['roi_nodes_ijk'][0], spacing,
@@ -116,6 +172,12 @@ def _native_masks(arrays, resolved, config):
         else:
             result[name] = tube_mask(shape, origin, geometry['roi_nodes_ijk'], spacing,
                                      geometry['roi_radii_mm'])
+        if 'range_metadata' in roi:
+            parent = roi['range_parent']
+            arc = tube_position_mm(shape, origin, parent['center_ijk'], spacing)
+            lo, hi = geometry['range_interval_mm']
+            result[name] &= (arc >= lo - 1e-9) & (arc <= hi + 1e-9)
+            result[name] &= tube_mask(shape, origin, parent['center_ijk'], spacing, parent['radius_mm'])
     return result
 
 
@@ -182,7 +244,7 @@ def apply_recipe(arrays, resolved, config, on_step=None):
             raise ValueError(f'Input {name} disagrees with original labels/selection/outer ROI')
     native = _native_masks(arrays, resolved, config)
     masks = {name: value & outer for name, value in native.items()}
-    active_names = list(dict.fromkeys(step['roi'] for step in plan['steps']
+    active_names = list(dict.fromkeys(step['region_key'] for step in plan['steps']
                                       if step['edit'].get('operation', 'none') != 'none'))
     for name in active_names:
         if not masks[name].any():
@@ -209,10 +271,11 @@ def apply_recipe(arrays, resolved, config, on_step=None):
     current_labels, current_atn = labels.copy(), atn.copy()
     catalog_records = {record['original_id']: record for record in resolved['catalog']['records']}
     steps, warnings, activity, event_index = [], [], {'added': 0, 'removed': 0, 'changed': 0}, 0
+    regions = recipe_regions(config, resolved)
     for step in plan['steps']:
-        name, roi_name = step['name'], step['roi']
-        step_resolved = _roi_geometry(config['rois'][roi_name], resolved)
-        step_config = _step_config(config, name)
+        name, roi_name = step['name'], step['region_key']
+        step_resolved = _roi_geometry(regions[roi_name], resolved)
+        step_config = _step_config(config, name, regions)
         for iteration in range(1, step['iterations'] + 1):
             event_index += 1
             before = _state(current_labels, current_atn, resolved['catalog'], source_ids,
@@ -247,6 +310,7 @@ def apply_recipe(arrays, resolved, config, on_step=None):
                 result['summary']['no_op_reason'] = reason
                 result['summary']['warnings'].append(reason)
             entry = {'index': event_index, 'step_name': name, 'roi_name': roi_name,
+                     'parent_roi': step['roi'], 'range_metadata': step.get('range_metadata'),
                      'iteration': iteration, 'status': 'empty_target' if empty_target else ('applied' if result['changed_mask'].any() else 'no_change'),
                      'requested_operation': requested, **result['summary'],
                      'labels_before_sha256': _digest(current_labels),

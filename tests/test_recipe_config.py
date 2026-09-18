@@ -189,6 +189,109 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(config["edits"]["arch_refine"]["roi"], "ascending")
         self.assertEqual(config["recipe"]["overlap"], "error")
 
+    def test_main_roi_can_be_shared_by_edits_without_any_named_rois(self):
+        parser = self.parser()
+        for section in list(parser.sections()):
+            if section.startswith("roi."):
+                parser.remove_section(section)
+            elif section.startswith("edit."):
+                parser[section]["roi"] = "main"
+        before = {section: dict(parser[section]) for section in parser.sections()}
+        config = self.load(parser)
+        self.assertEqual(config["rois"], {})
+        self.assertEqual(config, self.load(parser, loader=load_preview_config))
+        self.assertEqual(config["edits"]["ascending_expand"], {
+            "roi": "main", "iterations": 1, "operation": "dilation", "distance_mm": 2.,
+            "profile": "gaussian", "profile_axis": "tube", "shape_k": 6., "shape_window": (0., 1.)})
+        self.assertTrue(all(edit["roi"] == "main" for edit in config["edits"].values()))
+        self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
+
+    def test_explicit_named_main_roi_is_reserved(self):
+        parser = self.parser()
+        parser["roi.main"] = dict(parser["roi.ascending"])
+        with self.assertRaisesRegex(ValueError, r"\[roi.main\] is reserved.*top-level \[roi\]"):
+            self.load(parser)
+
+    def test_point_range_normalizes_1_based_inclusive_main_or_named_node_interval(self):
+        for roi_name, interval, expected in (("main", "2,8", (2, 8)),
+                                             ("ascending", " 2, 4 ", (2, 4)),
+                                             ("ascending", "1,4", (1, 4))):
+            with self.subTest(roi=roi_name, interval=interval):
+                parser = self.parser()
+                parser["edit.ascending_expand"].update(roi=roi_name, point_range=interval)
+                config = self.load(parser)
+                self.assertEqual(config["edits"]["ascending_expand"]["point_range"], expected)
+                self.assertNotIn("path_percent", config["edits"]["ascending_expand"])
+                self.assertNotIn("point_range", config["edits"]["descending_narrow"])
+                self.assertEqual(len(config["roi"]["center_ijk"]), 14)
+                self.assertEqual(len(config["rois"]["ascending"]["center_ijk"]), 4)
+
+    def test_path_percent_normalizes_main_or_named_physical_path_interval(self):
+        for roi_name, interval, expected in (("main", "0,100", (0., 100.)),
+                                             ("main", "30,75", (30., 75.)),
+                                             ("ascending", "2.5,70.125", (2.5, 70.125))):
+            with self.subTest(roi=roi_name, interval=interval):
+                parser = self.parser()
+                parser["edit.ascending_expand"].update(roi=roi_name, path_percent=interval)
+                config = self.load(parser)
+                self.assertEqual(config["edits"]["ascending_expand"]["path_percent"], expected)
+                self.assertNotIn("point_range", config["edits"]["ascending_expand"])
+
+    def test_selector_rejects_malformed_values_bounds_and_nonincreasing_intervals(self):
+        invalid = {
+            "point_range": ("", "2", "1,2,3", "1,,3", "1,4,", "0,3", "-1,3",
+                            "1,5", "3,3", "4,2", "1.0,3", "1,inf", "1,nan", "1;4", "1,\n4"),
+            "path_percent": ("", "2", "1,2,3", "1,,3", "0,100,", "-1,70", "1,101",
+                             "30,30", "70,30", "nan,40", "1,inf", "-inf,40", "0;100", "0,\n100"),
+        }
+        for selector, values in invalid.items():
+            for value in values:
+                with self.subTest(selector=selector, value=value), self.assertRaises(ValueError):
+                    parser = self.parser()
+                    parser["edit.ascending_expand"][selector] = value
+                    self.load(parser)
+
+    def test_selectors_are_mutually_exclusive_and_require_a_tube_base(self):
+        parser = self.parser()
+        parser["edit.ascending_expand"].update(point_range="1,4", path_percent="0,100")
+        with self.assertRaisesRegex(ValueError, "point_range and path_percent are mutually exclusive"):
+            self.load(parser)
+        for roi_name in ("main", "ascending"):
+            for selector, value in (("point_range", "1,2"), ("path_percent", "0,100")):
+                with self.subTest(roi=roi_name, selector=selector):
+                    parser = self.parser()
+                    section = "roi" if roi_name == "main" else "roi.ascending"
+                    parser[section].update(shape="sphere", center_ijk="387,360,1352", radius_mm="10")
+                    parser["edit.ascending_expand"].update(roi=roi_name, profile="uniform")
+                    parser["edit.ascending_expand"][selector] = value
+                    with self.assertRaisesRegex(ValueError, "requires the referenced ROI to have shape=tube"):
+                        self.load(parser)
+
+    def test_optional_selectors_preserve_required_edit_fields_and_reject_unknown_fields(self):
+        for key in ("roi", "iterations", "operation", "distance_mm", "profile",
+                    "profile_axis", "shape_k", "shape_window"):
+            with self.subTest(missing=key), self.assertRaisesRegex(ValueError, "missing"):
+                parser = self.parser()
+                parser["edit.ascending_expand"]["point_range"] = "1,4"
+                parser.remove_option("edit.ascending_expand", key)
+                self.load(parser)
+        parser = self.parser()
+        parser["edit.ascending_expand"].update(point_range="1,4", point_ranges="1,4")
+        with self.assertRaisesRegex(ValueError, "unknown=.*point_ranges"):
+            self.load(parser)
+
+    def test_main_sphere_edit_validates_profile_against_main_not_named_roi(self):
+        parser = self.parser()
+        parser["roi"].update(shape="sphere", center_ijk="387,360,1352", radius_mm="10")
+        parser["edit.ascending_expand"]["roi"] = "main"
+        with self.assertRaisesRegex(ValueError, "edit.ascending_expand.*requires roi.shape=tube"):
+            self.load(parser)
+        parser["edit.ascending_expand"]["profile_axis"] = "k"
+        config = self.load(parser)
+        self.assertEqual(config["edits"]["ascending_expand"]["roi"], "main")
+        self.assertEqual(config["edits"]["ascending_expand"]["profile_axis"], "k")
+        self.assertNotIn("point_range", config["edits"]["ascending_expand"])
+
     def test_named_sphere_is_validated_against_its_own_profile_axis(self):
         parser = self.parser()
         parser["roi.ascending"].update({"shape": "sphere", "center_ijk": "387.5,360,1352", "radius_mm": "50"})

@@ -121,6 +121,34 @@ def validate_edit_geometry(resolved, config):
             'roi_envelope_ijk_mm': [envelope_low.tolist(), envelope_high.tolist()]}
 
 
+def tube_position_mm(shape_kji, origin_ijk, nodes_ijk, spacing_ijk_mm):
+    """Physical arc coordinate of the closest point on an ordered centerline.
+
+    At equal distances the first supplied segment wins, matching the existing
+    tube profile convention. Endcap positions clamp to the first/last point.
+    """
+    spacing = np.asarray(spacing_ijk_mm, dtype=float)
+    nodes = np.asarray(nodes_ijk, dtype=float) * spacing
+    lengths = np.linalg.norm(np.diff(nodes, axis=0), axis=1)
+    if len(nodes) < 2 or np.any(lengths <= 0):
+        raise ValueError('Tube coordinates require distinct consecutive centers')
+    cumulative = np.concatenate(([0.], np.cumsum(lengths)))
+    k, j, i = np.ogrid[:shape_kji[0], :shape_kji[1], :shape_kji[2]]
+    coordinates = [(v + origin_ijk[a]) * spacing[a] for a, v in enumerate((i, j, k))]
+    closest = np.full(shape_kji, np.inf)
+    position = np.zeros(shape_kji, dtype=np.float64)
+    for index, (start, end) in enumerate(zip(nodes[:-1], nodes[1:])):
+        delta = end - start
+        t = np.clip(sum((coordinates[a] - start[a]) * delta[a] for a in range(3))
+                    / (lengths[index] ** 2), 0, 1)
+        squared = sum((coordinates[a] - start[a] - t*delta[a]) ** 2 for a in range(3))
+        nearer = squared < closest - _TOL
+        closest[nearer] = squared[nearer]
+        arc = cumulative[index] + t*lengths[index]
+        position[nearer] = arc[nearer]
+    return position
+
+
 def strength_field_mm(shape_kji, resolved, config):
     """Spatial edit budget, including zero-ended Gaussian tube arc-length taper."""
     spec = _edit_spec(resolved, config)
@@ -135,23 +163,10 @@ def strength_field_mm(shape_kji, resolved, config):
     k, j, i = np.ogrid[:shape_kji[0], :shape_kji[1], :shape_kji[2]]
     coordinates = [(v + origin[a]) * spacing[a] for a, v in enumerate((i, j, k))]
     if spec['axis'] == 'tube':
-        if len(nodes) < 2:
-            raise ValueError('Tube profile requires at least two ordered centers')
-        lengths = np.linalg.norm(np.diff(nodes, axis=0), axis=1)
-        if np.any(lengths <= 0):
-            raise ValueError('Consecutive tube centers must be distinct')
-        cumulative = np.concatenate(([0.], np.cumsum(lengths)))
-        closest = np.full(shape_kji, np.inf)
-        position = np.zeros(shape_kji, dtype=np.float64)
-        for index, (start, end) in enumerate(zip(nodes[:-1], nodes[1:])):
-            delta = end - start
-            t = np.clip(sum((coordinates[a] - start[a]) * delta[a] for a in range(3))
-                        / (lengths[index] ** 2), 0, 1)
-            squared = sum((coordinates[a] - start[a] - t*delta[a]) ** 2 for a in range(3))
-            nearer = squared < closest - _TOL  # Equal-distance segments keep supplied-order first.
-            closest[nearer] = squared[nearer]
-            arc = (cumulative[index] + t*lengths[index]) / cumulative[-1]
-            position[nearer] = arc[nearer]
+        parent = resolved.get('range_parent_nodes_ijk', resolved['roi_nodes_ijk'])
+        full_length = np.linalg.norm(np.diff(np.asarray(parent) * spacing, axis=0), axis=1).sum()
+        start, end = resolved.get('range_interval_mm', (0., full_length))
+        position = (tube_position_mm(shape_kji, origin, parent, spacing) - start) / (end - start)
     else:
         axis = ('i', 'j', 'k').index(spec['axis'])
         lo = float((nodes[:, axis] - radii).min())

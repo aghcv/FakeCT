@@ -8,6 +8,7 @@ import hashlib
 import html
 from html.parser import HTMLParser
 import json
+import math
 from pathlib import Path
 
 
@@ -221,6 +222,55 @@ def _control_points(report):
     return str(kind), rows
 
 
+def _main_tube_points(report):
+    """Show one-based path nodes with cumulative physical distance and percent."""
+    kind, rows = _control_points(report)
+    if kind != 'tube' or not rows:
+        return ''
+    geometry = report.get('geometry', {})
+    config = report.get('config', {})
+    roi = config.get('roi', {})
+    nodes = geometry.get('nodes_ijk', geometry.get('roi_nodes_ijk',
+                         roi.get('nodes_ijk', roi.get('center_ijk'))))
+    spacing = geometry.get('spacing_ijk_mm', config.get('input', {}).get('spacing_ijk_mm'))
+    positions = None
+    try:
+        spacing = [float(value) for value in spacing]
+        points = [[float(value) for value in point] for point in nodes]
+        if (len(spacing) == 3 and all(math.isfinite(value) and value > 0 for value in spacing)
+                and len(points) == len(rows) and all(len(point) == 3 for point in points)
+                and all(math.isfinite(value) for point in points for value in point)):
+            positions = [0.0]
+            for before, after in zip(points, points[1:]):
+                positions.append(positions[-1] + math.sqrt(sum(
+                    ((after[axis] - before[axis]) * spacing[axis]) ** 2 for axis in range(3))))
+    except (TypeError, ValueError, OverflowError):
+        positions = None
+    total = positions[-1] if positions else None
+    path_rows = []
+    for index, row in enumerate(rows):
+        distance = positions[index] if positions is not None else None
+        percent = 100 * distance / total if total and distance is not None else None
+        path_rows.append(row + [_measurement(distance), _measurement(percent)])
+    return ('<h3>Main tube point reference</h3><p>Point numbers start at 1 and follow the configured '
+            'path order. Percent is cumulative physical centerline length, using voxel spacing; '
+            'it is not the fraction of the point count. Total length: <strong>' + _measurement(total) +
+            ' mm</strong>.</p>' +
+            _table(['Point', 'i', 'j', 'k', 'Radius (mm)', 'Cumulative length (mm)', 'Path (%)'], path_rows))
+
+
+def _range_description(metadata):
+    selector = metadata.get('selector', 'full')
+    values = metadata.get('selector_values')
+    if selector == 'path_percent':
+        return '<code>path_percent = ' + _text_value(values) + '</code> (%)'
+    if selector == 'point_range':
+        return '<code>point_range = ' + _text_value(values) + '</code> (1-based points)'
+    if selector == 'full':
+        return 'Full base ROI'
+    return _text_value(selector) + ': ' + _text_value(values)
+
+
 def _selection(report):
     selection = report.get('selection', report.get('selection_diagnostics', {}))
     candidate = selection.get('candidate_voxels', report.get('candidate_voxels', report.get('selected_voxels')))
@@ -389,13 +439,24 @@ def _recipe_section(output, report, embedded):
                            _table(['Original ID', 'Anatomical name', 'Coarse tissue', 'Resistance group',
                                    'Factor', 'Factor source', 'Original voxels'], effective) + '</details>')
     steps = recipe.get('steps', [])
+    region_definitions = {row.get('name'): row for row in figures.get('rois', [])}
+    range_enabled = any(row.get('range_metadata') for row in region_definitions.values())
     roi_rows = []
     for row in figures.get('rois', []):
         coverage = recipe.get('roi_coverage', {}).get(row.get('name'), {})
-        roi_rows.append([_text_value(row.get('name')), _text_value(row.get('shape')),
+        range_metadata = row.get('range_metadata', {})
+        region_columns = [_text_value(row.get('display_name', row.get('name')))]
+        if range_enabled:
+            region_columns += [_text_value(row.get('parent_roi') or 'Independent named ROI'),
+                               _range_description(range_metadata),
+                               _measurement(range_metadata.get('selected_length_mm'))]
+        roi_rows.append(region_columns + [_text_value(row.get('shape')),
                          _text_value(row.get('nodes_ijk')), _text_value(row.get('radii_mm')),
                          _number(row.get('effective_voxels')), _number(row.get('target_voxels')),
                          _number(coverage.get('clipped_by_outer_roi_voxels'))])
+    roi_headers = ['Name'] + (['Base ROI', 'Selected range', 'Length (mm)'] if range_enabled else [])
+    roi_headers += ['Shape', 'Ordered centers (i, j, k)', 'Radii (mm)', 'Effective ROI voxels',
+                    'Original target voxels', 'Voxels clipped by main ROI']
     step_rows = []
     details = []
     for position, step in enumerate(steps, 1):
@@ -403,8 +464,15 @@ def _recipe_section(output, report, embedded):
         current_counts = summary.get('counts', {})
         name = step.get('name', step.get('step_name'))
         roi = step.get('roi', step.get('roi_name'))
+        region = region_definitions.get(roi, {})
+        roi_display = region.get('display_name', roi)
+        range_metadata = step.get('range_metadata', region.get('range_metadata', {}))
+        parent_roi = step.get('parent_roi', region.get('parent_roi'))
+        roi_description = _text_value(roi_display)
+        if parent_roi is not None:
+            roi_description += ' (base ' + _text_value(parent_roi) + ')'
         operation = summary.get('requested_operation', summary.get('operation'))
-        step_rows.append([_number(step.get('index', position)), _text_value(name), _text_value(roi),
+        step_rows.append([_number(step.get('index', position)), _text_value(name), roi_description,
                           _number(step.get('iteration')), _text_value(operation),
                           _number(current_counts.get('before')) + ' → ' + _number(current_counts.get('after')),
                           _number(current_counts.get('added')), _number(current_counts.get('removed')),
@@ -421,6 +489,7 @@ def _recipe_section(output, report, embedded):
                 content.append(_embed_png(output, step_figures[key], title, caption, embedded))
         metadata_rows = [[label, _text_value(value)] for label, value in (
             ('Status', step.get('status', summary.get('status'))),
+            ('Base ROI', parent_roi),
             ('Distance per pass (mm)', summary.get('distance_mm')),
             ('Profile', summary.get('profile')), ('Profile axis', summary.get('profile_axis')),
             ('Requested release before target resistance (voxels)', current_counts.get('requested_removed_before_stiffness')),
@@ -433,6 +502,18 @@ def _recipe_section(output, report, embedded):
             ('Input label SHA256', step.get('labels_before_sha256')),
             ('Output label SHA256', step.get('labels_after_sha256')),
             ('Pass arrays', step.get('artifact', step.get('array_artifact')))) if value is not None]
+        if range_metadata:
+            metadata_rows += [
+                ['Selected range', _range_description(range_metadata)],
+                ['Selected path length (mm)', _measurement(range_metadata.get('selected_length_mm'))],
+                ['Distance along base path (mm)', _measurement(range_metadata.get('start_distance_mm')) +
+                 ' → ' + _measurement(range_metadata.get('end_distance_mm'))],
+                ['Original base point numbers retained',
+                 _text_value(range_metadata.get('original_node_numbers_retained'))]]
+            if summary.get('profile_axis') == 'tube':
+                metadata_rows.append(['Local tube profile coordinate',
+                                      'u = 0 at the selected range start; u = 1 at its end. '
+                                      'Gaussian shape_window uses this local coordinate.'])
         warnings = ''.join('<p class="warning">'+_escape(w)+' </p>' for w in summary.get('warnings', []))
         blocked_rows = [[_text_value(row.get('original_id')), _text_value(row.get('original_name')),
                          _text_value(row.get('tissue_name')), _number(row.get('count'))]
@@ -443,7 +524,7 @@ def _recipe_section(output, report, embedded):
                           'protected barriers and accepted-path budgets determine whether growth can reach them.</p>'
                           if blocked_rows else '')
         details.append('<details><summary>Pass ' + _number(step.get('index', position)) + ': ' +
-                       _text_value(name) + ' · ROI ' + _text_value(roi) + ' · iteration ' +
+                       _text_value(name) + ' · ROI ' + roi_description + ' · iteration ' +
                        _number(step.get('iteration')) + '</summary>' +
                        _table(['Pass setting', 'Value'], metadata_rows) + warnings + blocked_labels + ''.join(content) + '</details>')
     visualizations = []
@@ -490,11 +571,26 @@ def _recipe_section(output, report, embedded):
         ('components_after', 'Final target inside main ROI'),
         ('full_target_components_before', 'Original full-crop target'),
         ('full_target_components_after', 'Final full-crop target')) if key in recipe]
-    overlaps = [[_text_value(row.get('roi_a')), _text_value(row.get('roi_b')),
+    overlaps = [[_text_value(region_definitions.get(row.get('roi_a'), {}).get('display_name', row.get('roi_a'))),
+                 _text_value(region_definitions.get(row.get('roi_b'), {}).get('display_name', row.get('roi_b'))),
                  _number(row.get('effective_overlap_voxels'))] for row in recipe.get('roi_overlaps', [])]
     transition_rows = [[_text_value(row.get('original_id')), _text_value(row.get('new_id')), _number(row.get('count'))]
                        for row in recipe.get('transitions', [])]
     warnings = ''.join('<p class="warning">'+_escape(w)+'</p>' for w in recipe.get('warnings', []))
+    range_content = ''
+    if range_enabled:
+        range_content = (
+            '<h3>Select edits along an existing tube</h3><p>Each edit can reuse the main tube or a named '
+            'base ROI and select an interval with <code>path_percent</code> or <code>point_range</code>. '
+            'For example, <code>path_percent = 30, 75</code> selects 30% through 75% of the base tube’s '
+            'physical centerline length. Separate edits can reuse that tube with different ranges.</p>'
+            '<p><strong>Range boundaries are strict:</strong> effective voxels must lie inside the main '
+            'ROI and within the selected interval of the base tube’s closest physical path coordinate. '
+            'Rounded endpoint spheres do not extend the edit past that interval.</p>'
+            '<p>For <code>profile_axis = tube</code>, the selected interval is remapped to '
+            '<code>u = 0…1</code>: 0 is its start and 1 is its end. '
+            '<code>shape_window = 0, 1</code> applies the Gaussian across the whole selected interval; '
+            'a narrower shape window is measured within that interval, not across the full base tube.</p>')
     return ('<section id="recipe"><h2>Named-region edit recipe</h2>' +
             _surface_overlay_section(output, recipe, embedded, recipe=True) +
             '<p class="rule">Each pass consumes the previous pass’s labels and attenuation proxy. '
@@ -507,9 +603,9 @@ def _recipe_section(output, report, embedded):
             '<p>Region names such as “ascending” and “descending” are working labels; they do not establish '
             'anatomical orientation. Confirm placement from the native coordinates and source anatomy.</p>' + warnings +
             policy_content +
+            range_content + _main_tube_points(report) +
             '<h3>Named ROI definitions</h3>' +
-            _table(['Name', 'Shape', 'Ordered centers (i, j, k)', 'Radii (mm)', 'Effective ROI voxels',
-                    'Original target voxels', 'Voxels clipped by main ROI'], roi_rows) + ''.join(visualizations) +
+            _table(roi_headers, roi_rows) + ''.join(visualizations) +
             '<h3>Execution order and per-pass accounting</h3>' +
             _table(['Pass', 'Edit', 'ROI', 'Iteration', 'Operation', 'Target before → after',
                     'Added', 'Removed', 'Blocked', 'Unresolved'], step_rows) +

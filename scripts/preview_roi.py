@@ -157,7 +157,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
     recipe_requested = 'recipe' in config
     if recipe_requested:
         code_files += [ROOT/'src/fakect_recipe.py', ROOT/'src/fakect_recipe_config.py',
-                       ROOT/'src/fakect_recipe_preview.py']
+                       ROOT/'src/fakect_recipe_preview.py', ROOT/'src/fakect_tube_range.py']
     code_hashes = {str(p.relative_to(ROOT)): digest(p) for p in code_files}
     resolved = resolve_preview(config)
     edit_requested = config.get('edit', {}).get('operation', 'none') != 'none'

@@ -1,0 +1,332 @@
+{
+  "date": "2026-09-17",
+  "report": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v6/report.html",
+  "input_provenance": {
+    "source_input": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/studies/thoracic-aorta-recipe.ini",
+    "before_input_sha256": "1dfa28a7fe5a8e6a4ce574d6713c173b26f93e7067e79509b2c0b9d3528c7771",
+    "before_input_backup": "/tmp/fakect-recipe-before-path-ranges.ini",
+    "after_input_sha256": "f3e86b411b985c01a550e87a345a2615569375fb63b36f69ab848419a3fd1fa5",
+    "range_endpoint_reference_points": {
+      "ascending_expand": [
+        2,
+        8
+      ],
+      "descending_narrow": [
+        10,
+        13
+      ],
+      "arch_refine": [
+        4,
+        9
+      ]
+    }
+  },
+  "parent_length_mm": 204.1933106999441,
+  "point_table": [
+    {
+      "point": 1,
+      "ijk": [
+        387.0,
+        360.0,
+        1352.0
+      ],
+      "radius_mm": 10.0,
+      "arc_mm": 0.0,
+      "path_percent": 0.0
+    },
+    {
+      "point": 2,
+      "ijk": [
+        378.0,
+        365.0,
+        1363.0
+      ],
+      "radius_mm": 10.0,
+      "arc_mm": 15.066519173319364,
+      "path_percent": 7.37855668321043
+    },
+    {
+      "point": 3,
+      "ijk": [
+        373.0,
+        362.0,
+        1374.0
+      ],
+      "radius_mm": 10.0,
+      "arc_mm": 27.516418771308096,
+      "path_percent": 13.4756710085095
+    },
+    {
+      "point": 4,
+      "ijk": [
+        373.0,
+        363.0,
+        1389.0
+      ],
+      "radius_mm": 12.0,
+      "arc_mm": 42.549715149681006,
+      "path_percent": 20.8379574256507
+    },
+    {
+      "point": 5,
+      "ijk": [
+        376.0,
+        366.0,
+        1409.0
+      ],
+      "radius_mm": 11.0,
+      "arc_mm": 62.99476344994188,
+      "path_percent": 30.850551976460572
+    },
+    {
+      "point": 6,
+      "ijk": [
+        385.0,
+        375.0,
+        1415.0
+      ],
+      "radius_mm": 10.0,
+      "arc_mm": 77.06601072941217,
+      "path_percent": 37.741692156927876
+    },
+    {
+      "point": 7,
+      "ijk": [
+        392.0,
+        386.0,
+        1417.0
+      ],
+      "radius_mm": 10.0,
+      "arc_mm": 90.25691668768509,
+      "path_percent": 44.20170101473838
+    },
+    {
+      "point": 8,
+      "ijk": [
+        393.0,
+        398.0,
+        1409.0
+      ],
+      "radius_mm": 13.0,
+      "arc_mm": 104.71374898248605,
+      "path_percent": 51.28167451888752
+    },
+    {
+      "point": 9,
+      "ijk": [
+        390.0,
+        408.0,
+        1394.0
+      ],
+      "radius_mm": 12.0,
+      "arc_mm": 122.98941586498312,
+      "path_percent": 60.231853552593776
+    },
+    {
+      "point": 10,
+      "ijk": [
+        387.0,
+        414.0,
+        1383.0
+      ],
+      "radius_mm": 11.0,
+      "arc_mm": 135.87351459170824,
+      "path_percent": 66.54160908893351
+    },
+    {
+      "point": 11,
+      "ijk": [
+        387.0,
+        419.0,
+        1370.0
+      ],
+      "radius_mm": 11.0,
+      "arc_mm": 149.80190286889237,
+      "path_percent": 73.36278664339878
+    },
+    {
+      "point": 12,
+      "ijk": [
+        387.0,
+        419.0,
+        1356.0
+      ],
+      "radius_mm": 11.0,
+      "arc_mm": 163.80190286889237,
+      "path_percent": 80.21903475065074
+    },
+    {
+      "point": 13,
+      "ijk": [
+        389.0,
+        419.0,
+        1341.0
+      ],
+      "radius_mm": 11.0,
+      "arc_mm": 178.93464881931394,
+      "path_percent": 87.63002480637232
+    },
+    {
+      "point": 14,
+      "ijk": [
+        391.0,
+        416.0,
+        1316.0
+      ],
+      "radius_mm": 11.0,
+      "arc_mm": 204.1933106999441,
+      "path_percent": 100.0
+    }
+  ],
+  "steps": [
+    {
+      "edit": "ascending_expand",
+      "path_percent": [
+        7.38,
+        51.28
+      ],
+      "changed_voxels": 4600,
+      "changed_percent_extent": [
+        9.81740241333006,
+        48.91039152706723
+      ],
+      "range_metadata": {
+        "selector": "path_percent",
+        "selector_values": [
+          7.38,
+          51.28
+        ],
+        "point_numbering": "one-based inclusive",
+        "parent_node_count": 14,
+        "selected_node_count": 7,
+        "parent_total_length_mm": 204.1933106999441,
+        "start_distance_mm": 15.069466329655876,
+        "end_distance_mm": 104.71032972693135,
+        "start_fraction": 0.0738,
+        "end_fraction": 0.5128,
+        "selected_length_mm": 89.64086339727547,
+        "original_node_numbers_retained": [
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "tube_end_caps": "round",
+        "semantics": "Ordered tube subpath; endpoint centers and radii interpolate on parent segments",
+        "mask_semantics": "Selected subpath tube intersected with parent tube, parent arc interval, and main ROI",
+        "local_coordinate": "u=(parent arc distance - range start)/(range end - range start)"
+      }
+    },
+    {
+      "edit": "descending_narrow",
+      "path_percent": [
+        66.54,
+        87.63
+      ],
+      "changed_voxels": 2038,
+      "changed_percent_extent": [
+        68.0183588687662,
+        86.14135431482998
+      ],
+      "range_metadata": {
+        "selector": "path_percent",
+        "selector_values": [
+          66.54,
+          87.63
+        ],
+        "point_numbering": "one-based inclusive",
+        "parent_node_count": 14,
+        "selected_node_count": 5,
+        "parent_total_length_mm": 204.1933106999441,
+        "start_distance_mm": 135.87022893974282,
+        "end_distance_mm": 178.934598166361,
+        "start_fraction": 0.6654,
+        "end_fraction": 0.8763,
+        "selected_length_mm": 43.0643692266182,
+        "original_node_numbers_retained": [
+          10,
+          11,
+          12
+        ],
+        "tube_end_caps": "round",
+        "semantics": "Ordered tube subpath; endpoint centers and radii interpolate on parent segments",
+        "mask_semantics": "Selected subpath tube intersected with parent tube, parent arc interval, and main ROI",
+        "local_coordinate": "u=(parent arc distance - range start)/(range end - range start)"
+      }
+    },
+    {
+      "edit": "arch_refine",
+      "path_percent": [
+        20.84,
+        60.23
+      ],
+      "changed_voxels": 0,
+      "changed_percent_extent": null,
+      "range_metadata": {
+        "selector": "path_percent",
+        "selector_values": [
+          20.84,
+          60.23
+        ],
+        "point_numbering": "one-based inclusive",
+        "parent_node_count": 14,
+        "selected_node_count": 6,
+        "parent_total_length_mm": 204.1933106999441,
+        "start_distance_mm": 42.55388594986835,
+        "end_distance_mm": 122.98563103457633,
+        "start_fraction": 0.2084,
+        "end_fraction": 0.6023,
+        "selected_length_mm": 80.43174508470798,
+        "original_node_numbers_retained": [
+          5,
+          6,
+          7,
+          8
+        ],
+        "tube_end_caps": "round",
+        "semantics": "Ordered tube subpath; endpoint centers and radii interpolate on parent segments",
+        "mask_semantics": "Selected subpath tube intersected with parent tube, parent arc interval, and main ROI",
+        "local_coordinate": "u=(parent arc distance - range start)/(range end - range start)"
+      }
+    }
+  ],
+  "final_counts": {
+    "before": 50485,
+    "after": 53047,
+    "added": 4600,
+    "removed": 2038,
+    "changed": 6638,
+    "scalar_changed": 4848,
+    "ever_changed": 6638,
+    "proposed_added": 9698,
+    "proposed_removed": 5632,
+    "blocked": 5098,
+    "unresolved": 3594
+  },
+  "checks": {
+    "tests_passed": 233,
+    "test_command": "python3 -m unittest discover -s tests",
+    "artifact_hashes_verified": 33,
+    "code_hashes_verified": 15,
+    "input_copy_hash_verified": true,
+    "changed_voxel_arc_ranges_independently_verified": true,
+    "original_crop_arrays_preserved": true,
+    "no_edits_outside_main_roi": true,
+    "source_file_stats_unchanged": true,
+    "full_source_files_hashed": false,
+    "static_range_and_overlay_previews_visually_inspected": true,
+    "browser": {
+      "browser": "Firefox 140.12.0 ESR headless",
+      "checks": [
+        "Edits tab activation",
+        "14 main tube reference rows",
+        "physical percent values",
+        "compact captured INI"
+      ],
+      "point_rows": 14,
+      "point_table_screenshot_inspected": true,
+      "webgl_pixels_verified": false
+    }
+  }
+}

@@ -1,8 +1,8 @@
-# Named ROIs and ordered edits
+# Shared tube ranges and ordered edits
 
 Use [thoracic-aorta-recipe.ini](../configs/studies/thoracic-aorta-recipe.ini) to
-try several regional changes on one anatomy. It copies the centerline and radii
-from your third aorta preview iteration. The original study input remains your
+try several regional changes on one anatomy. Define its centerline and radii
+once in `[roi]`, then select a physical path percentage in each edit. The original study input remains your
 single-edit/cohort input; this additional file uses `fakect.recipe/1` for combined
 edit review.
 
@@ -17,9 +17,9 @@ Run from the integrated checkout:
 python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-recipe.ini
 ```
 
-Open [the recipe report with Global, Local, and before/after overlay views](../outputs/studies/thoracic-aorta/recipe-v5/report.html).
+Open [the recipe report with Global, Local, and before/after overlay views](../outputs/studies/thoracic-aorta/recipe-v6/report.html).
 For subsequent runs, set `[output] directory` to a fresh location such as
-`outputs/studies/thoracic-aorta/recipe-v6`. Add `--validate-only` to check the
+`outputs/studies/thoracic-aorta/recipe-v7`. Add `--validate-only` to check the
 input and crop/search bounds without reading voxel payloads. Native overlap and
 selection counts require the actual preview run.
 
@@ -62,14 +62,14 @@ python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-recipe.in
 
 ## The INI structure
 
-The existing `[roi]` describes the overall workbench region: it fixes the shared
-crop and acts as an outer boundary for edits. Define local regions in named
-sections such as `[roi.ascending]`, `[roi.arch]` and `[roi.descending]`. Each can
-be a sphere or an ordered variable-radius tube. Coordinates use native `i,j,k`;
-all lengths use millimetres.
+The main `[roi]` defines the shared centerline, radii, crop, and hard outer
+editing boundary. Use `roi = main` in each edit to reuse it. A tube's first
+listed point is 0% and its last is 100%; put the proximal end first if that is
+the direction you want. Coordinates remain in supplied order and are never
+automatically sorted or assigned an anatomical direction.
 
-Each `[edit.NAME]` references a region by name. The list in `[recipe] steps`
-defines execution order, independently of where sections appear in the file:
+Each `[edit.NAME]` can select its own interval. This example edits only 30–75%
+of the main tube's physical length:
 
 ```ini
 [recipe]
@@ -77,7 +77,8 @@ steps = ascending_expand, descending_narrow, arch_refine
 overlap = sequential
 
 [edit.ascending_expand]
-roi = ascending
+roi = main
+path_percent = 30,75
 operation = dilation
 iterations = 1
 distance_mm = 2
@@ -87,21 +88,52 @@ shape_k = 6
 shape_window = 0,1
 ```
 
-The complete example includes all three region definitions and edit sections.
-It starts with ascending dilation and descending erosion, each at 2 mm for one
-pass. `arch_refine` has `operation = none`, so its region is visible and ready
-to edit. These local regions are new proposals derived from the reviewed overall
-path; inspect their locations before interpreting the anatomical names as final.
+`path_percent` measures cumulative distance along the tube in millimeters,
+including anisotropic voxel spacing. Uneven point spacing does not change the
+meaning of a percentage. Endpoint coordinates and radii interpolate on the
+parent segments, so you maintain only one coordinate/radius list.
 
-An effective edit region is:
+Alternatively replace the percentage line with `point_range = 2,8` to use
+original points 2 through 8 exactly. Point numbers are **1-based and inclusive**;
+the i,j,k coordinates themselves remain zero-based. The selectors are mutually
+exclusive. Omit both to edit the entire referenced ROI. Selectors require tubes;
+whole named spheres remain supported. The report's **Main tube point reference**
+table lists each node's coordinates, radius, cumulative distance, and percentage.
+
+The current aorta input uses percentages approximately matching points 2–8,
+10–13, and 4–9 for its three edits. It retains the user's 10 mm ascending dilation
+and descending erosion, each for one pass. `arch_refine` remains inactive. These
+ranges are starting points to inspect and adjust, including the ascending
+extension in the user's latest example.
+
+With `profile_axis = tube`, the selected interval becomes a local coordinate:
+`u=0` at the range start and `u=1` at its end. `shape_window = 0,1` tapers a
+Gaussian across that entire range; `shape_window = 0.2,0.8` narrows it to the
+middle 60% of the selected range. For a parent range of 30–75%, local u=0.5
+corresponds to parent 52.5%. Uniform edits still obey the selected range, even
+though they ignore Gaussian shape settings. Circumferential/eccentric asymmetry
+controls remain future work; this coordinate currently controls longitudinal
+localization and taper.
+
+A selected tube interval is bounded by:
 
 ```text
-named ROI intersected with the overall [roi]
+subpath tube ∩ parent tube ∩ selected parent arc interval ∩ overall [roi]
 ```
 
-The global `[selection]` then limits the anatomy: the example edits source ID
-2922 within the artery tissue group. A named ROI reaching outside the overall
-ROI is clipped, and the report records that coverage. Increase or reposition
+The parent arc coordinate is the closest centerline position at each voxel;
+equal-distance segments use the first in the supplied order. This prevents
+rounded subpath caps from extending edits beyond an internal range boundary,
+including uniform edits. At tight bends or self-approaches, nearest-point
+partitions can be nonplanar; inspect the native range overlays.
+
+Explicit `[roi.NAME]` sections are still available for independent paths, radii,
+or spheres. Use `roi = NAME`, optionally with a range on that named tube. These
+legacy whole named regions keep their previous rounded-tube mask semantics.
+`main` is reserved for the top-level ROI, so `[roi.main]` is rejected.
+
+The global `[selection]` then limits the anatomy. Regions reaching outside the
+overall ROI are clipped, and the report records that coverage. Increase or reposition
 the overall ROI if the intended change needs more space. Each active named ROI's
 full geometric envelope plus its edit/recipient search margin must fit the shared
 crop, even where the overall ROI clips it. Voxels outside effective edit regions
@@ -182,7 +214,7 @@ state = copy_of_original_crop()
 for step_name in recipe.steps:
     step = edits[step_name]
     for iteration in range(step.iterations):
-        state = apply_edit(state, rois[step.roi], step)
+        state = apply_edit(state, resolved_region_for(step), step)
 ```
 
 You do not need to write this loop. It is a bounded `for` loop, with 1–10
@@ -194,10 +226,11 @@ the present recipe always executes the explicit finite count.
 pass**, modulated by the profile. Two passes at 1 mm need not equal one pass at
 2 mm: eligibility, available recipients and the intermediate geometry can differ.
 Neither setting specifies a diameter change or stenosis percentage. Gaussian
-position is normalized along each named tube, not the overall aorta path.
+position is normalized within the selected interval, or along the full referenced
+tube if no interval was supplied.
 
 For several operations on the same region, define separate edit names with the
-same `roi` value and put them in the desired sequence. To inspect individual
+same `roi` and range values and put them in the desired sequence. To inspect individual
 effects, temporarily set the other operations to `none` while keeping their
 definitions and ordering.
 
@@ -207,8 +240,10 @@ definitions and ordering.
 earlier labels and copied attenuation values; an erosion may partly reverse a
 prior dilation. An operation has no implicit priority based on its name.
 
-`overlap = error` rejects overlap between distinct active named ROIs before
-applying any edits. Reusing the same ROI name intentionally is still allowed.
+`overlap = error` rejects overlap between distinct effective edit regions before
+applying any edits. Two intervals on `main` are checked separately, even when
+their input ROI names match. Legacy repeated use of the same whole named ROI
+retains its previous behavior and is allowed.
 Checks use effective native voxel masks. Regions used only by `operation = none`
 do not create active conflicts. Even disjoint regions can interact through
 nearby recipient context, so the runner always honors the declared order.

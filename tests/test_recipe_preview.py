@@ -126,6 +126,47 @@ class RecipeReportTests(unittest.TestCase):
         self.assertNotIn(payload, document)
         self.assertIn('&lt;script&gt;window.BAD=true&lt;/script&gt;', document)
 
+    def test_compact_range_uses_human_names_and_physical_main_point_reference(self):
+        self.report['geometry'] = {'roi_kind': 'tube', 'nodes_ijk': [[0, 0, 0], [3, 0, 0], [3, 4, 0]],
+                                   'radii_mm': [1, 2, 3], 'spacing_ijk_mm': [2, 1, 1]}
+        region = self.report['recipe']['figures']['rois'][0]
+        region.update(name='edit:expand', display_name='expand', parent_roi='main',
+                      range_metadata={'selector': 'path_percent', 'selector_values': [30, 75],
+                                      'parent_total_length_mm': 10, 'selected_length_mm': 4.5,
+                                      'start_distance_mm': 3, 'end_distance_mm': 7.5,
+                                      'start_fraction': .3, 'end_fraction': .75,
+                                      'original_node_numbers_retained': [2]})
+        self.report['recipe']['roi_coverage'] = {'edit:expand': {'clipped_by_outer_roi_voxels': 5}}
+        self.report['recipe']['steps'][0]['roi_name'] = 'edit:expand'
+        write_preview_report(self.output, self.report, '[edit.expand]\nroi = main\npath_percent = 30, 75\n')
+        document = (self.output/'report.html').read_text()
+        self.assertIn('<td>expand</td><td>main</td><td><code>path_percent = 30, 75</code> (%)</td><td>4.5</td>', document)
+        self.assertIn('ROI expand (base main)', document)
+        self.assertNotIn('ROI edit:expand', document)
+        self.assertIn('<td>2</td><td>3</td><td>0</td><td>0</td><td>2</td><td>6</td><td>60</td>', document)
+        self.assertIn('<td>3</td><td>3</td><td>4</td><td>0</td><td>3</td><td>10</td><td>100</td>', document)
+        self.assertIn('Total length: <strong>10 mm</strong>', document)
+        self.assertIn('Range boundaries are strict', document)
+        self.assertIn('shape_window = 0, 1', document)
+        self.assertIn('within that interval, not across the full base tube', document)
+        self.assertIn('<td>Distance along base path (mm)</td><td>3 → 7.5</td>', document)
+
+    def test_range_metadata_is_escaped_and_missing_spacing_is_not_assumed(self):
+        payload = '<script>window.BAD=true</script>'
+        self.report['geometry'] = {'roi_kind': 'tube', 'nodes_ijk': [[0, 0, 0], [2, 3, 4]],
+                                   'radii_mm': [1, 2]}
+        region = self.report['recipe']['figures']['rois'][0]
+        region.update(display_name=payload, parent_roi=payload,
+                      range_metadata={'selector': 'point_range', 'selector_values': [1, payload],
+                                      'selected_length_mm': payload})
+        write_preview_report(self.output, self.report, '[recipe]\nsteps = expand, shrink\n')
+        document = (self.output/'report.html').read_text()
+        self.assertNotIn(payload, document)
+        self.assertEqual(sum(tag == 'script' for tag, _ in Tags(document).tags), 1)
+        self.assertIn('point_range = 1, &lt;script&gt;', document)
+        self.assertIn('Total length: <strong>Not recorded mm</strong>', document)
+        self.assertIn('<td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>Not recorded</td><td>Not recorded</td>', document)
+
     def test_recipe_overlay_compares_original_with_complete_recipe_once(self):
         (self.output/'edit-overlay.html').write_text('<html><body>shared registered scene</body></html>')
         (self.output/'edit-overlay.png').write_bytes(PNG)
@@ -186,6 +227,33 @@ class RecipeFigureTests(unittest.TestCase):
             self.assertGreater(result['target_voxels_in_crop'], result['rois'][0]['target_voxels'])
             for key in ('overview', 'closeups', 'surfaces'):
                 self.assertTrue((Path(tmp)/result[key]).read_bytes().startswith(b'\x89PNG\r\n'))
+
+    def test_range_region_renderer_uses_resolved_definitions_and_preserves_mask_keys(self):
+        k, j, i = np.indices((8, 8, 8))
+        target = ((i-3)**2+(j-3)**2 < 4)
+        mask = target & (k >= 2) & (k <= 5)
+        arrays = {'candidates': target, 'roi': np.ones_like(mask),
+                  'attenuation_cm_inverse': np.where(target, .2, .05)}
+        config = {'study': {'name': 'Range fixture'}, 'rois': {},
+                  'preview': {'overlay_opacity': .2, 'volume_stride': 2}}
+        resolved = {'crop_low_ijk': (0, 0, 0), 'crop_high_ijk_exclusive': (8, 8, 8),
+                    'spacing_ijk_mm': (1, 1, 1), 'slice_ijk': (3, 3, 4)}
+        metadata = {'selector': 'path_percent', 'selector_values': [30, 75],
+                    'selected_length_mm': 3, 'start_distance_mm': 2, 'end_distance_mm': 5}
+        definition = {'shape': 'tube', 'center_ijk': [[3, 3, 2], [3, 3, 5]],
+                      'radius_mm': [2, 2], 'display_name': 'expand', 'parent_roi': 'main',
+                      'range_metadata': metadata}
+        with tempfile.TemporaryDirectory() as tmp, patch('fakect_recipe.recipe_regions') as regions:
+            regions.return_value = {'edit:expand': definition}
+            result = render_recipe_rois(arrays, resolved, config, {'edit:expand': mask}, tmp)
+            regions.assert_called_once_with(config, resolved)
+            row = result['rois'][0]
+            self.assertEqual(row['name'], 'edit:expand')
+            self.assertEqual(row['display_name'], 'expand')
+            self.assertEqual(row['parent_roi'], 'main')
+            self.assertEqual(row['range_metadata'], metadata)
+            self.assertEqual(row['effective_voxels'], int(mask.sum()))
+            self.assertEqual(row['target_voxels'], int((mask & target).sum()))
 
 
 if __name__ == '__main__':

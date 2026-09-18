@@ -16,6 +16,7 @@ SCHEMA = "fakect.recipe/1"
 RECIPE_FIELDS = {"steps", "overlap"}
 ROI_FIELDS = {"shape", "center_ijk", "radius_mm", "coordinate_reviewed"}
 EDIT_FIELDS = _EDIT_FIELDS["edit"] | {"roi", "iterations"}
+EDIT_SELECTORS = {"point_range", "path_percent"}
 BASE_SECTIONS = set(_FIELDS) | {"reassignment", "recipe"}
 STIFFNESS_SECTIONS = {"stiffness", "stiffness.labels"}
 STIFFNESS_REQUIRED = {"default", "bone", "skin"}
@@ -31,10 +32,10 @@ def _parser(sections):
     return result
 
 
-def _fields(parser, section, expected):
+def _fields(parser, section, expected, optional=frozenset()):
     actual = set(parser[section])
-    if actual != expected:
-        raise ValueError(f"[{section}] invalid settings: unknown={sorted(actual - expected)}, "
+    if actual - expected - optional or expected - actual:
+        raise ValueError(f"[{section}] invalid settings: unknown={sorted(actual - expected - optional)}, "
                          f"missing={sorted(expected - actual)}")
     if any("\n" in value for value in parser[section].values()):
         raise ValueError(f"[{section}] settings must each be on one line")
@@ -79,13 +80,40 @@ def _stiffness(parser, mode):
     return {"default": values.pop("default"), "tissues": values, "labels": labels}
 
 
+def _edit_selector(values, section, roi):
+    """Validate optional tube intervals; physical path interpolation happens later."""
+    present = set(values) & EDIT_SELECTORS
+    if len(present) > 1:
+        raise ValueError(f"[{section}] point_range and path_percent are mutually exclusive")
+    if not present:
+        return {}
+    key = next(iter(present))
+    label = f"{section}.{key}"
+    if roi["shape"] != "tube":
+        raise ValueError(f"{label} requires the referenced ROI to have shape=tube")
+    parts = _parts(values[key].strip(), label)
+    if len(parts) != 2:
+        raise ValueError(f"{label} must contain exactly two values: start,end")
+    if key == "point_range":
+        node_count = len(roi["center_ijk"])
+        interval = tuple(_integer(part, label, minimum=1, maximum=node_count) for part in parts)
+        if interval[0] >= interval[1]:
+            raise ValueError(f"{label} requires 1 <= start < end <= {node_count}; indices are 1-based and inclusive")
+    else:
+        interval = tuple(_float(part, label) for part in parts)
+        if not 0 <= interval[0] < interval[1] <= 100:
+            raise ValueError(f"{label} requires 0 <= start < end <= 100 percent of physical path length")
+    return {key: interval}
+
+
 def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     """Normalize common sections, named ROI definitions and finite ordered steps.
 
-    The main ROI remains the display crop and outer editing boundary. Named ROIs
-    carry no independent crop settings; their masks are intersected with that
-    boundary by the recipe engine. Sections may appear in any order: only
-    ``recipe.steps`` specifies execution order.
+    The main ROI remains the display crop and outer editing boundary, and may
+    be referenced directly as ``roi=main``. Optional named ROIs carry no
+    independent crop settings; their masks are intersected with that boundary
+    by the recipe engine. Tube edits may select a point or physical path interval.
+    Sections may appear in any order: only ``recipe.steps`` specifies execution order.
     """
     if parser.defaults():
         raise ValueError("[DEFAULT] settings are unsupported")
@@ -100,11 +128,16 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     _fields(parser, "recipe", RECIPE_FIELDS)
     roi_sections = [section for section in parser.sections() if section.startswith("roi.")]
     edit_sections = [section for section in parser.sections() if section.startswith("edit.")]
-    if not roi_sections or not edit_sections:
-        raise ValueError("A recipe requires at least one [roi.NAME] and one [edit.NAME]")
+    if not edit_sections:
+        raise ValueError("A recipe requires at least one [edit.NAME]")
+    if "roi.main" in roi_sections:
+        raise ValueError("[roi.main] is reserved; use roi=main in an edit to reference the top-level [roi]")
     for section in roi_sections + edit_sections:
         _name(section.split(".", 1)[1], section, _IDENTIFIER)
-        _fields(parser, section, ROI_FIELDS if section.startswith("roi.") else EDIT_FIELDS)
+        if section.startswith("roi."):
+            _fields(parser, section, ROI_FIELDS)
+        else:
+            _fields(parser, section, EDIT_FIELDS, EDIT_SELECTORS)
     steps = tuple(_name(value, "recipe.steps", _IDENTIFIER)
                   for value in _parts(parser["recipe"]["steps"].strip(), "recipe.steps"))
     names = {section[5:] for section in edit_sections}
@@ -140,15 +173,16 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     result["recipe"] = {"steps": steps, "overlap": overlap}
     result["rois"], result["edits"] = {}, {}
 
-    def named_parser(roi_name, edit=None):
+    def roi_parser(roi_name, edit=None):
         sections = {section: dict(values) for section, values in common.items()}
-        sections["roi"] = dict(parser[f"roi.{roi_name}"])
-        # This synthetic width only lets the common parser validate a named
-        # shape. The engine always uses the main ROI's actual crop and mask.
-        radii = _parts(sections["roi"]["radius_mm"].strip(), f"roi.{roi_name}.radius_mm")
-        largest = max((_float(value, f"roi.{roi_name}.radius_mm", positive=True)
-                       for value in radii), default=1.0)
-        sections["roi"]["crop_half_width_mm"] = str(largest)
+        if roi_name != "main":
+            sections["roi"] = dict(parser[f"roi.{roi_name}"])
+            # This synthetic width only lets the common parser validate a named
+            # shape. The engine always uses the main ROI's actual crop and mask.
+            radii = _parts(sections["roi"]["radius_mm"].strip(), f"roi.{roi_name}.radius_mm")
+            largest = max((_float(value, f"roi.{roi_name}.radius_mm", positive=True)
+                           for value in radii), default=1.0)
+            sections["roi"]["crop_half_width_mm"] = str(largest)
         if edit is not None:
             sections["edit"] = {key: edit[key] for key in _EDIT_FIELDS["edit"]}
         return _parser(sections)
@@ -156,7 +190,7 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     for section in roi_sections:
         name = section[4:]
         try:
-            roi = parse_preview_sections(named_parser(name), root)["roi"]
+            roi = parse_preview_sections(roi_parser(name), root)["roi"]
         except ValueError as error:
             raise ValueError(f"[{section}]: {error}") from error
         roi.pop("crop_half_width_mm")
@@ -165,15 +199,17 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     for section in edit_sections:
         name, values = section[5:], parser[section]
         roi_name = _name(values["roi"].strip(), f"{section}.roi", _IDENTIFIER)
-        if roi_name not in result["rois"]:
+        if roi_name != "main" and roi_name not in result["rois"]:
             raise ValueError(f"{section}.roi references undefined ROI {roi_name!r}")
+        base_roi = result["roi"] if roi_name == "main" else result["rois"][roi_name]
+        selector = _edit_selector(values, section, base_roi)
         iterations = _integer(values["iterations"].strip(), f"{section}.iterations", 1, 10)
         total_iterations += iterations
         try:
-            edit = parse_preview_sections(named_parser(roi_name, values), root)["edit"]
+            edit = parse_preview_sections(roi_parser(roi_name, values), root)["edit"]
         except ValueError as error:
             raise ValueError(f"[{section}]: {error}") from error
-        result["edits"][name] = {"roi": roi_name, "iterations": iterations, **edit}
+        result["edits"][name] = {"roi": roi_name, "iterations": iterations, **edit, **selector}
     if total_iterations > MAX_ITERATIONS:
         raise ValueError(f"A recipe permits at most {MAX_ITERATIONS} total iterations, including operation=none")
     return result

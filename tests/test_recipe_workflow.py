@@ -124,6 +124,35 @@ class RecipeWorkflowTests(unittest.TestCase):
             self.run_preview(validate_only=True)
         self.assertFalse(self.output.exists())
 
+    def test_compact_main_percent_range_reaches_masks_artifacts_and_report(self):
+        sections = self.fixture.sections
+        sections.pop('roi.lower')
+        sections.pop('roi.upper')
+        sections.pop('edit.shrink')
+        sections['recipe']['steps'] = 'grow'
+        sections['roi'].update(shape='tube', center_ijk='15,15,10 ; 15,15,15 ; 15,15,20',
+                               radius_mm='4,4,4')
+        sections['edit.grow'].update(roi='main', path_percent='30,75', profile_axis='tube')
+        self.fixture.write_input()
+        report = self.run_preview()
+        self.assertEqual(report['config']['rois'], {})
+        planned = report['recipe']['plan']['steps'][0]
+        self.assertEqual(planned['region_key'], 'edit:grow')
+        self.assertEqual(planned['range_metadata']['selector_values'], [30., 75.])
+        self.assertEqual(planned['geometry']['roi_nodes_ijk'], ((15., 15., 13.), (15., 15., 15.), (15., 15., 17.5)))
+        with np.load(self.output/'edit.npz') as edit:
+            changed = edit['changed_mask']
+            self.assertGreater(changed.sum(), 0)
+            # These planes lie inside round subpath endcaps, but outside the
+            # requested parent-arc interval, so uniform editing must leave them.
+            self.assertFalse(changed[:13].any())
+            self.assertFalse(changed[18:].any())
+        document = (self.output/'report.html').read_text()
+        self.assertIn('30', document)
+        self.assertIn('75', document)
+        self.assertTrue((self.output/'recipe-roi-closeups.png').is_file())
+        self.assertEqual(len(_Document(document).frames), 4)
+
     def test_overlap_failure_leaves_incomplete_marker_and_no_published_result(self):
         self.fixture.sections['recipe']['overlap'] = 'error'
         self.fixture.write_input()
