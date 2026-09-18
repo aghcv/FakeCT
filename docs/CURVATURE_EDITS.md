@@ -1,14 +1,16 @@
 # Curvature-relative aorta edits
 
 The [curvature INI](../configs/studies/thoracic-aorta-curvature.ini) reuses the
-reviewed parent tube saved with recipe-v6 and writes a new
-[recipe-v7 report](../outputs/studies/thoracic-aorta/recipe-v7/report.html).
-It applies 3 mm peak outward dilation followed by 3 mm peak inward erosion,
-both over 25–65% of the original physical path length. Selection uses the
+reviewed parent tube saved with recipe-v6 and now writes a
+[recipe-v8 report](../outputs/studies/thoracic-aorta/recipe-v8/report.html).
+The user's current trial applies 9 mm outward dilation over parent 3–20% with
+local Gaussian window 0.1–0.8, then 7 mm inward erosion over 25–35% with window
+0.3–0.9. Selection uses the
 `artery` category with blank `source_ids`, so mapped artery branches within the
 ROI participate without requiring XCAT ID knowledge. No per-ID stiffness
-overrides are used. These are proposed arch
-edits to inspect, with one pass each and the existing tissue resistance factors.
+overrides are used. Both steps use one pass and the existing resistance factors.
+With `roi_role=selection`, offspring may grow beyond the original selector;
+see [selection and growth regions](SELECTION_GROWTH.md).
 
 ```bash
 cd /home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16
@@ -17,12 +19,13 @@ python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-curvature
 ```
 
 After changing the file, choose a fresh `[output] directory`, such as
-`outputs/studies/thoracic-aorta/recipe-v8`. Each invocation starts from the
+`outputs/studies/thoracic-aorta/recipe-v9`. Each invocation starts from the
 original phantom. The two steps within a run consume each other's results.
-The older recipe and study INIs retain the user's edits.
+The curvature INI retains the user's edit parameters. Other recipe and study
+INIs retain their previous state.
 
-The [v7 evaluation](integration/2026-09-17/CURVATURE_EDITS.md) records branch
-coverage and the achieved changes. In particular, the current skin mapping of
+The earlier [v7 evaluation](integration/2026-09-17/CURVATURE_EDITS.md) records the
+previous 3 mm, 25–65% trial. In particular, the current skin mapping of
 interior-adjacent `chest_surface` limits erosion, and the broad artery category
 also includes pulmonary labels in this ROI. Review those findings with the views.
 
@@ -116,8 +119,10 @@ distance_mm × longitudinal_profile × angular_weight × (1 − stiffness)
 ```
 
 The existing weighted six-neighbor morphology, tissue eligibility and recipient
-search then determine the achieved changes. The main tube and selected arc
-range remain hard boundaries. Small budgets can produce no changed voxels on
+search then determine the achieved changes. In the current selection role, the
+tube and arc range constrain original target ancestors while the growth region
+provides space for offspring. In the legacy boundary role they constrain every
+change. Small budgets can produce no changed voxels on
 a 1 mm grid. Inner erosion removes target on the inner-facing boundary; it does
 not move the whole vessel or prescribe a stenosis percentage. The scalar output
 remains the existing attenuation-copy proxy.

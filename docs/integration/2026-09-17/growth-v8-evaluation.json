@@ -1,0 +1,307 @@
+{
+  "report": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v8/report.html",
+  "input_config_sha256": "61a9e085df3bfd38930f09804fa03d90c406df0dc42f61505255e48a55406a22",
+  "artifacts_verified": 34,
+  "code_files_verified": 19,
+  "counts": {
+    "before": 52576,
+    "after": 54286,
+    "added": 1710,
+    "removed": 0,
+    "changed": 1710,
+    "scalar_changed": 1710,
+    "ever_changed": 1710,
+    "proposed_added": 1812,
+    "proposed_removed": 35,
+    "blocked": 102,
+    "unresolved": 35,
+    "changed_outside_selection_roi": 1020,
+    "added_outside_selection_roi": 1020,
+    "removed_outside_selection_roi": 0,
+    "changed_outside_edit_selectors": 1020
+  },
+  "passes": [
+    {
+      "name": "arch_outer_expand",
+      "counts": {
+        "before": 9375,
+        "after": 11085,
+        "proposed_added": 1812,
+        "proposed_removed": 0,
+        "added": 1710,
+        "removed": 0,
+        "blocked": 102,
+        "unresolved": 0,
+        "changed": 1710,
+        "changed_outside_selection_roi": 1020,
+        "added_outside_selection_roi": 1020,
+        "removed_outside_selection_roi": 0,
+        "unselected_target_contact_voxels": 16,
+        "requested_removed_before_stiffness": 0,
+        "release_suppressed_by_target_stiffness": 0
+      },
+      "selection_voxels": 11726,
+      "edit_region_voxels": 50981,
+      "tracked_before": 9375,
+      "changed_outside_selector": 1020
+    },
+    {
+      "name": "arch_inner_narrow",
+      "counts": {
+        "before": 4946,
+        "after": 4946,
+        "proposed_added": 0,
+        "proposed_removed": 35,
+        "added": 0,
+        "removed": 0,
+        "blocked": 0,
+        "unresolved": 35,
+        "changed": 0,
+        "changed_outside_selection_roi": 0,
+        "added_outside_selection_roi": 0,
+        "removed_outside_selection_roi": 0,
+        "unselected_target_contact_voxels": 0,
+        "requested_removed_before_stiffness": 41,
+        "release_suppressed_by_target_stiffness": 6
+      },
+      "selection_voxels": 7779,
+      "edit_region_voxels": 4946,
+      "tracked_before": 4946,
+      "changed_outside_selector": 0
+    }
+  ],
+  "checks": [
+    "All artifact and generating code hashes match",
+    "Captured INI matches current file",
+    "All starting user parameters preserved; only selection role and output directory changed",
+    "Exact per-pass labels, scalar and ancestry chain",
+    "Original target selection and its offspring follow original ancestors",
+    "Unselected current artery voxels remain unchanged; every addition inherits a selected seed",
+    "Every changed voxel has reliable positive directional support inside its permitted edit footprint",
+    "Footprints equal independently computed per-pass physical envelopes; final union and all outside-selector counts match",
+    "All stiffness-1 voxels unchanged",
+    "Source native crops equal saved originals via independent memmap; source size/mtime unchanged",
+    "Other three pre-existing edited INIs unchanged"
+  ],
+  "source_integrity_scope": "Native crop content and source stat; full source volumes not hashed",
+  "comparison": {
+    "input_parameters_preserved": true,
+    "source_files": {
+      "act": {
+        "path": "/home/aghorban/slurm/xcat/260602/260602_act_1.bin",
+        "bytes": 4185000000,
+        "mtime_ns": 1786328260487208000,
+        "source_bytes_read": 355500000,
+        "crop_sha256": "9ec6a235a67a8bad63b311bbb50e037395abb5487a2b2731b2df8f57a860b72f",
+        "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+      },
+      "atn": {
+        "path": "/home/aghorban/slurm/xcat/260602/260602_atn_1.bin",
+        "bytes": 4185000000,
+        "mtime_ns": 1786328328749713000,
+        "source_bytes_read": 355500000,
+        "crop_sha256": "561c9a72856813229527beb4dc6b0ec647ffffd8c51742b96cdf83e3de35d998",
+        "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+      }
+    },
+    "original_input_sha256": "b3bd10623016b8f2c9f3acf7fd8494676984c089b738dbdda83dab4d195ee7f4",
+    "comparison_scope": "Identical current user parameters; only roi_role differs",
+    "boundary": {
+      "counts": {
+        "before": 52576,
+        "after": 53266,
+        "added": 690,
+        "removed": 0,
+        "changed": 690,
+        "scalar_changed": 690,
+        "ever_changed": 690,
+        "proposed_added": 706,
+        "proposed_removed": 35,
+        "blocked": 16,
+        "unresolved": 35
+      },
+      "steps": [
+        {
+          "name": "arch_outer_expand",
+          "counts": {
+            "before": 9375,
+            "after": 10065,
+            "proposed_added": 706,
+            "proposed_removed": 0,
+            "added": 690,
+            "removed": 0,
+            "blocked": 16,
+            "unresolved": 0,
+            "changed": 690,
+            "requested_removed_before_stiffness": 0,
+            "release_suppressed_by_target_stiffness": 0
+          }
+        },
+        {
+          "name": "arch_inner_narrow",
+          "counts": {
+            "before": 4946,
+            "after": 4946,
+            "proposed_added": 0,
+            "proposed_removed": 35,
+            "added": 0,
+            "removed": 0,
+            "blocked": 0,
+            "unresolved": 35,
+            "changed": 0,
+            "requested_removed_before_stiffness": 41,
+            "release_suppressed_by_target_stiffness": 6
+          }
+        }
+      ],
+      "components_before": 7,
+      "components_after": 7,
+      "label_hash": "43757a77ac93fd8e6e3d01709ef217bf98030cc1fbe7d63c4d41de53a8e8a6b9"
+    },
+    "selection": {
+      "counts": {
+        "before": 52576,
+        "after": 54286,
+        "added": 1710,
+        "removed": 0,
+        "changed": 1710,
+        "scalar_changed": 1710,
+        "ever_changed": 1710,
+        "proposed_added": 1812,
+        "proposed_removed": 35,
+        "blocked": 102,
+        "unresolved": 35,
+        "changed_outside_selection_roi": 1020,
+        "added_outside_selection_roi": 1020,
+        "removed_outside_selection_roi": 0,
+        "changed_outside_edit_selectors": 1020
+      },
+      "steps": [
+        {
+          "name": "arch_outer_expand",
+          "counts": {
+            "before": 9375,
+            "after": 11085,
+            "proposed_added": 1812,
+            "proposed_removed": 0,
+            "added": 1710,
+            "removed": 0,
+            "blocked": 102,
+            "unresolved": 0,
+            "changed": 1710,
+            "changed_outside_selection_roi": 1020,
+            "added_outside_selection_roi": 1020,
+            "removed_outside_selection_roi": 0,
+            "unselected_target_contact_voxels": 16,
+            "requested_removed_before_stiffness": 0,
+            "release_suppressed_by_target_stiffness": 0
+          }
+        },
+        {
+          "name": "arch_inner_narrow",
+          "counts": {
+            "before": 4946,
+            "after": 4946,
+            "proposed_added": 0,
+            "proposed_removed": 35,
+            "added": 0,
+            "removed": 0,
+            "blocked": 0,
+            "unresolved": 35,
+            "changed": 0,
+            "changed_outside_selection_roi": 0,
+            "added_outside_selection_roi": 0,
+            "removed_outside_selection_roi": 0,
+            "unselected_target_contact_voxels": 0,
+            "requested_removed_before_stiffness": 41,
+            "release_suppressed_by_target_stiffness": 6
+          }
+        }
+      ],
+      "components_before": 7,
+      "components_after": 7,
+      "label_hash": "27cae7d4d0dcc1ff2e36dbcb75624dc114d8936b29b9dbd138fea2b131f44e70"
+    }
+  },
+  "tests": {
+    "command": "python3 -m unittest discover -s tests",
+    "passed": 289,
+    "duration_seconds": 115.149
+  },
+  "visual_review": {
+    "static_files_inspected": [
+      "steps/01-arch_outer_expand-iteration-01/edit-comparison.png",
+      "edit-overlay.png"
+    ],
+    "browser_pixel_check": "No new interactive WebGL pixel validation performed"
+  },
+  "native_contact_and_recipient_audit": {
+    "artifact_directory": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v8",
+    "audit_scope_completed": "Read-only per-pass counts, contact-label identification, unresolved erosion neighbor-label/stiffness diagnosis, and final outside-main-ROI count.",
+    "lineage_and_scalar_chain": "Root independently validated these; this subagent stopped before duplicating those assertions at root request.",
+    "dilation": {
+      "step": "arch_outer_expand",
+      "added_voxels": 1710,
+      "added_outside_original_step_roi": 1020,
+      "added_outside_original_main_roi": 1020,
+      "proposed_added_voxels": 1812,
+      "blocked_voxels": 102,
+      "contacting_added_voxels": 16,
+      "contacted_unselected_candidate_voxels": 8,
+      "contacted_labels": [
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "tissue_name": "artery",
+          "voxels": 8
+        }
+      ],
+      "contact_interpretation": "Native face adjacency to unselected voxels of the same catalog label. No inference about distinct anatomical vessels or separation."
+    },
+    "erosion": {
+      "step": "arch_inner_narrow",
+      "requested_before_target_stiffness": 41,
+      "suppressed_by_target_stiffness": 6,
+      "proposed_removed_voxels": 35,
+      "removed_voxels": 0,
+      "unresolved_voxels": 35,
+      "unresolved_target": {
+        "original_id": 2922,
+        "original_name": "dias_aorta",
+        "voxels": 35
+      },
+      "unique_face_neighbor_shell_excluding_unresolved": [
+        {
+          "original_id": 4,
+          "original_name": "chest_surface",
+          "tissue_name": "soft_tissue",
+          "stiffness_group": "skin",
+          "stiffness": 0.95,
+          "voxels": 44
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "tissue_name": "artery",
+          "stiffness": 0.05,
+          "voxels": 68
+        }
+      ],
+      "recipient_search_mm": 3.0,
+      "skin_seed_penalty_mm": 2.85,
+      "minimum_native_edge_mm": 1.0,
+      "minimum_skin_seed_plus_first_edge_mm": 3.85,
+      "effective_skin_recipient_reach_mm": 0.15,
+      "diagnosis": "The non-target face-neighbor label is chest_surface, classified as skin for stiffness. Its 2.85 mm seed penalty plus the first 1 mm voxel edge exceeds the 3 mm recipient cap. Remaining same-category target voxels are excluded as recipient seeds. Unresolved target labels and attenuation remain preserved."
+    },
+    "final_counts_observed": {
+      "before": 52576,
+      "after": 54286,
+      "added": 1710,
+      "removed": 0,
+      "changed": 1710,
+      "changed_outside_selection_roi": 1020
+    },
+    "runtime_config_and_source_modified": false
+  }
+}

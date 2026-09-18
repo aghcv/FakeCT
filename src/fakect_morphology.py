@@ -79,6 +79,13 @@ def validate_edit_geometry(resolved, config):
     spacing = np.asarray(resolved['spacing_ijk_mm'], dtype=float)
     if spacing.shape != (3,) or not np.all(np.isfinite(spacing)) or np.any(spacing <= 0):
         raise ValueError('Morphology requires finite positive i,j,k spacing')
+    try:
+        growth_reach = float(resolved.get('growth_reach_mm', 0.))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError('growth_reach_mm must be finite and nonnegative') from exc
+    if (isinstance(resolved.get('growth_reach_mm'), (bool, np.bool_))
+            or not np.isfinite(growth_reach) or growth_reach < 0):
+        raise ValueError('growth_reach_mm must be finite and nonnegative')
     if spec['operation'] == 'none':
         return {'required_halo_mm': 0.0, 'checked': False}
     low = np.asarray(resolved['crop_low_ijk'], dtype=float)
@@ -98,12 +105,15 @@ def validate_edit_geometry(resolved, config):
         raise ValueError('Invalid resolved ROI geometry')
     envelope_low = (nodes * spacing - radii[:, None]).min(axis=0)
     envelope_high = (nodes * spacing + radii[:, None]).max(axis=0)
-    halo = spec['distance'] + spec['search'] + float(spacing.max())
+    halo = spec['distance'] + spec['search'] + float(spacing.max()) + growth_reach
+    if not np.isfinite(halo):
+        raise ValueError('The combined morphology growth halo must remain finite')
     if (np.any(envelope_low - halo < low * spacing - _TOL)
             or np.any(envelope_high + halo > (high - 1) * spacing + _TOL)):
+        growth_description = f' + {growth_reach:g} mm inherited growth' if growth_reach else ''
         message = (f'Insufficient crop/source halo: ROI needs {halo:g} mm of context beyond its envelope '
                    f'({spec["distance"]:g} mm edit + {spec["search"]:g} mm reassignment + '
-                   f'{spacing.max():g} mm spacing). ')
+                   f'{spacing.max():g} mm spacing{growth_description}). ')
         if 'shape_kji' in resolved and (
                 np.any(envelope_low - halo < -_TOL) or
                 np.any(envelope_high + halo > (np.asarray(resolved['shape_kji'])[::-1] - 1) * spacing + _TOL)):
@@ -119,8 +129,11 @@ def validate_edit_geometry(resolved, config):
                         'Increase [roi] crop_half_width_mm; a larger crop may also need a larger '
                         '[preview] volume_stride. Recheck both with --validate-only.')
         raise ValueError(message)
-    return {'required_halo_mm': halo, 'checked': True,
-            'roi_envelope_ijk_mm': [envelope_low.tolist(), envelope_high.tolist()]}
+    result = {'required_halo_mm': halo, 'checked': True,
+              'roi_envelope_ijk_mm': [envelope_low.tolist(), envelope_high.tolist()]}
+    if 'growth_reach_mm' in resolved:
+        result['growth_reach_mm'] = growth_reach
+    return result
 
 
 def tube_position_mm(shape_kji, origin_ijk, nodes_ijk, spacing_ijk_mm):
@@ -292,7 +305,20 @@ def apply_morphology(arrays, resolved, config):
             raise ValueError(f'{name} must be a Boolean mask matching the labels')
         masks[name] = value
     candidates, before, roi = (masks[n] for n in ('candidates', 'selected', 'roi'))
-    if not np.array_equal(before, candidates & roi):
+    roi_role = config.get('recipe', {}).get('roi_role', 'boundary')
+    if roi_role not in ('boundary', 'selection'):
+        raise ValueError('recipe.roi_role must be boundary or selection')
+    selection_mode = roi_role == 'selection'
+    edit_region = roi
+    if selection_mode:
+        if labels.size > MAX_MORPHOLOGY_VOXELS:
+            raise ValueError(f'Selection-only morphology is limited to {MAX_MORPHOLOGY_VOXELS:,} native voxels')
+        edit_region = np.asarray(arrays.get('edit_region'))
+        if edit_region.dtype != np.bool_ or edit_region.shape != labels.shape:
+            raise ValueError('Selection-only morphology requires a Boolean edit_region matching the crop')
+        if np.any(before & (~candidates | ~edit_region)):
+            raise ValueError('Tracked selected voxels must be a subset of candidates AND edit_region')
+    elif not np.array_equal(before, candidates & roi):
         raise ValueError('selected must equal candidates AND roi')
     tissue = coarse_labels(labels, resolved['catalog'])
     if not np.array_equal(tissue, arrays['tissue']):
@@ -300,6 +326,12 @@ def apply_morphology(arrays, resolved, config):
     spec = _edit_spec(resolved, config)
     if np.any(candidates & (tissue != spec['target_code'])):
         raise ValueError('Candidate mask contains labels outside the selected target tissue')
+    if selection_mode:
+        source_ids = resolved.get('source_ids') or config['selection'].get('source_ids') or tuple(
+            record['original_id'] for record in resolved['catalog']['records']
+            if record['classification']['tissue_name'] == config['selection']['tissue'])
+        if not np.array_equal(candidates, np.isin(labels, source_ids)):
+            raise ValueError('Selection-only morphology requires the full current candidate mask for all selected source IDs')
     if spec['operation'] != 'none' and not np.any(before):
         raise ValueError('Enabled morphology requires a nonempty selected target within the ROI')
     geometry = dict(resolved)
@@ -310,10 +342,10 @@ def apply_morphology(arrays, resolved, config):
     halo = validate_edit_geometry(geometry, config)
     spacing = tuple(map(float, resolved['spacing_ijk_mm']))
     strength = strength_field_mm(labels.shape, resolved, config)
-    strength[~roi] = 0
+    strength[~edit_region] = 0
     directional = None
     if config.get('edit', {}).get('direction', 'all') != 'all':
-        directional = direction_weight_field(labels.shape, resolved, config, roi)
+        directional = direction_weight_field(labels.shape, resolved, config, edit_region)
         strength *= directional['direction_weight']
     resistance = (stiffness_field(labels, resolved['catalog'], config['reassignment'])
                   if config.get('reassignment', {}).get('mode') == 'stiffness' else None)
@@ -326,6 +358,7 @@ def apply_morphology(arrays, resolved, config):
     proxy = attenuation.copy()
     eligible, protected, reassignment_policy = reassignment_masks(labels, candidates, resolved['catalog'], config.get('reassignment', {}))
     warnings = []
+    target_seed_index = np.full(labels.shape, -1, dtype=np.int32) if selection_mode else None
     if directional is not None:
         skipped = directional['summary']['unreliable_roi_voxels']
         if skipped:
@@ -333,14 +366,17 @@ def apply_morphology(arrays, resolved, config):
         if not directional['summary']['angular_supported_roi_voxels']:
             warnings.append('No ROI voxel has a reliable direction inside the selected angular sector; this pass cannot change labels.')
     if spec['operation'] == 'dilation' and spec['distance'] > 0:
-        distance = _distances(roi, before, spacing, spec['distance'])
-        proposed_added = roi & ~candidates & (distance <= strength + _TOL) & (strength > 0)
+        proposal_domain = edit_region & (~candidates | before) if selection_mode else edit_region
+        distance = _distances(proposal_domain, before, spacing, spec['distance'])
+        proposed_added = edit_region & ~candidates & (distance <= strength + _TOL) & (strength > 0)
         domain = before | (proposed_added & eligible)
         _, owners = _owned_paths(domain, before, spacing, spec['distance'], labels, effective_strength)
         added = proposed_added & (owners >= 0)
         blocked = proposed_added & ~added
         edited[added] = labels.ravel()[owners[added]]
         proxy[added] = attenuation.ravel()[owners[added]]
+        if selection_mode:
+            target_seed_index[added] = owners[added]
     elif spec['operation'] == 'erosion' and spec['distance'] > 0:
         seeds, boundary_distance = _erosion_boundary(candidates, spacing)
         distance = _distances(candidates, seeds, spacing, spec['distance'], boundary_distance)
@@ -358,6 +394,15 @@ def apply_morphology(arrays, resolved, config):
         proxy[removed] = attenuation.ravel()[owners[removed]]
     changed = added | removed
     after = (before | added) & ~removed
+    if selection_mode:
+        if np.any((changed | (proxy != attenuation)) & ~edit_region):
+            raise RuntimeError('Selection-only morphology changed values outside edit_region')
+        if np.any((changed | (proxy != attenuation)) & (candidates & ~before)):
+            raise RuntimeError('Selection-only morphology changed an unselected candidate voxel')
+        added_owners = target_seed_index[added]
+        if (np.any(added_owners < 0) or np.any(added_owners >= labels.size)
+                or np.any(~before.ravel()[added_owners])):
+            raise RuntimeError('Dilation lineage must refer to winning input-state selected target seeds')
     if np.any(blocked):
         warnings.append('Some dilation proposals were blocked by tissue eligibility, protected barriers, or the accepted-path distance budget.')
     if np.any(unresolved):
@@ -385,6 +430,23 @@ def apply_morphology(arrays, resolved, config):
                'allowed_tissues': list(spec['allowed_tissues']), 'recipient_max_distance_mm': spec['search'],
                'unresolved_policy': spec['unresolved'], 'halo': halo}
     summary['reassignment_policy'] = reassignment_policy
+    if selection_mode:
+        contact = added & ndimage.binary_dilation(candidates & ~before, structure=_STRUCTURE)
+        summary['roi_role'] = 'selection'
+        summary['selection_semantics'] = (
+            'The original ROI selects tracked anatomy; edits may extend beyond it within edit_region. '
+            'Only current tracked targets seed dilation or undergo erosion. Unselected candidate labels remain unchanged.')
+        summary['counts'].update(
+            changed_outside_selection_roi=int((changed & ~roi).sum()),
+            added_outside_selection_roi=int((added & ~roi).sum()),
+            removed_outside_selection_roi=int((removed & ~roi).sum()),
+            unselected_target_contact_voxels=int(contact.sum()))
+        summary['target_seed_index_semantics'] = (
+            'Input-state flat k,j,i target seed index for accepted additions only; -1 elsewhere. '
+            'Seeds belong to the tracked input selection, not unselected same-ID anatomy.')
+        summary['contact_semantics'] = (
+            'Accepted added voxels face-adjacent to an input-state candidate outside the tracked selection. '
+            'Contact is allowed but does not transfer seed ownership; anatomical separation is not guaranteed.')
     if directional is not None:
         summary['direction'] = directional['summary']
         if np.any(changed & ((directional['direction_weight'] <= 0) | ~directional['direction_reliable_mask'])):
@@ -395,6 +457,10 @@ def apply_morphology(arrays, resolved, config):
         summary['stiffness_count_semantics'] = ('Dilation proposed_added uses the original requested distance; blocked includes resistance and other eligibility/path limits. Erosion proposed_removed is after target resistance; requested_removed_before_stiffness records the unscaled request. Unresolved counts failed recipient assignments after that release selection.')
         summary['effective_distance_mm_range_in_roi'] = ([float(effective_strength[roi].min()), float(effective_strength[roi].max())]
                                                         if roi.any() else [0., 0.])
+        if selection_mode:
+            summary['effective_distance_mm_range_in_edit_region'] = (
+                [float(effective_strength[edit_region].min()), float(effective_strength[edit_region].max())]
+                if edit_region.any() else [0., 0.])
         summary['ownership_tie_break'] = ('Recipient: minimum seed stiffness penalty plus physical six-edge path distance; '
                                          'then lowest signed original ID and earliest seed coordinate. Dilation: physical path with local donor budgets.')
     if np.any(changed & protected) or np.any((proxy != attenuation) & protected):
@@ -410,4 +476,7 @@ def apply_morphology(arrays, resolved, config):
                       requested_removed_mask=requested_removed)
     if directional is not None:
         result.update({key: value for key, value in directional.items() if isinstance(value, np.ndarray)})
+    if selection_mode:
+        result.update(edit_region_mask=edit_region.copy(), selection_roi_mask=roi.copy(),
+                      target_seed_index=target_seed_index)
     return result

@@ -159,7 +159,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
     if recipe_requested:
         code_files += [ROOT/'src/fakect_recipe.py', ROOT/'src/fakect_recipe_config.py',
                        ROOT/'src/fakect_recipe_preview.py', ROOT/'src/fakect_tube_range.py',
-                       ROOT/'src/fakect_frame_preview.py']
+                       ROOT/'src/fakect_frame_preview.py', ROOT/'src/fakect_growth.py']
     code_hashes = {str(p.relative_to(ROOT)): digest(p) for p in code_files}
     resolved = resolve_preview(config)
     edit_requested = config.get('edit', {}).get('operation', 'none') != 'none'
@@ -302,6 +302,8 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
               'slices': plot_stats, 'volume': volume_stats, 'global_view': global_stats,
               'html_report': {'path': 'report.html', 'self_contained': True},
               'code_sha256': code_hashes}
+    if recipe_requested and config['recipe'].get('roi_role') == 'selection':
+        report['source_ids_semantics'] = 'Candidate dictionary IDs; original selection is candidate tissue AND ROI. Final edited selection includes surviving original ancestors and their offspring outside the ROI.'
     if training_plan is not None:
         report['training_plan'] = {**training_plan, 'target_preview': target_stats}
         report['rerun_command'] = 'python3 scripts/train_study.py --config /path/to/study.ini --stage preview'

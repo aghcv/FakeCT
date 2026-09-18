@@ -143,10 +143,11 @@ def _centerline_settings(parser):
 def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     """Normalize common sections, named ROI definitions and finite ordered steps.
 
-    The main ROI remains the display crop and outer editing boundary, and may
-    be referenced directly as ``roi=main``. Optional named ROIs carry no
-    independent crop settings; their masks are intersected with that boundary
-    by the recipe engine. Tube edits may select a point or physical path interval.
+    The main ROI defines the display crop and initial target selection, and may
+    be referenced directly as ``roi=main``. It also bounds all edits by default;
+    ``recipe.roi_role=selection`` separates seed selection from growth limits.
+    Optional named ROIs carry no independent crop settings. Tube edits may
+    select a point or physical path interval.
     Sections may appear in any order: only ``recipe.steps`` specifies execution order.
     """
     if parser.defaults():
@@ -159,7 +160,7 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     missing = sorted(BASE_SECTIONS - actual_sections)
     if unknown or missing:
         raise ValueError(f"Invalid recipe sections: unknown={unknown}, missing={missing}")
-    _fields(parser, "recipe", RECIPE_FIELDS)
+    _fields(parser, "recipe", RECIPE_FIELDS, {"roi_role"})
     roi_sections = [section for section in parser.sections() if section.startswith("roi.")]
     edit_sections = [section for section in parser.sections() if section.startswith("edit.")]
     if not edit_sections:
@@ -180,6 +181,12 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     overlap = parser["recipe"]["overlap"].strip()
     if overlap not in {"sequential", "error"}:
         raise ValueError("recipe.overlap must be sequential or error")
+    roi_role = parser["recipe"].get("roi_role")
+    if roi_role is not None:
+        roi_role = roi_role.strip()
+        if roi_role not in {"boundary", "selection"}:
+            raise ValueError("recipe.roi_role must be boundary (edits stay inside the ROI) "
+                             "or selection (ROI selects initial targets)")
     reassignment_fields = _EDIT_FIELDS["reassignment"]
     if "mode" in parser["reassignment"]:
         reassignment_fields = reassignment_fields | {"mode"}
@@ -205,6 +212,8 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
         result["reassignment"]["stiffness"] = stiffness
     result["study"]["schema_version"] = SCHEMA
     result["recipe"] = {"steps": steps, "overlap": overlap}
+    if roi_role is not None:
+        result["recipe"]["roi_role"] = roi_role
     result["rois"], result["edits"] = {}, {}
 
     def roi_parser(roi_name, edit=None):

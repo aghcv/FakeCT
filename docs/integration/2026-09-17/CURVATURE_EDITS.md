@@ -1,6 +1,6 @@
 # Recipe-v7: curvature frames and category-based artery editing
 
-Input: [thoracic-aorta-curvature.ini](../../../configs/studies/thoracic-aorta-curvature.ini).
+Captured input: [recipe-v7/input.ini](../../../outputs/studies/thoracic-aorta/recipe-v7/input.ini).
 Output: [recipe-v7/report.html](../../../outputs/studies/thoracic-aorta/recipe-v7/report.html).
 Methods and controls: [curvature editing guide](../../CURVATURE_EDITS.md).
 Machine-readable evidence: [curvature-v7-evaluation.json](curvature-v7-evaluation.json).

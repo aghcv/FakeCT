@@ -229,6 +229,37 @@ class RecipeReportTests(unittest.TestCase):
             write_preview_report(self.output, self.report, '[recipe]\nsteps = expand, shrink\n')
         self.assertFalse((self.output/'report.html').exists())
 
+    def test_selection_role_report_counts_offspring_beyond_selector_and_explains_ranges(self):
+        recipe = self.report['recipe']
+        recipe['roi_role'] = 'selection'
+        self.report['config']['recipe']['roi_role'] = 'selection'
+        recipe['figures']['rois'][0]['range_metadata'] = {
+            'selector': 'path_percent', 'selector_values': [3, 20], 'selected_length_mm': 30}
+        recipe['counts'].update(changed_outside_selection_roi=4, added_outside_selection_roi=3,
+                                removed_outside_selection_roi=1, unselected_target_contact_voxels=2)
+        recipe['steps'][0]['counts'].update(changed_outside_selection_roi=6,
+                                           added_outside_selection_roi=6, removed_outside_selection_roi=0,
+                                           unselected_target_contact_voxels=2)
+        write_preview_report(self.output, self.report, '[recipe]\nroi_role = selection\nsteps = expand, shrink\n')
+        document = (self.output/'report.html').read_text()
+        self.assertIn('ROI role: original target selection', document)
+        self.assertIn('id="selection-growth-summary"', document)
+        self.assertIn('<strong>4</strong><span>Net label changes beyond the original main selector', document)
+        self.assertIn('Solid orange identifies the fixed selector', document)
+        self.assertIn('dashed blue outlines the permitted growth/edit footprint', document)
+        self.assertIn('expanded offspring remain tracked in later passes, including outside the selector', document)
+        self.assertIn('The range selects original ancestors', document)
+        self.assertIn('A uniform edit can cross those end faces', document)
+        self.assertIn('Gaussian request is zero outside its local shape window', document)
+        self.assertNotIn('Range boundaries are strict', document)
+        self.assertNotIn('Every named ROI is clipped to the fixed main ROI', document)
+        self.assertNotIn('Original and final target areas are measured within the main ROI', document)
+        self.assertIn('<td>Final tracked target (including growth outside the selector)</td><td>32</td>', document)
+        self.assertIn('<td>Net added target outside the original main selector</td><td>3</td>', document)
+        self.assertIn('<td>Changed voxels outside the original selector</td><td>6</td>', document)
+        self.assertIn('<td>Added voxels contacting unselected input-state target</td><td>2</td>', document)
+        self.assertIn('including offspring of other selected regions', document)
+
 
 class RecipeFigureTests(unittest.TestCase):
     def test_step_focus_is_in_changed_region_and_uses_preceding_state_semantics(self):
@@ -257,6 +288,69 @@ class RecipeFigureTests(unittest.TestCase):
         focus = _focus(mask, mask, (10, 20, 30))
         local = np.asarray(focus)-[10, 20, 30]
         self.assertTrue(mask[tuple(local[::-1])])
+
+    def test_selection_role_focus_can_follow_changes_outside_original_roi(self):
+        roi = np.zeros((5, 6, 12), dtype=bool)
+        roi[1:4, 1:4, 1:4] = True
+        changed = np.zeros_like(roi)
+        changed[2, 2, 10] = True
+        footprint = roi.copy()
+        footprint[1:4, 1:4, 1:12] = True
+        event = {'before_arrays': {'roi': roi, 'selected': roi.copy(), 'edit_region': footprint},
+                 'result': {'added_mask': changed, 'removed_mask': np.zeros_like(roi)},
+                 'resolved': {'crop_low_ijk': (100, 200, 300), 'slice_ijk': (102, 202, 302)},
+                 'config': {'edit': {'operation': 'dilation'}, 'recipe': {'roi_role': 'selection'}},
+                 'index': 1, 'iteration': 1, 'step_name': 'grow', 'roi_name': 'main'}
+        with tempfile.TemporaryDirectory() as tmp, patch('fakect_edit_preview.render_edit_comparison') as render:
+            render.return_value = {'comparison': 'edit-comparison.png', 'profile': 'edit-profile.png'}
+            result = render_recipe_step(event, tmp)
+            self.assertEqual(result['focus_ijk'], [110, 202, 302])
+            self.assertIn('including growth outside the original selector', result['focus_semantics'])
+            self.assertIs(render.call_args.args[0]['roi'], roi)
+            np.testing.assert_array_equal(render.call_args.args[0]['edit_region'], footprint)
+            self.assertFalse(roi[2, 2, 10])
+
+    def test_comparison_keeps_offspring_in_view_and_separates_tracked_from_roi_areas(self):
+        from fakect_edit_preview import render_edit_comparison
+        shape = (20, 24, 24)
+        roi = np.zeros(shape, dtype=bool)
+        roi[8:12, 8:12, 8:12] = True
+        footprint = np.zeros(shape, dtype=bool)
+        footprint[7:14, 7:14, 7:23] = True
+        before = np.zeros(shape, dtype=bool)
+        before[9, 9, 9] = True
+        after = before.copy()
+        after[9, 9, 10:22] = True
+        added = after & ~before
+        empty = np.zeros(shape, dtype=bool)
+        arrays = {'roi': roi, 'edit_region': footprint, 'selected': before,
+                  'tissue': np.where(before, 6, 1), 'atn': np.where(before, .2, .05)}
+        edit = {'target_mask_before': before, 'target_mask_after': after,
+                'selection_roi_mask': roi, 'edit_region_mask': footprint,
+                'added_mask': added, 'removed_mask': empty, 'blocked_mask': empty,
+                'unresolved_mask': empty, 'edited_tissue_labels': np.where(after, 6, 1),
+                'strength_mm': np.where(footprint, 9, 0),
+                'summary': {'counts': {'added': 12, 'removed': 0, 'blocked': 0, 'unresolved': 0}}}
+        config = {'study': {'name': 'Tracked growth fixture'}, 'edit': {'operation': 'dilation'},
+                  'recipe': {'roi_role': 'selection'}}
+        resolved = {'crop_low_ijk': (100, 200, 300), 'crop_high_ijk_exclusive': (124, 224, 320),
+                    'spacing_ijk_mm': (1, 1, 1), 'slice_ijk': (121, 209, 309),
+                    'catalog': {'categories': [{'id': 1, 'name': 'soft_tissue'}, {'id': 6, 'name': 'artery'}]}}
+        with tempfile.TemporaryDirectory() as tmp:
+            result = render_edit_comparison(arrays, edit, resolved, config, tmp, before_is_source=False)
+            self.assertEqual(sum(result['before_tracked_axial_area_mm2']), 1)
+            self.assertEqual(sum(result['after_tracked_axial_area_mm2']), 13)
+            self.assertEqual(sum(result['after_roi_axial_area_mm2']), 3)
+            self.assertLess(result['display_low_ijk'][0], 121)
+            self.assertGreater(result['display_high_ijk_exclusive'][0], 121)
+            self.assertEqual(result['selection_roi_voxels'], int(roi.sum()))
+            self.assertEqual(result['edit_region_voxels'], int(footprint.sum()))
+            self.assertIn('dashed blue', result['mask_semantics'])
+            self.assertIn('offspring outside the original selector', result['area_semantics'])
+            for key in ('comparison', 'profile'):
+                self.assertTrue((Path(tmp)/result[key]).read_bytes().startswith(b'\x89PNG\r\n'))
+        np.testing.assert_array_equal(arrays['selected'], before)
+        self.assertEqual(int(roi.sum()), 64)
 
     def test_named_regions_render_counts_for_full_target_and_outer_intersections(self):
         k, j, i = np.indices((12, 12, 12))

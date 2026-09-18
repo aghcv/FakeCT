@@ -463,6 +463,7 @@ def _recipe_section(output, report, embedded):
     """Account for ordered passes separately from original-to-final changes."""
     recipe = report['recipe']
     config = report.get('config', {})
+    selection_role = recipe.get('roi_role', config.get('recipe', {}).get('roi_role')) == 'selection'
     figures = recipe.get('figures', {})
     counts = recipe.get('counts', {})
     activity = recipe.get('activity_counts', {})
@@ -507,8 +508,10 @@ def _recipe_section(output, report, embedded):
                          _number(row.get('effective_voxels')), _number(row.get('target_voxels')),
                          _number(coverage.get('clipped_by_outer_roi_voxels'))])
     roi_headers = ['Name'] + (['Base ROI', 'Selected range', 'Length (mm)'] if range_enabled else [])
-    roi_headers += ['Shape', 'Ordered centers (i, j, k)', 'Radii (mm)', 'Effective ROI voxels',
-                    'Original target voxels', 'Voxels clipped by main ROI']
+    roi_headers += ['Shape', 'Ordered centers (i, j, k)', 'Radii (mm)',
+                    'Original selector voxels' if selection_role else 'Effective ROI voxels',
+                    'Original selected target voxels' if selection_role else 'Original target voxels',
+                    'Voxels clipped by main ROI']
     step_rows = []
     details = []
     for position, step in enumerate(steps, 1):
@@ -534,9 +537,13 @@ def _recipe_section(output, report, embedded):
         for key, title, caption in (
                 ('comparison', 'Input state, output state and changes',
                  'The input state includes preceding passes. The difference overlay uses the input-state '
-                 'attenuation proxy. These views are focused within this named ROI; coordinates may differ between passes.'),
+                 'attenuation proxy. ' + ('Solid orange is the fixed original selector; dashed blue is the permitted '
+                 'growth/edit footprint. Views include selected offspring outside the selector; coordinates may differ between passes.'
+                 if selection_role else 'These views are focused within this named ROI; coordinates may differ between passes.')),
                 ('profile', 'Requested profile and achieved axial areas',
-                 'Areas belong to this effective named ROI for this pass; they are not vessel-normal lumen areas.')):
+                 ('Areas include the tracked selected lineage and its offspring outside the original selector; '
+                  'they are not vessel-normal lumen areas.' if selection_role else
+                  'Areas belong to this effective named ROI for this pass; they are not vessel-normal lumen areas.'))):
             if step_figures.get(key):
                 content.append(_embed_png(output, step_figures[key], title, caption, embedded))
         metadata_rows = [[label, _text_value(value)] for label, value in (
@@ -546,14 +553,21 @@ def _recipe_section(output, report, embedded):
             ('Profile', summary.get('profile')), ('Profile axis', summary.get('profile_axis')),
             ('Requested release before target resistance (voxels)', current_counts.get('requested_removed_before_stiffness')),
             ('Release suppressed by target resistance (voxels)', current_counts.get('release_suppressed_by_target_stiffness')),
-            ('Components inside this named ROI: before', summary.get('components_before')),
-            ('Components inside this named ROI: after', summary.get('components_after')),
+            ('Tracked target components: before' if selection_role else 'Components inside this named ROI: before', summary.get('components_before')),
+            ('Tracked target components: after' if selection_role else 'Components inside this named ROI: after', summary.get('components_after')),
             ('Components of full-crop target: before', summary.get('full_target_components_before')),
             ('Components of full-crop target: after', summary.get('full_target_components_after')),
             ('Display focus (i, j, k)', step_figures.get('focus_ijk')),
             ('Input label SHA256', step.get('labels_before_sha256')),
             ('Output label SHA256', step.get('labels_after_sha256')),
             ('Pass arrays', step.get('artifact', step.get('array_artifact')))) if value is not None]
+        if selection_role:
+            metadata_rows += [[label, _number(current_counts.get(key))] for key, label in (
+                ('changed_outside_selection_roi', 'Changed voxels outside the original selector'),
+                ('added_outside_selection_roi', 'Added target voxels outside the original selector'),
+                ('removed_outside_selection_roi', 'Removed target voxels outside the original selector'),
+                ('unselected_target_contact_voxels', 'Added voxels contacting unselected input-state target'))]
+            metadata_rows.append(['ROI role', 'Original target selection; descendants remain tracked outside the selector'])
         if range_metadata:
             metadata_rows += [
                 ['Selected range', _range_description(range_metadata)],
@@ -572,8 +586,8 @@ def _recipe_section(output, report, embedded):
                 ('direction', 'Circumferential edit direction'),
                 ('angular_width_deg', 'Angular width (degrees)'),
                 ('weight_semantics', 'Angular weighting'),
-                ('unreliable_roi_voxels', 'ROI voxels without a reliable inner/outer frame'),
-                ('angular_supported_roi_voxels', 'ROI voxels with angular support')) if direction.get(key) is not None]
+                ('unreliable_roi_voxels', 'Edit-footprint voxels without a reliable inner/outer frame' if selection_role else 'ROI voxels without a reliable inner/outer frame'),
+                ('angular_supported_roi_voxels', 'Edit-footprint voxels with angular support' if selection_role else 'ROI voxels with angular support')) if direction.get(key) is not None]
         warnings = ''.join('<p class="warning">'+_escape(w)+' </p>' for w in summary.get('warnings', []))
         blocked_rows = [[_text_value(row.get('original_id')), _text_value(row.get('original_name')),
                          _text_value(row.get('tissue_name')), _number(row.get('count'))]
@@ -590,8 +604,10 @@ def _recipe_section(output, report, embedded):
     visualizations = []
     for key, heading, caption in (
             ('overview', 'Named regions at the study crosshair',
-             'Colored overlays show each named ROI intersected with the main ROI. Cyan outlines the original '
-             'target throughout the crop. Multiple regions can overlap.'),
+             ('Colored overlays select original target seeds. They are fixed selectors, not growth walls; '
+              'per-pass figures show the permitted footprints. Cyan outlines the original target throughout the crop.'
+              if selection_role else 'Colored overlays show each named ROI intersected with the main ROI. Cyan outlines the original '
+              'target throughout the crop. Multiple regions can overlap.')),
             ('closeups', 'Per-region close-ups',
              'Each row uses a native target voxel near that region’s centroid. Read the i, j and k '
              'coordinates in each title before moving the corresponding named ROI.'),
@@ -608,7 +624,8 @@ def _recipe_section(output, report, embedded):
              'reverse an earlier label change; this figure does not sum intermediate changes. Net changes take '
              'visual precedence over earlier blocked/unresolved proposals at the same voxel.'),
             ('profile', 'Final axial geometry and recipe activity',
-             'Original and final target areas are measured within the main ROI. Blocked and unresolved '
+             ('Original and final areas include all tracked selected lineages and their offspring outside the selector. '
+              if selection_role else 'Original and final target areas are measured within the main ROI. ') + 'Blocked and unresolved '
              'masks are unions across passes; the requested profile is the maximum per-pass request, not a sum.')):
         if final_figures.get(key):
             final += _embed_png(output, final_figures[key], heading, caption, embedded)
@@ -617,18 +634,28 @@ def _recipe_section(output, report, embedded):
             output, 'after/roi-volume.html', 'Final recipe target and tissue volume', embedded)
     if (output/'after/roi-surfaces.png').is_file():
         final += _embed_png(output, 'after/roi-surfaces.png', 'Final static 3D context',
-                            'Final edited labels and tissue context within the original main ROI.', embedded)
+                            ('Final edited labels and tissue context within the native crop; selected offspring can lie outside the original selector.'
+                             if selection_role else 'Final edited labels and tissue context within the original main ROI.'), embedded)
     net_rows = [[label, _number(counts.get(key))] for key, label in (
-        ('before', 'Original target inside main ROI'), ('after', 'Final target inside main ROI'),
+        ('before', 'Original selected target (all tracked lineages)' if selection_role else 'Original target inside main ROI'),
+        ('after', 'Final tracked target (including growth outside the selector)' if selection_role else 'Final target inside main ROI'),
         ('added', 'Net target additions'), ('removed', 'Net target removals'),
         ('changed', 'Original-to-final label differences'), ('ever_changed', 'Unique voxels changed in any pass'),
         ('scalar_changed', 'Original-to-final attenuation proxy differences'))]
     net_rows += [[label, _number(activity.get(key))] for key, label in (
         ('added', 'Sum of additions across passes'), ('removed', 'Sum of removals across passes'),
         ('changed', 'Sum of label changes across passes'))]
+    if selection_role:
+        net_rows += [[label, _number(counts.get(key))] for key, label in (
+            ('changed_outside_selection_roi', 'Net changed voxels outside the original main selector'),
+            ('added_outside_selection_roi', 'Net added target outside the original main selector'),
+            ('removed_outside_selection_roi', 'Net removed target outside the original main selector'))]
+        net_rows += [[label, _number(counts[key])] for key, label in (
+            ('changed_outside_edit_selectors', 'Net changed voxels outside the union of original edit selectors'),
+            ('unselected_target_contact_voxels', 'Contact with unselected current target')) if key in counts]
     component_rows = [[label, _number(recipe.get(key))] for key, label in (
-        ('components_before', 'Original target inside main ROI'),
-        ('components_after', 'Final target inside main ROI'),
+        ('components_before', 'Original selected lineages' if selection_role else 'Original target inside main ROI'),
+        ('components_after', 'Final tracked lineages including offspring' if selection_role else 'Final target inside main ROI'),
         ('full_target_components_before', 'Original full-crop target'),
         ('full_target_components_after', 'Final full-crop target')) if key in recipe]
     overlaps = [[_text_value(region_definitions.get(row.get('roi_a'), {}).get('display_name', row.get('roi_a'))),
@@ -644,19 +671,48 @@ def _recipe_section(output, report, embedded):
             'base ROI and select an interval with <code>path_percent</code> or <code>point_range</code>. '
             'For example, <code>path_percent = 30, 75</code> selects 30% through 75% of the base tube’s '
             'physical centerline length. Separate edits can reuse that tube with different ranges.</p>'
-            '<p><strong>Range boundaries are strict:</strong> effective voxels must lie inside the main '
-            'ROI and within the selected interval of the base tube’s closest physical path coordinate. '
-            'Rounded endpoint spheres do not extend the edit past that interval.</p>'
+            + ('<p><strong>The range selects original ancestors:</strong> <code>path_percent</code> and '
+               '<code>point_range</code> choose original target voxels along the base path. Their offspring '
+               'may grow radially or beyond the original range end faces inside the permitted footprint. '
+               'A uniform edit can cross those end faces; the selected interval is not an offspring boundary.</p>'
+               if selection_role else '<p><strong>Range boundaries are strict:</strong> effective voxels must lie '
+               'inside the main ROI and within the selected interval of the base tube’s closest physical path coordinate. '
+               'Rounded endpoint spheres do not extend the edit past that interval.</p>') +
             '<p>For <code>profile_axis = tube</code>, the selected interval is remapped to '
             '<code>u = 0…1</code>: 0 is its start and 1 is its end. '
             '<code>shape_window = 0, 1</code> applies the Gaussian across the whole selected interval; '
-            'a narrower shape window is measured within that interval, not across the full base tube.</p>')
+            'a narrower shape window is measured within that interval, not across the full base tube.' +
+            (' The Gaussian request is zero outside its local shape window even when the permitted growth '
+             'footprint extends farther.' if selection_role else '') + '</p>')
+    roi_rule = ('<p class="rule"><strong>ROI role: original target selection.</strong> Solid orange identifies '
+                'the fixed selector; dashed blue outlines the permitted growth/edit footprint in per-pass slices. '
+                'The original ROI selects anatomy from the source volume. Its selected voxels and their '
+                'expanded offspring remain tracked in later passes, including outside the selector. '
+                'The selector is not a growth wall. Growth remains bounded by the edit footprint, crop and '
+                'tissue resistance.</p><p>Other original voxels of the same tissue category do not seed the edit. '
+                'Growing anatomy can still contact unselected current target, including offspring of other '
+                'selected regions. Per-pass contact counts identify added voxels next to input-state target '
+                'outside that pass’s selected lineage; they do not establish anatomical separation. '
+                'The before/after surface overlay includes all target tissue in the crop for context, while '
+                'per-pass counts follow the selected lineages. Each pass consumes the previous pass’s labels '
+                'and attenuation proxy; original source arrays remain preserved.</p>' if selection_role else
+                '<p class="rule">Each pass consumes the previous pass’s labels and attenuation proxy. '
+                '<strong>Every named ROI is clipped to the fixed main ROI.</strong> '
+                'The source arrays remain preserved; regions stay at their configured native coordinates.</p>')
+    growth_summary = ''
+    if selection_role:
+        metrics = ''.join('<div class="metric"><strong>' + _number(counts.get(key)) + '</strong><span>' + label + '</span></div>'
+                          for key, label in (('added', 'Net added tracked target'),
+                                             ('removed', 'Net released tracked target'),
+                                             ('changed_outside_selection_roi', 'Net label changes beyond the original main selector')))
+        growth_summary = ('<div id="selection-growth-summary"><p><strong>The ROI selects original anatomy; '
+                          'tracked offspring can grow outside it.</strong> Net counts below include that growth.</p>'
+                          '<div class="metrics">' + metrics + '</div></div>')
     return ('<section id="recipe"><h2>Named-region edit recipe</h2>' +
+            growth_summary +
             _surface_overlay_section(output, recipe, embedded, recipe=True) +
             _centerline_frames_section(output, recipe, embedded) +
-            '<p class="rule">Each pass consumes the previous pass’s labels and attenuation proxy. '
-            '<strong>Every named ROI is clipped to the fixed main ROI.</strong> '
-            'The source arrays remain preserved; regions stay at their configured native coordinates.</p>'
+            roi_rule +
             '<p>Configured order: <code>' + _text_value(config.get('recipe', {}).get('steps', [])) +
             '</code>. Overlap policy: <code>' + _text_value(recipe.get('overlap')) + '</code>. '
             'With <code>sequential</code>, later edits operate on earlier results in overlapping regions. '
@@ -668,9 +724,10 @@ def _recipe_section(output, report, embedded):
             '<h3>Named ROI definitions</h3>' +
             _table(roi_headers, roi_rows) + ''.join(visualizations) +
             '<h3>Execution order and per-pass accounting</h3>' +
-            _table(['Pass', 'Edit', 'ROI', 'Iteration', 'Operation', 'Target before → after',
+            _table(['Pass', 'Edit', 'Original selector' if selection_role else 'ROI', 'Iteration', 'Operation', 'Target before → after',
                     'Added', 'Removed', 'Blocked', 'Unresolved'], step_rows) +
-            '<p>Per-pass counts refer to that effective named ROI. Repeating an edit recomputes distances '
+            '<p>' + ('Per-pass counts follow the selected target and its tracked offspring, including growth outside the original selector. '
+                     if selection_role else 'Per-pass counts refer to that effective named ROI. ') + 'Repeating an edit recomputes distances '
             'from the current geometry; multiple small passes need not equal one larger pass.</p>' + ''.join(details) +
             '<h3>Final result versus original</h3><p>Net changes, unique changed voxels, and sums across passes '
             'answer different questions. A voxel can be edited more than once or restored by a later pass.</p>' +

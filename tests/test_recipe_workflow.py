@@ -124,6 +124,71 @@ class RecipeWorkflowTests(unittest.TestCase):
             self.run_preview(validate_only=True)
         self.assertFalse(self.output.exists())
 
+    def test_selection_role_exports_outside_roi_growth_and_exact_ancestor_state_chain(self):
+        sections = self.fixture.sections
+        sections.pop('roi.lower')
+        sections.pop('roi.upper')
+        sections['recipe']['roi_role'] = 'selection'
+        sections['roi']['radius_mm'] = '2.1'
+        sections['selection']['source_ids'] = ''
+        sections['edit.grow'].update(roi='main', iterations='2')
+        sections['edit.shrink'].update(roi='main')
+        self.fixture.write_input()
+        config = load_preview_config(self.path)
+        resolved = resolve_preview(config)
+        original_ini = self.path.read_bytes()
+        source_bytes = {key: path.read_bytes() for key, path in resolved['source_files'].items()}
+        report = self.run_preview()
+        self.assertEqual(report['config']['recipe']['roi_role'], 'selection')
+        self.assertEqual(report['recipe']['roi_role'], 'selection')
+        steps = report['recipe']['steps']
+        self.assertEqual([step['step_name'] for step in steps], ['grow', 'grow', 'shrink'])
+        snapshots = []
+        for step in steps:
+            with np.load(self.output/step['array_artifact'], allow_pickle=False) as saved:
+                snapshots.append({key: saved[key].copy() for key in saved.files})
+            snapshot = snapshots[-1]
+            added, owners = snapshot['added_mask'], snapshot['target_seed_index']
+            np.testing.assert_array_equal(snapshot['roi_mask'], snapshot['selection_roi_mask'])
+            self.assertTrue(np.all(owners[~added] == -1))
+            self.assertTrue(np.all(snapshot['target_mask_before'].ravel()[owners[added]]))
+            np.testing.assert_array_equal(snapshot['target_origin_index'][added],
+                                          snapshot['target_origin_before_index'].ravel()[owners[added]])
+            np.testing.assert_array_equal(snapshot['target_origin_index'] >= 0,
+                                          np.isin(snapshot['edited_labels'], resolved['source_ids']))
+            self.assertFalse(np.any(snapshot['changed_mask'] & ~snapshot['edit_region_mask']))
+            self.assertEqual(str(snapshot['input_config_sha256']), hashlib.sha256(original_ini).hexdigest())
+        first, second, last = snapshots
+        self.assertGreater(np.count_nonzero(first['changed_mask'] & ~first['selection_roi_mask']), 0)
+        self.assertGreater(np.count_nonzero(last['removed_mask'] & ~last['selection_roi_mask']), 0)
+        for previous, following in zip(snapshots, snapshots[1:]):
+            np.testing.assert_array_equal(following['before_labels'], previous['edited_labels'])
+            np.testing.assert_array_equal(following['before_attenuation_per_pixel'], previous['attenuation_proxy_per_pixel'])
+            np.testing.assert_array_equal(following['target_origin_before_index'], previous['target_origin_index'])
+        with np.load(self.output/'edit.npz', allow_pickle=False) as final:
+            np.testing.assert_array_equal(final['original_labels'], self.fixture.labels)
+            np.testing.assert_array_equal(final['edited_labels'], last['edited_labels'])
+            np.testing.assert_array_equal(final['target_origin_index'], last['target_origin_index'])
+            np.testing.assert_array_equal(final['changed_outside_selection_roi_mask'],
+                                          final['changed_mask'] & ~final['selection_roi_mask'])
+            self.assertGreater(final['changed_outside_selection_roi_mask'].sum(), 0)
+            self.assertEqual(report['recipe']['counts']['changed_outside_selection_roi'],
+                             int(final['changed_outside_selection_roi_mask'].sum()))
+            self.assertEqual(report['recipe']['counts']['after'], int(final['target_mask_after'].sum()))
+            other_artery = self.fixture.labels == 8
+            np.testing.assert_array_equal(final['edited_labels'][other_artery], self.fixture.labels[other_artery])
+        document = (self.output/'report.html').read_text()
+        self.assertIn('roi_role', document)
+        self.assertIn('growth outside the selector', document)
+        self.assertEqual((self.output/'input.ini').read_bytes(), original_ini)
+        self.assertEqual(self.path.read_bytes(), original_ini)
+        for key, path in resolved['source_files'].items():
+            self.assertEqual(path.read_bytes(), source_bytes[key])
+        manifest = json.loads((self.output/'artifact-manifest.json').read_text())
+        for name, digest in manifest.items():
+            self.assertEqual(hashlib.sha256((self.output/name).read_bytes()).hexdigest(), digest, name)
+        self.assertFalse((self.output/'INCOMPLETE').exists())
+
     def test_compact_main_percent_range_reaches_masks_artifacts_and_report(self):
         sections = self.fixture.sections
         sections.pop('roi.lower')

@@ -179,6 +179,45 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(config["recipe"]["steps"], ("arch_refine", "descending_narrow", "ascending_expand"))
         self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
 
+    def test_optional_recipe_roi_role_preserves_legacy_and_retains_explicit_choice(self):
+        legacy = self.load()
+        self.assertNotIn("roi_role", legacy["recipe"])
+        for role in ("boundary", "selection"):
+            with self.subTest(role=role):
+                parser = self.parser()
+                parser["recipe"]["roi_role"] = role
+                before = {section: dict(parser[section]) for section in parser.sections()}
+                config = self.load(parser)
+                self.assertEqual(config, self.load(parser, loader=load_preview_config))
+                self.assertEqual(config["recipe"].pop("roi_role"), role)
+                self.assertEqual(config, legacy)
+                self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
+
+    def test_recipe_roi_role_rejects_unknown_case_and_ambiguous_values(self):
+        for value in ("", "Boundary", "Selection", "seed", "crop", "all", "boundary,selection",
+                      "selection\nboundary"):
+            with self.subTest(role=value), self.assertRaises(ValueError):
+                parser = self.parser()
+                parser["recipe"]["roi_role"] = value
+                self.load(parser)
+        parser = self.parser()
+        parser["recipe"]["roi_role"] = "seed"
+        with self.assertRaisesRegex(ValueError, "boundary.*inside the ROI.*selection.*initial targets"):
+            self.load(parser)
+
+    def test_recipe_roi_role_is_global_and_does_not_relax_required_recipe_fields(self):
+        for section in ("roi", "roi.ascending", "edit.ascending_expand"):
+            with self.subTest(section=section), self.assertRaisesRegex(ValueError, "unknown.*roi_role"):
+                parser = self.parser()
+                parser[section]["roi_role"] = "selection"
+                self.load(parser)
+        for key in ("steps", "overlap"):
+            with self.subTest(missing=key), self.assertRaisesRegex(ValueError, "missing"):
+                parser = self.parser()
+                parser["recipe"]["roi_role"] = "selection"
+                parser.remove_option("recipe", key)
+                self.load(parser)
+
     def test_multiple_steps_can_share_roi_and_unused_roi_is_allowed(self):
         parser = self.parser()
         parser["edit.arch_refine"]["roi"] = "ascending"

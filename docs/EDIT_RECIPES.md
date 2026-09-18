@@ -1,5 +1,9 @@
 # Shared tube ranges and ordered edits
 
+For the new behavior where the ROI selects anatomy and dilation may grow beyond
+it, use `roi_role=selection` as described in [selection and growth regions](SELECTION_GROWTH.md).
+The boundary behavior described below remains the default for existing recipes.
+
 Use [thoracic-aorta-recipe.ini](../configs/studies/thoracic-aorta-recipe.ini) to
 try several regional changes on one anatomy. Define its centerline and radii
 once in `[roi]`, then select a physical path percentage in each edit. The original study input remains your

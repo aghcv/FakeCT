@@ -51,6 +51,7 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
     low = np.asarray(resolved['crop_low_ijk'])
     high = np.asarray(resolved['crop_high_ijk_exclusive'])
     spacing = np.asarray(resolved['spacing_ijk_mm'])
+    selection_role = config.get('recipe', {}).get('roi_role') == 'selection'
     target = np.asarray(arrays['candidates'], dtype=bool)
     image = arrays['attenuation_cm_inverse']
     window = (float(image.min()), max(float(image.max()), float(image.min()) + .001))
@@ -85,7 +86,8 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
         outer = take(arrays['roi'])
         if outer.any() and not outer.all():
             ax.contour(np.arange(low[x], high[x]), np.arange(low[y], high[y]), outer,
-                       levels=[.5], colors=['#eeeeee'], linewidths=.65, linestyles='--')
+                       levels=[.5], colors=['#ffb300' if selection_role else '#eeeeee'],
+                       linewidths=1 if selection_role else .65, linestyles='-' if selection_role else '--')
         for row in rows:
             region = take(masks[row['name']])
             if not region.any():
@@ -112,13 +114,16 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
                    ylim=(limits[0][y]-.5, limits[1][y]-.5))
 
     legend = [Line2D([0], [0], color='#00b8c9', label='Original full-crop target'),
-              Line2D([0], [0], color='#888888', ls='--', label='Main ROI: hard edit boundary')]
+              Line2D([0], [0], color='#ffb300' if selection_role else '#888888',
+                     ls='-' if selection_role else '--',
+                     label='Original main selector (growth can extend beyond it)' if selection_role else 'Main ROI: hard edit boundary')]
     legend += [Patch(facecolor=row['color'], alpha=.5, label=row['display_name']) for row in rows]
     fig, axes = plt.subplots(1, 3, figsize=(17, 7))
     for ax, spec in zip(axes, _PLANES):
         panel(ax, spec, resolved['slice_ijk'])
     fig.suptitle(config['study']['name'] + ' | Named regions on the original attenuation\n'
-                 'Colored regions are clipped to the main ROI; cyan shows the full target in this crop.', fontsize=14)
+                 + ('Original selectors choose target seeds; offspring can grow beyond them. Cyan: original full-crop target.'
+                    if selection_role else 'Colored regions are clipped to the main ROI; cyan shows the full target in this crop.'), fontsize=14)
     fig.legend(handles=legend, loc='lower center', bbox_to_anchor=(.5, .02), ncol=min(5, len(legend)), frameon=False)
     fig.tight_layout(rect=(0, .12, 1, .91))
     fig.savefig(output/'recipe-rois.png', dpi=145)
@@ -176,11 +181,15 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
     fig.tight_layout(rect=(0, .12, 1, .90))
     fig.savefig(output/'recipe-roi-surfaces.png', dpi=145)
     plt.close(fig)
-    return {'overview': 'recipe-rois.png', 'closeups': 'recipe-roi-closeups.png',
+    result = {'overview': 'recipe-rois.png', 'closeups': 'recipe-roi-closeups.png',
             'surfaces': 'recipe-roi-surfaces.png', 'rois': rows,
             'target_voxels_in_crop': int(target.sum()), 'display_stride': stride,
-            'mask_semantics': 'Each region is intersected with the immutable main ROI; selected tube ranges are also clipped by the parent path coordinate',
+            'mask_semantics': ('Colored regions are original target selectors; permitted per-pass edit footprints may extend outside them'
+                               if selection_role else 'Each region is intersected with the immutable main ROI; selected tube ranges are also clipped by the parent path coordinate'),
             'name_semantics': 'Region names are working labels; anatomical orientation remains unverified'}
+    if selection_role:
+        result['roi_role'] = 'selection'
+    return result
 
 
 def render_recipe_step(event, output):
@@ -194,13 +203,19 @@ def render_recipe_step(event, output):
     output = Path(output)
     destination = output/directory
     destination.mkdir(parents=True, exist_ok=True)
-    if not arrays['roi'].any():
+    selection_role = event['config'].get('recipe', {}).get('roi_role') == 'selection'
+    display_mask = np.asarray(arrays['roi'])
+    if selection_role:
+        display_mask = (display_mask | np.asarray(arrays.get('edit_region', arrays['roi'])) |
+                        np.asarray(arrays['selected']) | edit['added_mask'] | edit['removed_mask'])
+    if not display_mask.any():
         return {'artifact_directory': str(directory),
                 'skipped': 'No effective ROI voxels; no slice comparison was generated'}
-    focus = _focus(arrays['roi'], arrays['selected'], resolved['crop_low_ijk'])
-    changed = np.asarray(edit['added_mask']) | np.asarray(edit['removed_mask'])
+    focus = _focus(display_mask, arrays['selected'], resolved['crop_low_ijk'])
+    changed = (np.asarray(edit.get('changed_mask', edit['added_mask'] | edit['removed_mask']))
+               if selection_role else np.asarray(edit['added_mask']) | np.asarray(edit['removed_mask']))
     if changed.any():
-        focus = _focus(arrays['roi'], changed, resolved['crop_low_ijk'])
+        focus = _focus(display_mask, changed, resolved['crop_low_ijk'])
     resolved['slice_ijk'] = focus
     resolved['focus_ijk'] = focus
     figures = render_edit_comparison(arrays, edit, resolved, event['config'], destination,
@@ -209,5 +224,6 @@ def render_recipe_step(event, output):
     figures['profile'] = str(Path(directory)/figures['profile'])
     figures['artifact_directory'] = str(directory)
     figures['focus_ijk'] = list(focus)
-    figures['focus_semantics'] = 'A changed voxel near the changed-region centroid, or selected ROI center when no changes applied'
+    figures['focus_semantics'] = ('A changed voxel near the changed-region centroid, including growth outside the original selector; otherwise a tracked target voxel'
+                                  if selection_role else 'A changed voxel near the changed-region centroid, or selected ROI center when no changes applied')
     return figures

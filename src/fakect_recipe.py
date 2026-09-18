@@ -1,9 +1,9 @@
 """Ordered, bounded morphology recipes on a single immutable source crop.
 
-Named ROIs are fixed spatial masks clipped by the study's outer ROI. Each pass
-uses the preceding pass's labels and attenuation-copy proxy. Recipe order is
-therefore part of the experiment; no convergence loop or topology guarantee is
-implied by an iteration count.
+Named ROIs are fixed spatial masks clipped by the main ROI. In the default
+boundary role they bound edits; in selection role they identify original target
+ancestors whose offspring can grow outside the ROI. Each pass uses the preceding
+labels and scalar proxy. Iterations imply no topology or convergence guarantee.
 """
 import hashlib
 
@@ -16,6 +16,8 @@ from fakect_roi import _tube_nodes, sphere_mask, tube_mask
 from fakect_tissues import _validated_labels, coarse_labels
 from fakect_reassignment import reassignment_masks, stiffness_field
 from fakect_tube_range import resolve_tube_range
+from fakect_growth import (selection_mode, initial_origins, lineage_selection,
+                           expanded_region, inherit_origins, LINEAGE_SEMANTICS)
 
 
 RECIPE_ENGINE = 'ordered_named_roi_v1'
@@ -126,6 +128,19 @@ def validate_recipe(config, resolved):
         raise ValueError(f'Recipe crop exceeds {MAX_MORPHOLOGY_VOXELS:,} voxels')
     regions = recipe_regions(config, resolved)
     geometries = {name: _roi_geometry(roi, resolved) for name, roi in regions.items()}
+    growing = selection_mode(config)
+    if growing:
+        # Geometry-only masks bound ancestry displacement without reading any
+        # source labels. Overlapping selectors can inherit earlier growth.
+        shape = tuple(map(int, (high - low)[::-1]))
+        source_shape_view = np.broadcast_to(np.uint8(0), shape)
+        outer_geometry = _roi_geometry(config['roi'], resolved)
+        if outer_geometry['roi_kind'] == 'tube':
+            outer_mask = tube_mask(shape, low, outer_geometry['roi_nodes_ijk'], resolved['spacing_ijk_mm'], outer_geometry['roi_radii_mm'])
+        else:
+            outer_mask = sphere_mask(shape, low, outer_geometry['roi_nodes_ijk'][0], resolved['spacing_ijk_mm'], outer_geometry['roi_radii_mm'][0])
+        growth_masks = recipe_masks({'act': source_shape_view, 'roi': outer_mask}, resolved, config)
+        reach_by_origin = np.zeros(shape, dtype=np.float64)
     steps, passes = [], 0
     for name in names:
         if name not in config['edits']:
@@ -142,6 +157,12 @@ def validate_recipe(config, resolved):
         if passes > MAX_RECIPE_PASSES:
             raise ValueError(f'Recipe requires more than {MAX_RECIPE_PASSES} total passes')
         geometry = geometries[region_key]
+        inherited_reach = 0.
+        if growing:
+            inherited_reach = float(reach_by_origin[growth_masks[region_key]].max(initial=0.))
+            repeated_reach = (float(edit['distance_mm']) * (iterations - 1)
+                              if edit['operation'] == 'dilation' else 0.)
+            geometry = {**geometry, 'growth_reach_mm': inherited_reach + repeated_reach}
         try:
             halo = validate_edit_geometry(geometry, _step_config(config, name, regions))
         except ValueError as exc:
@@ -152,10 +173,20 @@ def validate_recipe(config, resolved):
                       'geometry': {k: geometry[k] for k in ('roi_kind', 'roi_nodes_ijk', 'roi_radii_mm', 'focus_ijk')},
                       'range_metadata': regions[region_key].get('range_metadata'),
                       'halo': halo})
+        if growing:
+            steps[-1]['inherited_growth_mm'] = inherited_reach
+            if edit['operation'] == 'dilation':
+                reach_by_origin[growth_masks[region_key]] += float(edit['distance_mm']) * iterations
     plan = {'engine': RECIPE_ENGINE, 'morphology_engine': ENGINE,
             'steps': steps, 'total_passes': passes, 'overlap': recipe['overlap'],
             'outer_boundary': 'Every named ROI is intersected with the fixed study ROI.',
             'order_semantics': 'Each pass consumes the labels and scalar proxy produced by the preceding pass.'}
+    if growing:
+        plan.update(roi_role='selection', target_origin_semantics=LINEAGE_SEMANTICS,
+                    outer_boundary='The main ROI bounds original target selection; offspring may grow beyond it inside validated crop context.',
+                    growth_region_semantics='Each dilation pass uses a physical Euclidean envelope around its tracked target, expanded by distance_mm. Tissue resistance, grid paths and spatial profiles determine accepted changes.',
+                    range_semantics='Path ranges select original target ancestors; Gaussian profiles retain their spatial tube coordinate. Uniform dilation may extend beyond the original range end faces.',
+                    contact_semantics='Unselected target voxels cannot seed or carry growth and remain unchanged. Growth may contact them; distinct anatomical trees are not inferred from tissue category.')
     from fakect_direction import recipe_centerline_frames
     frames = recipe_centerline_frames(config, resolved)
     if frames:
@@ -229,6 +260,7 @@ def apply_recipe(arrays, resolved, config, on_step=None):
     even where the final original label has been restored.
     """
     plan = validate_recipe(config, resolved)
+    growing = selection_mode(config)
     labels = _validated_labels(arrays['act'])
     atn = np.asarray(arrays['atn'])
     outer = np.asarray(arrays['roi'])
@@ -270,6 +302,29 @@ def apply_recipe(arrays, resolved, config, on_step=None):
     union = np.zeros_like(outer)
     for name in active_names:
         union |= masks[name]
+    edit_region_union = np.zeros_like(outer) if growing else union
+    origins = initial_origins(original['candidates']) if growing else None
+    if growing:
+        # Conservative source-aware envelopes check independent growth regions
+        # before any mutation when overlap=error. This may reject an overlap
+        # that the angular/tissue budgets would ultimately leave unchanged.
+        envelopes = {}
+        for step in plan['steps']:
+            if step['edit']['operation'] == 'none':
+                continue
+            distance = step['inherited_growth_mm']
+            if step['edit']['operation'] == 'dilation':
+                distance += step['edit']['distance_mm'] * step['iterations']
+            key = step['region_key']
+            envelope = expanded_region(original['candidates'] & masks[key], distance, resolved['spacing_ijk_mm'])
+            envelopes[key] = envelopes.get(key, np.zeros_like(outer)) | envelope
+        growth_overlaps = []
+        for index, key in enumerate(envelopes):
+            for other in list(envelopes)[index + 1:]:
+                count = int((envelopes[key] & envelopes[other]).sum())
+                growth_overlaps.append({'roi_a': key, 'roi_b': other, 'conservative_overlap_voxels': count})
+                if count and config['recipe']['overlap'] == 'error':
+                    raise ValueError(f'Growth regions {key} and {other} may overlap at {count} voxels; use overlap=sequential or separate their selections/budgets')
     cumulative = {key: np.zeros_like(outer) for key in ('ever_changed_mask', 'proposed_added_mask',
                   'proposed_removed_mask', 'blocked_mask', 'unresolved_mask')}
     strength = np.zeros(labels.shape, dtype=np.float64)
@@ -286,6 +341,13 @@ def apply_recipe(arrays, resolved, config, on_step=None):
             before = _state(current_labels, current_atn, resolved['catalog'], source_ids,
                             masks[roi_name], resolved['spacing_ijk_mm'])
             requested = step_config['edit'].get('operation', 'none')
+            if growing:
+                original_selected = original['candidates'] & masks[roi_name]
+                before['selected'] = lineage_selection(origins, original_selected)
+                before['edit_region'] = expanded_region(before['selected'],
+                    step_config['edit']['distance_mm'] if requested == 'dilation' else 0., resolved['spacing_ijk_mm'])
+                step_resolved = {**step_resolved, 'growth_reach_mm': step['inherited_growth_mm'] +
+                    ((iteration - 1) * step_config['edit']['distance_mm'] if requested == 'dilation' else 0.)}
             empty_target = requested != 'none' and not before['selected'].any()
             execution_config = step_config
             if empty_target:
@@ -300,6 +362,15 @@ def apply_recipe(arrays, resolved, config, on_step=None):
                     'Shortest accepted six-edge physical path, then lowest signed anatomical source ID, '
                     'then earliest input-state seed k,j,i coordinate.')
             pass_target_after = np.isin(result['edited_labels'], source_ids)
+            if growing:
+                updated_origins = inherit_origins(origins, result, before['selected'], pass_target_after)
+                result.update(target_origin_before_index=origins, target_origin_index=updated_origins,
+                              original_selected_mask=original_selected)
+                result['summary']['target_origin_semantics'] = LINEAGE_SEMANTICS
+                result['summary']['original_selection_voxels'] = int(original_selected.sum())
+                if requested != 'none':
+                    edit_region_union |= before['edit_region']
+                origins = updated_origins
             result['summary']['full_target_components_before'] = _components(before['candidates'])
             result['summary']['full_target_components_after'] = _components(pass_target_after)
             blocked_ids, blocked_counts = np.unique(current_labels[result['blocked_mask']], return_counts=True)
@@ -310,7 +381,8 @@ def apply_recipe(arrays, resolved, config, on_step=None):
                  'count': int(count)}
                 for key, count in zip(blocked_ids, blocked_counts)]
             if empty_target:
-                reason = 'No current target voxel remains inside this effective ROI; pass skipped.'
+                reason = ('No surviving target ancestor belongs to this original selection; pass skipped.' if growing else
+                          'No current target voxel remains inside this effective ROI; pass skipped.')
                 result['summary']['requested_operation'] = requested
                 result['summary']['no_op_reason'] = reason
                 result['summary']['warnings'].append(reason)
@@ -341,9 +413,13 @@ def apply_recipe(arrays, resolved, config, on_step=None):
     target_before = original['selected']
     full_after = np.isin(current_labels, source_ids)
     target_after = full_after & outer
+    if growing:
+        target_after = lineage_selection(origins, original['selected'])
     changed, scalar_changed = current_labels != labels, current_atn != atn
-    if np.any((changed | scalar_changed) & ~union):
-        raise RuntimeError('Recipe changed values outside its active effective ROI union')
+    if np.any((changed | scalar_changed) & ~edit_region_union):
+        raise RuntimeError('Recipe changed values outside its active edit region union')
+    if growing and np.any((changed | scalar_changed) & original['candidates'] & ~union):
+        raise RuntimeError('Recipe changed an original target outside every active selection')
     _, protected, reassignment_policy = reassignment_masks(labels, original['candidates'], resolved['catalog'], config['reassignment'])
     if np.any((changed | scalar_changed) & protected):
         raise RuntimeError('Recipe changed an originally protected non-target voxel')
@@ -379,6 +455,16 @@ def apply_recipe(arrays, resolved, config, on_step=None):
             'target_mask_after': target_after, 'added_mask': added, 'removed_mask': removed,
             'changed_mask': changed, 'scalar_changed_mask': scalar_changed,
             **cumulative, 'strength_mm': strength, 'summary': summary}
+    if growing:
+        result.update(selection_roi_mask=outer.copy(), edit_region_mask=edit_region_union,
+                      edit_selector_union_mask=union, target_origin_index=origins,
+                      changed_outside_selection_roi_mask=changed & ~outer)
+        summary['growth_region_overlaps'] = growth_overlaps
+        summary['counts'].update(changed_outside_selection_roi=int((changed & ~outer).sum()),
+                                added_outside_selection_roi=int((added & ~outer).sum()),
+                                removed_outside_selection_roi=int((removed & ~outer).sum()),
+                                changed_outside_edit_selectors=int((changed & ~union).sum()))
+        summary['target_mask_semantics'] = 'Before: original target inside main selection ROI. After: its surviving ancestry and offspring, including outside the ROI. Counts include all outside-ROI growth.'
     if config.get('reassignment', {}).get('mode') == 'stiffness':
         result['stiffness_field'] = stiffness_field(labels, resolved['catalog'], config['reassignment'])
         result['final_stiffness_field'] = stiffness_field(current_labels, resolved['catalog'], config['reassignment'])
