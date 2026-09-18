@@ -233,6 +233,47 @@ class RoiPreviewTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'fewer than two blocks'):
                 resolve_preview(config)
 
+    def test_display_budget_recommends_finest_valid_stride_without_reducing_crop(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config, _ = self.fixture(Path(directory))
+            audit = json.loads(config['input']['audit'].read_text())
+            audit['cases'][0]['shape_kji'] = [101, 151, 201]
+            audit['cases'][0]['spacing_ijk_mm'] = [1, 1, 1]
+            config['input']['audit'].write_text(json.dumps(audit))
+            for channel in ('act', 'atn'):
+                with (Path(directory)/'001'/f'001_{channel}_1.bin').open('r+b') as stream:
+                    stream.truncate(101 * 151 * 201 * 4)
+            config['roi'].update(center_ijk=(100, 75, 50), crop_half_width_mm=100)
+            config['preview'].update(volume_stride=2, context_tissues=('artery', 'unknown'))
+            with self.assertRaises(ValueError) as caught:
+                resolve_preview(config)
+            message = str(caught.exception)
+            self.assertIn('1,277,406 estimated cells at volume_stride = 2', message)
+            self.assertIn('limit 650,000', message)
+            self.assertIn('[preview] volume_stride = 3, the smallest valid stride', message)
+            self.assertIn('394,956 estimated display cells', message)
+            config['preview']['volume_stride'] = 3
+            resolved = resolve_preview(config)
+            self.assertEqual(resolved['crop_low_ijk'], (0, 0, 0))
+            self.assertEqual(resolved['crop_high_ijk_exclusive'], (201, 151, 101))
+
+    def test_display_budget_never_recommends_stride_with_too_few_axis_blocks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config, _ = self.fixture(Path(directory))
+            audit = json.loads(config['input']['audit'].read_text())
+            audit['cases'][0]['shape_kji'] = [2, 2, 200001]
+            audit['cases'][0]['spacing_ijk_mm'] = [1, 1, 1]
+            config['input']['audit'].write_text(json.dumps(audit))
+            config['roi'] = {'shape': 'tube', 'center_ijk': ((0, 0, 0), (200000, 0, 0)),
+                             'radius_mm': (1, 1), 'crop_half_width_mm': 3}
+            with self.assertRaises(ValueError) as caught:
+                resolve_preview(config)
+            message = str(caught.exception)
+            self.assertIn('3,200,048 estimated cells', message)
+            self.assertIn('No larger valid volume_stride fits the budget', message)
+            self.assertIn('at least two blocks per axis', message)
+            self.assertNotIn('Set [preview] volume_stride', message)
+
 
 if __name__ == '__main__':
     unittest.main()

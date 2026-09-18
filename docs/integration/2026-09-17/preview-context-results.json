@@ -1,0 +1,108 @@
+{
+  "date": "2026-09-17",
+  "report": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v5/report.html",
+  "input_provenance": {
+    "input": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/studies/thoracic-aorta-recipe.ini",
+    "backup": "/tmp/fakect-recipe-before-context-fix.ini",
+    "before_sha256": "0653754cbe12b68e15d2af15fddcd705a665ac9f90e99549ecd0ac3d79b7bff7",
+    "after_sha256": "1dfa28a7fe5a8e6a4ce574d6713c173b26f93e7067e79509b2c0b9d3528c7771"
+  },
+  "only_changed_parameters": [
+    [
+      "preview",
+      "volume_stride"
+    ],
+    [
+      "roi",
+      "crop_half_width_mm"
+    ]
+  ],
+  "errors_reproduced": {
+    "original_halo": "[edit.ascending_expand] using [roi.ascending]: Insufficient crop/source halo: ROI needs 14 mm of context beyond its envelope (10 mm edit + 3 mm reassignment + 1 mm spacing). Only 12 mm is available at the lower i crop face. Increase [roi] crop_half_width_mm; a larger crop may also need a larger [preview] volume_stride. Recheck both with --validate-only.",
+    "larger_crop_stride2": "3D preview exceeds the display budget: 797,040 estimated cells at volume_stride = 2, including padding for 4 fields; limit 650,000. Set [preview] volume_stride = 3, the smallest valid stride for this crop/context (252,560 estimated display cells). This changes display sampling only; retain the crop context needed for edits"
+  },
+  "resolved_crop_shape_kji": [
+    158,
+    116,
+    77
+  ],
+  "native_crop_voxels": 1411256,
+  "display_stride": 3,
+  "estimated_display_cells": 252560,
+  "display_limit": 650000,
+  "edit_settings": {
+    "ascending_expand": {
+      "roi": "ascending",
+      "iterations": 1,
+      "operation": "dilation",
+      "distance_mm": 10.0,
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_k": 6.0,
+      "shape_window": [
+        0.0,
+        1.0
+      ]
+    },
+    "descending_narrow": {
+      "roi": "descending",
+      "iterations": 1,
+      "operation": "erosion",
+      "distance_mm": 10.0,
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_k": 8.0,
+      "shape_window": [
+        0.0,
+        1.0
+      ]
+    },
+    "arch_refine": {
+      "roi": "arch",
+      "iterations": 1,
+      "operation": "none",
+      "distance_mm": 1.0,
+      "profile": "gaussian",
+      "profile_axis": "tube",
+      "shape_k": 6.0,
+      "shape_window": [
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "recipe_counts": {
+    "before": 50485,
+    "after": 51787,
+    "added": 3340,
+    "removed": 2038,
+    "changed": 5378,
+    "scalar_changed": 4399,
+    "ever_changed": 5378,
+    "proposed_added": 7072,
+    "proposed_removed": 5632,
+    "blocked": 3732,
+    "unresolved": 3594
+  },
+  "overlay_counts": {
+    "before_voxels": 56964,
+    "after_voxels": 58266,
+    "added_voxels": 3340,
+    "removed_voxels": 2038,
+    "unchanged_target_voxels": 54926,
+    "net_delta_voxels": 1302
+  },
+  "checks": {
+    "metadata_validation_passed": true,
+    "full_preview_exit_code": 0,
+    "native_overlay_stride": 1,
+    "artifact_hashes_verified": 33,
+    "code_hashes_verified": 14,
+    "original_crop_arrays_preserved": true,
+    "source_file_stats_unchanged": true,
+    "full_source_files_hashed": false,
+    "overlay_png_visually_inspected": true,
+    "tests_passed": 205,
+    "test_command": "python3 -m unittest discover -s tests"
+  }
+}

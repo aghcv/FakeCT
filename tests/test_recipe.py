@@ -153,7 +153,7 @@ class RecipeTests(unittest.TestCase):
         self.assertEqual(plan['total_passes'], 1)
         self.assertEqual(plan['steps'][0]['geometry']['roi_kind'], 'sphere')
         config['rois']['center']['radius_mm'] = 12
-        with self.assertRaisesRegex(ValueError, 'halo'):
+        with self.assertRaisesRegex(ValueError, r'\[edit.grow\] using \[roi.center\].*halo'):
             validate_recipe(config, resolved)
         config['rois']['center']['radius_mm'] = 5
         config['edits']['grow']['iterations'] = 10

@@ -8,6 +8,7 @@ import numpy as np
 from fakect_tissues import coarse_labels
 
 MAX_CROP_VOXELS = 16_777_216
+MAX_DISPLAY_CELLS = 650_000
 COLORS = {'background': '#000000', 'soft_tissue': '#bcaaa4', 'bone': '#fff0bc',
           'cartilage': '#66bb6a', 'muscle': '#b85c38', 'artery': '#f44336',
           'vein': '#367bf5', 'lung': '#4dd0c8', 'adipose': '#ffd600',
@@ -190,11 +191,35 @@ def resolve_preview(config):
     shape, spacing = case['shape_kji'], case['spacing_ijk_mm']
     roi = _resolve_roi(config['roi'], shape, spacing)
     low, high = roi['crop_low_ijk'], roi['crop_high_ijk_exclusive']
-    display_shape = np.ceil((np.asarray(high) - low) / config['preview']['volume_stride']).astype(int)
+    crop_shape = np.asarray(high) - low
+    volume_stride = config['preview']['volume_stride']
+    display_shape = (crop_shape + volume_stride - 1) // volume_stride
     if np.any(display_shape < 2):
         raise ValueError('volume_stride leaves fewer than two blocks per axis; reduce it')
-    if int(np.prod(display_shape + 2)) * (1 + len(config['preview']['context_tissues'])) > 650_000:
-        raise ValueError('3D preview exceeds the display budget; increase volume_stride or reduce crop/context')
+    field_count = 1 + len(config['preview']['context_tissues'])
+    display_cells = int(np.prod(display_shape + 2)) * field_count
+    if display_cells > MAX_DISPLAY_CELLS:
+        recommendation = None
+        # ceil(n / stride) must remain >= 2 along every crop axis. Search the
+        # accepted integer strides in order, retaining the finest valid display.
+        for stride in range(volume_stride + 1, int(crop_shape.min())):
+            candidate_shape = (crop_shape + stride - 1) // stride
+            candidate_cells = int(np.prod(candidate_shape + 2)) * field_count
+            if candidate_cells <= MAX_DISPLAY_CELLS:
+                recommendation = (stride, candidate_cells)
+                break
+        if recommendation is not None:
+            stride, cells = recommendation
+            advice = (f'Set [preview] volume_stride = {stride}, the smallest valid stride '
+                      f'for this crop/context ({cells:,} estimated display cells). '
+                      'This changes display sampling only; retain the crop context needed for edits')
+        else:
+            advice = ('No larger valid volume_stride fits the budget while retaining at least '
+                      'two blocks per axis; reduce context_tissues or shorten the long crop axes '
+                      'while retaining the context needed for edits')
+        raise ValueError(f'3D preview exceeds the display budget: {display_cells:,} estimated '
+                         f'cells at volume_stride = {volume_stride}, including padding for '
+                         f'{field_count} fields; limit {MAX_DISPLAY_CELLS:,}. {advice}')
     slices = config['preview']['slice_ijk'] or roi['focus_ijk']
     if any(not lo <= v < hi for v, lo, hi in zip(slices, low, high)):
         raise ValueError('slice_ijk lies outside the preview crop; move the ROI or increase crop_half_width_mm')

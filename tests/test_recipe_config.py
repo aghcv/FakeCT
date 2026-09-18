@@ -19,15 +19,7 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
         self.path = self.root / "recipe.ini"
-        self.template = (ROOT / "configs/studies/thoracic-aorta-recipe.ini").read_text()
-        # This is an editable user study. Keep this parser fixture's edit levels
-        # stable while leaving the user's actual trial parameters untouched.
-        self.template = re.sub(r"^(distance_mm = ).*?(\s+# NOTE .*)$",
-                               lambda m: m.group(1) + "2.0 " + m.group(2),
-                               self.template, flags=re.MULTILINE)
-        self.template = re.sub(r"^(shape_k = ).*?(\s+# NOTE .*)$",
-                               lambda m: m.group(1) + "6 " + m.group(2),
-                               self.template, flags=re.MULTILINE)
+        self.template = (ROOT / "tests/fixtures/thoracic-aorta-recipe.ini").read_text()
 
     def parser(self):
         parser = configparser.ConfigParser(interpolation=None, inline_comment_prefixes=("#",),
@@ -302,8 +294,9 @@ class RecipeConfigurationTests(unittest.TestCase):
             self.load(parser)
 
     def test_each_starter_parameter_references_an_existing_numbered_note(self):
-        notes = set(re.findall(r"^# NOTE ([0-9]+) --", self.template, re.MULTILINE))
-        assignments = [line for line in self.template.splitlines()
+        starter = (ROOT / "configs/studies/thoracic-aorta-recipe.ini").read_text()
+        notes = set(re.findall(r"^# NOTE ([0-9]+) --", starter, re.MULTILINE))
+        assignments = [line for line in starter.splitlines()
                        if line and not line.startswith(("#", "["))]
         self.assertGreater(len(assignments), 60)
         for line in assignments:

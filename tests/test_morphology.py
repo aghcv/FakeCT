@@ -271,6 +271,26 @@ class MorphologyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'requires a tube ROI'):
             validate_edit_geometry(resolved, config)
 
+    def test_halo_error_distinguishes_expandable_crop_from_source_boundary(self):
+        _, resolved, config = self.fixture(distance=2)
+        resolved.update(shape_kji=(50, 50, 50), crop_low_ijk=(5, 5, 5),
+                        crop_high_ijk_exclusive=(26, 26, 26))
+        with self.assertRaises(ValueError) as caught:
+            validate_edit_geometry(resolved, config)
+        message = str(caught.exception)
+        self.assertIn('6 mm of context', message)
+        self.assertIn('2 mm edit + 3 mm reassignment + 1 mm spacing', message)
+        self.assertIn('Only 5 mm is available at the lower i crop face', message)
+        self.assertIn('volume_stride', message)
+        # Expanding the crop supplies the missing native context.
+        resolved.update(crop_low_ijk=(4, 4, 4), crop_high_ijk_exclusive=(27, 27, 27))
+        validate_edit_geometry(resolved, config)
+        # The same request at the source edge cannot be fixed by a larger crop.
+        resolved.update(roi_nodes_ijk=((6, 15, 15),), crop_low_ijk=(0, 0, 0),
+                        crop_high_ijk_exclusive=(50, 50, 50))
+        with self.assertRaisesRegex(ValueError, 'beyond the source volume.*cannot supply it'):
+            validate_edit_geometry(resolved, config)
+
     def test_crop_and_full_execution_are_identical_with_valid_physical_halo(self):
         region = (slice(5, 26),) * 3
         for operation in ('erosion', 'dilation'):

@@ -99,7 +99,24 @@ def validate_edit_geometry(resolved, config):
     halo = spec['distance'] + spec['search'] + float(spacing.max())
     if (np.any(envelope_low - halo < low * spacing - _TOL)
             or np.any(envelope_high + halo > (high - 1) * spacing + _TOL)):
-        raise ValueError(f'Insufficient crop/source halo: ROI needs {halo:g} mm of context beyond its envelope; increase crop_half_width_mm or relocate/shorten the ROI')
+        message = (f'Insufficient crop/source halo: ROI needs {halo:g} mm of context beyond its envelope '
+                   f'({spec["distance"]:g} mm edit + {spec["search"]:g} mm reassignment + '
+                   f'{spacing.max():g} mm spacing). ')
+        if 'shape_kji' in resolved and (
+                np.any(envelope_low - halo < -_TOL) or
+                np.any(envelope_high + halo > (np.asarray(resolved['shape_kji'])[::-1] - 1) * spacing + _TOL)):
+            message += ('The required context extends beyond the source volume; increasing '
+                        'crop_half_width_mm cannot supply it. Relocate/shorten the ROI or reduce '
+                        'the edit/search distances.')
+        else:
+            margins = np.stack((envelope_low - low * spacing,
+                                (high - 1) * spacing - envelope_high))
+            side, axis = np.unravel_index(np.argmin(margins), margins.shape)
+            message += (f'Only {margins[side, axis]:g} mm is available at the '
+                        f'{("lower", "upper")[side]} {"ijk"[axis]} crop face. '
+                        'Increase [roi] crop_half_width_mm; a larger crop may also need a larger '
+                        '[preview] volume_stride. Recheck both with --validate-only.')
+        raise ValueError(message)
     return {'required_halo_mm': halo, 'checked': True,
             'roi_envelope_ijk_mm': [envelope_low.tolist(), envelope_high.tolist()]}
 

@@ -17,11 +17,48 @@ Run from the integrated checkout:
 python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-recipe.ini
 ```
 
-Open [the recipe report with Global, Local, and before/after overlay views](../outputs/studies/thoracic-aorta/recipe-v4/report.html).
+Open [the recipe report with Global, Local, and before/after overlay views](../outputs/studies/thoracic-aorta/recipe-v5/report.html).
 For subsequent runs, set `[output] directory` to a fresh location such as
-`outputs/studies/thoracic-aorta/recipe-v5`. Add `--validate-only` to check the
+`outputs/studies/thoracic-aorta/recipe-v6`. Add `--validate-only` to check the
 input and crop/search bounds without reading voxel payloads. Native overlap and
 selection counts require the actual preview run.
+
+## When stronger edits need more crop context
+
+The halo check requires `distance_mm + reassignment.max_distance_mm + largest
+voxel spacing` beyond each active named ROI envelope. With a 10 mm edit,
+3 mm reassignment search and 1 mm voxels, that is 14 mm. `crop_half_width_mm`
+extends from the **main centerline bounds**, so it must also cover the named
+ROI radius and placement. It is not the amount of empty space beyond the ROI.
+
+For the current aorta paths, use these settings together:
+
+```ini
+[roi]
+crop_half_width_mm = 28
+
+[preview]
+volume_stride = 3
+```
+
+These are entries to update in the existing sections, not duplicate sections to
+append. A larger crop supplies editing context but also increases the size of
+the 3D context display. Raising the stride reduces only that pooled display;
+editing, native slices, and the before/after surface overlay retain source
+resolution. Crop width does not enlarge the ROI or increase editing strength.
+
+The errors now identify the failing edit/ROI and available halo, or recommend
+the smallest display stride that fits the current crop. Context beyond the
+actual source boundary requires moving/shortening the ROI or reducing the
+edit/search distance; a larger crop cannot create missing source data.
+
+After changing the paths, radii, or edit distances, choose a fresh output
+directory and check settings before generating the full report:
+
+```bash
+python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-recipe.ini --validate-only
+python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-recipe.ini
+```
 
 ## The INI structure
 

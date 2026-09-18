@@ -88,7 +88,10 @@ def validate_recipe(config, resolved):
         if passes > MAX_RECIPE_PASSES:
             raise ValueError(f'Recipe requires more than {MAX_RECIPE_PASSES} total passes')
         geometry = geometries[roi_name]
-        halo = validate_edit_geometry(geometry, _step_config(config, name))
+        try:
+            halo = validate_edit_geometry(geometry, _step_config(config, name))
+        except ValueError as exc:
+            raise ValueError(f'[edit.{name}] using [roi.{roi_name}]: {exc}') from exc
         steps.append({'name': name, 'roi': roi_name, 'iterations': int(iterations),
                       'edit': {k: v for k, v in edit.items() if k not in ('roi', 'iterations')},
                       'geometry': {k: geometry[k] for k in ('roi_kind', 'roi_nodes_ijk', 'roi_radii_mm', 'focus_ijk')},
