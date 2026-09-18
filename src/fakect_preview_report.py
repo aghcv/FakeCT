@@ -370,6 +370,12 @@ def _surface_overlay_section(output, edit, embedded, *, recipe=False):
                '<p class="subtle">Both surfaces use the same native coordinates and the full selected '
                'anatomy within this crop. They are not clipped to the editing ROI. Shared regions '
                'overlap; separated boundaries reveal expansion or erosion.</p>')
+    if metadata.get('context_source') == 'final_tissue_labels':
+        content += ('<p>Each final tissue category has its own visibility and opacity controls. '
+                    'Context categories start hidden, except <strong>released</strong> diagnostic markers, '
+                    'which appear in bright pink at 80% opacity. Hide either anatomy surface to inspect '
+                    'these markers and enable neighboring tissue categories as needed. Ordinary context '
+                    'surfaces may be sampled for display; released markers retain native resolution.</p>')
     if (output/'edit-overlay.html').is_file():
         content += _embed_volume(output, 'edit-overlay.html', 'Before and after surfaces in one 3D view', embedded)
     if (output/'edit-overlay.png').is_file():
@@ -434,6 +440,51 @@ def _centerline_frames_section(output, recipe, embedded):
     return ''.join(content) + '</div>'
 
 
+def _release_assignment_section(output, summary, figures, embedded, *, scope='edit'):
+    """Distinguish diagnostic release markers from assigned surrounding tissue."""
+    release = summary.get('release_assignment', {})
+    if not release or (release.get('mode') != 'diagnostic_label' and not release.get('current_released_voxels')):
+        return ''
+    new_label = {'recipe': 'Unique voxels marked released during this recipe',
+                 'pass': 'Newly marked released in this pass',
+                 'edit': 'Newly marked released in this edit'}[scope]
+    content = ('<div class="diagnostic-release"><h3>Released diagnostic voxels' +
+               (' — final recipe state' if scope == 'recipe' else '') + '</h3>'
+               '<p><span class="legend-key" style="background:#ff2ea6"></span><strong>Hot pink: released.</strong> '
+               'With <code>assign_surrounding_tissue = false</code>, erosion removes target geometry and '
+               'marks the released voxels with a separate diagnostic label. It does not assign a surrounding '
+               'tissue. This marker is a derived editing label, not an XCAT anatomical identity.</p>' +
+               _table(['Diagnostic quantity', 'Voxels'], [
+                   [new_label, _number(release.get('newly_released_voxels'))],
+                   ['Current released markers', _number(release.get('current_released_voxels'))]]) +
+               '<p class="warning">Released voxels retain their previous attenuation as an unassigned '
+               'placeholder. Their intensity has not been reassigned to a surrounding tissue or recovered '
+               'by AI. The <code>attenuation_unassigned_mask</code> identifies these voxels; the categorical '
+               'geometry change alone does not complete an attenuation image.</p>'
+               '<p>Label name: <code>' + _text_value(release.get('label_name')) + '</code>; derived signed ID: '
+               '<code>' + _text_value(release.get('label_id')) + '</code>; diagnostic category: <code>' +
+               _text_value(release.get('tissue_id')) + '</code>.</p>')
+    if release.get('scalar_status'):
+        content += '<p><strong>Attenuation status:</strong> ' + _text_value(release['scalar_status']) + '</p>'
+    if figures.get('released_neighborhood'):
+        content += _embed_png(output, figures['released_neighborhood'], 'Released voxels and surrounding native tissues',
+                              'A native before/after close-up around an actual released voxel. The pink outline '
+                              'marks the same locations in both states; hot-pink pixels after editing are diagnostic '
+                              'markers. Colors represent labels, not attenuation.', embedded)
+    neighbors = release.get('surrounding_labels', [])
+    if neighbors:
+        rows = [[_text_value(row.get('original_id')), _text_value(row.get('original_name')),
+                 _text_value(row.get('tissue_name')), _number(row.get('count')),
+                 _text_value(row.get('stiffness_group')), _measurement(row.get('stiffness'))] for row in neighbors]
+        content += ('<h4>Observed labels around released voxels</h4>'
+                    '<p>These are existing labels in the input-state boundary neighborhood. Remaining target '
+                    'artery can appear alongside neighboring tissues. The observations do not establish which '
+                    'tissue should replace the released voxels, or validate their anatomical identity.</p>' +
+                    _table(['Input signed ID', 'Recorded anatomical name', 'Tissue group', 'Neighbor voxels',
+                            'Resistance group', 'Stiffness factor'], rows))
+    return content + '</div>'
+
+
 def _morphology_section(output, report, embedded):
     """Render applied label changes without treating a scalar proxy as recovered CT."""
     edit = report['edit']
@@ -458,7 +509,8 @@ def _morphology_section(output, report, embedded):
     settings = []
     for key, label in (('operation', 'Operation'), ('distance_mm', 'Distance (mm)'),
                        ('profile', 'Profile'), ('profile_axis', 'Profile axis'),
-                       ('shape_k', 'Profile shape k'), ('shape_window', 'Profile window')):
+                       ('shape_k', 'Profile shape k'), ('shape_window', 'Profile window'),
+                       ('assign_surrounding_tissue', 'Assign surrounding tissue')):
         value = edit.get(key, edit_config.get(key))
         if value is not None:
             settings.append([label, _text_value(value)])
@@ -495,6 +547,7 @@ def _morphology_section(output, report, embedded):
             '<p class="rule">Target counts and volumes below refer to the target <strong>inside the ROI</strong>, '
             'before and after this trial. Applied additions and removals describe actual label changes.</p>'
             '<div class="metrics">' + metrics + '</div>' + warnings +
+            _release_assignment_section(output, edit, edit.get('figures', {}), embedded) +
             '<p><strong>Strength:</strong> ' + _text_value(edit.get('strength_semantics')) + '</p>' +
             '<p><strong>Scalar image status:</strong> ' + _text_value(edit.get('scalar_status')) + '</p>'
             '<p>Any edited scalar image is a provisional attenuation proxy. It is <strong>not AI background recovery '
@@ -660,7 +713,9 @@ def _recipe_section(output, report, embedded):
         details.append('<details><summary>Pass ' + _number(step.get('index', position)) + ': ' +
                        _text_value(name) + ' · ROI ' + roi_description + ' · iteration ' +
                        _number(step.get('iteration')) + '</summary>' +
-                       _table(['Pass setting', 'Value'], metadata_rows) + warnings + blocked_labels + ''.join(content) + '</details>')
+                       _table(['Pass setting', 'Value'], metadata_rows) + warnings +
+                       _release_assignment_section(output, summary, step_figures, embedded, scope='pass') +
+                       blocked_labels + ''.join(content) + '</details>')
     visualizations = []
     for key, heading, caption in (
             ('overview', 'Named regions at the study crosshair',
@@ -775,6 +830,7 @@ def _recipe_section(output, report, embedded):
                           '<div class="metrics">' + metrics + '</div></div>')
     return ('<section id="recipe"><h2>Named-region edit recipe</h2>' +
             growth_summary +
+            _release_assignment_section(output, recipe, final_figures, embedded, scope='recipe') +
             _surface_overlay_section(output, recipe, embedded, recipe=True) +
             _centerline_frames_section(output, recipe, embedded) +
             roi_rule +

@@ -23,7 +23,7 @@ python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-recipe.in
 
 Open [the recipe report with Global, Local, and before/after overlay views](../outputs/studies/thoracic-aorta/recipe-v6/report.html).
 For subsequent runs, set `[output] directory` to a fresh location such as
-`outputs/studies/thoracic-aorta/recipe-v10`. Add `--validate-only` to check the
+`outputs/studies/thoracic-aorta/recipe-v11`. Add `--validate-only` to check the
 input and crop/search bounds without reading voxel payloads. Native overlap and
 selection counts require the actual preview run.
 

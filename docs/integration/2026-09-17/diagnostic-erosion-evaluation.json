@@ -1,0 +1,165 @@
+{
+  "schema": "fakect.diagnostic-erosion-evaluation/1",
+  "output": "outputs/studies/thoracic-aorta/recipe-v10",
+  "counts": {
+    "before": 52576,
+    "after": 54251,
+    "added": 1710,
+    "removed": 35,
+    "changed": 1745,
+    "scalar_changed": 1710,
+    "ever_changed": 1745,
+    "proposed_added": 1812,
+    "proposed_removed": 35,
+    "blocked": 102,
+    "unresolved": 0,
+    "changed_outside_selection_roi": 1020,
+    "added_outside_selection_roi": 1020,
+    "removed_outside_selection_roi": 0,
+    "changed_outside_edit_selectors": 1020,
+    "diagnostic_released": 35,
+    "released": 35,
+    "attenuation_unassigned": 35
+  },
+  "diagnostic_assignment": {
+    "mode": "diagnostic_label",
+    "label_name": "released",
+    "label_id": -2147483648,
+    "tissue_id": 254,
+    "diagnostic_only": true,
+    "newly_released_voxels": 35,
+    "current_released_voxels": 35,
+    "scalar_status": "Released voxels retain their input-state attenuation only as an unassigned placeholder. No surrounding tissue or attenuation has been inferred; use attenuation_unassigned_mask to identify them.",
+    "surrounding_labels": [
+      {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "tissue_name": "soft_tissue",
+        "count": 44,
+        "stiffness": 0.95,
+        "stiffness_group": "skin",
+        "stiffness_basis": "anatomical_group"
+      },
+      {
+        "original_id": 2922,
+        "original_name": "dias_aorta",
+        "tissue_name": "artery",
+        "count": 68,
+        "stiffness": 0.05,
+        "stiffness_group": "artery",
+        "stiffness_basis": "anatomical_group"
+      }
+    ],
+    "surrounding_semantics": "Unique final-state voxels sharing a face with a current released marker, excluding the released set; includes remaining target. Existing catalog classifications are observations, not verified material identities.",
+    "subsequent_pass_semantics": "Released markers remain visible and protected from donor/recipient propagation; no material is inferred from their retained attenuation."
+  },
+  "comparison_to_recipe_v9": {
+    "new_released_voxels": 35,
+    "dilation_unchanged": true,
+    "all_other_final_labels_identical": true,
+    "all_final_attenuation_identical": true,
+    "same_erosion_proposals_now_accepted": true,
+    "source_catalog_unchanged": true,
+    "target_stiffness_profile_and_direction_unchanged": true
+  },
+  "context_categories": [
+    {
+      "name": "released",
+      "category_id": 254,
+      "voxels": 35,
+      "display_stride": 1,
+      "visible": true,
+      "opacity": 0.8
+    },
+    {
+      "name": "soft_tissue",
+      "category_id": 1,
+      "voxels": 196258,
+      "display_stride": 3,
+      "visible": false,
+      "opacity": 0.45
+    },
+    {
+      "name": "bone",
+      "category_id": 2,
+      "voxels": 69575,
+      "display_stride": 3,
+      "visible": false,
+      "opacity": 0.45
+    },
+    {
+      "name": "cartilage",
+      "category_id": 3,
+      "voxels": 9426,
+      "display_stride": 1,
+      "visible": false,
+      "opacity": 0.45
+    },
+    {
+      "name": "muscle",
+      "category_id": 4,
+      "voxels": 74322,
+      "display_stride": 3,
+      "visible": false,
+      "opacity": 0.45
+    },
+    {
+      "name": "artery",
+      "category_id": 5,
+      "voxels": 129271,
+      "display_stride": 3,
+      "visible": false,
+      "opacity": 0.45
+    },
+    {
+      "name": "vein",
+      "category_id": 6,
+      "voxels": 48638,
+      "display_stride": 3,
+      "visible": false,
+      "opacity": 0.45
+    },
+    {
+      "name": "lung",
+      "category_id": 7,
+      "voxels": 434693,
+      "display_stride": 3,
+      "visible": false,
+      "opacity": 0.45
+    },
+    {
+      "name": "nervous_tissue",
+      "category_id": 9,
+      "voxels": 3146,
+      "display_stride": 1,
+      "visible": false,
+      "opacity": 0.45
+    },
+    {
+      "name": "unknown",
+      "category_id": 255,
+      "voxels": 445892,
+      "display_stride": 3,
+      "visible": false,
+      "opacity": 0.45
+    }
+  ],
+  "manifest_artifacts_verified": 43,
+  "generating_code_hashes_verified": 21,
+  "all_context_controls_present": true,
+  "volume_profiles_conserved": true,
+  "unrelated_user_inputs_unchanged": true,
+  "tests_passed": 327,
+  "javascript_control_checks": {
+    "runtime": "V8 with mocked DOM and Plotly.restyle",
+    "checks_passed": 5,
+    "checks": [
+      "initial visibility synchronization",
+      "opacity does not unhide a hidden category",
+      "opacity leaves other traces unchanged",
+      "visibility and legend toggles synchronize controls",
+      "camera object remains unchanged"
+    ],
+    "browser_webgl_pixel_test_performed": false
+  }
+}

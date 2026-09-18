@@ -6,13 +6,14 @@ from pathlib import Path
 import numpy as np
 
 from fakect_tissues import coarse_labels
+from fakect_released import uses_diagnostic_release, released_catalog, RELEASED_LABEL_ID
 
 MAX_CROP_VOXELS = 16_777_216
 MAX_DISPLAY_CELLS = 650_000
 COLORS = {'background': '#000000', 'soft_tissue': '#bcaaa4', 'bone': '#fff0bc',
           'cartilage': '#66bb6a', 'muscle': '#b85c38', 'artery': '#f44336',
           'vein': '#367bf5', 'lung': '#4dd0c8', 'adipose': '#ffd600',
-          'nervous_tissue': '#9575cd', 'fluid': '#b3e5fc', 'unknown': '#ff00cc'}
+          'nervous_tissue': '#9575cd', 'fluid': '#b3e5fc', 'unknown': '#ff00cc', 'released': '#ff2ea6'}
 
 
 def digest(path):
@@ -160,10 +161,12 @@ def resolve_preview(config):
     catalog_bytes = input_config['catalog'].read_bytes()
     audit = json.loads(audit_bytes)
     catalog = json.loads(catalog_bytes)
+    if uses_diagnostic_release(config):
+        catalog = released_catalog(catalog)
     coarse_labels(np.array([0], dtype=np.int32), catalog)
     categories = {c['name']: c for c in catalog['categories']}
     tissue = config['selection']['tissue']
-    if tissue not in categories or tissue == 'background':
+    if tissue not in categories or tissue in ('background', 'released'):
         raise ValueError(f'Select a catalog tissue other than background: {tissue}')
     for name in config['preview']['context_tissues']:
         if name not in categories or name == 'background':
@@ -197,6 +200,8 @@ def resolve_preview(config):
     if np.any(display_shape < 2):
         raise ValueError('volume_stride leaves fewer than two blocks per axis; reduce it')
     field_count = 1 + len(config['preview']['context_tissues'])
+    if uses_diagnostic_release(config) and 'released' not in config['preview']['context_tissues']:
+        field_count += 1  # The final 3D view automatically includes diagnostic releases.
     display_cells = int(np.prod(display_shape + 2)) * field_count
     if display_cells > MAX_DISPLAY_CELLS:
         recommendation = None
@@ -276,6 +281,8 @@ def prepare_crop(resolved, config):
     for channel, path in resolved['source_files'].items():
         arrays[channel], sources[channel] = read_crop(path, resolved['shape_kji'],
                                                      resolved['crop_low_ijk'], resolved['crop_high_ijk_exclusive'])
+    if uses_diagnostic_release(config) and np.any(arrays['act'] == RELEASED_LABEL_ID):
+        raise ValueError('Native source contains the reserved diagnostic released label; source-label collision')
     arrays['tissue'] = coarse_labels(arrays['act'], resolved['catalog'])
     arrays['candidates'] = np.isin(arrays['act'], resolved['source_ids'])
     if resolved.get('roi_kind', 'sphere') == 'tube':

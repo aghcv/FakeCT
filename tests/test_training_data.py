@@ -19,6 +19,17 @@ from fakect_training_data import (plan_variants, prepare_training_dataset,
 
 
 class TrainingDataTests(unittest.TestCase):
+    def test_source_diagnostic_markers_rejected_before_creating_dataset(self):
+        from fakect_released import RELEASED_LABEL_ID
+        source = self.root/'001/001_act_1.bin'
+        labels = self.labels.copy()
+        labels[15, 15, 16] = RELEASED_LABEL_ID
+        labels.tofile(source)
+        resolved = resolve_preview(self.config)
+        with self.assertRaisesRegex(ValueError, 'cannot form training pairs'):
+            prepare_training_dataset(self.config, resolved)
+        self.assertFalse(self.config['train']['dataset_directory'].exists())
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)

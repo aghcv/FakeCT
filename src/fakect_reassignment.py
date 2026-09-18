@@ -25,6 +25,8 @@ def _record_reasons(record, categories):
     group = classification.get('tissue_name', categories.get(classification.get('tissue_id'), 'unknown'))
     structure = _normalized(classification.get('structure_type'))
     reasons = []
+    if record.get('derived_label') == 'fakect.diagnostic-released/1' or group == 'released':
+        reasons.append('diagnostic_released')
     if int(record['original_id']) == 0 or group == 'background':
         reasons.append('background')
     if group == 'bone' or categories.get(classification.get('tissue_id')) == 'bone' or structure == 'bone':
@@ -49,13 +51,18 @@ def validate_reassignment_policy(catalog, policy, target_tissue=None, target_sou
     if len(set(allowed)) != len(allowed):
         raise ValueError('reassignment.allowed_tissues must not repeat a tissue')
     if mode == 'allowlist':
-        if any(name not in categories or name == 'unknown' for name in allowed):
-            raise ValueError('Allowed tissues must be known catalog groups; unknown can never be allowlisted')
+        if any(name not in categories or name in ('unknown', 'released') for name in allowed):
+            raise ValueError('Allowed tissues must be known catalog groups; unknown can never be allowlisted, nor diagnostic released markers')
         if target_tissue in allowed:
             raise ValueError('Allowed reassignment tissues must be disjoint from the target tissue')
     elif allowed:
         raise ValueError(f'{mode} requires empty reassignment.allowed_tissues')
     records = {int(record['original_id']): record for record in catalog['records']}
+    for value in target_source_ids:
+        if int(value) in records and 'diagnostic_released' in _record_reasons(records[int(value)], {v: k for k, v in categories.items()}):
+            raise ValueError('Diagnostic released markers cannot be anatomical edit targets')
+    if target_tissue == 'released':
+        raise ValueError('Diagnostic released markers cannot be anatomical edit targets')
     if mode == 'stiffness':
         stiffness = policy.get('stiffness', {})
         tissues = stiffness.get('tissues', {})
@@ -70,6 +77,10 @@ def validate_reassignment_policy(catalog, policy, target_tissue=None, target_sou
         for value in overrides:
             if isinstance(value, bool) or not isinstance(value, (int, np.integer)) or int(value) not in records:
                 raise ValueError(f'Stiffness label override must identify a catalogued signed original ID: {value}')
+            if 'diagnostic_released' in _record_reasons(records[int(value)], {v: k for k, v in categories.items()}):
+                raise ValueError('Diagnostic released markers cannot have a tissue stiffness override')
+        if 'released' in tissues:
+            raise ValueError('Diagnostic released markers cannot have a tissue stiffness override')
         for value in target_source_ids:
             value = int(value)
             if value not in records or 'background' in _record_reasons(records[value], {v: k for k, v in categories.items()}):
@@ -110,7 +121,9 @@ def stiffness_coefficients(catalog, policy):
         classification = record['classification']
         semantic_group = ('bone' if 'bone' in reasons else 'skin' if 'skin' in reasons
                           else classification.get('tissue_name', 'unknown'))
-        if 'background' in reasons:
+        if 'diagnostic_released' in reasons:
+            value, basis = 1., 'diagnostic_unassigned_protection'
+        elif 'background' in reasons:
             value, basis = 1., 'categorical_background_protection'
         elif key in spec.get('labels', {}):
             value, basis = spec['labels'][key], 'original_id_override'

@@ -164,7 +164,7 @@ def _provenance(config, resolved):
     for key in ('catalog', 'audit'):
         if _file_hash(config['input'][key]) != resolved[key + '_sha256']:
             raise ValueError(f'{key} changed after source resolution')
-    modules = ('fakect_training_data.py', 'fakect_morphology.py', 'fakect_reassignment.py',
+    modules = ('fakect_training_data.py', 'fakect_morphology.py', 'fakect_reassignment.py', 'fakect_released.py',
                'fakect_roi.py', 'fakect_tissues.py')
     metadata_sources = {str(resolved['case'][name]): _file_hash(resolved['case'][name])
                         for name in ('par_path', 'log_path') if name in resolved.get('case', {})}
@@ -212,6 +212,8 @@ def validate_study_plan(config, resolved):
     The returned whole-variant splits remain provisional until native geometry
     duplicates can be identified during preparation.
     """
+    if config.get('edit', {}).get('assign_surrounding_tissue', True) is False:
+        raise ValueError('Diagnostic released labels have unassigned attenuation and cannot form training pairs; use preview_roi.py for diagnostic edits or set assign_surrounding_tissue=true')
     variants = plan_variants(config)
     _target_ids(config, resolved)
     for variant in variants:
@@ -254,6 +256,9 @@ def prepare_training_dataset(config, resolved, *, input_bytes=None):
     if output.exists():
         raise FileExistsError('Training dataset directory exists; choose a new dataset_directory')
     arrays, sources = prepare_crop(resolved, config)
+    from fakect_released import RELEASED_LABEL_ID
+    if np.any(arrays['act'] == RELEASED_LABEL_ID):
+        raise ValueError('Diagnostic released voxels have unassigned attenuation and cannot form training pairs')
     original_mask = np.isin(arrays['act'], targets)
     if not np.any(original_mask):
         raise ValueError('Training target is absent from the complete crop')
@@ -277,6 +282,8 @@ def prepare_training_dataset(config, resolved, *, input_bytes=None):
     baseline_mask_hash = _array_hash(original_mask.astype(np.uint8))
     for variant in variants:
         result = apply_morphology(arrays, resolved, _variant_config(config, variant))
+        if np.any(result.get('attenuation_unassigned_mask', False)):
+            raise ValueError('Diagnostic released voxels have unassigned attenuation and cannot form training pairs')
         labels = result['edited_labels']
         changed = result['changed_mask']
         mask = np.isin(labels, targets).astype(np.uint8)

@@ -51,9 +51,10 @@ semantics are in the figure's `arc_profile` metadata in `preview-report.json`
 and the saved NPZ metadata. Each recipe pass has the same files in its step
 directory. The HTML embeds both charts for portable review.
 
-The current aorta input produces `outputs/studies/thoracic-aorta/recipe-v9`.
+The original centerline-profile evaluation is `outputs/studies/thoracic-aorta/recipe-v9`.
+The current input adds [diagnostic erosion](DIAGNOSTIC_EROSION.md) in `recipe-v10`.
 After that directory has been generated, select a new `[output] directory`
-(for example `recipe-v10`) and rerun from the integration worktree:
+(for example `recipe-v11`) and rerun from the integration worktree:
 
 ```bash
 python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-curvature.ini

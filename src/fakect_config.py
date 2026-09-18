@@ -32,6 +32,7 @@ _EDIT_FIELDS = {
     "edit": {"operation", "distance_mm", "profile", "profile_axis", "shape_k", "shape_window"},
     "reassignment": {"allowed_tissues", "max_distance_mm", "unresolved"},
 }
+_OPTIONAL_EDIT_FIELDS = {"assign_surrounding_tissue"}
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*\Z")
 _CASE_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\Z")
 _TISSUE_NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
@@ -156,8 +157,10 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
         expected = base_fields | ({"shape"} if section == "roi" and version != "fakect.preview/1" else set())
         actual = set(parser[section])
         optional = {"source_ids"} if section == "selection" else set()
-        if actual - expected or expected - actual - optional:
-            unknown, missing = sorted(actual - expected), sorted(expected - actual - optional)
+        if section == "edit":
+            optional |= _OPTIONAL_EDIT_FIELDS
+        if actual - expected - optional or expected - actual - optional:
+            unknown, missing = sorted(actual - expected - optional), sorted(expected - actual - optional)
             raise ValueError(f"[{section}] invalid settings: unknown={unknown}, missing={missing}")
         for key in actual:
             if "\n" in parser[section][key]:
@@ -254,6 +257,13 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
                           "profile": profile, "profile_axis": axis,
                           "shape_k": _float(read("edit", "shape_k"), "edit.shape_k", positive=True),
                           "shape_window": window}
+        if "assign_surrounding_tissue" in parser["edit"]:
+            assign = read("edit", "assign_surrounding_tissue")
+            if assign not in {"true", "false"}:
+                raise ValueError("edit.assign_surrounding_tissue must be true or false")
+            if assign == "false" and operation != "erosion":
+                raise ValueError("edit.assign_surrounding_tissue=false requires operation=erosion")
+            result["edit"]["assign_surrounding_tissue"] = assign == "true"
         result["reassignment"] = {"allowed_tissues": allowed,
                                   "max_distance_mm": _float(read("reassignment", "max_distance_mm"),
                                                              "reassignment.max_distance_mm", positive=True),

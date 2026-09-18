@@ -404,6 +404,7 @@ class PreviewReportTests(unittest.TestCase):
         report = self.morphology_report()
         payload = '<script>window.UNSAFE=true</script>'
         report['edit']['surface_overlay'] = {'counts': {'before_voxels': 150, 'after_voxels': 180},
+                                              'context_source': 'final_tissue_labels',
                                               'description': payload}
         overlay = self.volume.replace('embedded:true', 'surfaceOverlay:true')
         (self.output/'edit-overlay.html').write_text(overlay)
@@ -416,6 +417,8 @@ class PreviewReportTests(unittest.TestCase):
         self.assertLess(document.index('id="surface-overlay"'), document.index('After-edit 3D context'))
         self.assertIn('15%, 45%, or 80%', document)
         self.assertIn('full selected anatomy within this crop', document)
+        self.assertIn('Each final tissue category has its own visibility and opacity controls', document)
+        self.assertIn('released markers retain native resolution', document)
         self.assertNotIn(payload, document)
         self.assertIn('&lt;script&gt;window.UNSAFE=true&lt;/script&gt;', document)
 

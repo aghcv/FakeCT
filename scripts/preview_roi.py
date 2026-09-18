@@ -153,7 +153,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                   ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_reassignment.py',
                   ROOT/'src/fakect_edit_preview.py', ROOT/'src/fakect_arc_profile.py', ROOT/'src/fakect_global_preview.py',
                   ROOT/'src/fakect_surface_overlay.py']
-    code_files += [ROOT/'src/fakect_direction.py', ROOT/'src/fakect_centerline_frame.py']
+    code_files += [ROOT/'src/fakect_direction.py', ROOT/'src/fakect_centerline_frame.py', ROOT/'src/fakect_released.py']
     code_files += [Path(p) for p in extra_code_files]
     recipe_requested = 'recipe' in config
     if recipe_requested:
@@ -194,6 +194,8 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
         from fakect_morphology import apply_morphology
         edit_result = apply_morphology(arrays, resolved, config)
     output.mkdir(parents=True, exist_ok=True)
+    if resolved['catalog'].get('diagnostic_extension'):
+        (output/'derived-label-catalog.json').write_text(json.dumps(resolved['catalog'], indent=2) + '\n')
     if recipe_requested:
         (output / 'INCOMPLETE').write_text('Recipe preview is incomplete; no final report has been published.\n')
         from fakect_recipe import apply_recipe, recipe_masks
@@ -253,16 +255,21 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
         surface_overlay = render_surface_overlay(
             arrays['candidates'], np.isin(edit_result['edited_labels'], resolved['source_ids']),
             crop_origin_ijk=resolved['crop_low_ijk'], spacing_ijk_mm=resolved['spacing_ijk_mm'],
-            volume_stride=config['preview']['volume_stride'], output_dir=output)
+            volume_stride=config['preview']['volume_stride'], output_dir=output,
+            before_tissue_labels=arrays['tissue'], after_tissue_labels=edit_result['edited_tissue_labels'],
+            catalog=resolved['catalog'])
         figure_config = config if not recipe_requested else {**config, 'edit': {'operation': 'recipe'}}
         edit_figures = render_edit_comparison(arrays, edit_result, resolved, figure_config, output)
+        after_context = list(config['preview']['context_tissues'])
+        if np.any(edit_result.get('released_mask', False)) and 'released' not in after_context:
+            after_context.append('released')
         after_volume = render_volume_preview(edit_result['edited_labels'], edit_result['edited_tissue_labels'],
             resolved['catalog'], edit_result['target_mask_after'],
             crop_origin_ijk=resolved['crop_low_ijk'], spacing_ijk_mm=resolved['spacing_ijk_mm'],
             roi_center_ijk=resolved['roi_nodes_ijk'][0], roi_radius_mm=resolved['roi_radii_mm'][0],
             roi_shape=resolved['roi_kind'], roi_nodes_ijk=resolved['roi_nodes_ijk'],
             roi_radii_mm=resolved['roi_radii_mm'], roi_mask=arrays['roi'],
-            context_tissues=config['preview']['context_tissues'], volume_stride=config['preview']['volume_stride'],
+            context_tissues=after_context, volume_stride=config['preview']['volume_stride'],
             volume_opacity=config['preview']['volume_opacity'], context_opacity=config['preview']['context_opacity'],
             output_dir=output / 'after')
     unknown = next(c['id'] for c in resolved['catalog']['categories'] if c['name'] == 'unknown')
@@ -304,6 +311,11 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
               'code_sha256': code_hashes}
     if recipe_requested and config['recipe'].get('roi_role') == 'selection':
         report['source_ids_semantics'] = 'Candidate dictionary IDs; original selection is candidate tissue AND ROI. Final edited selection includes surviving original ancestors and their offspring outside the ROI.'
+    if resolved['catalog'].get('diagnostic_extension'):
+        report['derived_catalog'] = {'path': 'derived-label-catalog.json',
+                                     'sha256': digest(output/'derived-label-catalog.json'),
+                                     'source_catalog_sha256': resolved['catalog_sha256'],
+                                     'semantics': resolved['catalog']['diagnostic_extension_semantics']}
     if training_plan is not None:
         report['training_plan'] = {**training_plan, 'target_preview': target_stats}
         report['rerun_command'] = 'python3 scripts/train_study.py --config /path/to/study.ini --stage preview'
@@ -327,7 +339,9 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
             original_attenuation_per_pixel=arrays['atn'], roi_mask=arrays['roi'],
             geometry_json=np.array(json.dumps(json_value(report['geometry']))),
             edit_json=np.array(json.dumps(json_value(report[metadata_key]), allow_nan=False)),
-            catalog_json=np.array(resolved['catalog_bytes'].decode('utf-8')))
+            catalog_json=np.array(resolved['catalog_bytes'].decode('utf-8')),
+            **({'derived_catalog_json': np.array(json.dumps(resolved['catalog']))}
+               if resolved['catalog'].get('diagnostic_extension') else {}))
     if not arrays['candidates'].any():
         report['selection_warning'] = 'Tissue candidates are absent from this crop; relocate the ROI or change tissue selection.'
     elif not arrays['selected'].any():

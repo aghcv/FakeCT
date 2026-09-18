@@ -96,7 +96,7 @@ k,j,i crop; -1 indicates a non-target voxel. The saved geometry converts them
 to native coordinates. Final counts include offspring outside the main ROI;
 `changed_outside_selection_roi` identifies those changes explicitly.
 
-After editing the INI, choose a fresh output directory such as `recipe-v10`, then
+After editing the INI, choose a fresh output directory such as `recipe-v11`, then
 run from the integrated worktree:
 
 ```bash

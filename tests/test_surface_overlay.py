@@ -128,6 +128,99 @@ class SurfaceOverlayTests(unittest.TestCase):
                 self.render(output)
             self.assertFalse(output.exists())
 
+    def test_final_categories_have_independent_controls_and_native_released_marker(self):
+        before_labels = np.zeros(self.before.shape, dtype=np.uint8)
+        before_labels[0] = 2  # A category absent in the final state is not a context.
+        final_labels = np.zeros_like(before_labels)
+        final_labels[self.after] = 5
+        final_labels[0, :2, :2] = 1
+        final_labels[1, 0, 0] = 255
+        final_labels[2, 3, 3] = 254  # One released voxel must survive stride 3.
+        final_labels[5, 7, 9] = 19  # Uncatalogued categories are still displayed.
+        catalog = {'categories': [{'id': 0, 'name': 'background'}, {'id': 1, 'name': 'soft_tissue'},
+                                 {'id': 2, 'name': 'bone'}, {'id': 5, 'name': 'artery'},
+                                 {'id': 254, 'name': 'released'}, {'id': 255, 'name': 'unknown'}]}
+        originals = [array.copy() for array in (before_labels, final_labels)]
+        before_labels.setflags(write=False)
+        final_labels.setflags(write=False)
+        with tempfile.TemporaryDirectory() as output:
+            result = self.render(output, before_tissue_labels=before_labels,
+                                 after_tissue_labels=final_labels, catalog=catalog)
+            contexts = {row['category_id']: row for row in result['context_surfaces']}
+            self.assertEqual(set(contexts), {1, 5, 19, 254, 255})
+            self.assertEqual(result['static_visible_context_categories'], [254])
+            self.assertEqual(result['context_source'], 'final_tissue_labels')
+            self.assertEqual(result['surfaces'][0]['source_voxels'], 64)
+            marker = contexts[254]
+            self.assertEqual(marker['volume_stride'], 1)
+            self.assertEqual(marker['source_voxels'], 1)
+            self.assertEqual(marker['surface_triangles'], 8)
+            self.assertEqual(marker['color'], '#ff2ea6')
+            self.assertEqual(marker['opacity'], .8)
+            np.testing.assert_allclose(marker['bounds_ijk_relative_mm'], [[12.5, 13.5], [45, 47], [94.5, 97.5]])
+            html = Path(result['html_path']).read_text()
+            self.assertIn('contexts represent FINAL', html.replace('Context categories', 'contexts'))
+            plot_start = re.search(r'Plotly\.newPlot\(\s*"surface-overlay-plot"\s*,\s*', html)
+            traces, _ = json.JSONDecoder().raw_decode(html[plot_start.end():])
+            self.assertEqual(len(traces), 7)
+            for category, row in contexts.items():
+                self.assertEqual(traces[row['trace_index']]['visible'], True if category == 254 else 'legendonly')
+                self.assertEqual(html.count(f'name="category-{category}-opacity"'), 3)
+                self.assertIn(f'"key": "category-{category}", "trace_index": {row["trace_index"]}', html)
+                checked = ' checked' if category == 254 else ''
+                self.assertIn(f'id="overlay-category-{category}-visible" type="checkbox"{checked}>', html)
+            self.assertNotIn('__CONTROL_ROWS_JSON__', html)
+            self.assertTrue(any('no catalog name' in warning for warning in result['warnings']))
+        for actual, expected in zip((before_labels, final_labels), originals):
+            np.testing.assert_array_equal(actual, expected)
+
+    def test_context_pooling_has_separate_budget_counts_and_safe_names(self):
+        shape = (16, 16, 16)
+        final_labels = np.where(np.indices(shape).sum(axis=0) % 2, 2, 1).astype(np.uint8)
+        final_labels[8, 8, 8] = 254
+        catalog = {'categories': [{'id': 1, 'name': '<script>alert("x")</script>'},
+                                 {'id': 2, 'name': 'bone'}, {'id': 254, 'name': 'released'}]}
+        before = np.zeros(shape, dtype=bool)
+        with tempfile.TemporaryDirectory() as output, \
+                patch('fakect_surface_overlay.TARGET_CONTEXT_TRIANGLES', 300), \
+                patch('fakect_surface_overlay.MAX_CONTEXT_TRIANGLES', 650), \
+                patch('fakect_surface_overlay.MAX_SURFACE_TRIANGLES', 10):
+            result = self.render(output, before=before, after=before, after_tissue_labels=final_labels, catalog=catalog)
+            self.assertLessEqual(result['context_surface_triangles'], 650)
+            self.assertEqual(len(result['context_surfaces']), 3)
+            self.assertEqual(sum(row['source_voxels'] for row in result['context_surfaces']), final_labels.size)
+            for row in result['context_surfaces']:
+                if row['category_id'] == 254:
+                    self.assertEqual(row['volume_stride'], 1)
+                else:
+                    self.assertGreaterEqual(row['volume_stride'], 3)
+                    self.assertLessEqual(row['surface_triangles'], 300)
+                    self.assertEqual(row['sampling'], 'block-maximum Boolean occupancy')
+            html = Path(result['html_path']).read_text()
+            self.assertNotIn('<script>alert("x")</script>', html)
+            self.assertIn('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;', html)
+            self.assertIn('overlay-category-1-visible', html)
+            self.assertTrue(any('occupancy stride' in warning for warning in result['warnings']))
+
+    def test_bad_context_inputs_and_unmeshable_native_marker_fail_before_writing(self):
+        labels = np.zeros_like(self.before, dtype=np.uint8)
+        catalog = {'categories': [{'id': 0, 'name': 'background'}]}
+        invalid = [{'before_tissue_labels': labels}, {'catalog': catalog},
+                   {'after_tissue_labels': labels.astype(float), 'catalog': catalog},
+                   {'after_tissue_labels': labels[:, :, :-1], 'catalog': catalog},
+                   {'after_tissue_labels': labels, 'catalog': {'categories': [{'id': 2, 'name': 'bone'},
+                                                                                 {'id': 2, 'name': 'duplicate'}]}}]
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'must-not-exist'
+            for kwargs in invalid:
+                with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                    self.render(output, **kwargs)
+                self.assertFalse(output.exists())
+            labels[2, 3, 3] = 254
+            with patch('fakect_surface_overlay.MAX_CONTEXT_TRIANGLES', 7), self.assertRaisesRegex(ValueError, 'native resolution'):
+                self.render(output, after_tissue_labels=labels, catalog=catalog)
+            self.assertFalse(output.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

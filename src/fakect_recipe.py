@@ -18,6 +18,8 @@ from fakect_reassignment import reassignment_masks, stiffness_field
 from fakect_tube_range import resolve_tube_range
 from fakect_growth import (selection_mode, initial_origins, lineage_selection,
                            expanded_region, inherit_origins, LINEAGE_SEMANTICS)
+from fakect_released import (RELEASED_LABEL_ID, uses_diagnostic_release, released_catalog,
+                             release_assignment_metadata, SCALAR_STATUS)
 
 
 RECIPE_ENGINE = 'ordered_named_roi_v1'
@@ -259,6 +261,9 @@ def apply_recipe(arrays, resolved, config, on_step=None):
     later reversed. ``scalar_changed_mask`` separately captures proxy changes
     even where the final original label has been restored.
     """
+    diagnostic = uses_diagnostic_release(config) or np.any(np.asarray(arrays['act']) == RELEASED_LABEL_ID)
+    if diagnostic:
+        resolved = {**resolved, 'catalog': released_catalog(resolved['catalog'])}
     plan = validate_recipe(config, resolved)
     growing = selection_mode(config)
     labels = _validated_labels(arrays['act'])
@@ -327,6 +332,8 @@ def apply_recipe(arrays, resolved, config, on_step=None):
                     raise ValueError(f'Growth regions {key} and {other} may overlap at {count} voxels; use overlap=sequential or separate their selections/budgets')
     cumulative = {key: np.zeros_like(outer) for key in ('ever_changed_mask', 'proposed_added_mask',
                   'proposed_removed_mask', 'blocked_mask', 'unresolved_mask')}
+    if diagnostic:
+        cumulative['diagnostic_released_mask'] = np.zeros_like(outer)
     strength = np.zeros(labels.shape, dtype=np.float64)
     current_labels, current_atn = labels.copy(), atn.copy()
     catalog_records = {record['original_id']: record for record in resolved['catalog']['records']}
@@ -353,11 +360,14 @@ def apply_recipe(arrays, resolved, config, on_step=None):
             if empty_target:
                 execution_config = {**step_config, 'edit': {**step_config['edit'], 'operation': 'none'}}
             result = apply_morphology(before, step_resolved, execution_config)
-            result['summary']['scalar_status'] = (
-                'Copies winning INPUT-STATE target/recipient scalars. Earlier recipe passes may already '
-                'have copied these values. Pass hashes record the state chain; this is a display proxy, '
-                'not fresh AI recovery or a physical CT reconstruction. Original source arrays remain unchanged.')
-            if config.get('reassignment', {}).get('mode') != 'stiffness':
+            if 'release_assignment' not in result['summary']:
+                result['summary']['scalar_status'] = (
+                    'Copies winning INPUT-STATE target/recipient scalars. Earlier recipe passes may already '
+                    'have copied these values. Pass hashes record the state chain; this is a display proxy, '
+                    'not fresh AI recovery or a physical CT reconstruction. Original source arrays remain unchanged.')
+            if 'release_assignment' in result['summary'] or np.any(result.get('released_mask', False)):
+                result['summary']['scalar_status'] += ' ' + SCALAR_STATUS
+            if config.get('reassignment', {}).get('mode') != 'stiffness' and 'release_assignment' not in result['summary']:
                 result['summary']['ownership_tie_break'] = (
                     'Shortest accepted six-edge physical path, then lowest signed anatomical source ID, '
                     'then earliest input-state seed k,j,i coordinate.')
@@ -404,6 +414,8 @@ def apply_recipe(arrays, resolved, config, on_step=None):
             cumulative['ever_changed_mask'] |= result['changed_mask']
             for key in ('proposed_added_mask', 'proposed_removed_mask', 'blocked_mask', 'unresolved_mask'):
                 cumulative[key] |= result[key]
+            if diagnostic:
+                cumulative['diagnostic_released_mask'] |= result.get('diagnostic_released_mask', False)
             strength = np.maximum(strength, result['strength_mm'])
             if on_step is not None:
                 on_step({'before_arrays': before, 'result': result, 'resolved': step_resolved,
@@ -468,4 +480,18 @@ def apply_recipe(arrays, resolved, config, on_step=None):
     if config.get('reassignment', {}).get('mode') == 'stiffness':
         result['stiffness_field'] = stiffness_field(labels, resolved['catalog'], config['reassignment'])
         result['final_stiffness_field'] = stiffness_field(current_labels, resolved['catalog'], config['reassignment'])
+    if diagnostic:
+        released = current_labels == RELEASED_LABEL_ID
+        result.update(released_mask=released, attenuation_unassigned_mask=released.copy())
+        metadata = release_assignment_metadata(current_labels, released, resolved['catalog'], config['reassignment'])
+        metadata.update(newly_released_voxels=int(cumulative['diagnostic_released_mask'].sum()),
+                        current_released_voxels=int(released.sum()),
+                        surrounding_semantics='Unique final-state voxels sharing a face with a current released marker, excluding the released set; includes remaining target. Existing catalog classifications are observations, not verified material identities.')
+        summary['release_assignment'] = metadata
+        summary['scalar_status'] = ('Ordinary accepted edits copy current-state target/recipient attenuation. '
+            'Diagnostic erosion leaves released positions unchanged in the scalar array. ' + SCALAR_STATUS +
+            ' This is a geometry/label trial, not a reconstructed CT. Original source arrays remain unchanged.')
+        summary['counts']['diagnostic_released'] = int(cumulative['diagnostic_released_mask'].sum())
+        summary['counts']['released'] = int(released.sum())
+        summary['counts']['attenuation_unassigned'] = int(released.sum())
     return result

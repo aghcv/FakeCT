@@ -13,6 +13,8 @@ from scipy import ndimage
 from fakect_tissues import _validated_labels, coarse_labels
 from fakect_reassignment import reassignment_masks, stiffness_field, validate_reassignment_policy
 from fakect_direction import directional_spec, direction_weight_field
+from fakect_released import (RELEASED_LABEL_ID, released_catalog,
+                            release_assignment_metadata, uses_diagnostic_release)
 
 
 ENGINE = 'weighted_6_neighbor_mm_v1'
@@ -29,6 +31,11 @@ def _edit_spec(resolved, config):
     operation = edit.get('operation', 'none')
     if operation not in ('none', 'erosion', 'dilation'):
         raise ValueError('edit.operation must be none, erosion, or dilation')
+    assign_surrounding = edit.get('assign_surrounding_tissue', True)
+    if not isinstance(assign_surrounding, (bool, np.bool_)):
+        raise ValueError('edit.assign_surrounding_tissue must be Boolean')
+    if not assign_surrounding and operation == 'dilation':
+        raise ValueError('edit.assign_surrounding_tissue=false is only supported for erosion')
     distance = float(edit.get('distance_mm', 0))
     if not np.isfinite(distance) or not 0 <= distance <= MAX_DISTANCE_MM:
         raise ValueError(f'edit.distance_mm must be finite and between 0 and {MAX_DISTANCE_MM:g}')
@@ -59,9 +66,10 @@ def _edit_spec(resolved, config):
         record['original_id'] for record in resolved['catalog']['records']
         if record['classification']['tissue_name'] == target)
     validate_reassignment_policy(resolved['catalog'], policy, target, target_ids)
-    if target not in categories or (operation != 'none' and target in ('unknown', 'background')):
+    if target not in categories or (operation != 'none' and target in ('unknown', 'background', 'released')):
         raise ValueError('The edit target must be a known anatomical tissue, not unknown/background')
-    return {'operation': operation, 'distance': distance, 'search': search, 'profile': profile,
+    return {'operation': operation, 'assign_surrounding_tissue': bool(assign_surrounding),
+            'distance': distance, 'search': search, 'profile': profile,
             'axis': axis, 'shape_k': shape_k, 'window': window, 'unresolved': unresolved,
             'target_code': categories[target], 'allowed_codes': tuple(categories[n] for n in allowed),
             'allowed_tissues': allowed}
@@ -295,6 +303,12 @@ def apply_morphology(arrays, resolved, config):
     labels = _validated_labels(arrays['act'])
     if labels.ndim != 3 or labels.size == 0:
         raise ValueError('Morphology requires a nonempty 3D label crop')
+    assign_setting = config.get('edit', {}).get('assign_surrounding_tissue', True)
+    diagnostic_requested = isinstance(assign_setting, (bool, np.bool_)) and not assign_setting
+    track_released = diagnostic_requested or uses_diagnostic_release(config) or np.any(labels == RELEASED_LABEL_ID)
+    if track_released:
+        # Derived diagnostic identities never change the preserved source catalog.
+        resolved = {**resolved, 'catalog': released_catalog(resolved['catalog'])}
     attenuation = np.asarray(arrays['atn'])
     if attenuation.shape != labels.shape or attenuation.dtype.kind not in 'iuf' or not np.all(np.isfinite(attenuation)):
         raise ValueError('Source attenuation must be a finite numeric crop matching the labels')
@@ -382,16 +396,22 @@ def apply_morphology(arrays, resolved, config):
         distance = _distances(candidates, seeds, spacing, spec['distance'], boundary_distance)
         requested_removed = before & (distance <= strength + _TOL) & (strength > 0)
         proposed_removed = before & (distance <= effective_strength + _TOL) & (effective_strength > 0)
-        recipient_seeds = eligible & ndimage.binary_dilation(proposed_removed, structure=_STRUCTURE)
-        domain = proposed_removed | recipient_seeds
-        initial = None if resistance is None else resistance * spec['search']
-        _, owners = _owned_paths(domain, recipient_seeds, spacing, spec['search'], labels, initial=initial)
-        removed = proposed_removed & (owners >= 0)
-        unresolved = proposed_removed & ~removed
-        if np.any(unresolved) and spec['unresolved'] == 'error':
-            raise ValueError(f'{int(unresolved.sum())} proposed released voxels have no eligible recipient within reassignment.max_distance_mm')
-        edited[removed] = labels.ravel()[owners[removed]]
-        proxy[removed] = attenuation.ravel()[owners[removed]]
+        if spec['assign_surrounding_tissue']:
+            recipient_seeds = eligible & ndimage.binary_dilation(proposed_removed, structure=_STRUCTURE)
+            domain = proposed_removed | recipient_seeds
+            initial = None if resistance is None else resistance * spec['search']
+            _, owners = _owned_paths(domain, recipient_seeds, spacing, spec['search'], labels, initial=initial)
+            removed = proposed_removed & (owners >= 0)
+            unresolved = proposed_removed & ~removed
+            if np.any(unresolved) and spec['unresolved'] == 'error':
+                raise ValueError(f'{int(unresolved.sum())} proposed released voxels have no eligible recipient within reassignment.max_distance_mm')
+            edited[removed] = labels.ravel()[owners[removed]]
+            proxy[removed] = attenuation.ravel()[owners[removed]]
+        else:
+            removed = proposed_removed.copy()
+            edited[removed] = RELEASED_LABEL_ID
+            # Geometry-only diagnostic: source scalar values stay in place and
+            # are explicitly marked unassigned, rather than fabricated as CT.
     changed = added | removed
     after = (before | added) & ~removed
     if selection_mode:
@@ -430,6 +450,19 @@ def apply_morphology(arrays, resolved, config):
                'allowed_tissues': list(spec['allowed_tissues']), 'recipient_max_distance_mm': spec['search'],
                'unresolved_policy': spec['unresolved'], 'halo': halo}
     summary['reassignment_policy'] = reassignment_policy
+    if not spec['assign_surrounding_tissue']:
+        summary['release_assignment'] = release_assignment_metadata(
+            labels, removed, resolved['catalog'], config.get('reassignment', {}))
+        summary['scalar_status'] = (
+            'Diagnostic erosion assigns released target voxels a synthetic released label; '
+            'their input-state attenuation values are retained, not reassigned or reconstructed. '
+            'attenuation_unassigned_mask identifies every current released voxel. '
+            'This is a geometry diagnostic, not a completed synthetic CT. Source arrays remain unchanged.')
+        summary['ownership_tie_break'] = 'Diagnostic release performs no surrounding-tissue ownership search.'
+    elif track_released:
+        summary['scalar_status'] += (
+            ' Previously released diagnostic voxels are protected and keep their unassigned input-state '
+            'attenuation; attenuation_unassigned_mask records them.')
     if selection_mode:
         contact = added & ndimage.binary_dilation(candidates & ~before, structure=_STRUCTURE)
         summary['roi_role'] = 'selection'
@@ -455,14 +488,18 @@ def apply_morphology(arrays, resolved, config):
         summary['counts']['requested_removed_before_stiffness'] = int(requested_removed.sum())
         summary['counts']['release_suppressed_by_target_stiffness'] = int((requested_removed & ~proposed_removed).sum())
         summary['stiffness_count_semantics'] = ('Dilation proposed_added uses the original requested distance; blocked includes resistance and other eligibility/path limits. Erosion proposed_removed is after target resistance; requested_removed_before_stiffness records the unscaled request. Unresolved counts failed recipient assignments after that release selection.')
+        if not spec['assign_surrounding_tissue']:
+            summary['stiffness_count_semantics'] += (
+                ' Diagnostic mode skips recipient assignment and marks every proposed removal as synthetic released.')
         summary['effective_distance_mm_range_in_roi'] = ([float(effective_strength[roi].min()), float(effective_strength[roi].max())]
                                                         if roi.any() else [0., 0.])
         if selection_mode:
             summary['effective_distance_mm_range_in_edit_region'] = (
                 [float(effective_strength[edit_region].min()), float(effective_strength[edit_region].max())]
                 if edit_region.any() else [0., 0.])
-        summary['ownership_tie_break'] = ('Recipient: minimum seed stiffness penalty plus physical six-edge path distance; '
-                                         'then lowest signed original ID and earliest seed coordinate. Dilation: physical path with local donor budgets.')
+        if spec['assign_surrounding_tissue']:
+            summary['ownership_tie_break'] = ('Recipient: minimum seed stiffness penalty plus physical six-edge path distance; '
+                                             'then lowest signed original ID and earliest seed coordinate. Dilation: physical path with local donor budgets.')
     if np.any(changed & protected) or np.any((proxy != attenuation) & protected):
         raise RuntimeError('Morphology changed a protected input label/scalar')
     result = {'edited_labels': edited, 'edited_tissue_labels': coarse_labels(edited, resolved['catalog']),
@@ -479,4 +516,13 @@ def apply_morphology(arrays, resolved, config):
     if selection_mode:
         result.update(edit_region_mask=edit_region.copy(), selection_roi_mask=roi.copy(),
                       target_seed_index=target_seed_index)
+    if track_released:
+        released = edited == RELEASED_LABEL_ID
+        diagnostic = removed.copy() if not spec['assign_surrounding_tissue'] else np.zeros_like(removed)
+        result.update(diagnostic_released_mask=diagnostic, released_mask=released,
+                      attenuation_unassigned_mask=released.copy())
+        summary['counts'].update(diagnostic_released=int(diagnostic.sum()),
+                                 released=int(released.sum()), attenuation_unassigned=int(released.sum()))
+        if not spec['assign_surrounding_tissue']:
+            summary['release_assignment']['current_released_voxels'] = int(released.sum())
     return result

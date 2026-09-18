@@ -16,7 +16,7 @@ COLORS = {
     'background': '#000000', 'soft_tissue': '#bcaaa4', 'bone': '#fff0bc',
     'cartilage': '#66bb6a', 'muscle': '#b85c38', 'artery': '#f44336',
     'vein': '#367bf5', 'lung': '#4dd0c8', 'adipose': '#ffd600',
-    'nervous_tissue': '#9575cd', 'fluid': '#b3e5fc', 'unknown': '#ff00cc',
+    'nervous_tissue': '#9575cd', 'fluid': '#b3e5fc', 'unknown': '#ff00cc', 'released': '#ff2ea6',
 }
 SELECTION_COLOR = '#00bcd4'
 ROI_COLOR = '#ff9800'
@@ -185,7 +185,7 @@ def render_volume_preview(original_labels, tissue_labels, catalog, selection_mas
         grid, _ = occupancy_grid(mask, volume_stride, origin, spacing)
         fields.append({'name': category['name'].replace('_', ' '), 'grid': grid,
                        'color': COLORS.get(category['name'], '#999999'),
-                       'opacity': float(context_opacity), 'source_voxels': int(mask.sum()),
+                       'opacity': .8 if category['name'] == 'released' else float(context_opacity), 'source_voxels': int(mask.sum()),
                        'kind': 'context', 'tissue_id': int(category['id'])})
     render_cell_count = int(np.prod(np.asarray(pooled.shape) + 2))
     if render_cell_count * len(fields) > 650_000:

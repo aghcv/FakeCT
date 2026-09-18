@@ -81,6 +81,54 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(permissive["reassignment"]["mode"], "permissive_except_bone_skin")
         self.assertNotIn("stiffness", permissive["reassignment"])
 
+    def test_optional_erosion_assignment_flag_is_per_edit_and_preserves_legacy_dictionaries(self):
+        legacy = self.load()
+        self.assertTrue(all("assign_surrounding_tissue" not in edit for edit in legacy["edits"].values()))
+        for value, expected in (("false", False), ("true", True)):
+            with self.subTest(value=value):
+                parser = self.parser()
+                parser["edit.descending_narrow"]["assign_surrounding_tissue"] = value
+                before = {section: dict(parser[section]) for section in parser.sections()}
+                config = self.load(parser)
+                self.assertEqual(config, self.load(parser, loader=load_preview_config))
+                self.assertIs(config["edits"]["descending_narrow"].pop("assign_surrounding_tissue"), expected)
+                self.assertEqual(config, legacy)
+                self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
+        parser = self.parser()
+        parser["recipe"]["roi_role"] = "selection"
+        parser["edit.descending_narrow"].update(roi="main", point_range="2,3", direction="inner",
+                                                assign_surrounding_tissue="false")
+        config = self.load(parser)
+        self.assertIs(config["edits"]["descending_narrow"]["assign_surrounding_tissue"], False)
+        self.assertEqual(config["edits"]["descending_narrow"]["point_range"], (2, 3))
+        self.assertEqual(config["edits"]["descending_narrow"]["direction"], "inner")
+        self.assertEqual(config["recipe"]["roi_role"], "selection")
+
+    def test_erosion_assignment_flag_rejects_invalid_booleans_operations_and_unknown_fields(self):
+        for value in ("", "False", "TRUE", "0", "1", "yes", "no", "nan", "false,true", "false\ntrue"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                parser = self.parser()
+                parser["edit.descending_narrow"]["assign_surrounding_tissue"] = value
+                self.load(parser)
+        for name in ("ascending_expand", "arch_refine"):
+            with self.subTest(edit=name):
+                parser = self.parser()
+                parser["edit." + name]["assign_surrounding_tissue"] = "false"
+                with self.assertRaisesRegex(ValueError, r"edit\." + name + ".*false requires operation=erosion"):
+                    self.load(parser)
+                parser["edit." + name]["assign_surrounding_tissue"] = "true"
+                self.assertIs(self.load(parser)["edits"][name]["assign_surrounding_tissue"], True)
+        parser = self.parser()
+        parser["edit.descending_narrow"]["assign_surrounding_tissues"] = "false"
+        with self.assertRaisesRegex(ValueError, "unknown.*assign_surrounding_tissues"):
+            self.load(parser)
+        for field in ("operation", "distance_mm", "iterations", "roi"):
+            with self.subTest(missing=field), self.assertRaisesRegex(ValueError, "missing"):
+                parser = self.parser()
+                parser["edit.descending_narrow"]["assign_surrounding_tissue"] = "false"
+                parser.remove_option("edit.descending_narrow", field)
+                self.load(parser)
+
     def test_recipe_needs_no_anatomical_id_inputs(self):
         parser = self.parser()
         parser["selection"]["source_ids"] = ""

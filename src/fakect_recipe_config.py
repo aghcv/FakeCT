@@ -8,7 +8,7 @@ from __future__ import annotations
 import configparser
 from pathlib import Path
 
-from fakect_config import (REPOSITORY_ROOT, _EDIT_FIELDS, _FIELDS, _IDENTIFIER, _float,
+from fakect_config import (REPOSITORY_ROOT, _EDIT_FIELDS, _OPTIONAL_EDIT_FIELDS, _FIELDS, _IDENTIFIER, _float,
                            _integer, _name, _parts, parse_preview_sections)
 
 
@@ -172,7 +172,7 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
         if section.startswith("roi."):
             _fields(parser, section, ROI_FIELDS)
         else:
-            _fields(parser, section, EDIT_FIELDS, EDIT_SELECTORS | EDIT_DIRECTION_FIELDS)
+            _fields(parser, section, EDIT_FIELDS, EDIT_SELECTORS | EDIT_DIRECTION_FIELDS | _OPTIONAL_EDIT_FIELDS)
     steps = tuple(_name(value, "recipe.steps", _IDENTIFIER)
                   for value in _parts(parser["recipe"]["steps"].strip(), "recipe.steps"))
     names = {section[5:] for section in edit_sections}
@@ -227,7 +227,8 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
                            for value in radii), default=1.0)
             sections["roi"]["crop_half_width_mm"] = str(largest)
         if edit is not None:
-            sections["edit"] = {key: edit[key] for key in _EDIT_FIELDS["edit"]}
+            sections["edit"] = {key: edit[key] for key in _EDIT_FIELDS["edit"] | _OPTIONAL_EDIT_FIELDS
+                                if key in edit}
         return _parser(sections)
 
     for section in roi_sections:

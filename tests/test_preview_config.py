@@ -228,6 +228,38 @@ class PreviewConfigurationTests(unittest.TestCase):
                            profile="uniform", profile_axis="tube", shape_window="0,1")
         self.assertEqual(result["edit"]["shape_window"], (0., 1.))
 
+    def test_optional_erosion_surrounding_assignment_retains_strict_boolean_without_legacy_default(self):
+        text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
+        legacy = self.load(text)
+        self.assertNotIn("assign_surrounding_tissue", legacy["edit"])
+        for value, expected in (("true", True), ("false", False)):
+            with self.subTest(value=value):
+                explicit = text.replace("[edit]", "[edit]\nassign_surrounding_tissue = " + value)
+                result = self.load(explicit)
+                self.assertIs(result["edit"].pop("assign_surrounding_tissue"), expected)
+                self.assertEqual(result, legacy)
+        explicit_true = text.replace("[edit]", "[edit]\nassign_surrounding_tissue = true")
+        for operation in ("dilation", "none"):
+            with self.subTest(operation=operation):
+                self.assertIs(self.load(explicit_true, operation=operation)["edit"]["assign_surrounding_tissue"], True)
+
+    def test_surrounding_assignment_rejects_non_boolean_values_and_false_outside_erosion(self):
+        text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
+        for value in ("", "False", "TRUE", "0", "1", "yes", "no", "nan", "false,true", "false\n    true"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                self.load(text.replace("[edit]", "[edit]\nassign_surrounding_tissue = " + value))
+        explicit = text.replace("[edit]", "[edit]\nassign_surrounding_tissue = false")
+        for operation in ("dilation", "none"):
+            with self.subTest(operation=operation), self.assertRaisesRegex(ValueError, "false requires operation=erosion"):
+                self.load(explicit, operation=operation)
+        for section in ("reassignment", "roi", "selection"):
+            with self.subTest(section=section), self.assertRaisesRegex(ValueError, "unknown.*assign_surrounding_tissue"):
+                self.load(text.replace("[" + section + "]", "[" + section + "]\nassign_surrounding_tissue = false"))
+        with self.assertRaisesRegex(ValueError, "unknown.*assign_surrounding_tissues"):
+            self.load(text.replace("[edit]", "[edit]\nassign_surrounding_tissues = false"))
+        with self.assertRaisesRegex(ValueError, "missing.*operation"):
+            self.load(re.sub(r"^operation = .*\n", "", explicit, flags=re.MULTILINE))
+
     def test_edit_rejects_invalid_parameters_and_unsafe_implicit_defaults(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         invalid = [("operation", "stenosis"), ("operation", "Erosion"), ("distance_mm", "0"),

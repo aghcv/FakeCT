@@ -224,7 +224,7 @@ def render_recipe_step(event, output):
                                      before_is_source=False)
     figures['comparison'] = str(Path(directory)/figures['comparison'])
     figures['profile'] = str(Path(directory)/figures['profile'])
-    for key in ('axial_profile', 'profile_data'):
+    for key in ('axial_profile', 'profile_data', 'released_neighborhood'):
         if key in figures:
             figures[key] = str(Path(directory)/figures[key])
     figures['artifact_directory'] = str(directory)
