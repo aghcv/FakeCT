@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from fakect_morphology import apply_morphology, validate_edit_geometry, MAX_DISTANCE_MM
+from fakect_erosion_guard import erosion_guard_spec
 from fakect_roi import prepare_crop
 
 
@@ -25,6 +26,7 @@ IMAGE_WARNING = ('Attenuation-copy proxy in inverse centimetres; not HU, learned
 _DATA_TRAIN_KEYS = ('target_source_ids', 'anatomy_family', 'operations', 'distances_mm',
                     'shape_ks', 'include_baseline', 'max_variants', 'image_method',
                     'split_mode', 'validation_fraction', 'test_fraction', 'split_seed')
+_EROSION_GUARD_FIELDS = ('min_volume_ratio', 'preserve_connectivity', 'backoff_factor', 'max_backoff_steps')
 
 
 def _json_value(value):
@@ -111,6 +113,7 @@ def plan_variants(config):
             'anatomy_family': family, 'profile': config['edit']['profile'],
             'profile_axis': config['edit']['profile_axis'],
             'shape_window': list(config['edit']['shape_window'])}
+    guard = erosion_guard_spec(config)
     variants = []
     if train['include_baseline']:
         variants.append({**base, 'variant_id': 'baseline', 'operation': 'none',
@@ -118,6 +121,10 @@ def plan_variants(config):
     edited = []
     for operation, distance, shape_k in product(sorted(operations), distances, shape_ks):
         record = {**base, 'operation': operation, 'distance_mm': distance, 'shape_k': shape_k}
+        if operation == 'erosion' and guard['enabled']:
+            # Scenario identities bind the effective policy, including runtime
+            # defaults. Disabled/absent safeguards preserve existing identities.
+            record.update({key: guard[key] for key in _EROSION_GUARD_FIELDS})
         identifier = hashlib.sha256(_canonical(record).encode()).hexdigest()[:16]
         edited.append({**record, 'variant_id': operation + '-' + identifier, 'split': 'train'})
     # Hash ranking avoids dependence on filesystem order or global RNG state.
@@ -139,6 +146,11 @@ def _variant_config(config, variant):
     result = deepcopy(config)
     for key in ('operation', 'distance_mm', 'shape_k', 'shape_window', 'profile', 'profile_axis'):
         result['edit'][key] = variant[key]
+    for key in _EROSION_GUARD_FIELDS:
+        if variant['operation'] != 'erosion':
+            result['edit'].pop(key, None)
+        elif key in variant:
+            result['edit'][key] = variant[key]
     return result
 
 
@@ -164,7 +176,7 @@ def _provenance(config, resolved):
     for key in ('catalog', 'audit'):
         if _file_hash(config['input'][key]) != resolved[key + '_sha256']:
             raise ValueError(f'{key} changed after source resolution')
-    modules = ('fakect_training_data.py', 'fakect_morphology.py', 'fakect_reassignment.py', 'fakect_released.py',
+    modules = ('fakect_training_data.py', 'fakect_morphology.py', 'fakect_reassignment.py', 'fakect_released.py', 'fakect_erosion_guard.py',
                'fakect_roi.py', 'fakect_tissues.py')
     metadata_sources = {str(resolved['case'][name]): _file_hash(resolved['case'][name])
                         for name in ('par_path', 'log_path') if name in resolved.get('case', {})}

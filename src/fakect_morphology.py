@@ -15,6 +15,7 @@ from fakect_reassignment import reassignment_masks, stiffness_field, validate_re
 from fakect_direction import directional_spec, direction_weight_field
 from fakect_released import (RELEASED_LABEL_ID, released_catalog,
                             release_assignment_metadata, uses_diagnostic_release)
+from fakect_erosion_guard import erosion_guard_spec, apply_guarded_erosion
 
 
 ENGINE = 'weighted_6_neighbor_mm_v1'
@@ -26,6 +27,7 @@ _STRUCTURE = ndimage.generate_binary_structure(3, 1)
 
 def _edit_spec(resolved, config):
     edit = config.get('edit', {})
+    erosion_guard_spec(config)
     directional_spec(resolved, config)
     policy = config.get('reassignment', {})
     operation = edit.get('operation', 'none')
@@ -293,7 +295,16 @@ def _erosion_boundary(candidates, spacing):
     return np.isfinite(initial), initial
 
 
-def apply_morphology(arrays, resolved, config):
+def apply_morphology(arrays, resolved, config, *, erosion_reference=None):
+    """Apply an edit with optional erosion checks before accepting its output.
+
+    Recipes pass a fixed pre-step reference to prevent repeated iterations from
+    ratcheting down the volume floor. A standalone edit makes its own reference.
+    """
+    return apply_guarded_erosion(arrays, resolved, config, reference=erosion_reference)
+
+
+def _apply_morphology_once(arrays, resolved, config):
     """Return edited copies, exact audit masks, and a scalar COPY proxy.
 
     The configured policy determines eligible current-state donors/recipients.

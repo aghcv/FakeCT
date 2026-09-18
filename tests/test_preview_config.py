@@ -260,6 +260,51 @@ class PreviewConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing.*operation"):
             self.load(re.sub(r"^operation = .*\n", "", explicit, flags=re.MULTILINE))
 
+    def test_optional_erosion_safeguards_keep_legacy_values_and_explicit_types(self):
+        text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
+        legacy = self.load(text)
+        settings = {"min_volume_ratio": ("0", "1", ".65"),
+                    "preserve_connectivity": ("false", "true"),
+                    "backoff_factor": (".5", ".001", ".999"),
+                    "max_backoff_steps": ("0", "20", "8")}
+        for key, values in settings.items():
+            self.assertNotIn(key, legacy["edit"])
+            for value in values:
+                with self.subTest(key=key, value=value):
+                    result = self.load(text.replace("[edit]", f"[edit]\n{key} = {value}"))
+                    actual = result["edit"].pop(key)
+                    expected = (value == "true" if key == "preserve_connectivity" else
+                                int(value) if key == "max_backoff_steps" else float(value))
+                    self.assertEqual(actual, expected)
+                    self.assertIs(type(actual), type(expected))
+                    self.assertEqual(result, legacy)
+        combined = text.replace("[edit]", "[edit]\nmin_volume_ratio = 0\npreserve_connectivity = false\n"
+                                "backoff_factor = .5\nmax_backoff_steps = 8\nassign_surrounding_tissue = false")
+        self.assertEqual(self.load(combined)["edit"], legacy["edit"] | {
+            "min_volume_ratio": 0., "preserve_connectivity": False, "backoff_factor": .5,
+            "max_backoff_steps": 8, "assign_surrounding_tissue": False})
+
+    def test_erosion_safeguards_reject_invalid_numbers_booleans_and_other_operations(self):
+        text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
+        invalid = {"min_volume_ratio": ("-.01", "1.01", "nan", "inf", "-inf", "true", "", "1,0"),
+                   "preserve_connectivity": ("False", "TRUE", "yes", "no", "0", "1", "", "false,true"),
+                   "backoff_factor": ("0", "1", "-.5", "1.01", "nan", "inf", "-inf", "false", ""),
+                   "max_backoff_steps": ("-1", "21", "8.0", "1e1", "nan", "inf", "true", "", "1_0")}
+        for key, values in invalid.items():
+            for value in values:
+                with self.subTest(key=key, value=value), self.assertRaisesRegex(ValueError, "edit." + key):
+                    self.load(text.replace("[edit]", f"[edit]\n{key} = {value}"))
+        for key, value in (("min_volume_ratio", "0"), ("preserve_connectivity", "false"),
+                           ("backoff_factor", ".5"), ("max_backoff_steps", "0")):
+            for operation in ("dilation", "none"):
+                with self.subTest(key=key, operation=operation), self.assertRaisesRegex(
+                        ValueError, f"edit.{key} requires operation=erosion"):
+                    self.load(text.replace("[edit]", f"[edit]\n{key} = {value}"), operation=operation)
+            with self.subTest(misplaced=key), self.assertRaisesRegex(ValueError, "unknown.*" + key):
+                self.load(text.replace("[reassignment]", f"[reassignment]\n{key} = {value}"))
+        with self.assertRaisesRegex(ValueError, "unknown.*min_volume_ratios"):
+            self.load(text.replace("[edit]", "[edit]\nmin_volume_ratios = .5"))
+
     def test_edit_rejects_invalid_parameters_and_unsafe_implicit_defaults(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         invalid = [("operation", "stenosis"), ("operation", "Erosion"), ("distance_mm", "0"),

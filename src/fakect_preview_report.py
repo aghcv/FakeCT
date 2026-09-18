@@ -485,6 +485,87 @@ def _release_assignment_section(output, summary, figures, embedded, *, scope='ed
     return content + '</div>'
 
 
+def _erosion_safeguard_section(summary):
+    """Explain accepted erosion geometry and the fixed reference used by retries."""
+    guard = summary.get('erosion_safeguard', {})
+    if not isinstance(guard, dict) or not guard.get('enabled'):
+        return ''
+
+    def percent(value):
+        if value is None:
+            return 'Not recorded'
+        try:
+            return _measurement(float(value) * 100) + '%'
+        except (TypeError, ValueError, OverflowError):
+            return _text_value(value)
+
+    def connectivity(value):
+        if not guard.get('preserve_connectivity'):
+            return 'Not requested'
+        return {True: 'Passed', False: 'Failed', None: 'Not evaluated'}.get(value, _text_value(value))
+
+    status = guard.get('status')
+    explanation = {
+        'accepted': 'The requested distance passed the configured erosion checks.',
+        'reduced': 'A smaller erosion distance passed the configured checks and was applied.',
+        'skipped': 'No attempted erosion was accepted. The original input state of this pass was kept; '
+                   'earlier accepted passes remain in place.',
+    }.get(status, 'Review the recorded outcome and attempts below.')
+    rows = [
+        ['Outcome', _text_value(status)],
+        ['Requested erosion distance (mm)', _measurement(guard.get('requested_distance_mm'))],
+        ['Accepted erosion distance (mm)', _measurement(guard.get('accepted_distance_mm'))],
+        ['Local volume retained', percent(guard.get('retained_volume_ratio'))],
+        ['Minimum local retention', percent(guard.get('min_volume_ratio'))],
+        ['Target voxels in the fixed baseline', _number(guard.get('baseline_target_voxels'))],
+        ['Retained target voxels', _number(guard.get('retained_target_voxels'))],
+        ['Preserve connectivity', _text_value(guard.get('preserve_connectivity'))],
+        ['Connectivity check', connectivity(guard.get('connectivity_ok'))],
+        ['Affected components', _text_value(guard.get('affected_components'))],
+    ]
+    rows += [[label, _measurement(guard[key])] for key, label in (
+        ('baseline_volume_mm3', 'Local target volume in the fixed baseline (mm³)'),
+        ('retained_volume_mm3', 'Retained local target volume (mm³)')) if key in guard]
+    content = ('<div class="erosion-safeguard"><h3>Erosion safeguard</h3><p><strong>' +
+               _escape(explanation) + '</strong></p>' + _table(['Check', 'Result'], rows) +
+               '<p><strong>Fixed reference:</strong> the baseline is captured before this edit step '
+               'and remains constant across its iterations and retry attempts. Each attempt starts from '
+               'the current pass input; rejected trials do not accumulate changes.</p>')
+    if guard.get('scope_semantics'):
+        content += '<p><strong>Measured region:</strong> ' + _text_value(guard['scope_semantics']) + '</p>'
+    if guard.get('reference_semantics'):
+        content += '<p><strong>Recorded reference:</strong> ' + _text_value(guard['reference_semantics']) + '</p>'
+    attempts = []
+    reason_labels = {'local_volume_below_floor': 'Local volume below configured minimum',
+                     'affected_component_split_or_lost': 'An affected target component split or disappeared'}
+    show_fragments = any(attempt.get('component_details') for attempt in guard.get('attempts', []))
+    for index, attempt in enumerate(guard.get('attempts', []), 1):
+        accepted = attempt.get('accepted')
+        outcome = 'Accepted' if accepted is True else 'Rejected' if accepted is False else 'Not recorded'
+        reasons = attempt.get('reasons')
+        if isinstance(reasons, (list, tuple)):
+            reasons = [reason_labels.get(reason, reason) if isinstance(reason, str) else reason for reason in reasons]
+        elif isinstance(reasons, str):
+            reasons = reason_labels.get(reasons, reasons)
+        attempts.append([_number(index), _measurement(attempt.get('distance_mm')),
+                         percent(attempt.get('retained_volume_ratio')),
+                         _number(attempt.get('retained_target_voxels')),
+                         connectivity(attempt.get('connectivity_ok')), outcome,
+                         _text_value(reasons) if reasons else 'Checks passed' if accepted else 'Not recorded'])
+        if show_fragments:
+            fragments = ['Component ' + _number(row.get('component_id')) + ': 1 → ' +
+                         _number(row.get('surviving_components')) for row in attempt.get('component_details', [])]
+            attempts[-1].append('; '.join(fragments) if fragments else 'Not evaluated')
+    if attempts:
+        content += ('<details><summary>Erosion attempts and retry reasons</summary>' +
+                    _table(['Attempt', 'Distance (mm)', 'Local volume retained', 'Retained target voxels',
+                            'Connectivity', 'Decision', 'Reasons'] +
+                           (['Baseline → surviving components'] if show_fragments else []), attempts) + '</details>')
+    return content + ('<p class="subtle">These are voxel-level geometry checks. Preserved connectivity '
+                      'does not bound minimum cross-sectional area; a connected vessel can still be '
+                      'very narrow. Review the resulting geometry in the previews.</p></div>')
+
+
 def _morphology_section(output, report, embedded):
     """Render applied label changes without treating a scalar proxy as recovered CT."""
     edit = report['edit']
@@ -547,6 +628,7 @@ def _morphology_section(output, report, embedded):
             '<p class="rule">Target counts and volumes below refer to the target <strong>inside the ROI</strong>, '
             'before and after this trial. Applied additions and removals describe actual label changes.</p>'
             '<div class="metrics">' + metrics + '</div>' + warnings +
+            _erosion_safeguard_section(edit) +
             _release_assignment_section(output, edit, edit.get('figures', {}), embedded) +
             '<p><strong>Strength:</strong> ' + _text_value(edit.get('strength_semantics')) + '</p>' +
             '<p><strong>Scalar image status:</strong> ' + _text_value(edit.get('scalar_status')) + '</p>'
@@ -622,6 +704,8 @@ def _recipe_section(output, report, embedded):
                     'Voxels clipped by main ROI']
     step_rows = []
     details = []
+    safeguards_present = any(step.get('summary', step).get('erosion_safeguard', {}).get('enabled')
+                             for step in steps)
     for position, step in enumerate(steps, 1):
         summary = step.get('summary', step)
         current_counts = summary.get('counts', {})
@@ -640,6 +724,12 @@ def _recipe_section(output, report, embedded):
                           _number(current_counts.get('before')) + ' → ' + _number(current_counts.get('after')),
                           _number(current_counts.get('added')), _number(current_counts.get('removed')),
                           _number(current_counts.get('blocked')), _number(current_counts.get('unresolved'))])
+        if safeguards_present:
+            guard = summary.get('erosion_safeguard', {})
+            step_rows[-1] += ([_text_value(guard.get('status')),
+                              _measurement(guard.get('requested_distance_mm')),
+                              _measurement(guard.get('accepted_distance_mm'))] if guard.get('enabled') else
+                             ['Not enabled', '—', '—'])
         step_figures = step.get('figures', {})
         content = []
         for key, title, caption in (
@@ -714,6 +804,7 @@ def _recipe_section(output, report, embedded):
                        _text_value(name) + ' · ROI ' + roi_description + ' · iteration ' +
                        _number(step.get('iteration')) + '</summary>' +
                        _table(['Pass setting', 'Value'], metadata_rows) + warnings +
+                       _erosion_safeguard_section(summary) +
                        _release_assignment_section(output, summary, step_figures, embedded, scope='pass') +
                        blocked_labels + ''.join(content) + '</details>')
     visualizations = []
@@ -846,7 +937,9 @@ def _recipe_section(output, report, embedded):
             _table(roi_headers, roi_rows) + ''.join(visualizations) +
             '<h3>Execution order and per-pass accounting</h3>' +
             _table(['Pass', 'Edit', 'Original selector' if selection_role else 'ROI', 'Iteration', 'Operation', 'Target before → after',
-                    'Added', 'Removed', 'Blocked', 'Unresolved'], step_rows) +
+                    'Added', 'Removed', 'Blocked', 'Unresolved'] +
+                   (['Erosion safeguard', 'Requested distance (mm)', 'Accepted distance (mm)']
+                    if safeguards_present else []), step_rows) +
             '<p>' + ('Per-pass counts follow the selected target and its tracked offspring, including growth outside the original selector. '
                      if selection_role else 'Per-pass counts refer to that effective named ROI. ') + 'Repeating an edit recomputes distances '
             'from the current geometry; multiple small passes need not equal one larger pass.</p>' + ''.join(details) +

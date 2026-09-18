@@ -153,7 +153,8 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                   ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_reassignment.py',
                   ROOT/'src/fakect_edit_preview.py', ROOT/'src/fakect_arc_profile.py', ROOT/'src/fakect_global_preview.py',
                   ROOT/'src/fakect_surface_overlay.py']
-    code_files += [ROOT/'src/fakect_direction.py', ROOT/'src/fakect_centerline_frame.py', ROOT/'src/fakect_released.py']
+    code_files += [ROOT/'src/fakect_direction.py', ROOT/'src/fakect_centerline_frame.py', ROOT/'src/fakect_released.py',
+                   ROOT/'src/fakect_erosion_guard.py']
     code_files += [Path(p) for p in extra_code_files]
     recipe_requested = 'recipe' in config
     if recipe_requested:

@@ -32,7 +32,8 @@ _EDIT_FIELDS = {
     "edit": {"operation", "distance_mm", "profile", "profile_axis", "shape_k", "shape_window"},
     "reassignment": {"allowed_tissues", "max_distance_mm", "unresolved"},
 }
-_OPTIONAL_EDIT_FIELDS = {"assign_surrounding_tissue"}
+_EROSION_GUARD_FIELDS = {"min_volume_ratio", "preserve_connectivity", "backoff_factor", "max_backoff_steps"}
+_OPTIONAL_EDIT_FIELDS = {"assign_surrounding_tissue"} | _EROSION_GUARD_FIELDS
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*\Z")
 _CASE_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\Z")
 _TISSUE_NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
@@ -264,6 +265,27 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
             if assign == "false" and operation != "erosion":
                 raise ValueError("edit.assign_surrounding_tissue=false requires operation=erosion")
             result["edit"]["assign_surrounding_tissue"] = assign == "true"
+        guard_fields = _EROSION_GUARD_FIELDS & set(parser["edit"])
+        if guard_fields and operation != "erosion":
+            raise ValueError(f"edit.{sorted(guard_fields)[0]} requires operation=erosion")
+        # Omitted safeguards deliberately add no normalized keys. Their disabled
+        # defaults and retry policy belong to the runtime, preserving older inputs.
+        if "min_volume_ratio" in guard_fields:
+            result["edit"]["min_volume_ratio"] = _float(
+                read("edit", "min_volume_ratio"), "edit.min_volume_ratio", opacity=True)
+        if "preserve_connectivity" in guard_fields:
+            preserve = read("edit", "preserve_connectivity")
+            if preserve not in {"true", "false"}:
+                raise ValueError("edit.preserve_connectivity must be true or false")
+            result["edit"]["preserve_connectivity"] = preserve == "true"
+        if "backoff_factor" in guard_fields:
+            factor = _float(read("edit", "backoff_factor"), "edit.backoff_factor")
+            if not 0 < factor < 1:
+                raise ValueError("edit.backoff_factor must be strictly between 0 and 1")
+            result["edit"]["backoff_factor"] = factor
+        if "max_backoff_steps" in guard_fields:
+            result["edit"]["max_backoff_steps"] = _integer(
+                read("edit", "max_backoff_steps"), "edit.max_backoff_steps", minimum=0, maximum=20)
         result["reassignment"] = {"allowed_tissues": allowed,
                                   "max_distance_mm": _float(read("reassignment", "max_distance_mm"),
                                                              "reassignment.max_distance_mm", positive=True),

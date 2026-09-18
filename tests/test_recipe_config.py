@@ -129,6 +129,75 @@ class RecipeConfigurationTests(unittest.TestCase):
                 parser.remove_option("edit.descending_narrow", field)
                 self.load(parser)
 
+    def test_optional_erosion_safeguards_are_typed_per_edit_and_preserve_legacy(self):
+        legacy = self.load()
+        cases = ({"min_volume_ratio": ("0", 0.)}, {"min_volume_ratio": ("1", 1.)},
+                 {"preserve_connectivity": ("true", True)}, {"preserve_connectivity": ("false", False)},
+                 {"backoff_factor": (".5", .5)}, {"max_backoff_steps": ("0", 0)},
+                 {"max_backoff_steps": ("20", 20)},
+                 {"min_volume_ratio": (".75", .75), "preserve_connectivity": ("true", True),
+                  "backoff_factor": (".25", .25), "max_backoff_steps": ("8", 8)})
+        for edit in legacy["edits"].values():
+            for key in ("min_volume_ratio", "preserve_connectivity", "backoff_factor", "max_backoff_steps"):
+                self.assertNotIn(key, edit)
+        for case in cases:
+            with self.subTest(case=case):
+                parser = self.parser()
+                parser["edit.descending_narrow"].update({key: pair[0] for key, pair in case.items()})
+                snapshot = {section: dict(parser[section]) for section in parser.sections()}
+                config = self.load(parser)
+                self.assertEqual(config, self.load(parser, loader=load_preview_config))
+                for key, (_, expected) in case.items():
+                    actual = config["edits"]["descending_narrow"].pop(key)
+                    self.assertEqual(actual, expected)
+                    self.assertIs(type(actual), type(expected))
+                self.assertEqual(config, legacy)
+                self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, snapshot)
+
+    def test_erosion_safeguards_combine_with_main_ranges_direction_and_diagnostic_release(self):
+        parser = self.parser()
+        parser["recipe"]["roi_role"] = "selection"
+        parser["edit.descending_narrow"].update(roi="main", path_percent="25,65", direction="inner",
+                                                assign_surrounding_tissue="false", min_volume_ratio=".8",
+                                                preserve_connectivity="true", backoff_factor=".5", max_backoff_steps="8")
+        edit = self.load(parser)["edits"]["descending_narrow"]
+        self.assertEqual(edit["path_percent"], (25., 65.))
+        self.assertEqual(edit["direction"], "inner")
+        self.assertIs(edit["assign_surrounding_tissue"], False)
+        self.assertEqual(edit["min_volume_ratio"], .8)
+        self.assertIs(edit["preserve_connectivity"], True)
+        self.assertEqual(edit["backoff_factor"], .5)
+        self.assertEqual(edit["max_backoff_steps"], 8)
+
+    def test_erosion_safeguards_reject_invalid_values_with_named_edit_diagnostics(self):
+        invalid = {"min_volume_ratio": ("-.1", "1.1", "nan", "inf", "-inf", "true", "", ".5,.6"),
+                   "preserve_connectivity": ("False", "TRUE", "yes", "no", "0", "1", "", "false,true"),
+                   "backoff_factor": ("0", "1", "-.5", "1.5", "nan", "inf", "-inf", "false", ""),
+                   "max_backoff_steps": ("-1", "21", "8.0", "1e1", "nan", "inf", "true", "", "1_0")}
+        for key, values in invalid.items():
+            for value in values:
+                with self.subTest(key=key, value=value):
+                    parser = self.parser()
+                    parser["edit.descending_narrow"][key] = value
+                    with self.assertRaisesRegex(ValueError, "edit.descending_narrow.*edit." + key):
+                        self.load(parser)
+        for key, value in (("min_volume_ratio", "0"), ("preserve_connectivity", "false"),
+                           ("backoff_factor", ".5"), ("max_backoff_steps", "0")):
+            for edit_name in ("ascending_expand", "arch_refine"):
+                with self.subTest(key=key, edit_name=edit_name):
+                    parser = self.parser()
+                    parser["edit." + edit_name][key] = value
+                    with self.assertRaisesRegex(ValueError, "edit." + edit_name + ".*requires operation=erosion"):
+                        self.load(parser)
+            parser = self.parser()
+            parser["recipe"][key] = value
+            with self.subTest(misplaced=key), self.assertRaisesRegex(ValueError, "unknown.*" + key):
+                self.load(parser)
+        parser = self.parser()
+        parser["edit.descending_narrow"]["min_volume_ratios"] = ".5"
+        with self.assertRaisesRegex(ValueError, "unknown.*min_volume_ratios"):
+            self.load(parser)
+
     def test_recipe_needs_no_anatomical_id_inputs(self):
         parser = self.parser()
         parser["selection"]["source_ids"] = ""

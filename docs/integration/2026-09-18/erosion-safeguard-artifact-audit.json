@@ -1,0 +1,200 @@
+{
+  "artifact_hashes_verified": 49,
+  "code_hashes_verified": 22,
+  "config_hash": "f99f26238342f424c1472b13f3326ee8f3e6f8f91454c140e6247083032ce563",
+  "report_hash": "8e0aeb0430f7c8899deb8fe8b0a26569e16b5b7f0d9eab1289fe5d99f979b422",
+  "source_stat_check": true,
+  "unrelated_user_inputs_unchanged": true,
+  "scope_masks_verified": true,
+  "counts": {
+    "before": 52576,
+    "after": 52832,
+    "added": 1710,
+    "removed": 1454,
+    "changed": 3164,
+    "scalar_changed": 1710,
+    "ever_changed": 3164,
+    "proposed_added": 1812,
+    "proposed_removed": 1454,
+    "blocked": 102,
+    "unresolved": 0,
+    "changed_outside_selection_roi": 1020,
+    "added_outside_selection_roi": 1020,
+    "removed_outside_selection_roi": 0,
+    "changed_outside_edit_selectors": 1020,
+    "diagnostic_released": 1454,
+    "released": 1454,
+    "attenuation_unassigned": 1454
+  },
+  "steps": [
+    {
+      "name": "arch_inner_narrow",
+      "guard": {
+        "min_volume_ratio": 0.5,
+        "backoff_factor": 0.5,
+        "preserve_connectivity": true,
+        "max_backoff_steps": 8,
+        "enabled": true,
+        "retained_target_voxels": 9541,
+        "retained_volume_ratio": 0.9962409940482406,
+        "connectivity_ok": true,
+        "affected_components": 1,
+        "component_details": [
+          {
+            "component_id": 1,
+            "before_voxels": 127645,
+            "surviving_voxels": 127609,
+            "surviving_components": 1,
+            "ok": true
+          }
+        ],
+        "reasons": [],
+        "accepted": true,
+        "status": "reduced",
+        "requested_distance_mm": 7.0,
+        "accepted_distance_mm": 1.75,
+        "baseline_target_voxels": 9577,
+        "baseline_volume_mm3": 9577.0,
+        "retained_volume_mm3": 9541.0,
+        "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+        "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+        "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+        "attempts": [
+          {
+            "distance_mm": 7.0,
+            "retained_target_voxels": 8823,
+            "retained_volume_ratio": 0.9212697086770387,
+            "connectivity_ok": false,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 127645,
+                "surviving_voxels": 126891,
+                "surviving_components": 12,
+                "ok": false
+              }
+            ],
+            "reasons": [
+              "affected_component_split_or_lost"
+            ],
+            "accepted": false
+          },
+          {
+            "distance_mm": 3.5,
+            "retained_target_voxels": 9341,
+            "retained_volume_ratio": 0.9753576276495771,
+            "connectivity_ok": false,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 127645,
+                "surviving_voxels": 127409,
+                "surviving_components": 6,
+                "ok": false
+              }
+            ],
+            "reasons": [
+              "affected_component_split_or_lost"
+            ],
+            "accepted": false
+          },
+          {
+            "distance_mm": 1.75,
+            "retained_target_voxels": 9541,
+            "retained_volume_ratio": 0.9962409940482406,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 127645,
+                "surviving_voxels": 127609,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "coa_narrow",
+      "guard": {
+        "min_volume_ratio": 0.5,
+        "backoff_factor": 0.5,
+        "preserve_connectivity": true,
+        "max_backoff_steps": 8,
+        "enabled": true,
+        "retained_target_voxels": 2218,
+        "retained_volume_ratio": 0.61001100110011,
+        "connectivity_ok": true,
+        "affected_components": 1,
+        "component_details": [
+          {
+            "component_id": 1,
+            "before_voxels": 127609,
+            "surviving_voxels": 126191,
+            "surviving_components": 1,
+            "ok": true
+          }
+        ],
+        "reasons": [],
+        "accepted": true,
+        "status": "reduced",
+        "requested_distance_mm": 10.0,
+        "accepted_distance_mm": 5.0,
+        "baseline_target_voxels": 3636,
+        "baseline_volume_mm3": 3636.0,
+        "retained_volume_mm3": 2218.0,
+        "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+        "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+        "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+        "attempts": [
+          {
+            "distance_mm": 10.0,
+            "retained_target_voxels": 1246,
+            "retained_volume_ratio": 0.3426842684268427,
+            "connectivity_ok": false,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 127609,
+                "surviving_voxels": 125219,
+                "surviving_components": 2,
+                "ok": false
+              }
+            ],
+            "reasons": [
+              "local_volume_below_floor",
+              "affected_component_split_or_lost"
+            ],
+            "accepted": false
+          },
+          {
+            "distance_mm": 5.0,
+            "retained_target_voxels": 2218,
+            "retained_volume_ratio": 0.61001100110011,
+            "connectivity_ok": true,
+            "affected_components": 1,
+            "component_details": [
+              {
+                "component_id": 1,
+                "before_voxels": 127609,
+                "surviving_voxels": 126191,
+                "surviving_components": 1,
+                "ok": true
+              }
+            ],
+            "reasons": [],
+            "accepted": true
+          }
+        ]
+      }
+    }
+  ]
+}

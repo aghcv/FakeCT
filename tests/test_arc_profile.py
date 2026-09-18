@@ -2,12 +2,14 @@
 from copy import deepcopy
 from pathlib import Path
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-from fakect_arc_profile import build_arc_profile
+from fakect_arc_profile import build_arc_profile, render_arc_profile
 
 
 SERIES = {'before': 'target_mask_before', 'after': 'target_mask_after',
@@ -163,6 +165,45 @@ class ArcProfileTests(unittest.TestCase):
 
     def test_non_tube_uses_fallback_without_requiring_tube_inputs(self):
         self.assertIsNone(build_arc_profile({}, {'roi_kind': 'sphere'}, {}, None))
+
+    def test_guarded_strength_plot_reports_accepted_field_and_original_requested_distance(self):
+        from matplotlib.figure import Figure
+        edit, resolved, config, region = self.fixture()
+        config['edit'].update(operation='erosion', distance_mm=4.)
+        edit['strength_mm'][region] = 2.
+        guard = {'enabled': True, 'status': 'reduced', 'requested_distance_mm': 4.,
+                 'accepted_distance_mm': 2., 'retained_volume_ratio': .75, 'min_volume_ratio': .6}
+        edit['summary'] = {'erosion_safeguard': guard}
+        metadata = build_arc_profile(edit, resolved, config, region)
+        self.assertIn('accepted-trial spatial distance', metadata['arc_profile']['strength_semantics'])
+        self.assertIn('not the original INI request or achieved displacement',
+                      metadata['arc_profile']['strength_semantics'])
+        self.assertEqual(metadata['arc_profile']['erosion_safeguard'], guard)
+        self.assertIsNot(metadata['arc_profile']['erosion_safeguard'], guard)
+        snapshot = {}
+
+        def capture(figure, *args, **kwargs):
+            snapshot['title'] = figure._suptitle.get_text()
+            snapshot['caption'] = figure.texts[-1].get_text()
+            snapshot['axis'] = figure.axes[2].get_ylabel()
+            snapshot['strength'] = figure.axes[2].lines[0].get_ydata().copy()
+
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(Figure, 'savefig', capture):
+                result = render_arc_profile(metadata, config, {}, {}, directory)
+            header = (Path(directory)/result['profile_data']).read_text().splitlines()[0]
+        self.assertIn('maximum_accepted_trial_distance_mm', header)
+        self.assertNotIn('maximum_request_mm', header)
+        self.assertIn('accepted trial profile', snapshot['title'])
+        self.assertIn('Maximum accepted-trial distance', snapshot['axis'])
+        self.assertIn('requested 4 mm; accepted 2 mm; local volume retained 75% (minimum 60%)', snapshot['caption'])
+        np.testing.assert_allclose(snapshot['strength'], 2.)
+
+        # Disabled metadata follows the legacy request-field convention exactly.
+        guard['enabled'] = False
+        legacy = build_arc_profile(edit, resolved, config, region)
+        self.assertNotIn('erosion_safeguard', legacy['arc_profile'])
+        self.assertIn('Maximum requested spatial distance', legacy['arc_profile']['strength_semantics'])
 
 
 if __name__ == '__main__':

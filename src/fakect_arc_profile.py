@@ -78,7 +78,7 @@ def build_arc_profile(edit, resolved, config, edit_region):
         raise ValueError('Profile range must lie along the full parent path')
     if np.allclose(interval, (0., total), atol=1e-10, rtol=1e-12):
         interval = np.array([0., total])
-    return {
+    metadata = {
         'profile_coordinate': 'centerline_arc_length_mm',
         'profile_roi_name': config.get('profile_roi_name', config.get('roi', {}).get('parent_roi', 'main')),
         'profile_length_mm': total,
@@ -100,6 +100,17 @@ def build_arc_profile(edit, resolved, config, edit_region):
             'bin_semantics': 'Equal physical-length bins, approximately twice the largest native spacing; capped at 512 bins. Voxel-center counts are not subvoxel or interpolated areas.',
             'strength_semantics': 'Maximum requested spatial distance among edit-footprint voxels in each bin, including directional taper, before tissue resistance; recipe uses maximum per-pass request, not a sum or achieved displacement.',
         }}
+    safeguard = edit.get('summary', {}).get('erosion_safeguard', {})
+    if safeguard.get('enabled'):
+        metadata['arc_profile']['erosion_safeguard'] = {
+            key: safeguard.get(key) for key in ('enabled', 'status', 'requested_distance_mm',
+                                               'accepted_distance_mm', 'retained_volume_ratio',
+                                               'min_volume_ratio')}
+        metadata['arc_profile']['strength_semantics'] = (
+            'Maximum accepted-trial spatial distance among edit-footprint voxels in each bin, '
+            'after safeguard distance selection and directional taper, before tissue resistance; '
+            'not the original INI request or achieved displacement. A skipped pass has zero accepted strength.')
+    return metadata
 
 
 def render_arc_profile(metadata, config, names, colors, output):
@@ -112,6 +123,8 @@ def render_arc_profile(metadata, config, names, colors, output):
     roi_name = metadata['profile_roi_name']
     operation = config['edit']['operation']
     recipe = operation == 'recipe'
+    safeguard = data.get('erosion_safeguard', {})
+    guarded = safeguard.get('enabled', False)
     fig, axes = plt.subplots(3, 1, figsize=(12, 10), sharex=True)
     try:
         for key, label, color in [('before', 'Before', '#007c91'), ('after', 'After', '#d45a00')]:
@@ -125,7 +138,8 @@ def render_arc_profile(metadata, config, names, colors, output):
         axes[1].set(ylabel='Affected volume / path length\n(mm³/mm = mm²)')
         axes[1].legend(ncol=2)
         axes[2].plot(x, data['maximum_strength_mm'], color='#713fb5')
-        axes[2].set(ylabel=('Maximum per-pass request\nin arc bin (mm)' if recipe else
+        axes[2].set(ylabel=('Maximum accepted-trial distance\nin arc bin (mm)' if guarded else
+                            'Maximum per-pass request\nin arc bin (mm)' if recipe else
                             'Maximum requested distance\nin arc bin (mm)'),
                     xlabel=f'Curvilinear distance from ROI {roi_name} start (mm)')
         interval = data['range_interval_mm']
@@ -145,16 +159,23 @@ def render_arc_profile(metadata, config, names, colors, output):
                    f'after {end_after[0]:g}/{end_after[1]:g}.')
         if interval != [0., length]:
             caption += f'\nShading: original selection interval {interval[0]:.2f}–{interval[1]:.2f} mm; the parent reference stays fixed.'
-        fig.suptitle(f'{operation.capitalize()}: requested spatial profile and achieved label geometry', fontsize=14)
+        if guarded:
+            caption += (f"\nSafeguard {safeguard['status']}: requested {safeguard['requested_distance_mm']:g} mm; "
+                        f"accepted {safeguard['accepted_distance_mm']:g} mm; local volume retained "
+                        f"{100 * safeguard['retained_volume_ratio']:g}% "
+                        f"(minimum {100 * safeguard['min_volume_ratio']:g}%).")
+        profile_title = 'accepted trial profile' if guarded else 'requested spatial profile'
+        fig.suptitle(f'{operation.capitalize()}: {profile_title} and achieved label geometry', fontsize=14)
         fig.text(.5, .013, caption, ha='center', fontsize=9)
-        fig.tight_layout(rect=(0, .09, 1, .96))
+        fig.tight_layout(rect=(0, .12 if guarded else .09, 1, .96))
         fig.savefig(Path(output) / 'edit-profile.png', dpi=145)
     finally:
         plt.close(fig)
     with (Path(output) / 'edit-profile.csv').open('w', newline='', encoding='utf-8') as stream:
         writer = csv.writer(stream)
         writer.writerow(['start_mm', 'end_mm', 'center_mm', 'center_percent',
-                         *[name + '_volume_per_length_mm2' for name in SERIES], 'maximum_request_mm'])
+                         *[name + '_volume_per_length_mm2' for name in SERIES],
+                         'maximum_accepted_trial_distance_mm' if guarded else 'maximum_request_mm'])
         for index, center in enumerate(x):
             writer.writerow([data['edges_mm'][index], data['edges_mm'][index+1], center, center*100/length,
                              *[data['volume_per_length_mm2'][name][index] for name in SERIES],

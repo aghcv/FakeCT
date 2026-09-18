@@ -1,0 +1,938 @@
+{
+  "sources": {
+    "act": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_act_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328260487208000,
+      "source_bytes_read": 355500000,
+      "crop_sha256": "9ec6a235a67a8bad63b311bbb50e037395abb5487a2b2731b2df8f57a860b72f",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    },
+    "atn": {
+      "path": "/home/aghorban/slurm/xcat/260602/260602_atn_1.bin",
+      "bytes": 4185000000,
+      "mtime_ns": 1786328328749713000,
+      "source_bytes_read": 355500000,
+      "crop_sha256": "561c9a72856813229527beb4dc6b0ec647ffffd8c51742b96cdf83e3de35d998",
+      "integrity_scope": "Crop content hash and source stat; full source volume not hashed"
+    }
+  },
+  "runs": {
+    "unrestricted": {
+      "summary": {
+        "counts": {
+          "before": 52576,
+          "after": 51142,
+          "added": 1710,
+          "removed": 3144,
+          "changed": 4854,
+          "scalar_changed": 1710,
+          "ever_changed": 4854,
+          "proposed_added": 1812,
+          "proposed_removed": 3144,
+          "blocked": 102,
+          "unresolved": 0,
+          "changed_outside_selection_roi": 1020,
+          "added_outside_selection_roi": 1020,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 1020,
+          "diagnostic_released": 3144,
+          "released": 3144,
+          "attenuation_unassigned": 3144
+        },
+        "activity_counts": {
+          "added": 1710,
+          "removed": 3144,
+          "changed": 4854
+        },
+        "components_before": 7,
+        "components_after": 8,
+        "full_target_components_before": 27,
+        "full_target_components_after": 39,
+        "full_target_before": 127596,
+        "full_target_after": 126162,
+        "roi_coverage": {
+          "edit:arch_outer_expand": {
+            "native_roi_voxels_in_crop": 11726,
+            "effective_roi_voxels": 11726,
+            "clipped_by_outer_roi_voxels": 0,
+            "original_target_voxels": 9375
+          },
+          "edit:arch_inner_narrow": {
+            "native_roi_voxels_in_crop": 23901,
+            "effective_roi_voxels": 23901,
+            "clipped_by_outer_roi_voxels": 0,
+            "original_target_voxels": 15871
+          },
+          "edit:coa_narrow": {
+            "native_roi_voxels_in_crop": 7790,
+            "effective_roi_voxels": 7790,
+            "clipped_by_outer_roi_voxels": 0,
+            "original_target_voxels": 4042
+          }
+        },
+        "original_labels_sha256": "2e5b5ff3372f0543f9975b95abe87bcd9e4698643beed2d4e87af3bf0fc61019",
+        "final_labels_sha256": "8cce53647abcdd01f0149a885ca26910ac2b8078e5c8bf3c27329a5faad7d5db",
+        "original_attenuation_sha256": "71617013fad1c2e3f1f51fe5f092fbfa918d8b00feb0ea8a7380a22c96db56c4",
+        "final_attenuation_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+        "steps": [
+          {
+            "index": 1,
+            "step_name": "arch_outer_expand",
+            "roi_name": "edit:arch_outer_expand",
+            "parent_roi": "main",
+            "range_metadata": {
+              "selector": "path_percent",
+              "selector_values": [
+                3.0,
+                20.0
+              ],
+              "point_numbering": "one-based inclusive",
+              "parent_node_count": 14,
+              "selected_node_count": 4,
+              "parent_total_length_mm": 204.1933106999441,
+              "start_distance_mm": 6.125799320998323,
+              "end_distance_mm": 40.83866213998883,
+              "start_fraction": 0.03,
+              "end_fraction": 0.20000000000000004,
+              "selected_length_mm": 34.7128628189905,
+              "original_node_numbers_retained": [
+                2,
+                3
+              ],
+              "tube_end_caps": "round",
+              "semantics": "Ordered tube subpath; endpoint centers and radii interpolate on parent segments",
+              "mask_semantics": "Selected subpath tube intersected with parent tube, parent arc interval, and main ROI",
+              "local_coordinate": "u=(parent arc distance - range start)/(range end - range start)"
+            },
+            "iteration": 1,
+            "status": "applied",
+            "requested_operation": "dilation",
+            "operation": "dilation",
+            "distance_mm": 9.0,
+            "counts": {
+              "before": 9375,
+              "after": 11085,
+              "proposed_added": 1812,
+              "proposed_removed": 0,
+              "added": 1710,
+              "removed": 0,
+              "blocked": 102,
+              "unresolved": 0,
+              "changed": 1710,
+              "changed_outside_selection_roi": 1020,
+              "added_outside_selection_roi": 1020,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 16,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0,
+              "diagnostic_released": 0,
+              "released": 0,
+              "attenuation_unassigned": 0
+            },
+            "full_target_before": 127596,
+            "full_target_after": 129306,
+            "full_target_components_before": 27,
+            "full_target_components_after": 27,
+            "labels_before_sha256": "2e5b5ff3372f0543f9975b95abe87bcd9e4698643beed2d4e87af3bf0fc61019",
+            "labels_after_sha256": "27cae7d4d0dcc1ff2e36dbcb75624dc114d8936b29b9dbd138fea2b131f44e70",
+            "attenuation_before_sha256": "71617013fad1c2e3f1f51fe5f092fbfa918d8b00feb0ea8a7380a22c96db56c4",
+            "attenuation_after_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "warnings": [
+              "Curvature direction is unreliable at 2421 ROI voxels; their directional edit budget is zero.",
+              "Some dilation proposals were blocked by tissue eligibility, protected barriers, or the accepted-path distance budget."
+            ]
+          },
+          {
+            "index": 2,
+            "step_name": "arch_inner_narrow",
+            "roi_name": "edit:arch_inner_narrow",
+            "parent_roi": "main",
+            "range_metadata": {
+              "selector": "path_percent",
+              "selector_values": [
+                25.0,
+                55.0
+              ],
+              "point_numbering": "one-based inclusive",
+              "parent_node_count": 14,
+              "selected_node_count": 6,
+              "parent_total_length_mm": 204.1933106999441,
+              "start_distance_mm": 51.04832767498603,
+              "end_distance_mm": 112.30632088496927,
+              "start_fraction": 0.25,
+              "end_fraction": 0.55,
+              "selected_length_mm": 61.25799320998324,
+              "original_node_numbers_retained": [
+                5,
+                6,
+                7,
+                8
+              ],
+              "tube_end_caps": "round",
+              "semantics": "Ordered tube subpath; endpoint centers and radii interpolate on parent segments",
+              "mask_semantics": "Selected subpath tube intersected with parent tube, parent arc interval, and main ROI",
+              "local_coordinate": "u=(parent arc distance - range start)/(range end - range start)"
+            },
+            "iteration": 1,
+            "status": "applied",
+            "requested_operation": "erosion",
+            "operation": "erosion",
+            "distance_mm": 7.0,
+            "counts": {
+              "before": 15871,
+              "after": 15117,
+              "proposed_added": 0,
+              "proposed_removed": 754,
+              "added": 0,
+              "removed": 754,
+              "blocked": 0,
+              "unresolved": 0,
+              "changed": 754,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 813,
+              "release_suppressed_by_target_stiffness": 59,
+              "diagnostic_released": 754,
+              "released": 754,
+              "attenuation_unassigned": 754
+            },
+            "full_target_before": 129306,
+            "full_target_after": 128552,
+            "full_target_components_before": 27,
+            "full_target_components_after": 38,
+            "labels_before_sha256": "27cae7d4d0dcc1ff2e36dbcb75624dc114d8936b29b9dbd138fea2b131f44e70",
+            "labels_after_sha256": "3ce52a2a8f610856a67258d970d61a4e2f170d2d04d31c078cc5aa05eae6376a",
+            "attenuation_before_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "attenuation_after_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "warnings": []
+          },
+          {
+            "index": 3,
+            "step_name": "coa_narrow",
+            "roi_name": "edit:coa_narrow",
+            "parent_roi": "main",
+            "range_metadata": {
+              "selector": "path_percent",
+              "selector_values": [
+                65.0,
+                75.0
+              ],
+              "point_numbering": "one-based inclusive",
+              "parent_node_count": 14,
+              "selected_node_count": 4,
+              "parent_total_length_mm": 204.1933106999441,
+              "start_distance_mm": 132.72565195496367,
+              "end_distance_mm": 153.1449830249581,
+              "start_fraction": 0.65,
+              "end_fraction": 0.7500000000000001,
+              "selected_length_mm": 20.419331069994428,
+              "original_node_numbers_retained": [
+                10,
+                11
+              ],
+              "tube_end_caps": "round",
+              "semantics": "Ordered tube subpath; endpoint centers and radii interpolate on parent segments",
+              "mask_semantics": "Selected subpath tube intersected with parent tube, parent arc interval, and main ROI",
+              "local_coordinate": "u=(parent arc distance - range start)/(range end - range start)"
+            },
+            "iteration": 1,
+            "status": "applied",
+            "requested_operation": "erosion",
+            "operation": "erosion",
+            "distance_mm": 10.0,
+            "counts": {
+              "before": 4042,
+              "after": 1652,
+              "proposed_added": 0,
+              "proposed_removed": 2390,
+              "added": 0,
+              "removed": 2390,
+              "blocked": 0,
+              "unresolved": 0,
+              "changed": 2390,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 2429,
+              "release_suppressed_by_target_stiffness": 39,
+              "diagnostic_released": 2390,
+              "released": 3144,
+              "attenuation_unassigned": 3144
+            },
+            "full_target_before": 128552,
+            "full_target_after": 126162,
+            "full_target_components_before": 38,
+            "full_target_components_after": 39,
+            "labels_before_sha256": "3ce52a2a8f610856a67258d970d61a4e2f170d2d04d31c078cc5aa05eae6376a",
+            "labels_after_sha256": "8cce53647abcdd01f0149a885ca26910ac2b8078e5c8bf3c27329a5faad7d5db",
+            "attenuation_before_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "attenuation_after_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "warnings": []
+          }
+        ]
+      },
+      "elapsed_seconds": 15.06603716313839
+    },
+    "guarded": {
+      "summary": {
+        "counts": {
+          "before": 52576,
+          "after": 52832,
+          "added": 1710,
+          "removed": 1454,
+          "changed": 3164,
+          "scalar_changed": 1710,
+          "ever_changed": 3164,
+          "proposed_added": 1812,
+          "proposed_removed": 1454,
+          "blocked": 102,
+          "unresolved": 0,
+          "changed_outside_selection_roi": 1020,
+          "added_outside_selection_roi": 1020,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 1020,
+          "diagnostic_released": 1454,
+          "released": 1454,
+          "attenuation_unassigned": 1454
+        },
+        "activity_counts": {
+          "added": 1710,
+          "removed": 1454,
+          "changed": 3164
+        },
+        "components_before": 7,
+        "components_after": 7,
+        "full_target_components_before": 27,
+        "full_target_components_after": 27,
+        "full_target_before": 127596,
+        "full_target_after": 127852,
+        "roi_coverage": {
+          "edit:arch_outer_expand": {
+            "native_roi_voxels_in_crop": 11726,
+            "effective_roi_voxels": 11726,
+            "clipped_by_outer_roi_voxels": 0,
+            "original_target_voxels": 9375
+          },
+          "edit:arch_inner_narrow": {
+            "native_roi_voxels_in_crop": 23901,
+            "effective_roi_voxels": 23901,
+            "clipped_by_outer_roi_voxels": 0,
+            "original_target_voxels": 15871
+          },
+          "edit:coa_narrow": {
+            "native_roi_voxels_in_crop": 7790,
+            "effective_roi_voxels": 7790,
+            "clipped_by_outer_roi_voxels": 0,
+            "original_target_voxels": 4042
+          }
+        },
+        "original_labels_sha256": "2e5b5ff3372f0543f9975b95abe87bcd9e4698643beed2d4e87af3bf0fc61019",
+        "final_labels_sha256": "967e703dacacb74baf3efada499eff7e7d368d39f839296f5651a0779fbf1be1",
+        "original_attenuation_sha256": "71617013fad1c2e3f1f51fe5f092fbfa918d8b00feb0ea8a7380a22c96db56c4",
+        "final_attenuation_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+        "steps": [
+          {
+            "index": 1,
+            "step_name": "arch_outer_expand",
+            "roi_name": "edit:arch_outer_expand",
+            "parent_roi": "main",
+            "range_metadata": {
+              "selector": "path_percent",
+              "selector_values": [
+                3.0,
+                20.0
+              ],
+              "point_numbering": "one-based inclusive",
+              "parent_node_count": 14,
+              "selected_node_count": 4,
+              "parent_total_length_mm": 204.1933106999441,
+              "start_distance_mm": 6.125799320998323,
+              "end_distance_mm": 40.83866213998883,
+              "start_fraction": 0.03,
+              "end_fraction": 0.20000000000000004,
+              "selected_length_mm": 34.7128628189905,
+              "original_node_numbers_retained": [
+                2,
+                3
+              ],
+              "tube_end_caps": "round",
+              "semantics": "Ordered tube subpath; endpoint centers and radii interpolate on parent segments",
+              "mask_semantics": "Selected subpath tube intersected with parent tube, parent arc interval, and main ROI",
+              "local_coordinate": "u=(parent arc distance - range start)/(range end - range start)"
+            },
+            "iteration": 1,
+            "status": "applied",
+            "requested_operation": "dilation",
+            "operation": "dilation",
+            "distance_mm": 9.0,
+            "counts": {
+              "before": 9375,
+              "after": 11085,
+              "proposed_added": 1812,
+              "proposed_removed": 0,
+              "added": 1710,
+              "removed": 0,
+              "blocked": 102,
+              "unresolved": 0,
+              "changed": 1710,
+              "changed_outside_selection_roi": 1020,
+              "added_outside_selection_roi": 1020,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 16,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0,
+              "diagnostic_released": 0,
+              "released": 0,
+              "attenuation_unassigned": 0
+            },
+            "full_target_before": 127596,
+            "full_target_after": 129306,
+            "full_target_components_before": 27,
+            "full_target_components_after": 27,
+            "labels_before_sha256": "2e5b5ff3372f0543f9975b95abe87bcd9e4698643beed2d4e87af3bf0fc61019",
+            "labels_after_sha256": "27cae7d4d0dcc1ff2e36dbcb75624dc114d8936b29b9dbd138fea2b131f44e70",
+            "attenuation_before_sha256": "71617013fad1c2e3f1f51fe5f092fbfa918d8b00feb0ea8a7380a22c96db56c4",
+            "attenuation_after_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "warnings": [
+              "Curvature direction is unreliable at 2421 ROI voxels; their directional edit budget is zero.",
+              "Some dilation proposals were blocked by tissue eligibility, protected barriers, or the accepted-path distance budget."
+            ]
+          },
+          {
+            "index": 2,
+            "step_name": "arch_inner_narrow",
+            "roi_name": "edit:arch_inner_narrow",
+            "parent_roi": "main",
+            "range_metadata": {
+              "selector": "path_percent",
+              "selector_values": [
+                25.0,
+                55.0
+              ],
+              "point_numbering": "one-based inclusive",
+              "parent_node_count": 14,
+              "selected_node_count": 6,
+              "parent_total_length_mm": 204.1933106999441,
+              "start_distance_mm": 51.04832767498603,
+              "end_distance_mm": 112.30632088496927,
+              "start_fraction": 0.25,
+              "end_fraction": 0.55,
+              "selected_length_mm": 61.25799320998324,
+              "original_node_numbers_retained": [
+                5,
+                6,
+                7,
+                8
+              ],
+              "tube_end_caps": "round",
+              "semantics": "Ordered tube subpath; endpoint centers and radii interpolate on parent segments",
+              "mask_semantics": "Selected subpath tube intersected with parent tube, parent arc interval, and main ROI",
+              "local_coordinate": "u=(parent arc distance - range start)/(range end - range start)"
+            },
+            "iteration": 1,
+            "status": "applied",
+            "requested_operation": "erosion",
+            "operation": "erosion",
+            "distance_mm": 1.75,
+            "counts": {
+              "before": 15871,
+              "after": 15835,
+              "proposed_added": 0,
+              "proposed_removed": 36,
+              "added": 0,
+              "removed": 36,
+              "blocked": 0,
+              "unresolved": 0,
+              "changed": 36,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 42,
+              "release_suppressed_by_target_stiffness": 6,
+              "diagnostic_released": 36,
+              "released": 36,
+              "attenuation_unassigned": 36
+            },
+            "full_target_before": 129306,
+            "full_target_after": 129270,
+            "full_target_components_before": 27,
+            "full_target_components_after": 27,
+            "labels_before_sha256": "27cae7d4d0dcc1ff2e36dbcb75624dc114d8936b29b9dbd138fea2b131f44e70",
+            "labels_after_sha256": "1aa6be028c47cdcd25e9a2e097e423a35a882e1deed16fc4dbd0c44d3421f612",
+            "attenuation_before_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "attenuation_after_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.5,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 9541,
+              "retained_volume_ratio": 0.9962409940482406,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 127645,
+                  "surviving_voxels": 127609,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "reduced",
+              "requested_distance_mm": 7.0,
+              "accepted_distance_mm": 1.75,
+              "baseline_target_voxels": 9577,
+              "baseline_volume_mm3": 9577.0,
+              "retained_volume_mm3": 9541.0,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 7.0,
+                  "retained_target_voxels": 8823,
+                  "retained_volume_ratio": 0.9212697086770387,
+                  "connectivity_ok": false,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 127645,
+                      "surviving_voxels": 126891,
+                      "surviving_components": 12,
+                      "ok": false
+                    }
+                  ],
+                  "reasons": [
+                    "affected_component_split_or_lost"
+                  ],
+                  "accepted": false
+                },
+                {
+                  "distance_mm": 3.5,
+                  "retained_target_voxels": 9341,
+                  "retained_volume_ratio": 0.9753576276495771,
+                  "connectivity_ok": false,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 127645,
+                      "surviving_voxels": 127409,
+                      "surviving_components": 6,
+                      "ok": false
+                    }
+                  ],
+                  "reasons": [
+                    "affected_component_split_or_lost"
+                  ],
+                  "accepted": false
+                },
+                {
+                  "distance_mm": 1.75,
+                  "retained_target_voxels": 9541,
+                  "retained_volume_ratio": 0.9962409940482406,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 127645,
+                      "surviving_voxels": 127609,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            },
+            "warnings": [
+              "Erosion safeguard reduced: requested 7 mm; accepted 1.75 mm; local retained volume 99.6%."
+            ]
+          },
+          {
+            "index": 3,
+            "step_name": "coa_narrow",
+            "roi_name": "edit:coa_narrow",
+            "parent_roi": "main",
+            "range_metadata": {
+              "selector": "path_percent",
+              "selector_values": [
+                65.0,
+                75.0
+              ],
+              "point_numbering": "one-based inclusive",
+              "parent_node_count": 14,
+              "selected_node_count": 4,
+              "parent_total_length_mm": 204.1933106999441,
+              "start_distance_mm": 132.72565195496367,
+              "end_distance_mm": 153.1449830249581,
+              "start_fraction": 0.65,
+              "end_fraction": 0.7500000000000001,
+              "selected_length_mm": 20.419331069994428,
+              "original_node_numbers_retained": [
+                10,
+                11
+              ],
+              "tube_end_caps": "round",
+              "semantics": "Ordered tube subpath; endpoint centers and radii interpolate on parent segments",
+              "mask_semantics": "Selected subpath tube intersected with parent tube, parent arc interval, and main ROI",
+              "local_coordinate": "u=(parent arc distance - range start)/(range end - range start)"
+            },
+            "iteration": 1,
+            "status": "applied",
+            "requested_operation": "erosion",
+            "operation": "erosion",
+            "distance_mm": 5.0,
+            "counts": {
+              "before": 4042,
+              "after": 2624,
+              "proposed_added": 0,
+              "proposed_removed": 1418,
+              "added": 0,
+              "removed": 1418,
+              "blocked": 0,
+              "unresolved": 0,
+              "changed": 1418,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1452,
+              "release_suppressed_by_target_stiffness": 34,
+              "diagnostic_released": 1418,
+              "released": 1454,
+              "attenuation_unassigned": 1454
+            },
+            "full_target_before": 129270,
+            "full_target_after": 127852,
+            "full_target_components_before": 27,
+            "full_target_components_after": 27,
+            "labels_before_sha256": "1aa6be028c47cdcd25e9a2e097e423a35a882e1deed16fc4dbd0c44d3421f612",
+            "labels_after_sha256": "967e703dacacb74baf3efada499eff7e7d368d39f839296f5651a0779fbf1be1",
+            "attenuation_before_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "attenuation_after_sha256": "b4757a0e8aedc9c1ee4f828fcfd1e1723db462d7855b93d5f2f55f76348494ad",
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.5,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 2218,
+              "retained_volume_ratio": 0.61001100110011,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 127609,
+                  "surviving_voxels": 126191,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "reduced",
+              "requested_distance_mm": 10.0,
+              "accepted_distance_mm": 5.0,
+              "baseline_target_voxels": 3636,
+              "baseline_volume_mm3": 3636.0,
+              "retained_volume_mm3": 2218.0,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 10.0,
+                  "retained_target_voxels": 1246,
+                  "retained_volume_ratio": 0.3426842684268427,
+                  "connectivity_ok": false,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 127609,
+                      "surviving_voxels": 125219,
+                      "surviving_components": 2,
+                      "ok": false
+                    }
+                  ],
+                  "reasons": [
+                    "local_volume_below_floor",
+                    "affected_component_split_or_lost"
+                  ],
+                  "accepted": false
+                },
+                {
+                  "distance_mm": 5.0,
+                  "retained_target_voxels": 2218,
+                  "retained_volume_ratio": 0.61001100110011,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 127609,
+                      "surviving_voxels": 126191,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            },
+            "warnings": [
+              "Erosion safeguard reduced: requested 10 mm; accepted 5 mm; local retained volume 61.0%."
+            ]
+          }
+        ]
+      },
+      "elapsed_seconds": 20.97688351664692
+    }
+  },
+  "input_before_safeguards_sha256": "a235c2098f9b14a0674badaf0467818527d086136a95e5ffae46cbd381a8e901",
+  "input_with_safeguards_sha256": "f99f26238342f424c1472b13f3326ee8f3e6f8f91454c140e6247083032ce563",
+  "comparison_semantics": "Same native phantom crop and user geometry/edit parameters; unrestricted run removes only the four erosion safeguard settings. Both runs start from original source. Local guard references are captured before each named step.",
+  "user_parameters_before_safeguards": {
+    "study": {
+      "schema_version": "fakect.recipe/1",
+      "name": "xcat-thoracic-aorta-curvature"
+    },
+    "input": {
+      "root": "/home/aghorban/slurm/xcat",
+      "case_id": "260602",
+      "frame": 1,
+      "audit": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/docs/integration/2026-09-16/xcat-results.json",
+      "catalog": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/tissues/atlas-v1/label-catalog.json"
+    },
+    "selection": {
+      "tissue": "artery",
+      "source_ids": []
+    },
+    "roi": {
+      "shape": "tube",
+      "center_ijk": [
+        [
+          387.0,
+          360.0,
+          1352.0
+        ],
+        [
+          378.0,
+          365.0,
+          1363.0
+        ],
+        [
+          373.0,
+          362.0,
+          1374.0
+        ],
+        [
+          373.0,
+          363.0,
+          1389.0
+        ],
+        [
+          376.0,
+          366.0,
+          1409.0
+        ],
+        [
+          385.0,
+          375.0,
+          1415.0
+        ],
+        [
+          392.0,
+          386.0,
+          1417.0
+        ],
+        [
+          393.0,
+          398.0,
+          1409.0
+        ],
+        [
+          390.0,
+          408.0,
+          1394.0
+        ],
+        [
+          387.0,
+          414.0,
+          1383.0
+        ],
+        [
+          387.0,
+          419.0,
+          1370.0
+        ],
+        [
+          387.0,
+          419.0,
+          1356.0
+        ],
+        [
+          389.0,
+          419.0,
+          1341.0
+        ],
+        [
+          391.0,
+          416.0,
+          1316.0
+        ]
+      ],
+      "radius_mm": [
+        10.0,
+        10.0,
+        10.0,
+        12.0,
+        11.0,
+        10.0,
+        10.0,
+        13.0,
+        12.0,
+        11.0,
+        11.0,
+        11.0,
+        11.0,
+        11.0
+      ],
+      "crop_half_width_mm": 28.0,
+      "coordinate_reviewed": true
+    },
+    "preview": {
+      "slice_ijk": [
+        385,
+        388,
+        1390
+      ],
+      "overlay_opacity": 0.22,
+      "volume_opacity": 0.25,
+      "context_tissues": [
+        "artery",
+        "bone",
+        "vein"
+      ],
+      "context_opacity": 0.08,
+      "volume_stride": 3
+    },
+    "output": {
+      "directory": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v10"
+    },
+    "reassignment": {
+      "allowed_tissues": [],
+      "max_distance_mm": 3.0,
+      "unresolved": "preserve",
+      "mode": "stiffness",
+      "stiffness": {
+        "default": 0.05,
+        "tissues": {
+          "bone": 1.0,
+          "skin": 0.95,
+          "soft_tissue": 0.05,
+          "muscle": 0.1,
+          "artery": 0.05,
+          "vein": 0.05,
+          "lung": 0.02,
+          "cartilage": 0.2,
+          "adipose": 0.02,
+          "nervous_tissue": 0.1,
+          "fluid": 0.02,
+          "unknown": 0.05
+        },
+        "labels": {}
+      }
+    },
+    "recipe": {
+      "steps": [
+        "arch_outer_expand",
+        "arch_inner_narrow",
+        "coa_narrow"
+      ],
+      "overlap": "sequential",
+      "roi_role": "selection"
+    },
+    "rois": {},
+    "edits": {
+      "arch_outer_expand": {
+        "roi": "main",
+        "iterations": 1,
+        "operation": "dilation",
+        "distance_mm": 9.0,
+        "profile": "gaussian",
+        "profile_axis": "tube",
+        "shape_k": 6.0,
+        "shape_window": [
+          0.1,
+          0.8
+        ],
+        "path_percent": [
+          3.0,
+          20.0
+        ],
+        "direction": "outer",
+        "angular_width_deg": 180.0
+      },
+      "arch_inner_narrow": {
+        "roi": "main",
+        "iterations": 1,
+        "operation": "erosion",
+        "distance_mm": 7.0,
+        "profile": "gaussian",
+        "profile_axis": "tube",
+        "shape_k": 6.0,
+        "shape_window": [
+          0.3,
+          0.9
+        ],
+        "assign_surrounding_tissue": false,
+        "path_percent": [
+          25.0,
+          55.0
+        ],
+        "direction": "inner",
+        "angular_width_deg": 180.0
+      },
+      "coa_narrow": {
+        "roi": "main",
+        "iterations": 1,
+        "operation": "erosion",
+        "distance_mm": 10.0,
+        "profile": "gaussian",
+        "profile_axis": "tube",
+        "shape_k": 8.0,
+        "shape_window": [
+          0.05,
+          0.95
+        ],
+        "assign_surrounding_tissue": false,
+        "path_percent": [
+          65.0,
+          75.0
+        ],
+        "direction": "all"
+      }
+    },
+    "centerline": {
+      "smoothing_mm": 1.0,
+      "sample_step_mm": 1.0,
+      "min_curvature_per_mm": 0.002
+    }
+  }
+}

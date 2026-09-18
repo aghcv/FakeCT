@@ -20,6 +20,7 @@ from fakect_growth import (selection_mode, initial_origins, lineage_selection,
                            expanded_region, inherit_origins, LINEAGE_SEMANTICS)
 from fakect_released import (RELEASED_LABEL_ID, uses_diagnostic_release, released_catalog,
                              release_assignment_metadata, SCALAR_STATUS)
+from fakect_erosion_guard import create_erosion_guard
 
 
 RECIPE_ENGINE = 'ordered_named_roi_v1'
@@ -343,6 +344,7 @@ def apply_recipe(arrays, resolved, config, on_step=None):
         name, roi_name = step['name'], step['region_key']
         step_resolved = _roi_geometry(regions[roi_name], resolved)
         step_config = _step_config(config, name, regions)
+        erosion_reference = None
         for iteration in range(1, step['iterations'] + 1):
             event_index += 1
             before = _state(current_labels, current_atn, resolved['catalog'], source_ids,
@@ -359,7 +361,13 @@ def apply_recipe(arrays, resolved, config, on_step=None):
             execution_config = step_config
             if empty_target:
                 execution_config = {**step_config, 'edit': {**step_config['edit'], 'operation': 'none'}}
-            result = apply_morphology(before, step_resolved, execution_config)
+            if iteration == 1:
+                erosion_reference = create_erosion_guard(before, step_resolved, execution_config)
+            if erosion_reference is None:
+                result = apply_morphology(before, step_resolved, execution_config)
+            else:
+                result = apply_morphology(before, step_resolved, execution_config,
+                                          erosion_reference=erosion_reference)
             if 'release_assignment' not in result['summary']:
                 result['summary']['scalar_status'] = (
                     'Copies winning INPUT-STATE target/recipient scalars. Earlier recipe passes may already '
@@ -459,7 +467,7 @@ def apply_recipe(arrays, resolved, config, on_step=None):
                'reassignment_policy': reassignment_policy,
                'changed_semantics': 'changed is original-versus-final label inequality; added/removed are net target-membership changes. ever_changed records unique voxels touched by any pass. activity_counts sum pass changes and can count a voxel repeatedly. Proposal/blocked/unresolved masks are unions of pass events.',
                'scalar_status': 'Each pass copies a winning CURRENT target/recipient scalar. The final attenuation-copy proxy may differ even where the original label is restored; scalar_changed_mask records this. This is not AI recovery or a physical CT reconstruction.',
-               'topology_status': 'Connected-component counts are diagnostics. Repeated erosion/dilation can disconnect or merge regions; topology is not preserved by contract.',
+               'topology_status': 'Optional per-edit erosion safeguards enforce the recorded local volume floor and/or six-face component preservation before accepting a pass. Other edits remain unconstrained; these checks do not bound minimum cross-sectional area or guarantee complete topology preservation.',
                'original_labels_sha256': _digest(labels), 'final_labels_sha256': _digest(current_labels),
                'original_attenuation_sha256': _digest(atn), 'final_attenuation_sha256': _digest(current_atn)}
     result = {'edited_labels': current_labels, 'edited_tissue_labels': coarse_labels(current_labels, resolved['catalog']),

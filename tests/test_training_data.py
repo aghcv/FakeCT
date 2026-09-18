@@ -113,6 +113,70 @@ class TrainingDataTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 plan_variants(config)
 
+    def test_enabled_guard_policy_binds_erosion_variant_identity_and_preserves_legacy_ids(self):
+        legacy = plan_variants(self.config)
+        disabled = deepcopy(self.config)
+        disabled['edit'].update(min_volume_ratio=0., preserve_connectivity=False,
+                                backoff_factor=.25, max_backoff_steps=20)
+        self.assertEqual(plan_variants(disabled), legacy)
+        config = deepcopy(self.config)
+        config['edit'].update(min_volume_ratio=.75, preserve_connectivity=True)
+        snapshot = deepcopy(config)
+        planned = validate_study_plan(config, self.resolved)
+        self.assertEqual(config, snapshot)
+        expected = {'min_volume_ratio': .75, 'preserve_connectivity': True,
+                    'backoff_factor': .5, 'max_backoff_steps': 8}
+        for original, guarded in zip(legacy, planned):
+            with self.subTest(variant=guarded['variant_id']):
+                if guarded['operation'] == 'erosion':
+                    self.assertNotEqual(guarded['variant_id'], original['variant_id'])
+                    self.assertEqual({key: guarded[key] for key in expected}, expected)
+                else:
+                    self.assertEqual(guarded['variant_id'], original['variant_id'])
+                    self.assertTrue(set(expected).isdisjoint(guarded))
+        explicit = deepcopy(config)
+        explicit['edit'].update(backoff_factor=.5, max_backoff_steps=8)
+        self.assertEqual(plan_variants(explicit), planned)
+        explicit['edit']['backoff_factor'] = .25
+        changed = plan_variants(explicit)
+        for first, second in zip(planned, changed):
+            self.assertEqual(first['variant_id'] == second['variant_id'], first['operation'] != 'erosion')
+        self.assertFalse(config['train']['dataset_directory'].exists())
+
+    def test_mixed_training_applies_guards_only_to_erosion_and_records_accepted_outputs(self):
+        config = deepcopy(self.config)
+        config['edit'].update(min_volume_ratio=1., preserve_connectivity=True)
+        original_config = deepcopy(config)
+        source_bytes = {name: path.read_bytes() for name, path in self.resolved['source_files'].items()}
+        prepare_training_dataset(config, self.resolved)
+        manifest = validate_dataset(config, self.resolved)
+        self.assertEqual(config, original_config)
+        self.assertEqual(manifest['sample_count'], 7)
+        self.assertTrue(any(sample['operation'] == 'dilation' and not sample['zero_change']
+                            for sample in manifest['samples']))
+        for sample in manifest['samples']:
+            with self.subTest(variant=sample['variant_id']):
+                guard = sample['morphology'].get('erosion_safeguard')
+                if sample['operation'] == 'erosion':
+                    self.assertIsNotNone(guard)
+                    self.assertEqual(guard['min_volume_ratio'], 1.)
+                    self.assertEqual(guard['retained_volume_ratio'], 1.)
+                    self.assertTrue(guard['connectivity_ok'])
+                    self.assertTrue(guard['accepted'])
+                    self.assertEqual(sample['min_volume_ratio'], 1.)
+                else:
+                    self.assertIsNone(guard)
+                with np.load(config['train']['dataset_directory'] / sample['path'], allow_pickle=False) as data:
+                    metadata = json.loads(str(data['metadata_json']))
+                    self.assertEqual(metadata['morphology'], sample['morphology'])
+                    if sample['operation'] in ('erosion', 'none'):
+                        np.testing.assert_array_equal(data['edited_labels'], self.labels)
+                        np.testing.assert_array_equal(data['mask'], self.labels == -7)
+                        np.testing.assert_array_equal(data['image'], self.scalar / .1)
+                        self.assertFalse(data['changed_mask'].any())
+        for name, path in self.resolved['source_files'].items():
+            self.assertEqual(path.read_bytes(), source_bytes[name])
+
     def test_prepared_pairs_preserve_signed_source_and_full_target_outside_roi(self):
         source_bytes = {name: path.read_bytes() for name, path in self.resolved['source_files'].items()}
         result = prepare_training_dataset(self.config, self.resolved)
