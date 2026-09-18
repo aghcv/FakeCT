@@ -17,6 +17,8 @@ RECIPE_FIELDS = {"steps", "overlap"}
 ROI_FIELDS = {"shape", "center_ijk", "radius_mm", "coordinate_reviewed"}
 EDIT_FIELDS = _EDIT_FIELDS["edit"] | {"roi", "iterations"}
 EDIT_SELECTORS = {"point_range", "path_percent"}
+EDIT_DIRECTION_FIELDS = {"direction", "angular_width_deg"}
+CENTERLINE_DEFAULTS = {"smoothing_mm": 1., "sample_step_mm": 1., "min_curvature_per_mm": .002}
 BASE_SECTIONS = set(_FIELDS) | {"reassignment", "recipe"}
 STIFFNESS_SECTIONS = {"stiffness", "stiffness.labels"}
 STIFFNESS_REQUIRED = {"default", "bone", "skin"}
@@ -106,6 +108,38 @@ def _edit_selector(values, section, roi):
     return {key: interval}
 
 
+def _edit_direction(values, section, roi):
+    direction = values.get("direction", "all").strip()
+    if direction not in {"all", "inner", "outer"}:
+        raise ValueError(f"{section}.direction must be all, inner, or outer")
+    if direction == "all":
+        if "angular_width_deg" in values:
+            raise ValueError(f"{section}.angular_width_deg requires direction=inner or outer")
+        return {"direction": direction} if "direction" in values else {}
+    if roi["shape"] != "tube" or len(roi["center_ijk"]) < 4:
+        raise ValueError(f"{section}.direction={direction} requires a referenced parent tube "
+                         "with at least four center_ijk nodes for a cubic spline")
+    width = _float(values.get("angular_width_deg", "180").strip(),
+                   f"{section}.angular_width_deg", positive=True)
+    if width > 180:
+        raise ValueError(f"{section}.angular_width_deg must be <= 180")
+    return {"direction": direction, "angular_width_deg": width}
+
+
+def _centerline_settings(parser):
+    values = parser["centerline"] if parser.has_section("centerline") else {}
+    if parser.has_section("centerline"):
+        _fields(parser, "centerline", set(), set(CENTERLINE_DEFAULTS))
+    result = {}
+    for name, default in CENTERLINE_DEFAULTS.items():
+        value = _float(values.get(name, str(default)).strip(), f"centerline.{name}",
+                       positive=name != "smoothing_mm")
+        if name == "smoothing_mm" and value < 0:
+            raise ValueError("centerline.smoothing_mm must be >= 0")
+        result[name] = value
+    return result
+
+
 def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     """Normalize common sections, named ROI definitions and finite ordered steps.
 
@@ -120,7 +154,7 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     if not parser.has_section("study") or parser["study"].get("schema_version", "").strip() != SCHEMA:
         raise ValueError(f"study.schema_version must be {SCHEMA}")
     actual_sections = set(parser.sections())
-    unknown = sorted(section for section in actual_sections - BASE_SECTIONS - STIFFNESS_SECTIONS
+    unknown = sorted(section for section in actual_sections - BASE_SECTIONS - STIFFNESS_SECTIONS - {"centerline"}
                      if not section.startswith(("roi.", "edit.")))
     missing = sorted(BASE_SECTIONS - actual_sections)
     if unknown or missing:
@@ -137,7 +171,7 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
         if section.startswith("roi."):
             _fields(parser, section, ROI_FIELDS)
         else:
-            _fields(parser, section, EDIT_FIELDS, EDIT_SELECTORS)
+            _fields(parser, section, EDIT_FIELDS, EDIT_SELECTORS | EDIT_DIRECTION_FIELDS)
     steps = tuple(_name(value, "recipe.steps", _IDENTIFIER)
                   for value in _parts(parser["recipe"]["steps"].strip(), "recipe.steps"))
     names = {section[5:] for section in edit_sections}
@@ -203,13 +237,17 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
             raise ValueError(f"{section}.roi references undefined ROI {roi_name!r}")
         base_roi = result["roi"] if roi_name == "main" else result["rois"][roi_name]
         selector = _edit_selector(values, section, base_roi)
+        direction = _edit_direction(values, section, base_roi)
         iterations = _integer(values["iterations"].strip(), f"{section}.iterations", 1, 10)
         total_iterations += iterations
         try:
             edit = parse_preview_sections(roi_parser(roi_name, values), root)["edit"]
         except ValueError as error:
             raise ValueError(f"[{section}]: {error}") from error
-        result["edits"][name] = {"roi": roi_name, "iterations": iterations, **edit, **selector}
+        result["edits"][name] = {"roi": roi_name, "iterations": iterations, **edit, **selector, **direction}
     if total_iterations > MAX_ITERATIONS:
         raise ValueError(f"A recipe permits at most {MAX_ITERATIONS} total iterations, including operation=none")
+    if parser.has_section("centerline") or any(edit.get("direction") in {"inner", "outer"}
+                                               for edit in result["edits"].values()):
+        result["centerline"] = _centerline_settings(parser)
     return result

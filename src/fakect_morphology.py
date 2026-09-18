@@ -12,6 +12,7 @@ from scipy import ndimage
 
 from fakect_tissues import _validated_labels, coarse_labels
 from fakect_reassignment import reassignment_masks, stiffness_field, validate_reassignment_policy
+from fakect_direction import directional_spec, direction_weight_field
 
 
 ENGINE = 'weighted_6_neighbor_mm_v1'
@@ -23,6 +24,7 @@ _STRUCTURE = ndimage.generate_binary_structure(3, 1)
 
 def _edit_spec(resolved, config):
     edit = config.get('edit', {})
+    directional_spec(resolved, config)
     policy = config.get('reassignment', {})
     operation = edit.get('operation', 'none')
     if operation not in ('none', 'erosion', 'dilation'):
@@ -309,6 +311,10 @@ def apply_morphology(arrays, resolved, config):
     spacing = tuple(map(float, resolved['spacing_ijk_mm']))
     strength = strength_field_mm(labels.shape, resolved, config)
     strength[~roi] = 0
+    directional = None
+    if config.get('edit', {}).get('direction', 'all') != 'all':
+        directional = direction_weight_field(labels.shape, resolved, config, roi)
+        strength *= directional['direction_weight']
     resistance = (stiffness_field(labels, resolved['catalog'], config['reassignment'])
                   if config.get('reassignment', {}).get('mode') == 'stiffness' else None)
     effective_strength = strength if resistance is None else strength * (1 - resistance)
@@ -320,6 +326,12 @@ def apply_morphology(arrays, resolved, config):
     proxy = attenuation.copy()
     eligible, protected, reassignment_policy = reassignment_masks(labels, candidates, resolved['catalog'], config.get('reassignment', {}))
     warnings = []
+    if directional is not None:
+        skipped = directional['summary']['unreliable_roi_voxels']
+        if skipped:
+            warnings.append(f'Curvature direction is unreliable at {skipped} ROI voxels; their directional edit budget is zero.')
+        if not directional['summary']['angular_supported_roi_voxels']:
+            warnings.append('No ROI voxel has a reliable direction inside the selected angular sector; this pass cannot change labels.')
     if spec['operation'] == 'dilation' and spec['distance'] > 0:
         distance = _distances(roi, before, spacing, spec['distance'])
         proposed_added = roi & ~candidates & (distance <= strength + _TOL) & (strength > 0)
@@ -373,6 +385,10 @@ def apply_morphology(arrays, resolved, config):
                'allowed_tissues': list(spec['allowed_tissues']), 'recipient_max_distance_mm': spec['search'],
                'unresolved_policy': spec['unresolved'], 'halo': halo}
     summary['reassignment_policy'] = reassignment_policy
+    if directional is not None:
+        summary['direction'] = directional['summary']
+        if np.any(changed & ((directional['direction_weight'] <= 0) | ~directional['direction_reliable_mask'])):
+            raise RuntimeError('Morphology changed a voxel outside reliable directional support')
     if resistance is not None:
         summary['counts']['requested_removed_before_stiffness'] = int(requested_removed.sum())
         summary['counts']['release_suppressed_by_target_stiffness'] = int((requested_removed & ~proposed_removed).sum())
@@ -392,4 +408,6 @@ def apply_morphology(arrays, resolved, config):
     if resistance is not None:
         result.update(stiffness_field=resistance, effective_strength_mm=effective_strength,
                       requested_removed_mask=requested_removed)
+    if directional is not None:
+        result.update({key: value for key, value in directional.items() if isinstance(value, np.ndarray)})
     return result

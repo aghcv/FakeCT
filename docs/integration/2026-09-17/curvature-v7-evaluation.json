@@ -1,0 +1,2503 @@
+{
+  "report": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v7/report.html",
+  "config_sha256": "7e1556dce811e7dcd13173b350385a3d8a96f371992739222ac1a6581dca59f7",
+  "manifest_artifacts_verified": 34,
+  "code_files_verified": 18,
+  "config_selection": {
+    "tissue": "artery",
+    "source_ids": []
+  },
+  "frame_metadata": {
+    "schema_version": "fakect-centerline-frame-1",
+    "input_node_count": 14,
+    "sample_count": 205,
+    "spline_degree": 3,
+    "smoothing_mm": 1.0,
+    "smoothing_residual_budget_mm2": 14.0,
+    "fit_residual_sum_mm2": 14.000170484719732,
+    "fit_rms_displacement_mm": 1.000006088721449,
+    "fit_max_displacement_mm": 1.5406235111434412,
+    "parent_total_length_mm": 204.1933106999441,
+    "sampled_spline_length_mm": 203.5153098679386,
+    "sample_step_mm": 1.0,
+    "actual_sample_step_mm": 0.9976240679800913,
+    "arc_quadrature_samples": 1653,
+    "min_curvature_per_mm": 0.002,
+    "numerical_curvature_floor_per_mm": 4.897320076608532e-13,
+    "stationary_speed_floor_mm_per_parent_fraction": 2.1570801640950687e-10,
+    "reliable_count": 203,
+    "reliable_fraction": 0.9902439024390244,
+    "low_curvature_count": 0,
+    "endpoint_count": 2,
+    "degenerate_tangent_count": 0,
+    "inflection_candidate_count": 0,
+    "ambiguous_transport_count": 0,
+    "parent_node_fraction": [
+      0.0,
+      0.0737855668321043,
+      0.13475671008509502,
+      0.208379574256507,
+      0.3085055197646057,
+      0.37741692156927875,
+      0.4420170101473838,
+      0.5128167451888752,
+      0.6023185355259377,
+      0.6654160908893351,
+      0.7336278664339878,
+      0.8021903475065073,
+      0.8763002480637232,
+      1.0
+    ],
+    "spacing_ijk_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "original_nodes_ijk": [
+      [
+        387.0,
+        360.0,
+        1352.0
+      ],
+      [
+        378.0,
+        365.0,
+        1363.0
+      ],
+      [
+        373.0,
+        362.0,
+        1374.0
+      ],
+      [
+        373.0,
+        363.0,
+        1389.0
+      ],
+      [
+        376.0,
+        366.0,
+        1409.0
+      ],
+      [
+        385.0,
+        375.0,
+        1415.0
+      ],
+      [
+        392.0,
+        386.0,
+        1417.0
+      ],
+      [
+        393.0,
+        398.0,
+        1409.0
+      ],
+      [
+        390.0,
+        408.0,
+        1394.0
+      ],
+      [
+        387.0,
+        414.0,
+        1383.0
+      ],
+      [
+        387.0,
+        419.0,
+        1370.0
+      ],
+      [
+        387.0,
+        419.0,
+        1356.0
+      ],
+      [
+        389.0,
+        419.0,
+        1341.0
+      ],
+      [
+        391.0,
+        416.0,
+        1316.0
+      ]
+    ],
+    "fitted_controls_xyz_mm": [
+      [
+        386.9425560490102,
+        360.32052380220546,
+        1352.2289085142113
+      ],
+      [
+        378.0163700667102,
+        363.74727358320547,
+        1362.3758598624358
+      ],
+      [
+        373.5242033602644,
+        363.44390588827,
+        1374.117760035643
+      ],
+      [
+        371.9113339406308,
+        362.4253843455924,
+        1389.7249779624267
+      ],
+      [
+        377.06868534606775,
+        366.0823860216378,
+        1408.2777269727555
+      ],
+      [
+        384.9800392982946,
+        375.0927164436403,
+        1415.694997247545
+      ],
+      [
+        391.2803431184778,
+        386.04430210182045,
+        1416.2426358096573
+      ],
+      [
+        392.89677206477216,
+        397.3696939128736,
+        1408.9888377269053
+      ],
+      [
+        390.33507314498837,
+        408.67038956040363,
+        1394.704637052731
+      ],
+      [
+        387.76323730745725,
+        414.3128681429337,
+        1382.9720290947876
+      ],
+      [
+        386.14345942932687,
+        418.09162755561226,
+        1369.5645923275802
+      ],
+      [
+        386.92623842391356,
+        419.46426630680855,
+        1355.960345413935
+      ],
+      [
+        389.24206188825406,
+        418.93391480892814,
+        1341.1708280666098
+      ],
+      [
+        390.969626561832,
+        416.00074752606827,
+        1315.9758639127765
+      ]
+    ],
+    "parameterization": "Spline parameter u is original polyline physical arc fraction; arc-length resampling does not redefine u",
+    "smoothing_semantics": "RMS 3D residual budget at supplied controls; FITPACK s=n*smoothing_mm^2; no per-point displacement guarantee",
+    "sampling_semantics": "Uniform fitted-spline arc distance from bounded dense trapezoidal speed quadrature and monotone linear inversion",
+    "frame_semantics": "T follows supplied order; N follows principal curvature toward inner bend; B=T cross N; outer=-N",
+    "reliability_semantics": "Inner/outer valid only where reliable: sufficient curvature and no endpoint, stationary tangent, or sampled normal-turn ambiguity",
+    "transport_semantics": "Minimum-rotation reference normals are display-only in low curvature; never substitute them for valid inner/outer directions",
+    "stationary_tangent_semantics": "Nearest valid fitted tangent is display-only fallback; if all samples are stationary, original parent-segment direction is used",
+    "inflection_semantics": "Opposing transported principal normals flag an inflection or unresolved normal-turn candidate; true Frenet normals are not flipped",
+    "endpoint_policy": "First and last fitted samples excluded from reliable inner/outer semantics",
+    "limits": {
+      "input_nodes": 512,
+      "samples": 4096,
+      "arc_grid": 65537
+    },
+    "references": [
+      "https://docs.scipy.org/doc/scipy-1.13.1/reference/generated/scipy.interpolate.splprep.html",
+      "https://docs.scipy.org/doc/scipy-1.13.1/reference/generated/scipy.interpolate.BSpline.html",
+      "https://www.cis.upenn.edu/~cis6100/gma-v2-chap19.pdf"
+    ],
+    "source_arrays_modified": false
+  },
+  "counts": {
+    "before": 52576,
+    "after": 53110,
+    "added": 583,
+    "removed": 49,
+    "changed": 632,
+    "scalar_changed": 632,
+    "ever_changed": 632,
+    "proposed_added": 990,
+    "proposed_removed": 565,
+    "blocked": 407,
+    "unresolved": 516
+  },
+  "checks": [
+    "all manifest and generating source-code hashes match",
+    "captured INI equals new config; artery category with no ID filter or override",
+    "frame T,N,B unit and orthogonal; B equals T cross N",
+    "report and per-pass fit metadata identical",
+    "all changed voxels inside reliable positive angular support and25..65% range",
+    "pass label/scalar chain exact; originals preserved; full stiffness barriers unchanged",
+    "independent read-only memmap source crops exactly match captured originals; source size and mtime unchanged"
+  ],
+  "passes": [
+    {
+      "name": "arch_outer_expand",
+      "direction": "outer",
+      "counts": {
+        "before": 20767,
+        "after": 21350,
+        "proposed_added": 990,
+        "proposed_removed": 0,
+        "added": 583,
+        "removed": 0,
+        "blocked": 407,
+        "unresolved": 0,
+        "changed": 583,
+        "requested_removed_before_stiffness": 0,
+        "release_suppressed_by_target_stiffness": 0
+      },
+      "changed_percent_range": [
+        43.05077989639285,
+        58.78481861900055
+      ],
+      "changed_angular_cosine_range": [
+        0.5873746275901794,
+        0.9999926090240479
+      ],
+      "angular_supported_roi_voxels": 17928,
+      "unreliable_roi_voxels": 0,
+      "warnings": [
+        "Some dilation proposals were blocked by tissue eligibility, protected barriers, or the accepted-path distance budget."
+      ]
+    },
+    {
+      "name": "arch_inner_narrow",
+      "direction": "inner",
+      "counts": {
+        "before": 21350,
+        "after": 21301,
+        "proposed_added": 0,
+        "proposed_removed": 565,
+        "added": 0,
+        "removed": 49,
+        "blocked": 0,
+        "unresolved": 516,
+        "changed": 49,
+        "requested_removed_before_stiffness": 613,
+        "release_suppressed_by_target_stiffness": 48
+      },
+      "changed_percent_range": [
+        38.8183602998963,
+        58.11489503863332
+      ],
+      "changed_angular_cosine_range": [
+        0.6083290576934814,
+        0.999453067779541
+      ],
+      "angular_supported_roi_voxels": 15217,
+      "unreliable_roi_voxels": 0,
+      "warnings": [
+        "Unresolved proposed releases retain their original target label and scalar; requested erosion was only partly achieved."
+      ]
+    }
+  ],
+  "full_crop_before": {
+    "components_6": 27,
+    "largest_component_voxels": 125935,
+    "total_voxels": 127596
+  },
+  "full_crop_after": {
+    "components_6": 27,
+    "largest_component_voxels": 126469,
+    "total_voxels": 128130
+  },
+  "main_roi_before": {
+    "components_6": 7,
+    "largest_component_voxels": 52569,
+    "total_voxels": 52576
+  },
+  "main_roi_after": {
+    "components_6": 7,
+    "largest_component_voxels": 53103,
+    "total_voxels": 53110
+  },
+  "source_integrity_scope": "Native crop content plus source stat; full 4.185GB volume hashes not calculated",
+  "user_input_files_untouched": true,
+  "tests": {
+    "command": "python3 -m unittest discover -s tests",
+    "passed": 265,
+    "duration_seconds": 123.263
+  },
+  "browser": {
+    "tabs": [
+      "Global view",
+      "Local view",
+      "Edits / recipe",
+      "Inputs",
+      "Provenance"
+    ],
+    "category_input": [
+      "tissue = artery                             # NOTE 5: coarse tissue category",
+      "source_ids =                                 # NOTE 5: all artery IDs; tube bounds selection"
+    ],
+    "frame_iframes": 1,
+    "traces": [
+      {
+        "name": "Original target context (sampled)",
+        "type": "mesh3d"
+      },
+      {
+        "name": "Original ROI control points",
+        "type": "scatter3d"
+      },
+      {
+        "name": "Smoothed direction reference",
+        "type": "scatter3d"
+      },
+      {
+        "name": "Inner/outer undefined or unreliable",
+        "type": "scatter3d"
+      },
+      {
+        "name": "Inner N (trusted curvature)",
+        "type": "scatter3d"
+      },
+      {
+        "name": "Outer -N (trusted curvature)",
+        "type": "scatter3d"
+      },
+      {
+        "name": "B = T \u00d7 N (trusted curvature)",
+        "type": "scatter3d"
+      },
+      {
+        "name": "T: configured path order",
+        "type": "scatter3d"
+      },
+      {
+        "name": "Spline curvature",
+        "type": "scatter"
+      },
+      {
+        "name": "Unreliable direction",
+        "type": "scatter"
+      },
+      {
+        "name": "Minimum trusted curvature",
+        "type": "scatter"
+      }
+    ],
+    "webgl_available": false,
+    "headless_adjustment": "Disabled pointer interception by the no-WebGL placeholder only for legend-control checks; no scene pixel claim",
+    "legend_toggle_checks": [
+      "inner",
+      "outer",
+      "binormal",
+      "tangent"
+    ],
+    "pixel_validation": "Static PNGs inspected; headless WebGL scene pixels not validated",
+    "browser": "Firefox 140.12 ESR headless, local files"
+  },
+  "branch_selection": {
+    "catalog_artery_label_count": 644,
+    "regions": {
+      "crop": {
+        "artery_label_count": 99,
+        "artery_voxels": 127596
+      },
+      "main_roi": {
+        "artery_voxels": 52576,
+        "artery_labels": [
+          {
+            "original_id": 1186,
+            "original_name": "internal_carotid_right",
+            "hierarchy_path": "01_Cardiovascular/Cerebrovascular/Arteries",
+            "confidence": "high",
+            "voxels": 311,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                372,
+                364,
+                1410
+              ],
+              "maximum_ijk": [
+                380,
+                370,
+                1421
+              ]
+            }
+          },
+          {
+            "original_id": 1547,
+            "original_name": "arteries",
+            "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+            "confidence": "medium",
+            "voxels": 265,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                380,
+                370,
+                1414
+              ],
+              "maximum_ijk": [
+                386,
+                376,
+                1424
+              ]
+            }
+          },
+          {
+            "original_id": 1550,
+            "original_name": "arteries",
+            "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+            "confidence": "medium",
+            "voxels": 657,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                384,
+                375,
+                1415
+              ],
+              "maximum_ijk": [
+                393,
+                385,
+                1426
+              ]
+            }
+          },
+          {
+            "original_id": 1747,
+            "original_name": "right_pulmonary_arts",
+            "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+            "confidence": "high",
+            "voxels": 76,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                372,
+                372,
+                1383
+              ],
+              "maximum_ijk": [
+                381,
+                375,
+                1392
+              ]
+            }
+          },
+          {
+            "original_id": 1969,
+            "original_name": "left_pulmonary_arts",
+            "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+            "confidence": "high",
+            "voxels": 116,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                393,
+                390,
+                1392
+              ],
+              "maximum_ijk": [
+                401,
+                398,
+                1400
+              ]
+            }
+          },
+          {
+            "original_id": 2912,
+            "original_name": "dias_rca1",
+            "hierarchy_path": "01_Cardiovascular/Coronary_Circulation/Coronary_Arteries",
+            "confidence": "high",
+            "voxels": 59,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                374,
+                354,
+                1363
+              ],
+              "maximum_ijk": [
+                379,
+                358,
+                1367
+              ]
+            }
+          },
+          {
+            "original_id": 2914,
+            "original_name": "dias_lad1",
+            "hierarchy_path": "01_Cardiovascular/Coronary_Circulation/Coronary_Arteries",
+            "confidence": "high",
+            "voxels": 112,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                379,
+                363,
+                1370
+              ],
+              "maximum_ijk": [
+                385,
+                369,
+                1375
+              ]
+            }
+          },
+          {
+            "original_id": 2920,
+            "original_name": "dias_pul_art",
+            "hierarchy_path": "01_Cardiovascular/Heart/Pulmonary_Artery",
+            "confidence": "high",
+            "voxels": 495,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                381,
+                355,
+                1381
+              ],
+              "maximum_ijk": [
+                386,
+                373,
+                1399
+              ]
+            }
+          },
+          {
+            "original_id": 2922,
+            "original_name": "dias_aorta",
+            "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+            "confidence": "high",
+            "voxels": 50485,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                365,
+                350,
+                1305
+              ],
+              "maximum_ijk": [
+                402,
+                427,
+                1424
+              ]
+            }
+          }
+        ],
+        "contacts": [
+          {
+            "labels": [
+              {
+                "original_id": 1186,
+                "original_name": "internal_carotid_right",
+                "tissue_name": "artery",
+                "canonical_name": "internal_carotid",
+                "hierarchy_path": "01_Cardiovascular/Cerebrovascular/Arteries",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 233,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  376,
+                  367,
+                  1409
+                ],
+                [
+                  376,
+                  367,
+                  1410
+                ]
+              ],
+              [
+                [
+                  377,
+                  367,
+                  1409
+                ],
+                [
+                  377,
+                  367,
+                  1410
+                ]
+              ],
+              [
+                [
+                  378,
+                  367,
+                  1409
+                ],
+                [
+                  378,
+                  367,
+                  1410
+                ]
+              ],
+              [
+                [
+                  376,
+                  368,
+                  1409
+                ],
+                [
+                  376,
+                  368,
+                  1410
+                ]
+              ],
+              [
+                [
+                  377,
+                  368,
+                  1409
+                ],
+                [
+                  377,
+                  368,
+                  1410
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1547,
+                "original_name": "arteries",
+                "tissue_name": "artery",
+                "canonical_name": "arteries",
+                "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+                "classification_status": "classified",
+                "confidence": "medium"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 199,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  380,
+                  373,
+                  1413
+                ],
+                [
+                  380,
+                  373,
+                  1414
+                ]
+              ],
+              [
+                [
+                  381,
+                  373,
+                  1413
+                ],
+                [
+                  381,
+                  373,
+                  1414
+                ]
+              ],
+              [
+                [
+                  382,
+                  373,
+                  1413
+                ],
+                [
+                  382,
+                  373,
+                  1414
+                ]
+              ],
+              [
+                [
+                  380,
+                  374,
+                  1413
+                ],
+                [
+                  380,
+                  374,
+                  1414
+                ]
+              ],
+              [
+                [
+                  381,
+                  374,
+                  1413
+                ],
+                [
+                  381,
+                  374,
+                  1414
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1550,
+                "original_name": "arteries",
+                "tissue_name": "artery",
+                "canonical_name": "arteries",
+                "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+                "classification_status": "classified",
+                "confidence": "medium"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 341,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  386,
+                  380,
+                  1414
+                ],
+                [
+                  386,
+                  380,
+                  1415
+                ]
+              ],
+              [
+                [
+                  387,
+                  380,
+                  1414
+                ],
+                [
+                  387,
+                  380,
+                  1415
+                ]
+              ],
+              [
+                [
+                  386,
+                  381,
+                  1414
+                ],
+                [
+                  386,
+                  381,
+                  1415
+                ]
+              ],
+              [
+                [
+                  387,
+                  381,
+                  1414
+                ],
+                [
+                  387,
+                  381,
+                  1415
+                ]
+              ],
+              [
+                [
+                  388,
+                  381,
+                  1414
+                ],
+                [
+                  388,
+                  381,
+                  1415
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1969,
+                "original_name": "left_pulmonary_arts",
+                "tissue_name": "artery",
+                "canonical_name": "pulmonary_artery",
+                "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 74,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  396,
+                  396,
+                  1394
+                ],
+                [
+                  396,
+                  396,
+                  1395
+                ]
+              ],
+              [
+                [
+                  394,
+                  394,
+                  1395
+                ],
+                [
+                  394,
+                  394,
+                  1396
+                ]
+              ],
+              [
+                [
+                  397,
+                  396,
+                  1395
+                ],
+                [
+                  397,
+                  396,
+                  1396
+                ]
+              ],
+              [
+                [
+                  398,
+                  397,
+                  1395
+                ],
+                [
+                  398,
+                  397,
+                  1396
+                ]
+              ],
+              [
+                [
+                  394,
+                  393,
+                  1396
+                ],
+                [
+                  394,
+                  393,
+                  1397
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 2912,
+                "original_name": "dias_rca1",
+                "tissue_name": "artery",
+                "canonical_name": "rca",
+                "hierarchy_path": "01_Cardiovascular/Coronary_Circulation/Coronary_Arteries",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 95,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  376,
+                  355,
+                  1362
+                ],
+                [
+                  376,
+                  355,
+                  1363
+                ]
+              ],
+              [
+                [
+                  377,
+                  355,
+                  1362
+                ],
+                [
+                  377,
+                  355,
+                  1363
+                ]
+              ],
+              [
+                [
+                  374,
+                  355,
+                  1363
+                ],
+                [
+                  374,
+                  355,
+                  1364
+                ]
+              ],
+              [
+                [
+                  378,
+                  355,
+                  1363
+                ],
+                [
+                  378,
+                  355,
+                  1364
+                ]
+              ],
+              [
+                [
+                  375,
+                  356,
+                  1363
+                ],
+                [
+                  375,
+                  356,
+                  1364
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 2914,
+                "original_name": "dias_lad1",
+                "tissue_name": "artery",
+                "canonical_name": "left_anterior_descending_coronary_artery",
+                "hierarchy_path": "01_Cardiovascular/Coronary_Circulation/Coronary_Arteries",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 126,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  382,
+                  365,
+                  1369
+                ],
+                [
+                  382,
+                  365,
+                  1370
+                ]
+              ],
+              [
+                [
+                  383,
+                  365,
+                  1369
+                ],
+                [
+                  383,
+                  365,
+                  1370
+                ]
+              ],
+              [
+                [
+                  382,
+                  366,
+                  1369
+                ],
+                [
+                  382,
+                  366,
+                  1370
+                ]
+              ],
+              [
+                [
+                  383,
+                  366,
+                  1369
+                ],
+                [
+                  383,
+                  366,
+                  1370
+                ]
+              ],
+              [
+                [
+                  380,
+                  364,
+                  1370
+                ],
+                [
+                  380,
+                  364,
+                  1371
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1747,
+                "original_name": "right_pulmonary_arts",
+                "tissue_name": "artery",
+                "canonical_name": "pulmonary_artery",
+                "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 3,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  375,
+                  372,
+                  1384
+                ],
+                [
+                  375,
+                  373,
+                  1384
+                ]
+              ],
+              [
+                [
+                  375,
+                  372,
+                  1385
+                ],
+                [
+                  375,
+                  373,
+                  1385
+                ]
+              ],
+              [
+                [
+                  375,
+                  372,
+                  1386
+                ],
+                [
+                  375,
+                  373,
+                  1386
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 2920,
+                "original_name": "dias_pul_art",
+                "tissue_name": "artery",
+                "canonical_name": "pulmonary_artery",
+                "hierarchy_path": "01_Cardiovascular/Heart/Pulmonary_Artery",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 15,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  381,
+                  365,
+                  1391
+                ],
+                [
+                  382,
+                  365,
+                  1391
+                ]
+              ],
+              [
+                [
+                  380,
+                  368,
+                  1391
+                ],
+                [
+                  381,
+                  368,
+                  1391
+                ]
+              ],
+              [
+                [
+                  381,
+                  365,
+                  1392
+                ],
+                [
+                  382,
+                  365,
+                  1392
+                ]
+              ],
+              [
+                [
+                  380,
+                  368,
+                  1392
+                ],
+                [
+                  381,
+                  368,
+                  1392
+                ]
+              ],
+              [
+                [
+                  381,
+                  365,
+                  1393
+                ],
+                [
+                  382,
+                  365,
+                  1393
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "edit:arch_outer_expand": {
+        "artery_voxels": 20767,
+        "artery_labels": [
+          {
+            "original_id": 1186,
+            "original_name": "internal_carotid_right",
+            "hierarchy_path": "01_Cardiovascular/Cerebrovascular/Arteries",
+            "confidence": "high",
+            "voxels": 311,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                372,
+                364,
+                1410
+              ],
+              "maximum_ijk": [
+                380,
+                370,
+                1421
+              ]
+            }
+          },
+          {
+            "original_id": 1547,
+            "original_name": "arteries",
+            "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+            "confidence": "medium",
+            "voxels": 265,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                380,
+                370,
+                1414
+              ],
+              "maximum_ijk": [
+                386,
+                376,
+                1424
+              ]
+            }
+          },
+          {
+            "original_id": 1550,
+            "original_name": "arteries",
+            "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+            "confidence": "medium",
+            "voxels": 657,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                384,
+                375,
+                1415
+              ],
+              "maximum_ijk": [
+                393,
+                385,
+                1426
+              ]
+            }
+          },
+          {
+            "original_id": 1969,
+            "original_name": "left_pulmonary_arts",
+            "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+            "confidence": "high",
+            "voxels": 116,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                393,
+                390,
+                1392
+              ],
+              "maximum_ijk": [
+                401,
+                398,
+                1400
+              ]
+            }
+          },
+          {
+            "original_id": 2920,
+            "original_name": "dias_pul_art",
+            "hierarchy_path": "01_Cardiovascular/Heart/Pulmonary_Artery",
+            "confidence": "high",
+            "voxels": 69,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                381,
+                360,
+                1395
+              ],
+              "maximum_ijk": [
+                386,
+                373,
+                1399
+              ]
+            }
+          },
+          {
+            "original_id": 2922,
+            "original_name": "dias_aorta",
+            "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+            "confidence": "high",
+            "voxels": 19349,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                366,
+                356,
+                1382
+              ],
+              "maximum_ijk": [
+                402,
+                419,
+                1424
+              ]
+            }
+          }
+        ],
+        "contacts": [
+          {
+            "labels": [
+              {
+                "original_id": 1186,
+                "original_name": "internal_carotid_right",
+                "tissue_name": "artery",
+                "canonical_name": "internal_carotid",
+                "hierarchy_path": "01_Cardiovascular/Cerebrovascular/Arteries",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 233,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  376,
+                  367,
+                  1409
+                ],
+                [
+                  376,
+                  367,
+                  1410
+                ]
+              ],
+              [
+                [
+                  377,
+                  367,
+                  1409
+                ],
+                [
+                  377,
+                  367,
+                  1410
+                ]
+              ],
+              [
+                [
+                  378,
+                  367,
+                  1409
+                ],
+                [
+                  378,
+                  367,
+                  1410
+                ]
+              ],
+              [
+                [
+                  376,
+                  368,
+                  1409
+                ],
+                [
+                  376,
+                  368,
+                  1410
+                ]
+              ],
+              [
+                [
+                  377,
+                  368,
+                  1409
+                ],
+                [
+                  377,
+                  368,
+                  1410
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1547,
+                "original_name": "arteries",
+                "tissue_name": "artery",
+                "canonical_name": "arteries",
+                "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+                "classification_status": "classified",
+                "confidence": "medium"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 199,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  380,
+                  373,
+                  1413
+                ],
+                [
+                  380,
+                  373,
+                  1414
+                ]
+              ],
+              [
+                [
+                  381,
+                  373,
+                  1413
+                ],
+                [
+                  381,
+                  373,
+                  1414
+                ]
+              ],
+              [
+                [
+                  382,
+                  373,
+                  1413
+                ],
+                [
+                  382,
+                  373,
+                  1414
+                ]
+              ],
+              [
+                [
+                  380,
+                  374,
+                  1413
+                ],
+                [
+                  380,
+                  374,
+                  1414
+                ]
+              ],
+              [
+                [
+                  381,
+                  374,
+                  1413
+                ],
+                [
+                  381,
+                  374,
+                  1414
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1550,
+                "original_name": "arteries",
+                "tissue_name": "artery",
+                "canonical_name": "arteries",
+                "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+                "classification_status": "classified",
+                "confidence": "medium"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 341,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  386,
+                  380,
+                  1414
+                ],
+                [
+                  386,
+                  380,
+                  1415
+                ]
+              ],
+              [
+                [
+                  387,
+                  380,
+                  1414
+                ],
+                [
+                  387,
+                  380,
+                  1415
+                ]
+              ],
+              [
+                [
+                  386,
+                  381,
+                  1414
+                ],
+                [
+                  386,
+                  381,
+                  1415
+                ]
+              ],
+              [
+                [
+                  387,
+                  381,
+                  1414
+                ],
+                [
+                  387,
+                  381,
+                  1415
+                ]
+              ],
+              [
+                [
+                  388,
+                  381,
+                  1414
+                ],
+                [
+                  388,
+                  381,
+                  1415
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1969,
+                "original_name": "left_pulmonary_arts",
+                "tissue_name": "artery",
+                "canonical_name": "pulmonary_artery",
+                "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 74,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  396,
+                  396,
+                  1394
+                ],
+                [
+                  396,
+                  396,
+                  1395
+                ]
+              ],
+              [
+                [
+                  394,
+                  394,
+                  1395
+                ],
+                [
+                  394,
+                  394,
+                  1396
+                ]
+              ],
+              [
+                [
+                  397,
+                  396,
+                  1395
+                ],
+                [
+                  397,
+                  396,
+                  1396
+                ]
+              ],
+              [
+                [
+                  398,
+                  397,
+                  1395
+                ],
+                [
+                  398,
+                  397,
+                  1396
+                ]
+              ],
+              [
+                [
+                  394,
+                  393,
+                  1396
+                ],
+                [
+                  394,
+                  393,
+                  1397
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 2920,
+                "original_name": "dias_pul_art",
+                "tissue_name": "artery",
+                "canonical_name": "pulmonary_artery",
+                "hierarchy_path": "01_Cardiovascular/Heart/Pulmonary_Artery",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 2,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  381,
+                  368,
+                  1396
+                ],
+                [
+                  382,
+                  368,
+                  1396
+                ]
+              ],
+              [
+                [
+                  382,
+                  366,
+                  1397
+                ],
+                [
+                  383,
+                  366,
+                  1397
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "edit:arch_inner_narrow": {
+        "artery_voxels": 20767,
+        "artery_labels": [
+          {
+            "original_id": 1186,
+            "original_name": "internal_carotid_right",
+            "hierarchy_path": "01_Cardiovascular/Cerebrovascular/Arteries",
+            "confidence": "high",
+            "voxels": 311,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                372,
+                364,
+                1410
+              ],
+              "maximum_ijk": [
+                380,
+                370,
+                1421
+              ]
+            }
+          },
+          {
+            "original_id": 1547,
+            "original_name": "arteries",
+            "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+            "confidence": "medium",
+            "voxels": 265,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                380,
+                370,
+                1414
+              ],
+              "maximum_ijk": [
+                386,
+                376,
+                1424
+              ]
+            }
+          },
+          {
+            "original_id": 1550,
+            "original_name": "arteries",
+            "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+            "confidence": "medium",
+            "voxels": 657,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                384,
+                375,
+                1415
+              ],
+              "maximum_ijk": [
+                393,
+                385,
+                1426
+              ]
+            }
+          },
+          {
+            "original_id": 1969,
+            "original_name": "left_pulmonary_arts",
+            "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+            "confidence": "high",
+            "voxels": 116,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                393,
+                390,
+                1392
+              ],
+              "maximum_ijk": [
+                401,
+                398,
+                1400
+              ]
+            }
+          },
+          {
+            "original_id": 2920,
+            "original_name": "dias_pul_art",
+            "hierarchy_path": "01_Cardiovascular/Heart/Pulmonary_Artery",
+            "confidence": "high",
+            "voxels": 69,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                381,
+                360,
+                1395
+              ],
+              "maximum_ijk": [
+                386,
+                373,
+                1399
+              ]
+            }
+          },
+          {
+            "original_id": 2922,
+            "original_name": "dias_aorta",
+            "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+            "confidence": "high",
+            "voxels": 19349,
+            "bounds_ijk": {
+              "minimum_ijk": [
+                366,
+                356,
+                1382
+              ],
+              "maximum_ijk": [
+                402,
+                419,
+                1424
+              ]
+            }
+          }
+        ],
+        "contacts": [
+          {
+            "labels": [
+              {
+                "original_id": 1186,
+                "original_name": "internal_carotid_right",
+                "tissue_name": "artery",
+                "canonical_name": "internal_carotid",
+                "hierarchy_path": "01_Cardiovascular/Cerebrovascular/Arteries",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 233,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  376,
+                  367,
+                  1409
+                ],
+                [
+                  376,
+                  367,
+                  1410
+                ]
+              ],
+              [
+                [
+                  377,
+                  367,
+                  1409
+                ],
+                [
+                  377,
+                  367,
+                  1410
+                ]
+              ],
+              [
+                [
+                  378,
+                  367,
+                  1409
+                ],
+                [
+                  378,
+                  367,
+                  1410
+                ]
+              ],
+              [
+                [
+                  376,
+                  368,
+                  1409
+                ],
+                [
+                  376,
+                  368,
+                  1410
+                ]
+              ],
+              [
+                [
+                  377,
+                  368,
+                  1409
+                ],
+                [
+                  377,
+                  368,
+                  1410
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1547,
+                "original_name": "arteries",
+                "tissue_name": "artery",
+                "canonical_name": "arteries",
+                "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+                "classification_status": "classified",
+                "confidence": "medium"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 199,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  380,
+                  373,
+                  1413
+                ],
+                [
+                  380,
+                  373,
+                  1414
+                ]
+              ],
+              [
+                [
+                  381,
+                  373,
+                  1413
+                ],
+                [
+                  381,
+                  373,
+                  1414
+                ]
+              ],
+              [
+                [
+                  382,
+                  373,
+                  1413
+                ],
+                [
+                  382,
+                  373,
+                  1414
+                ]
+              ],
+              [
+                [
+                  380,
+                  374,
+                  1413
+                ],
+                [
+                  380,
+                  374,
+                  1414
+                ]
+              ],
+              [
+                [
+                  381,
+                  374,
+                  1413
+                ],
+                [
+                  381,
+                  374,
+                  1414
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1550,
+                "original_name": "arteries",
+                "tissue_name": "artery",
+                "canonical_name": "arteries",
+                "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+                "classification_status": "classified",
+                "confidence": "medium"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 341,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  386,
+                  380,
+                  1414
+                ],
+                [
+                  386,
+                  380,
+                  1415
+                ]
+              ],
+              [
+                [
+                  387,
+                  380,
+                  1414
+                ],
+                [
+                  387,
+                  380,
+                  1415
+                ]
+              ],
+              [
+                [
+                  386,
+                  381,
+                  1414
+                ],
+                [
+                  386,
+                  381,
+                  1415
+                ]
+              ],
+              [
+                [
+                  387,
+                  381,
+                  1414
+                ],
+                [
+                  387,
+                  381,
+                  1415
+                ]
+              ],
+              [
+                [
+                  388,
+                  381,
+                  1414
+                ],
+                [
+                  388,
+                  381,
+                  1415
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 1969,
+                "original_name": "left_pulmonary_arts",
+                "tissue_name": "artery",
+                "canonical_name": "pulmonary_artery",
+                "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 74,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  396,
+                  396,
+                  1394
+                ],
+                [
+                  396,
+                  396,
+                  1395
+                ]
+              ],
+              [
+                [
+                  394,
+                  394,
+                  1395
+                ],
+                [
+                  394,
+                  394,
+                  1396
+                ]
+              ],
+              [
+                [
+                  397,
+                  396,
+                  1395
+                ],
+                [
+                  397,
+                  396,
+                  1396
+                ]
+              ],
+              [
+                [
+                  398,
+                  397,
+                  1395
+                ],
+                [
+                  398,
+                  397,
+                  1396
+                ]
+              ],
+              [
+                [
+                  394,
+                  393,
+                  1396
+                ],
+                [
+                  394,
+                  393,
+                  1397
+                ]
+              ]
+            ]
+          },
+          {
+            "labels": [
+              {
+                "original_id": 2920,
+                "original_name": "dias_pul_art",
+                "tissue_name": "artery",
+                "canonical_name": "pulmonary_artery",
+                "hierarchy_path": "01_Cardiovascular/Heart/Pulmonary_Artery",
+                "classification_status": "classified",
+                "confidence": "high"
+              },
+              {
+                "original_id": 2922,
+                "original_name": "dias_aorta",
+                "tissue_name": "artery",
+                "canonical_name": "aorta",
+                "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+                "classification_status": "classified",
+                "confidence": "high"
+              }
+            ],
+            "shared_face_count": 2,
+            "example_face_voxel_endpoints_ijk": [
+              [
+                [
+                  381,
+                  368,
+                  1396
+                ],
+                [
+                  382,
+                  368,
+                  1396
+                ]
+              ],
+              [
+                [
+                  382,
+                  366,
+                  1397
+                ],
+                [
+                  383,
+                  366,
+                  1397
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "limitations": [
+      "The selected25..65% range includes116 left_pulmonary_arts and69 dias_pul_art voxels in addition to aorta and catalog artery branches.",
+      "The source grid has direct aorta/pulmonary-label contacts; six-neighbor connectivity alone cannot separate vascular trees in this crop.",
+      "The labels named dias_rca1 and dias_lad1 intersect the main ROI but are absent from the current25..65% range.",
+      "Generic catalog names arteries for1547 and1550 do not establish specific anatomical branch identity.",
+      "No nonartery vascular-name matches were found inside main ROI, but names alone cannot exclude absent or misclassified anatomical branches."
+    ],
+    "notes": [
+      "Contacts count face-sharing voxel pairs with both endpoints inside the stated region.",
+      "Anatomical identities are catalog names only, without manual anatomical adjudication.",
+      "Component sharing uses the whole bounded crop; a component may connect outside the requested ROI.",
+      "Minimum distances are native voxel-center distances, not vessel wall gaps.",
+      "Absent labels cannot be diagnosed from one bounded crop or this catalog alone."
+    ]
+  },
+  "erosion_reassignment_diagnosis": {
+    "step_npz": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/studies/thoracic-aorta/recipe-v7/steps/02-arch_inner_narrow-iteration-01/step.npz",
+    "configured_search_mm": 3.0,
+    "proposed_voxels": 565,
+    "removed_voxels": 49,
+    "unresolved_voxels": 516,
+    "recipient_seed_voxels": 458,
+    "unresolved_in_components_without_any_eligible_seed": 0,
+    "unresolved_reachable_in_current_release_domain_with_larger_path_budget": 516,
+    "reachable_unresolved_fixed_seed_penalty_cost_range_mm": [
+      3.15,
+      7.85
+    ],
+    "unresolved_that_would_be_reachable_at_same3mm_with_zero_seed_penalty": 509,
+    "unresolved_nearest_eligible_voxel_center_distances_mm": {
+      "minimum": 1.0,
+      "median": 1.0,
+      "maximum": 2.0
+    },
+    "proposed_by_original_label": [
+      {
+        "original_id": 1969,
+        "original_name": "left_pulmonary_arts",
+        "tissue_name": "artery",
+        "voxels": 7,
+        "stiffness": 0.05
+      },
+      {
+        "original_id": 2922,
+        "original_name": "dias_aorta",
+        "tissue_name": "artery",
+        "voxels": 558,
+        "stiffness": 0.05
+      }
+    ],
+    "removed_by_original_label": [
+      {
+        "original_id": 2922,
+        "original_name": "dias_aorta",
+        "tissue_name": "artery",
+        "voxels": 49,
+        "stiffness": 0.05
+      }
+    ],
+    "unresolved_by_original_label": [
+      {
+        "original_id": 1969,
+        "original_name": "left_pulmonary_arts",
+        "tissue_name": "artery",
+        "voxels": 7,
+        "stiffness": 0.05
+      },
+      {
+        "original_id": 2922,
+        "original_name": "dias_aorta",
+        "tissue_name": "artery",
+        "voxels": 509,
+        "stiffness": 0.05
+      }
+    ],
+    "recipient_seeds_by_original_label": [
+      {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "tissue_name": "soft_tissue",
+        "voxels": 432,
+        "stiffness": 0.95
+      },
+      {
+        "original_id": 204,
+        "original_name": "musc444",
+        "tissue_name": "muscle",
+        "voxels": 7,
+        "stiffness": 0.1
+      },
+      {
+        "original_id": 1428,
+        "original_name": "trachea",
+        "tissue_name": "unknown",
+        "voxels": 17,
+        "stiffness": 0.05
+      },
+      {
+        "original_id": 1533,
+        "original_name": "bronchi",
+        "tissue_name": "unknown",
+        "voxels": 2,
+        "stiffness": 0.05
+      }
+    ],
+    "nonartery_neighbors_of_unresolved": [
+      {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "tissue_name": "soft_tissue",
+        "voxels": 412,
+        "stiffness": 0.95,
+        "eligible_voxels": 412,
+        "protected_voxels": 0
+      }
+    ],
+    "unresolved_domain_components": [
+      {
+        "component": 1,
+        "proposed_voxels": 562,
+        "unresolved_voxels": 515,
+        "recipient_seed_voxels": 455,
+        "bounds_ijk": {
+          "minimum_ijk": [
+            376,
+            370,
+            1392
+          ],
+          "maximum_ijk": [
+            396,
+            400,
+            1415
+          ]
+        },
+        "adjacent_nonartery_labels": [
+          {
+            "original_id": 4,
+            "original_name": "chest_surface",
+            "tissue_name": "soft_tissue",
+            "voxels": 411,
+            "stiffness": 0.95,
+            "eligible_voxels": 411,
+            "protected_voxels": 0
+          }
+        ]
+      },
+      {
+        "component": 2,
+        "proposed_voxels": 1,
+        "unresolved_voxels": 1,
+        "recipient_seed_voxels": 1,
+        "bounds_ijk": {
+          "minimum_ijk": [
+            393,
+            381,
+            1406
+          ],
+          "maximum_ijk": [
+            393,
+            381,
+            1407
+          ]
+        },
+        "adjacent_nonartery_labels": [
+          {
+            "original_id": 4,
+            "original_name": "chest_surface",
+            "tissue_name": "soft_tissue",
+            "voxels": 1,
+            "stiffness": 0.95,
+            "eligible_voxels": 1,
+            "protected_voxels": 0
+          }
+        ]
+      }
+    ],
+    "interpretation": [
+      "Current erosion reassignment propagates only through proposed release voxels and their adjacent eligible recipient seeds.",
+      "The larger-path-budget diagnostic holds that domain and original3mm seed penalties fixed; it is not an edited rerun or proposed configuration change.",
+      "A release component with no eligible recipient seed cannot be repaired merely by increasing max_distance_mm.",
+      "All nonarterial face-neighbors of the unresolved set are chest_surface; this does not mean every unresolved voxel touches that label directly.",
+      "chest_surface has coarse soft_tissue category but the fine Skin hierarchy triggers stiffness=.95, overriding soft_tissue=.05.",
+      "The catalog Skin assignment is rule-derived with medium confidence; these interior-adjacent voxels are not independently validated as physical skin. No category, resistance, source, or config was altered for this analysis."
+    ],
+    "chest_surface_catalog_record": {
+      "original_id": 4,
+      "original_name": "chest_surface",
+      "classification": {
+        "normalized_name": "chest_surface",
+        "canonical_name": "chest_surface",
+        "system": "integumentary",
+        "subsystem": "skin",
+        "anatomical_region": "whole_body",
+        "structure_type": "organ",
+        "laterality": "",
+        "piece_number": "",
+        "temporal_phase": "",
+        "hierarchy_path": "11_Integumentary/Skin",
+        "secondary_systems": "",
+        "original_name": "chest_surface",
+        "confidence": "medium",
+        "status": "classified",
+        "evidence": [
+          {
+            "kind": "hierarchy_rules",
+            "priority": 89,
+            "rules": [
+              "region_surface_skin"
+            ],
+            "conflict": false
+          },
+          {
+            "kind": "tissue_policy",
+            "rule": "other_organ_anatomy"
+          }
+        ],
+        "atlas_rows": [],
+        "matched_rules": [
+          "region_surface_skin"
+        ],
+        "classifier_scope": "explicit_dpi_files_only",
+        "material_type": null,
+        "material_status": "unverified_anatomical_group",
+        "tissue_id": 1,
+        "tissue_name": "soft_tissue"
+      },
+      "dictionary_sources": [
+        "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+        "references/atlas/xcat/organ_ids.040.txt"
+      ]
+    },
+    "skin_seed_budget_mm": {
+      "search_maximum": 3.0,
+      "stiffness": 0.95,
+      "initial_penalty": 2.85,
+      "remaining_path_budget": 0.15,
+      "minimum_native_edge": 1.0
+    }
+  }
+}

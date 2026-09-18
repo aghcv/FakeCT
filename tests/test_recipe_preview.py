@@ -179,6 +179,56 @@ class RecipeReportTests(unittest.TestCase):
         self.assertIn('edit-overlay.png', result['embedded_assets'])
         self.assertLess(document.index('id="surface-overlay"'), document.index('Named ROI definitions'))
 
+    def test_centerline_views_embed_once_with_per_pass_direction_and_provenance(self):
+        (self.output/'edit-overlay.html').write_text('<html><body>registered comparison</body></html>')
+        directory = self.output/'centerline-01-main'
+        directory.mkdir()
+        (directory/'frame.html').write_text('<html><body><script>window.frameReady=true;</script></body></html>')
+        for name in ('frame.png', 'curvature.png'):
+            (directory/name).write_bytes(PNG)
+        payload = '<script>window.BAD=true</script>'
+        self.report['recipe']['centerline_frames'] = [{
+            'parent_roi': 'main', 'html': 'centerline-01-main/frame.html',
+            'figure': 'centerline-01-main/frame.png', 'curvature_figure': 'centerline-01-main/curvature.png',
+            'frame_artifact': 'centerline-01-main/frame.json', 'sample_count': 205,
+            'reliable_samples': 203, 'unreliable_samples': 2, 'arrow_length_mm': 6.5,
+            'settings': {'smoothing_mm': 1, 'sample_step_mm': 1, 'min_curvature_per_mm': .002},
+            'metadata': {'fit_rms_displacement_mm': .999, 'warning_detail': payload},
+            'warnings': [payload], 'artifacts': {'frame_artifact': {'sha256': 'frame-hash'}}}]
+        self.report['recipe']['steps'][0]['direction'] = {
+            'direction': 'outer', 'angular_width_deg': 180, 'weight_semantics': 'Cosine sector',
+            'unreliable_roi_voxels': 50, 'angular_supported_roi_voxels': 100}
+        self.report['recipe']['steps'][1]['summary']['direction'] = {
+            'direction': 'inner', 'angular_width_deg': 180, 'weight_semantics': payload}
+        result = write_preview_report(self.output, self.report, '[centerline]\nsmoothing_mm = 1\n')
+        document = (self.output/'report.html').read_text()
+        self.assertEqual(document.count('id="centerline-frames"'), 1)
+        self.assertLess(document.index('id="surface-overlay"'), document.index('id="centerline-frames"'))
+        self.assertLess(document.index('id="centerline-frames"'), document.index('Named ROI definitions'))
+        for name in ('frame.html', 'frame.png', 'curvature.png'):
+            self.assertIn('centerline-01-main/'+name, result['embedded_assets'])
+        self.assertIn('frame-hash', document)
+        self.assertIn('centerline-01-main/frame.json', document)
+        self.assertNotIn('centerline-01-main/frame.json', result['embedded_assets'])
+        self.assertIn('<td>Circumferential edit direction</td><td>outer</td>', document)
+        self.assertIn('<td>Circumferential edit direction</td><td>inner</td>', document)
+        self.assertIn('<td>Angular width (degrees)</td><td>180</td>', document)
+        self.assertIn('<td>ROI voxels without a reliable inner/outer frame</td><td>50</td>', document)
+        self.assertIn('original ROI points and masks remain unchanged', document)
+        self.assertIn('Arrow length is a display scale', document)
+        self.assertNotIn(payload, document)
+        self.assertEqual(sum(tag == 'script' for tag, _ in Tags(document).tags), 1)
+
+    def test_centerline_view_rejects_external_resources(self):
+        directory = self.output/'centerline-01-main'
+        directory.mkdir()
+        (directory/'frame.html').write_text('<script src="https://example.com/frame.js"></script>')
+        self.report['recipe']['centerline_frames'] = [{'parent_roi': 'main',
+                                                      'html': 'centerline-01-main/frame.html'}]
+        with self.assertRaisesRegex(ValueError, 'must embed its resources'):
+            write_preview_report(self.output, self.report, '[recipe]\nsteps = expand, shrink\n')
+        self.assertFalse((self.output/'report.html').exists())
+
 
 class RecipeFigureTests(unittest.TestCase):
     def test_step_focus_is_in_changed_region_and_uses_preceding_state_semantics(self):

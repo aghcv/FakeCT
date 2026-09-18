@@ -152,10 +152,15 @@ def validate_recipe(config, resolved):
                       'geometry': {k: geometry[k] for k in ('roi_kind', 'roi_nodes_ijk', 'roi_radii_mm', 'focus_ijk')},
                       'range_metadata': regions[region_key].get('range_metadata'),
                       'halo': halo})
-    return {'engine': RECIPE_ENGINE, 'morphology_engine': ENGINE,
+    plan = {'engine': RECIPE_ENGINE, 'morphology_engine': ENGINE,
             'steps': steps, 'total_passes': passes, 'overlap': recipe['overlap'],
             'outer_boundary': 'Every named ROI is intersected with the fixed study ROI.',
             'order_semantics': 'Each pass consumes the labels and scalar proxy produced by the preceding pass.'}
+    from fakect_direction import recipe_centerline_frames
+    frames = recipe_centerline_frames(config, resolved)
+    if frames:
+        plan['centerline_frame_metadata'] = {name: frame['metadata'] for name, frame in frames.items()}
+    return plan
 
 
 def _native_masks(arrays, resolved, config):

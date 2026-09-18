@@ -164,6 +164,77 @@ class RecipeWorkflowTests(unittest.TestCase):
         self.assertFalse((self.output/'edit.npz').exists())
         self.assertFalse((self.output/'steps').exists())
 
+    def test_curvature_outer_range_exports_direction_evidence_and_portable_frame(self):
+        sections = self.fixture.sections
+        for name in ('roi.lower', 'roi.upper', 'edit.shrink'):
+            sections.pop(name)
+        sections['recipe']['steps'] = 'grow'
+        sections['roi'].update(shape='tube',
+                               center_ijk='13,15,10 ; 14.5,15,12.5 ; 15,15,15 ; 14.5,15,17.5 ; 13,15,20',
+                               radius_mm='4,4,4,4,4')
+        sections['centerline'] = {'smoothing_mm': '0', 'sample_step_mm': '.5',
+                                  'min_curvature_per_mm': '.002'}
+        sections['edit.grow'].update(roi='main', path_percent='20,80', profile_axis='tube',
+                                     direction='outer', angular_width_deg='180', distance_mm='2')
+        self.fixture.write_input()
+        original_ini = self.path.read_bytes()
+        config = load_preview_config(self.path)
+        resolved = resolve_preview(config)
+        sources = {name: path.read_bytes() for name, path in resolved['source_files'].items()}
+        report = self.run_preview()
+        steps = report['recipe']['steps']
+        self.assertEqual(len(steps), 1)
+        self.assertEqual(steps[0]['direction']['direction'], 'outer')
+        self.assertEqual(steps[0]['range_metadata']['selector_values'], [20., 80.])
+        with np.load(self.output/steps[0]['array_artifact'], allow_pickle=False) as step, \
+                np.load(self.output/'edit.npz', allow_pickle=False) as final:
+            changed, weight, reliable = step['changed_mask'], step['direction_weight'], step['direction_reliable_mask']
+            self.assertGreater(changed.sum(), 0)
+            self.assertTrue(np.all(np.isfinite(weight)))
+            self.assertTrue(np.all((weight >= 0) & (weight <= 1)))
+            self.assertFalse(np.any(changed & ((weight <= 0) | ~reliable)))
+            self.assertFalse(np.any(changed & ~step['roi_mask']))
+            self.assertTrue(np.all(step['direction_cosine'][changed] > 0))
+            np.testing.assert_array_equal(step['before_labels'], self.fixture.labels)
+            np.testing.assert_array_equal(final['original_labels'], self.fixture.labels)
+            np.testing.assert_array_equal(final['edited_labels'], step['edited_labels'])
+            np.testing.assert_array_equal(final['edited_labels'][~changed], self.fixture.labels[~changed])
+            np.testing.assert_array_equal(final['attenuation_proxy_per_pixel'][~changed],
+                                          step['before_attenuation_per_pixel'][~changed])
+            saved_step = json.loads(str(step['step_json']))
+            self.assertEqual(saved_step['direction'], steps[0]['direction'])
+        self.assertEqual((self.output/'input.ini').read_bytes(), original_ini)
+        for name, path in resolved['source_files'].items():
+            self.assertEqual(path.read_bytes(), sources[name])
+        frames = report['recipe']['centerline_frames']
+        self.assertEqual(len(frames), 1)
+        frame = frames[0]
+        self.assertEqual(frame['parent_roi'], 'main')
+        self.assertEqual(frame['metadata']['input_node_count'], 5)
+        self.assertGreater(frame['metadata']['reliable_count'], 0)
+        frame_record = json.loads((self.output/frame['frame_artifact']).read_text())
+        self.assertEqual(frame_record['frame']['metadata'], frame['metadata'])
+        self.assertEqual(frame_record['frame']['metadata'], steps[0]['direction']['frame_metadata'])
+        self.assertEqual(len(frame_record['frame']['xyz_mm']), frame['sample_count'])
+        self.assertEqual(sum(frame_record['frame']['reliable']), frame['reliable_samples'])
+        document = (self.output/'report.html').read_text()
+        parsed = _Document(document)
+        self.assertIn((self.output/frame['html']).read_text(), parsed.frames)
+        embedded_images = {hashlib.sha256(base64.b64decode(value.split(',', 1)[1])).hexdigest()
+                           for value in parsed.images}
+        for key in ('figure', 'curvature_figure'):
+            self.assertIn(hashlib.sha256((self.output/frame[key]).read_bytes()).hexdigest(), embedded_images)
+        self.assertEqual(len(parsed.frames), 5)
+        saved_report = json.loads((self.output/'preview-report.json').read_text())
+        self.assertEqual(saved_report['recipe']['centerline_frames'], frames)
+        self.assertEqual(saved_report['recipe']['counts'], report['recipe']['counts'])
+        inventory = json.loads((self.output/'artifact-manifest.json').read_text())
+        for name, digest in inventory.items():
+            self.assertEqual(hashlib.sha256((self.output/name).read_bytes()).hexdigest(), digest, name)
+        self.assertFalse((self.output/'INCOMPLETE').exists())
+        self.assertFalse(self.fixture.dataset.exists())
+        self.assertFalse(self.fixture.model.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

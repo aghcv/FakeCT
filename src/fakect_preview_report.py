@@ -113,6 +113,7 @@ _STYLE = '''
 header,main,footer{max-width:1240px;margin:auto}header{padding:38px 30px 24px}h1{font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.18;margin:10px 0 14px;overflow-wrap:anywhere}h2{font-size:1.5rem;margin:0 0 14px}h3{font-size:1.1rem;margin:20px 0 8px}p{margin:8px 0 16px}.eyebrow{color:var(--accent);font-size:.8rem;font-weight:750;letter-spacing:.14em;text-transform:uppercase}.subtle,figcaption{color:var(--muted)}
 nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}nav a,button,.download{border:1px solid #b7cad3;background:white;color:var(--accent);border-radius:7px;padding:8px 12px;font:inherit;text-decoration:none;cursor:pointer}nav a:hover,button:hover,.download:hover{background:#e6f3f4}main{padding:0 20px}section{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:28px;margin:0 0 20px;scroll-margin-top:20px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:20px 0}.metric{padding:16px;border:1px solid var(--line);border-radius:8px;background:#f9fbfc}.metric strong{display:block;font-size:1.9rem;line-height:1.25}.metric span{color:var(--muted);font-size:.9rem}.rule{border-left:4px solid var(--accent);background:#eef8f9;padding:14px 18px}.warning{border-left:4px solid #c6841b;background:#fff8e8;padding:12px 18px;margin:12px 0}.status{display:inline-block;border-radius:20px;background:#e2f1eb;color:#23583d;padding:3px 11px;font-size:.85rem;font-weight:650}.table-scroll{max-width:100%;overflow:auto}table{width:100%;border-collapse:collapse;font-size:.92rem;margin:12px 0}th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}th{background:#edf3f6;white-space:nowrap}td{overflow-wrap:anywhere}figure{margin:22px 0 32px}figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:6px}figcaption{font-size:.9rem;margin:8px 0}iframe{width:100%;height:880px;border:1px solid var(--line);border-radius:8px;background:#f4f6f8}details{margin-top:15px}summary{cursor:pointer;font-weight:650;color:var(--accent)}code,pre,textarea{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.86rem}code{overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:15px;border-radius:6px;background:#f2f6f8}textarea{width:100%;min-height:420px;resize:vertical;background:#f8fbfc;color:var(--ink);border:1px solid #b7cad3;border-radius:6px;padding:15px;tab-size:4;line-height:1.5}.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}#input-status{color:var(--muted);font-size:.9rem}footer{padding:12px 30px 38px;font-size:.85rem;color:var(--muted)}.two-column{display:grid;grid-template-columns:1fr 1fr;gap:20px}.hash{word-break:break-all}.legend-key{display:inline-block;width:.85em;height:.85em;margin-right:.4em;border:1px solid #667;vertical-align:baseline}
 .report-tabs a[aria-selected="true"]{color:white;background:var(--accent);border-color:var(--accent)}.report-tabs a:focus-visible{outline:3px solid #e5a130;outline-offset:3px}.report-panel:focus{outline:none}.section-links{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 20px}.section-links a{color:var(--accent)}.global-view iframe{height:1050px}.report-panel[hidden]{display:none}
+.frame-preview iframe{height:1250px}
 @media(max-width:700px){header{padding:25px 20px}main{padding:0 10px}section{padding:18px}.two-column{grid-template-columns:1fr}iframe{height:740px}.global-view iframe{height:1250px}.metric strong{font-size:1.6rem}th,td{padding:8px}}
 @media print{body{background:#fff}nav,.actions,iframe{display:none}section{break-inside:auto;border:0;padding:15px 0}figure{break-inside:avoid}textarea{height:480px}header,main{max-width:none}details>*{display:block}details{break-inside:avoid}}
 @media print{.report-panel[hidden]{display:block!important}.section-links{display:none}}
@@ -331,6 +332,57 @@ def _surface_overlay_section(output, edit, embedded, *, recipe=False):
     return content + '</div>'
 
 
+def _centerline_frames_section(output, recipe, embedded):
+    frames = recipe.get('centerline_frames', [])
+    if not frames:
+        return ''
+    content = ['<div id="centerline-frames" class="frame-preview"><h3>Centerline directions and curvature</h3>',
+               '<p class="rule">The original ROI points and masks remain unchanged. A smoothed spline '
+               'provides the direction reference for inner and outer edits. '
+               '<strong>T</strong> follows the configured point order; <strong>N</strong> points toward '
+               'the local curvature center (inner), <strong>−N</strong> points outward, and '
+               '<strong>B = T × N</strong>. Binormal sign depends on point order.</p>',
+               '<p>Gray samples have undefined or unreliable inner/outer directions, including low-curvature '
+               'or ambiguous parts of the fitted path. N, −N and B arrows are omitted there. '
+               'These are mathematical directions of the ROI reference, not independently verified anatomical '
+               'wall identities. Arrow length is a display scale, not the requested edit distance.</p>']
+    for frame in frames:
+        parent = _text_value(frame.get('parent_roi'))
+        counts = [[label, _number(frame.get(key))] for key, label in (
+            ('sample_count', 'Spline samples'), ('reliable_samples', 'Reliable inner/outer samples'),
+            ('unreliable_samples', 'Undefined or unreliable samples'))]
+        content += ['<h4>Base ROI: ' + parent + '</h4>', _table(['Frame diagnostic', 'Count'], counts)]
+        content += ['<p class="warning">' + _escape(warning) + '</p>' for warning in frame.get('warnings', [])]
+        if frame.get('html'):
+            content.append(_embed_volume(output, frame['html'],
+                                          'Centerline direction reference — ' + str(frame.get('parent_roi')), embedded))
+        if frame.get('figure'):
+            content += ['<details><summary>Static centerline directions</summary>',
+                        _embed_png(output, frame['figure'], 'Centerline directions — ' + str(frame.get('parent_roi')),
+                                   'Original ROI points and polyline, the fitted direction reference, and sparse '
+                                   'trusted N, −N, B and T arrows. Translucent target context comes from original '
+                                   'labels; sampling may widen thin structures.', embedded), '</details>']
+        if frame.get('curvature_figure'):
+            content.append(_embed_png(output, frame['curvature_figure'],
+                                       'Curvature and reliability — ' + str(frame.get('parent_roi')),
+                                       'Curvature is plotted against cumulative physical path percentage of '
+                                       'the original parent ROI. Gray samples do not supply trusted inner/outer directions.', embedded))
+        settings = [[_text_value(key), _text_value(value)] for key, value in frame.get('settings', {}).items()]
+        settings += [['Arrow display length (mm)', _measurement(frame.get('arrow_length_mm'))],
+                     ['Target context display stride', _number(frame.get('target_context_stride'))]]
+        artifact = frame.get('artifacts', {}).get('frame_artifact', {})
+        content += ['<details><summary>Spline fit, settings and complete frame data</summary>',
+                    _table(['Setting', 'Value'], settings),
+                    '<p>The complete sampled frame, original ROI, fitting metadata, transported fallback '
+                    'normals and reliability flags remain in <code>' + _text_value(frame.get('frame_artifact')) +
+                    '</code> in the output directory. This HTML embeds the views; it does not embed the full '
+                    'frame JSON.</p><p>Frame JSON SHA256: <code class="hash">' +
+                    _text_value(artifact.get('sha256')) + '</code>.</p><pre>' +
+                    _escape(json.dumps(frame.get('metadata', {}), indent=2, ensure_ascii=False, allow_nan=False)) +
+                    '</pre></details>']
+    return ''.join(content) + '</div>'
+
+
 def _morphology_section(output, report, embedded):
     """Render applied label changes without treating a scalar proxy as recovered CT."""
     edit = report['edit']
@@ -514,6 +566,14 @@ def _recipe_section(output, report, embedded):
                 metadata_rows.append(['Local tube profile coordinate',
                                       'u = 0 at the selected range start; u = 1 at its end. '
                                       'Gaussian shape_window uses this local coordinate.'])
+        direction = summary.get('direction', {})
+        if isinstance(direction, dict) and direction:
+            metadata_rows += [[label, _text_value(direction.get(key))] for key, label in (
+                ('direction', 'Circumferential edit direction'),
+                ('angular_width_deg', 'Angular width (degrees)'),
+                ('weight_semantics', 'Angular weighting'),
+                ('unreliable_roi_voxels', 'ROI voxels without a reliable inner/outer frame'),
+                ('angular_supported_roi_voxels', 'ROI voxels with angular support')) if direction.get(key) is not None]
         warnings = ''.join('<p class="warning">'+_escape(w)+' </p>' for w in summary.get('warnings', []))
         blocked_rows = [[_text_value(row.get('original_id')), _text_value(row.get('original_name')),
                          _text_value(row.get('tissue_name')), _number(row.get('count'))]
@@ -593,6 +653,7 @@ def _recipe_section(output, report, embedded):
             'a narrower shape window is measured within that interval, not across the full base tube.</p>')
     return ('<section id="recipe"><h2>Named-region edit recipe</h2>' +
             _surface_overlay_section(output, recipe, embedded, recipe=True) +
+            _centerline_frames_section(output, recipe, embedded) +
             '<p class="rule">Each pass consumes the previous pass’s labels and attenuation proxy. '
             '<strong>Every named ROI is clipped to the fixed main ROI.</strong> '
             'The source arrays remain preserved; regions stay at their configured native coordinates.</p>'

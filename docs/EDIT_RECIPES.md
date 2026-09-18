@@ -19,7 +19,7 @@ python3 scripts/preview_roi.py --config configs/studies/thoracic-aorta-recipe.in
 
 Open [the recipe report with Global, Local, and before/after overlay views](../outputs/studies/thoracic-aorta/recipe-v6/report.html).
 For subsequent runs, set `[output] directory` to a fresh location such as
-`outputs/studies/thoracic-aorta/recipe-v7`. Add `--validate-only` to check the
+`outputs/studies/thoracic-aorta/recipe-v8`. Add `--validate-only` to check the
 input and crop/search bounds without reading voxel payloads. Native overlap and
 selection counts require the actual preview run.
 
@@ -111,9 +111,9 @@ With `profile_axis = tube`, the selected interval becomes a local coordinate:
 Gaussian across that entire range; `shape_window = 0.2,0.8` narrows it to the
 middle 60% of the selected range. For a parent range of 30–75%, local u=0.5
 corresponds to parent 52.5%. Uniform edits still obey the selected range, even
-though they ignore Gaussian shape settings. Circumferential/eccentric asymmetry
-controls remain future work; this coordinate currently controls longitudinal
-localization and taper.
+though they ignore Gaussian shape settings. This coordinate controls longitudinal
+localization and taper. Optional `direction=inner` or `outer` adds curvature-relative
+circumferential localization; see [curvature edits and the recipe-v7 example](CURVATURE_EDITS.md).
 
 A selected tube interval is bounded by:
 

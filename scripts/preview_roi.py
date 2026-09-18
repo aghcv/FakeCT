@@ -153,11 +153,13 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                   ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_reassignment.py',
                   ROOT/'src/fakect_edit_preview.py', ROOT/'src/fakect_global_preview.py',
                   ROOT/'src/fakect_surface_overlay.py']
+    code_files += [ROOT/'src/fakect_direction.py', ROOT/'src/fakect_centerline_frame.py']
     code_files += [Path(p) for p in extra_code_files]
     recipe_requested = 'recipe' in config
     if recipe_requested:
         code_files += [ROOT/'src/fakect_recipe.py', ROOT/'src/fakect_recipe_config.py',
-                       ROOT/'src/fakect_recipe_preview.py', ROOT/'src/fakect_tube_range.py']
+                       ROOT/'src/fakect_recipe_preview.py', ROOT/'src/fakect_tube_range.py',
+                       ROOT/'src/fakect_frame_preview.py']
     code_hashes = {str(p.relative_to(ROOT)): digest(p) for p in code_files}
     resolved = resolve_preview(config)
     edit_requested = config.get('edit', {}).get('operation', 'none') != 'none'
@@ -187,6 +189,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
     edit_result = None
     recipe_steps = []
     recipe_figures = None
+    frame_figures = []
     if edit_requested:
         from fakect_morphology import apply_morphology
         edit_result = apply_morphology(arrays, resolved, config)
@@ -219,6 +222,11 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                   f"iteration {event['iteration']}; added={counts['added']}, removed={counts['removed']}", flush=True)
 
         edit_result = apply_recipe(arrays, resolved, config, on_step=capture_step)
+        from fakect_direction import recipe_centerline_frames
+        frames = recipe_centerline_frames(config, resolved)
+        if frames:
+            from fakect_frame_preview import render_centerline_frames
+            frame_figures = render_centerline_frames(frames, arrays, resolved, config, output)
     print(f"Read native crop {arrays['act'].shape}; selected voxels={int(arrays['selected'].sum())}", flush=True)
     plot_stats = render_slices(arrays, resolved, config, output)
     from fakect_global_preview import render_global_preview
@@ -304,6 +312,8 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                                 'final_figures': edit_figures, 'after_volume': after_volume,
                                 'surface_overlay': surface_overlay,
                                 'array_artifact': 'edit.npz', 'plan': recipe_plan}
+            if frame_figures:
+                report['recipe']['centerline_frames'] = frame_figures
         else:
             report['edit'] = {**edit_result['summary'], 'figures': edit_figures, 'after_volume': after_volume,
                               'surface_overlay': surface_overlay,

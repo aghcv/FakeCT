@@ -292,6 +292,131 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(config["edits"]["ascending_expand"]["profile_axis"], "k")
         self.assertNotIn("point_range", config["edits"]["ascending_expand"])
 
+    def test_optional_centerline_defaults_and_partial_overrides_leave_legacy_edits_unchanged(self):
+        legacy = self.load()
+        self.assertNotIn("centerline", legacy)
+        for edit in legacy["edits"].values():
+            self.assertNotIn("direction", edit)
+            self.assertNotIn("angular_width_deg", edit)
+        for values, expected in (
+                ({}, {"smoothing_mm": 1., "sample_step_mm": 1., "min_curvature_per_mm": .002}),
+                ({"smoothing_mm": "0"},
+                 {"smoothing_mm": 0., "sample_step_mm": 1., "min_curvature_per_mm": .002}),
+                ({"smoothing_mm": "2.5", "sample_step_mm": ".4", "min_curvature_per_mm": ".01"},
+                 {"smoothing_mm": 2.5, "sample_step_mm": .4, "min_curvature_per_mm": .01})):
+            with self.subTest(values=values):
+                parser = self.parser()
+                parser["centerline"] = values
+                before = {section: dict(parser[section]) for section in parser.sections()}
+                config = self.load(parser)
+                self.assertEqual(config, self.load(parser, loader=load_preview_config))
+                self.assertEqual(config.pop("centerline"), expected)
+                self.assertEqual(config, legacy)
+                self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
+
+    def test_directional_main_or_named_edits_supply_angle_and_centerline_defaults(self):
+        for roi_name in ("main", "ascending"):
+            for direction in ("inner", "outer"):
+                with self.subTest(roi=roi_name, direction=direction):
+                    parser = self.parser()
+                    parser["edit.ascending_expand"].update(roi=roi_name, direction=direction)
+                    config = self.load(parser)
+                    self.assertEqual(config["edits"]["ascending_expand"]["direction"], direction)
+                    self.assertEqual(config["edits"]["ascending_expand"]["angular_width_deg"], 180.)
+                    self.assertEqual(config["centerline"], {
+                        "smoothing_mm": 1., "sample_step_mm": 1., "min_curvature_per_mm": .002})
+                    self.assertNotIn("direction", config["edits"]["descending_narrow"])
+                    self.assertNotIn("angular_width_deg", config["edits"]["descending_narrow"])
+
+    def test_directional_range_validates_original_parent_and_retains_explicit_settings(self):
+        for selector, interval, expected in (("point_range", "2,3", (2, 3)),
+                                             ("path_percent", "30,75", (30., 75.))):
+            with self.subTest(selector=selector):
+                parser = self.parser()
+                parser["edit.ascending_expand"].update(direction="inner", angular_width_deg="75.5")
+                parser["edit.ascending_expand"][selector] = interval
+                parser["centerline"] = {"sample_step_mm": ".25"}
+                before = {section: dict(parser[section]) for section in parser.sections()}
+                config = self.load(parser)
+                edit = config["edits"]["ascending_expand"]
+                # Named parent has four nodes; point_range retains only two.
+                self.assertEqual(len(config["rois"]["ascending"]["center_ijk"]), 4)
+                self.assertEqual(edit[selector], expected)
+                self.assertEqual(edit["direction"], "inner")
+                self.assertEqual(edit["angular_width_deg"], 75.5)
+                self.assertEqual(config["centerline"], {
+                    "smoothing_mm": 1., "sample_step_mm": .25, "min_curvature_per_mm": .002})
+                self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
+
+    def test_explicit_all_preserves_ordinary_sphere_edits_without_centerline_defaults(self):
+        parser = self.parser()
+        parser["roi.ascending"].update(shape="sphere", center_ijk="387,360,1352", radius_mm="10")
+        parser["edit.ascending_expand"]["profile_axis"] = "k"
+        baseline = self.load(parser)
+        parser["edit.ascending_expand"]["direction"] = "all"
+        config = self.load(parser)
+        self.assertEqual(config["edits"]["ascending_expand"].pop("direction"), "all")
+        self.assertEqual(config, baseline)
+        self.assertNotIn("centerline", config)
+
+    def test_directional_edits_reject_spheres_and_parents_with_fewer_than_four_nodes(self):
+        for roi_name in ("main", "ascending"):
+            for shape, centers, radii in (
+                    ("sphere", "387,360,1352", "10"),
+                    ("tube", "387,360,1352 ; 378,365,1363", "10,10"),
+                    ("tube", "387,360,1352 ; 378,365,1363 ; 373,362,1374", "10,10,10")):
+                with self.subTest(roi=roi_name, shape=shape, centers=centers):
+                    parser = self.parser()
+                    section = "roi" if roi_name == "main" else "roi.ascending"
+                    parser[section].update(shape=shape, center_ijk=centers, radius_mm=radii)
+                    parser["edit.ascending_expand"].update(roi=roi_name, direction="outer", profile_axis="k")
+                    with self.assertRaisesRegex(ValueError, "parent tube.*at least four"):
+                        self.load(parser)
+
+    def test_direction_and_angular_width_reject_invalid_or_unused_settings(self):
+        for direction in ("", "Inner", "inside", "both", "inner,outer", "inner\nouter"):
+            with self.subTest(direction=direction), self.assertRaises(ValueError):
+                parser = self.parser()
+                parser["edit.ascending_expand"]["direction"] = direction
+                self.load(parser)
+        for width in ("", "0", "-1", "180.01", "nan", "inf", "-inf", "90,180", "90\n180"):
+            with self.subTest(width=width), self.assertRaises(ValueError):
+                parser = self.parser()
+                parser["edit.ascending_expand"].update(direction="inner", angular_width_deg=width)
+                self.load(parser)
+        for direction in (None, "all"):
+            with self.subTest(unused_width_direction=direction):
+                parser = self.parser()
+                parser["edit.ascending_expand"]["angular_width_deg"] = "90"
+                if direction is not None:
+                    parser["edit.ascending_expand"]["direction"] = direction
+                with self.assertRaisesRegex(ValueError, "angular_width_deg requires direction=inner or outer"):
+                    self.load(parser)
+        for width in (".1", "180"):
+            parser = self.parser()
+            parser["edit.ascending_expand"].update(direction="outer", angular_width_deg=width)
+            self.assertEqual(self.load(parser)["edits"]["ascending_expand"]["angular_width_deg"], float(width))
+
+    def test_centerline_rejects_unknown_nonfinite_negative_and_nonpositive_settings(self):
+        for key in ("smoothing_mm", "sample_step_mm", "min_curvature_per_mm"):
+            invalid = ("", "-1", "nan", "inf", "-inf", "1,2", "1\n2")
+            if key != "smoothing_mm":
+                invalid += ("0",)
+            for value in invalid:
+                with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                    parser = self.parser()
+                    parser["centerline"] = {key: value}
+                    self.load(parser)
+        for section, key in (("centerline", "smoothing"), ("centerline", "direction"),
+                             ("edit.ascending_expand", "angular_width")):
+            with self.subTest(section=section, key=key):
+                parser = self.parser()
+                if not parser.has_section(section):
+                    parser.add_section(section)
+                parser[section][key] = "1"
+                with self.assertRaisesRegex(ValueError, "unknown"):
+                    self.load(parser)
+
     def test_named_sphere_is_validated_against_its_own_profile_axis(self):
         parser = self.parser()
         parser["roi.ascending"].update({"shape": "sphere", "center_ijk": "387.5,360,1352", "radius_mm": "50"})
