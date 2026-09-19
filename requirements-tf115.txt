@@ -1,0 +1,12 @@
+# Pinned for TensorFlow 1.15 container (older base libs)
+# Adjust if your container ships different base versions.
+numpy==1.18.5
+scipy==1.4.1
+scikit-image==0.16.2
+trimesh==3.9.43
+plotly==4.14.3
+dash==1.21.0
+pynrrd==0.4.2
+pillow==7.1.2
+pandas==1.0.5
+matplotlib==3.2.2
