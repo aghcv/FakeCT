@@ -993,6 +993,14 @@ def _recipe_training_section(output, report, embedded):
         ('target_voxels_outside_roi', 'Original selected target outside main selector'),
         ('target_components_6', 'Original selected components (six-neighbor)'))]
     model_rows = [[_escape(key), _text_value(value)] for key, value in plan.get('model', {}).items()]
+    cohort_only = plan.get('split_mode') == 'unassigned'
+    split_explanation = ('Model splits are unassigned here. A separate model experiment keeps each anatomy family '
+                         'in one train, validation or test partition.' if cohort_only else
+                         'Identical target masks stay in one split; baseline-equivalent masks stay in training, '
+                         'so provisional assignments can change.')
+    next_step = ('set <code>train.parameters_reviewed = true</code>, run <code>stage = freeze</code>, then '
+                 '<code>stage = prepare</code>. Register the completed dataset for later model experiments.' if cohort_only else
+                 '<code>stage = prepare</code> exports pairs and <code>stage = fit</code> trains from the frozen dataset.')
     figure = _embed_png(output, 'training-target.png', 'Original selected training target',
                         'Source attenuation above; original ROI-selected binary target below. Cyan outlines '
                         'selected tissue; orange is the fixed ancestor selector. Final pairs track surviving '
@@ -1022,22 +1030,20 @@ def _recipe_training_section(output, report, embedded):
             'every listed variant.</p><p>' + _text_value(plan.get('validation_scope')) + '</p>'
             '<p>Run <code>stage = preflight</code> to execute every planned combination on the native crop '
             'and review actual edits, accepted safeguard distances, unresolved voxels and duplicate geometries '
-            'before exporting training pairs. Identical target masks stay in one split; baseline-equivalent '
-            'masks stay in training, so provisional assignments can change.</p>'
+            'before exporting training pairs. ' + split_explanation + '</p>'
             '<p class="warning">' + _text_value(plan.get('split_warning')) + '</p>'
             '<p class="warning">' + _text_value(plan.get('image_warning')) + '</p>'
-            '<details><summary>TensorFlow experiment and output locations</summary>' +
+            '<details><summary>Output locations and model settings, if applicable</summary>' +
             _table(['Model setting', 'Value'], model_rows) +
             '<p>Native preflight audit: <code>' + _text_value(plan.get('preflight_directory')) + '</code><br>'
             'Future paired data: <code>' + _text_value(plan.get('dataset_directory')) + '</code><br>'
-            'Future model: <code>' + _text_value(plan.get('model_directory')) + '</code></p>'
+            'Future model: <code>' + _text_value(plan.get('model_directory') or 'Separate model-experiment INI') + '</code></p>'
             '<p>The 2D U-Net maps normalized attenuation patches to the binary selected-lineage target. '
             'Validation selects the checkpoint; test images and masks remain reserved from fitting and selection.</p></details>'
             '<h3>Continue from the same INI</h3><ol><li>Use <code>stage = preview</code> while reviewing the '
             'main ROI and ordered <code>[edit.NAME]</code> settings.</li><li>Adjust <code>[sweep.NAME]</code> '
             'values. <code>stage = plan</code> writes the metadata plan; <code>stage = preflight</code> '
-            'measures every combination.</li><li>After reviewing the native results, <code>stage = prepare</code> '
-            'exports pairs and <code>stage = fit</code> trains from the frozen dataset.</li></ol></section>')
+            'measures every combination.</li><li>After reviewing the native results, ' + next_step + '</li></ol></section>')
 
 
 def _training_section(output, report, embedded):

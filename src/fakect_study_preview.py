@@ -14,7 +14,7 @@ def render_training_target(arrays, resolved, config, output):
     from matplotlib.lines import Line2D
     from scipy.ndimage import label
 
-    recipe_study = config.get('study', {}).get('schema_version') == 'fakect.recipe-study/1'
+    recipe_study = config.get('study', {}).get('schema_version') in ('fakect.recipe-study/1', 'fakect.recipe-cohort/1')
     target = (np.asarray(arrays['selected'], dtype=bool) if recipe_study else
               np.isin(arrays['act'], config['train']['target_source_ids']))
     roi = arrays['roi']

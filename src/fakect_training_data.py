@@ -30,7 +30,7 @@ _EROSION_GUARD_FIELDS = ('min_volume_ratio', 'preserve_connectivity', 'backoff_f
 
 
 def _recipe_study(config):
-    return config.get('study', {}).get('schema_version') == 'fakect.recipe-study/1'
+    return config.get('study', {}).get('schema_version') in ('fakect.recipe-study/1', 'fakect.recipe-cohort/1')
 
 
 def _json_value(value):
@@ -420,7 +420,8 @@ def validate_dataset(config, resolved, manifest_path=None):
             raise ValueError('Duplicate sample identity or path in dataset manifest')
         seen_ids.add(identity)
         paths.add(relative)
-        if sample['split'] not in ('train', 'validation', 'test'):
+        allowed_splits = ('unassigned',) if manifest.get('split_mode') == 'unassigned' else ('train', 'validation', 'test')
+        if sample['split'] not in allowed_splits:
             raise ValueError('Unknown dataset split')
         if manifest['artifacts_sha256'].get(relative) != sample['sha256']:
             raise ValueError('Sample checksum disagrees with artifact inventory')

@@ -95,6 +95,9 @@ def inspect_manifest(manifest_path):
     """Validate split/provenance metadata without opening sample NPZ payloads."""
     path = Path(manifest_path).resolve()
     data = json.loads(path.read_text())
+    if data.get('schema_version') == 'fakect.model-experiment-lock/1':
+        from fakect_model_experiment import inspect_experiment_lock
+        return inspect_experiment_lock(path)
     if data.get('schema_version') != 'fakect.training-dataset/1':
         raise ValueError('Unsupported training dataset manifest schema')
     if data.get('split_mode') != 'scenario_only':
@@ -181,9 +184,10 @@ class PatchDataset:
             split = sample['split']
             if split == 'test':
                 continue
-            for k in range(self.shape[0]):
-                for j in range(0, self.shape[1], self.patch_size[0]):
-                    for i in range(0, self.shape[2], self.patch_size[1]):
+            shape = tuple(sample.get('shape_kji', self.shape))
+            for k in range(shape[0]):
+                for j in range(0, shape[1], self.patch_size[0]):
+                    for i in range(0, shape[2], self.patch_size[1]):
                         self._patches[split].append((sample_index, k, j, i))
 
     def patches(self, split):
@@ -224,9 +228,10 @@ class PatchDataset:
             raise ValueError(f'Sample file hash changed: {sample["variant_id"]}')
         with np.load(path, allow_pickle=False) as archive:
             image, mask = archive['image'], archive['mask']
-        if image.dtype != np.float32 or image.shape != self.shape or not np.all(np.isfinite(image)):
+        shape = tuple(sample.get('shape_kji', self.shape))
+        if image.dtype != np.float32 or image.shape != shape or not np.all(np.isfinite(image)):
             raise ValueError('Sample image must be finite float32 matching crop_shape_kji')
-        if mask.dtype != np.uint8 or mask.shape != self.shape or not np.all((mask == 0) | (mask == 1)):
+        if mask.dtype != np.uint8 or mask.shape != shape or not np.all((mask == 0) | (mask == 1)):
             raise ValueError('Sample mask must be uint8 {0,1} matching crop_shape_kji')
         for array, name in ((image, 'image_sha256'), (mask, 'mask_sha256')):
             if hashlib.sha256(array.tobytes(order='C')).hexdigest() != sample[name]:
@@ -244,7 +249,7 @@ class PatchDataset:
         valid = np.zeros_like(images)
         for index, (sample_index, k, j, i) in enumerate(records):
             image, mask = self._load(sample_index)
-            h, w = min(height, self.shape[1] - j), min(width, self.shape[2] - i)
+            h, w = min(height, image.shape[1] - j), min(width, image.shape[2] - i)
             images[index, :h, :w, 0] = normalize_image(image[k, j:j+h, i:i+w], self.settings)
             masks[index, :h, :w, 0] = mask[k, j:j+h, i:i+w]
             valid[index, :h, :w, 0] = 1
@@ -390,6 +395,10 @@ def train_segmentation(config, manifest_path):
                 'history': history, 'tensorflow_version': tf.__version__, 'numpy_version': np.__version__,
                 'model_file': model_path.name, 'model_sha256': _sha256(model_path),
                 'module_sha256': _sha256(__file__), 'weights_include_test_selection': False}
+    if data['split_mode'] == 'anatomy_family':
+        metadata.update(
+            evaluation_scope='Holdout of verified source anatomy families; synthetic CT proxy data, not a patient-generalization claim.',
+            family_assignment=data['family_assignment'], source_datasets=data['source_datasets'])
     (output / 'model-metadata.json').write_text(json.dumps(metadata, indent=2, allow_nan=False) + '\n')
     return metadata
 

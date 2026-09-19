@@ -1,0 +1,3427 @@
+{
+  "schema_version": "fakect.multiphantom-inventory/1",
+  "created_utc": "2026-09-19T01:56:36.501246+00:00",
+  "source_root": "/home/aghorban/slurm/xcat",
+  "audit_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/docs/integration/2026-09-16/xcat-results.json",
+  "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+  "catalog_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/tissues/atlas-v1/label-catalog.json",
+  "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+  "cases": [
+    {
+      "case_id": "260602",
+      "directory": "/home/aghorban/slurm/xcat/260602",
+      "par_path": "/home/aghorban/slurm/xcat/260602.par",
+      "par_sha256": "b384254a849f09fd8f46a5838aaea25512979e15e3854eeb2204444b9ea72575",
+      "log_path": "/home/aghorban/slurm/xcat/260602/260602_log",
+      "log_sha256": "bd7c1f134282a77a7f28645959679cbce97aa809bbf1a035670c5206f616cad8",
+      "organ_file": "vmale50.nrb",
+      "heart_base": "vmale50_heart.nrb",
+      "sex_parameter": "0",
+      "provisional_anatomy_family": "xcat_reference_adult",
+      "family_reviewed": false,
+      "shape_kji": [
+        1860,
+        750,
+        750
+      ],
+      "spacing_ijk_mm": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "body_height_mm": 1752.3262,
+      "parameter_differences_from_260602": {},
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/vmale50.nrb",
+        "bytes": 63512091,
+        "sha256": "4d3fdc484e31542eca6dd6659ace2563c27ec28426819dc23704cebbb0bc2465"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/vmale50_heart.nrb",
+        "sha256": "6a082f348528320e6151f65384acf0fe66b48e7095ebd510e342c8a1aa07de75"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 4185000000,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260602_1_body.raw",
+        "260602_1_bones.raw",
+        "260602_1_heart.raw",
+        "260602_1_muscle.raw",
+        "260602_1_organs.raw",
+        "260602_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260602/260602_act_1.bin",
+          "bytes": 4185000000,
+          "mtime_ns": 1786328260487208000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260602/260602_atn_1.bin",
+          "bytes": 4185000000,
+          "mtime_ns": 1786328328749713000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -830.0,
+        -817.0,
+        1014.0,
+        1016.0,
+        1018.0,
+        1019.0,
+        1020.0,
+        1021.0,
+        1022.0,
+        1023.0,
+        1024.0,
+        1027.0
+      ],
+      "review_status": "reviewed_reference_roi",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260602.json",
+      "localization_sha256": "1f86a0dec2289fd346e10e7f9cc8880c14e2bd0e28ed748433d5c838d1e3f437",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            385,
+            359,
+            1352
+          ],
+          [
+            378,
+            365,
+            1363
+          ],
+          [
+            373,
+            362,
+            1374
+          ],
+          [
+            373,
+            363,
+            1389
+          ],
+          [
+            376,
+            366,
+            1402
+          ],
+          [
+            385,
+            375,
+            1410
+          ],
+          [
+            392,
+            386,
+            1411
+          ],
+          [
+            393,
+            398,
+            1405
+          ],
+          [
+            390,
+            408,
+            1394
+          ],
+          [
+            387,
+            414,
+            1383
+          ],
+          [
+            387,
+            419,
+            1370
+          ],
+          [
+            387,
+            419,
+            1355
+          ],
+          [
+            389,
+            419,
+            1341
+          ],
+          [
+            390,
+            418,
+            1327
+          ],
+          [
+            390,
+            416,
+            1316
+          ]
+        ],
+        "radius_mm": [
+          10.1,
+          10.0,
+          10.0,
+          11.1,
+          10.4,
+          10.0,
+          10.0,
+          12.2,
+          11.1,
+          10.5,
+          10.5,
+          10.7,
+          10.9,
+          10.9,
+          10.3
+        ],
+        "crop_half_width_mm": 27.2,
+        "crop_low_ijk": [
+          345,
+          331,
+          1288
+        ],
+        "crop_high_ijk_exclusive": [
+          422,
+          448,
+          1440
+        ],
+        "crop_voxels": 1369368,
+        "volume_stride": 3,
+        "slice_ijk": [
+          393,
+          398,
+          1405
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 207.11245337126508,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 1.0,
+        "dilation_distance_mm": [
+          3.0,
+          6.0,
+          9.0
+        ],
+        "coa_distance_mm": [
+          2.0,
+          4.0,
+          6.0,
+          8.0,
+          10.0
+        ],
+        "inner_arch_distance_mm": 7.0,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260611",
+      "directory": "/home/aghorban/slurm/xcat/260611",
+      "par_path": "/home/aghorban/slurm/xcat/260611.par",
+      "par_sha256": "3a32cd19f6488bc99811c813917c819c64099dbcea85d13e06fe0ea5520917f1",
+      "log_path": "/home/aghorban/slurm/xcat/260611/260611_log",
+      "log_sha256": "97de065810d9da98a4842e9f1036ccd7f0c57b8414a5891ef1817f400ff66e62",
+      "organ_file": "vfemale50.nrb",
+      "heart_base": "vfemale50_heart.nrb",
+      "sex_parameter": "1",
+      "provisional_anatomy_family": "xcat_reference_adult",
+      "family_reviewed": false,
+      "shape_kji": [
+        1720,
+        690,
+        690
+      ],
+      "spacing_ijk_mm": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "body_height_mm": 1630.4417,
+      "parameter_differences_from_260602": {
+        "gender": "1",
+        "organ_file": "vfemale50.nrb",
+        "heart_base": "vfemale50_heart.nrb",
+        "x_array_size": "690",
+        "y_array_size": "690",
+        "endslice": "1720"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/vfemale50.nrb",
+        "bytes": 64468656,
+        "sha256": "1cab5af8f394c6a5fb686c25561d45f2056b315ebd0be34f7f6ea1b6ddf7b04b"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/vfemale50_heart.nrb",
+        "sha256": "5ff4587cc6bebbaf700e601d3804db0352b2ef7423e20acde533043e7837a99d"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 3275568000,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260611_1_body.raw",
+        "260611_1_bones.raw",
+        "260611_1_heart.raw",
+        "260611_1_muscle.raw",
+        "260611_1_organs.raw",
+        "260611_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260611/260611_act_1.bin",
+          "bytes": 3275568000,
+          "mtime_ns": 1786398886837978000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260611/260611_atn_1.bin",
+          "bytes": 3275568000,
+          "mtime_ns": 1786398945847371000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -824.0,
+        -820.0,
+        -802.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260611.json",
+      "localization_sha256": "2cdd8e472f5198a8dab63d024f8bf0cb23b9869d1796f292ec2c8c229612a400",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            354,
+            328,
+            1246
+          ],
+          [
+            347,
+            331,
+            1257
+          ],
+          [
+            342,
+            329,
+            1268
+          ],
+          [
+            342,
+            330,
+            1281
+          ],
+          [
+            345,
+            333,
+            1294
+          ],
+          [
+            353,
+            341,
+            1301
+          ],
+          [
+            361,
+            350,
+            1303
+          ],
+          [
+            361,
+            362,
+            1298
+          ],
+          [
+            360,
+            371,
+            1288
+          ],
+          [
+            357,
+            377,
+            1278
+          ],
+          [
+            356,
+            382,
+            1266
+          ],
+          [
+            356,
+            384,
+            1253
+          ],
+          [
+            357,
+            384,
+            1240
+          ],
+          [
+            358,
+            383,
+            1227
+          ],
+          [
+            359,
+            381,
+            1214
+          ],
+          [
+            359,
+            381,
+            1213
+          ]
+        ],
+        "radius_mm": [
+          10.2,
+          10.5,
+          10.7,
+          11.1,
+          9.8,
+          9.4,
+          9.4,
+          10.2,
+          9.9,
+          9.4,
+          9.4,
+          9.4,
+          9.4,
+          9.5,
+          9.5,
+          9.6
+        ],
+        "crop_half_width_mm": 25.5,
+        "crop_low_ijk": [
+          316,
+          302,
+          1187
+        ],
+        "crop_high_ijk_exclusive": [
+          388,
+          411,
+          1330
+        ],
+        "crop_voxels": 1122264,
+        "volume_stride": 2,
+        "slice_ijk": [
+          360,
+          371,
+          1288
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 196.59846370336265,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.9304441718670874,
+        "dilation_distance_mm": [
+          2.791,
+          5.583,
+          8.374
+        ],
+        "coa_distance_mm": [
+          1.861,
+          3.722,
+          5.583,
+          7.444,
+          9.304
+        ],
+        "inner_arch_distance_mm": 6.513,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260612",
+      "directory": "/home/aghorban/slurm/xcat/260612",
+      "par_path": "/home/aghorban/slurm/xcat/260612.par",
+      "par_sha256": "11225615167155aaccca9d0406d1e263cdfd8c907ff9a7ef12e8a24ca8560ce1",
+      "log_path": "/home/aghorban/slurm/xcat/260612/260612_log",
+      "log_sha256": "367e4d4b7cfe0e45f649b888687616d195fce43853cf65b0ce07fe43bd772a60",
+      "organ_file": "male_infant_ref.nrb",
+      "heart_base": "male_infant_ref_heart.nrb",
+      "sex_parameter": "0",
+      "provisional_anatomy_family": "xcat_reference_infant",
+      "family_reviewed": false,
+      "shape_kji": [
+        1400,
+        554,
+        554
+      ],
+      "spacing_ijk_mm": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "body_height_mm": 518.8584,
+      "parameter_differences_from_260602": {
+        "organ_file": "male_infant_ref.nrb",
+        "heart_base": "male_infant_ref_heart.nrb",
+        "pixel_width": "0.04",
+        "slice_width": "0.04",
+        "x_array_size": "554",
+        "y_array_size": "554",
+        "endslice": "1400"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/male_infant_ref.nrb",
+        "bytes": 67244293,
+        "sha256": "af6d5bb30921115f9577685923dd0c35bb1560c328ad20d6b9967389b5db3a2f"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/male_infant_ref_heart.nrb",
+        "sha256": "29362a2936e1a7d2d8504e27dbf36ea6026ce68e16673a0fe2f0c1e0bd1bc674"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 1718729600,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260612_1_body.raw",
+        "260612_1_bones.raw",
+        "260612_1_heart.raw",
+        "260612_1_muscle.raw",
+        "260612_1_organs.raw",
+        "260612_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260612/260612_act_1.bin",
+          "bytes": 1718729600,
+          "mtime_ns": 1785637615126601000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260612/260612_atn_1.bin",
+          "bytes": 1718729600,
+          "mtime_ns": 1785637646074168000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -828.0,
+        -820.0,
+        -805.0,
+        430.0,
+        431.0,
+        583.0,
+        584.0,
+        871.0,
+        872.0,
+        873.0,
+        874.0,
+        875.0,
+        876.0,
+        877.0,
+        878.0,
+        879.0,
+        1016.0,
+        1018.0,
+        1019.0,
+        1024.0,
+        1027.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260612.json",
+      "localization_sha256": "2bac60eb9f26e533e9740efefb4a77896c9b8f3087666c269d8dad543e62bf0b",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            281,
+            237,
+            913
+          ],
+          [
+            273,
+            240,
+            918
+          ],
+          [
+            271,
+            240,
+            929
+          ],
+          [
+            272,
+            240,
+            939
+          ],
+          [
+            277,
+            240,
+            948
+          ],
+          [
+            286,
+            242,
+            953
+          ],
+          [
+            293,
+            249,
+            956
+          ],
+          [
+            297,
+            259,
+            954
+          ],
+          [
+            298,
+            269,
+            954
+          ],
+          [
+            301,
+            277,
+            949
+          ],
+          [
+            301,
+            285,
+            941
+          ],
+          [
+            300,
+            290,
+            933
+          ],
+          [
+            299,
+            294,
+            924
+          ],
+          [
+            297,
+            298,
+            915
+          ],
+          [
+            296,
+            301,
+            905
+          ],
+          [
+            295,
+            303,
+            896
+          ],
+          [
+            295,
+            303,
+            886
+          ]
+        ],
+        "radius_mm": [
+          3.6,
+          3.6,
+          4.1,
+          4.1,
+          3.8,
+          3.0,
+          3.0,
+          3.0,
+          3.6,
+          4.0,
+          3.9,
+          3.6,
+          3.4,
+          3.5,
+          3.4,
+          3.4,
+          3.5
+        ],
+        "crop_half_width_mm": 11.0,
+        "crop_low_ijk": [
+          243,
+          209,
+          858
+        ],
+        "crop_high_ijk_exclusive": [
+          330,
+          332,
+          985
+        ],
+        "crop_voxels": 1359027,
+        "volume_stride": 3,
+        "slice_ijk": [
+          298,
+          269,
+          954
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 70.63802556600425,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.2960969253327377,
+        "dilation_distance_mm": [
+          0.888,
+          1.777,
+          2.665
+        ],
+        "coa_distance_mm": [
+          0.592,
+          1.184,
+          1.777,
+          2.369,
+          2.961
+        ],
+        "inner_arch_distance_mm": 2.073,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260613",
+      "directory": "/home/aghorban/slurm/xcat/260613",
+      "par_path": "/home/aghorban/slurm/xcat/260613.par",
+      "par_sha256": "1fad083d89338f2040a4fb26bcfba7391635cd685c16b4a21a3428baa7e72e3c",
+      "log_path": "/home/aghorban/slurm/xcat/260613/260613_log",
+      "log_sha256": "e7c45af721429b0b5edb0b67dcade79aafc046dbdee35f5a5fdb29364ec6326a",
+      "organ_file": "male_1yr_ref.nrb",
+      "heart_base": "male_1yr_ref_heart.nrb",
+      "sex_parameter": "0",
+      "provisional_anatomy_family": "xcat_reference_1yr",
+      "family_reviewed": false,
+      "shape_kji": [
+        1640,
+        657,
+        657
+      ],
+      "spacing_ijk_mm": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "body_height_mm": 770.0762,
+      "parameter_differences_from_260602": {
+        "organ_file": "male_1yr_ref.nrb",
+        "heart_base": "male_1yr_ref_heart.nrb",
+        "pixel_width": "0.05",
+        "slice_width": "0.05",
+        "x_array_size": "657",
+        "y_array_size": "657",
+        "endslice": "1640"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/male_1yr_ref.nrb",
+        "bytes": 67191681,
+        "sha256": "118b5f4bdefb9cfa82817f3e283a8e37f4d64b04d889e5f50d8f3af8e2f5aad8"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/male_1yr_ref_heart.nrb",
+        "sha256": "06bc933b50bddd76e3d68af771fa8697443071eab3a03d9f594386384ddc4411"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 2831617440,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260613_1_body.raw",
+        "260613_1_bones.raw",
+        "260613_1_heart.raw",
+        "260613_1_muscle.raw",
+        "260613_1_organs.raw",
+        "260613_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260613/260613_act_1.bin",
+          "bytes": 2831617440,
+          "mtime_ns": 1785637689740962000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260613/260613_atn_1.bin",
+          "bytes": 2831617440,
+          "mtime_ns": 1785637740795822000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -822.0,
+        -817.0,
+        -814.0,
+        -806.0,
+        871.0,
+        872.0,
+        873.0,
+        874.0,
+        875.0,
+        1014.0,
+        1016.0,
+        1017.0,
+        1027.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260613.json",
+      "localization_sha256": "0066c961b91900dbdac3bf0c1cca6d18d675adf01fc6c6728a9237fd529c9ecb",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            323,
+            306,
+            1121
+          ],
+          [
+            314,
+            311,
+            1125
+          ],
+          [
+            311,
+            311,
+            1137
+          ],
+          [
+            311,
+            312,
+            1150
+          ],
+          [
+            312,
+            317,
+            1160
+          ],
+          [
+            320,
+            319,
+            1169
+          ],
+          [
+            330,
+            321,
+            1175
+          ],
+          [
+            340,
+            328,
+            1173
+          ],
+          [
+            347,
+            337,
+            1168
+          ],
+          [
+            352,
+            346,
+            1162
+          ],
+          [
+            353,
+            355,
+            1156
+          ],
+          [
+            353,
+            360,
+            1144
+          ],
+          [
+            353,
+            363,
+            1133
+          ],
+          [
+            351,
+            365,
+            1121
+          ],
+          [
+            350,
+            365,
+            1108
+          ],
+          [
+            349,
+            365,
+            1095
+          ],
+          [
+            348,
+            365,
+            1089
+          ]
+        ],
+        "radius_mm": [
+          4.6,
+          5.7,
+          6.4,
+          5.5,
+          5.7,
+          5.2,
+          5.2,
+          4.4,
+          4.4,
+          4.4,
+          5.2,
+          4.9,
+          4.9,
+          4.5,
+          4.4,
+          4.5,
+          4.5
+        ],
+        "crop_half_width_mm": 14.9,
+        "crop_low_ijk": [
+          281,
+          276,
+          1059
+        ],
+        "crop_high_ijk_exclusive": [
+          384,
+          396,
+          1206
+        ],
+        "crop_voxels": 1816920,
+        "volume_stride": 3,
+        "slice_ijk": [
+          347,
+          337,
+          1168
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 102.52751839196874,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.4394593883262146,
+        "dilation_distance_mm": [
+          1.318,
+          2.637,
+          3.955
+        ],
+        "coa_distance_mm": [
+          0.879,
+          1.758,
+          2.637,
+          3.516,
+          4.395
+        ],
+        "inner_arch_distance_mm": 3.076,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260614",
+      "directory": "/home/aghorban/slurm/xcat/260614",
+      "par_path": "/home/aghorban/slurm/xcat/260614.par",
+      "par_sha256": "ce00100bd5e911ffbe66572627df545c2668e724d1cd9dbf86f6c3eee4bf692b",
+      "log_path": "/home/aghorban/slurm/xcat/260614/260614_log",
+      "log_sha256": "35795994d342eb8b4d6339125269856814f29b865ff03bc414d289377dc07b26",
+      "organ_file": "male_5yr_ref.nrb",
+      "heart_base": "male_5yr_ref_heart.nrb",
+      "sex_parameter": "0",
+      "provisional_anatomy_family": "xcat_reference_5yr",
+      "family_reviewed": false,
+      "shape_kji": [
+        1934,
+        782,
+        782
+      ],
+      "spacing_ijk_mm": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "body_height_mm": 1126.8391,
+      "parameter_differences_from_260602": {
+        "organ_file": "male_5yr_ref.nrb",
+        "heart_base": "male_5yr_ref_heart.nrb",
+        "pixel_width": "0.06",
+        "slice_width": "0.06",
+        "x_array_size": "782",
+        "y_array_size": "782",
+        "endslice": "1934"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/male_5yr_ref.nrb",
+        "bytes": 65819102,
+        "sha256": "ac72a8a3f05aad4722f9babb32db9eed2ef45f7cdc96f30ce22a9c1b03fb8888"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/male_5yr_ref_heart.nrb",
+        "sha256": "10a53ee81d858b017032371aed9d23f0f1859b6219a999c50fe14fd515444c5c"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 4730749664,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260614_1_body.raw",
+        "260614_1_bones.raw",
+        "260614_1_heart.raw",
+        "260614_1_muscle.raw",
+        "260614_1_organs.raw",
+        "260614_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260614/260614_act_1.bin",
+          "bytes": 4730749664,
+          "mtime_ns": 1785637797319335000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260614/260614_atn_1.bin",
+          "bytes": 4730749664,
+          "mtime_ns": 1785637870946544000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -830.0,
+        -821.0,
+        -806.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260614.json",
+      "localization_sha256": "83aafff6145b69e165bbf978a05dd18b1c1ace03d1e95e42d3f2d7e2b70db1ac",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            394,
+            332,
+            1411
+          ],
+          [
+            383,
+            332,
+            1421
+          ],
+          [
+            380,
+            329,
+            1434
+          ],
+          [
+            380,
+            325,
+            1449
+          ],
+          [
+            387,
+            325,
+            1462
+          ],
+          [
+            397,
+            329,
+            1473
+          ],
+          [
+            405,
+            340,
+            1476
+          ],
+          [
+            410,
+            353,
+            1474
+          ],
+          [
+            409,
+            366,
+            1467
+          ],
+          [
+            407,
+            377,
+            1457
+          ],
+          [
+            407,
+            388,
+            1446
+          ],
+          [
+            407,
+            396,
+            1433
+          ],
+          [
+            409,
+            402,
+            1419
+          ],
+          [
+            411,
+            406,
+            1406
+          ],
+          [
+            413,
+            408,
+            1391
+          ],
+          [
+            416,
+            408,
+            1377
+          ],
+          [
+            417,
+            408,
+            1372
+          ]
+        ],
+        "radius_mm": [
+          6.9,
+          7.6,
+          7.6,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.9,
+          6.8,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.5
+        ],
+        "crop_half_width_mm": 18.2,
+        "crop_low_ijk": [
+          349,
+          294,
+          1341
+        ],
+        "crop_high_ijk_exclusive": [
+          449,
+          440,
+          1508
+        ],
+        "crop_voxels": 2438200,
+        "volume_stride": 3,
+        "slice_ijk": [
+          409,
+          366,
+          1467
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 147.9938497912412,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.6430532739851746,
+        "dilation_distance_mm": [
+          1.929,
+          3.858,
+          5.787
+        ],
+        "coa_distance_mm": [
+          1.286,
+          2.572,
+          3.858,
+          5.144,
+          6.431
+        ],
+        "inner_arch_distance_mm": 4.501,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260615",
+      "directory": "/home/aghorban/slurm/xcat/260615",
+      "par_path": "/home/aghorban/slurm/xcat/260615.par",
+      "par_sha256": "d65e13b4636b1ae533b0ec348a00ab01077423998419420f6648e707795d41a9",
+      "log_path": "/home/aghorban/slurm/xcat/260615/260615_log",
+      "log_sha256": "985a1aca5b4ee2058188c961210c89a10926bd1e12735233db0942e159ee08ff",
+      "organ_file": "male_10yr_ref.nrb",
+      "heart_base": "male_10yr_ref_heart.nrb",
+      "sex_parameter": "0",
+      "provisional_anatomy_family": "xcat_reference_10yr",
+      "family_reviewed": false,
+      "shape_kji": [
+        1838,
+        741,
+        741
+      ],
+      "spacing_ijk_mm": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "body_height_mm": 1390.7021,
+      "parameter_differences_from_260602": {
+        "organ_file": "male_10yr_ref.nrb",
+        "heart_base": "male_10yr_ref_heart.nrb",
+        "pixel_width": "0.08",
+        "slice_width": "0.08",
+        "x_array_size": "741",
+        "y_array_size": "741",
+        "endslice": "1838"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/male_10yr_ref.nrb",
+        "bytes": 64874857,
+        "sha256": "8a0bb00492b1942d058341851c90ea6cc2d30eb61ef067323b71ac5dd33dd889"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/male_10yr_ref_heart.nrb",
+        "sha256": "f37069c32d1bb15ea63317e7ecdd0d616729682ab37cdf44b51be6d847273f7e"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 4036843512,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260615_1_body.raw",
+        "260615_1_bones.raw",
+        "260615_1_heart.raw",
+        "260615_1_muscle.raw",
+        "260615_1_organs.raw",
+        "260615_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260615/260615_act_1.bin",
+          "bytes": 4036843512,
+          "mtime_ns": 1785637745845064000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260615/260615_atn_1.bin",
+          "bytes": 4036843512,
+          "mtime_ns": 1785637816053990000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -827.0,
+        -820.0,
+        -816.0,
+        586.0,
+        887.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260615.json",
+      "localization_sha256": "ce36d46e14bd998a4aecdbdadef50209c28c1ce12bcd82c77940fb82fbc3549e",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            375,
+            333,
+            1340
+          ],
+          [
+            365,
+            334,
+            1350
+          ],
+          [
+            364,
+            329,
+            1363
+          ],
+          [
+            366,
+            330,
+            1377
+          ],
+          [
+            370,
+            336,
+            1388
+          ],
+          [
+            376,
+            346,
+            1395
+          ],
+          [
+            383,
+            355,
+            1401
+          ],
+          [
+            388,
+            368,
+            1400
+          ],
+          [
+            388,
+            379,
+            1391
+          ],
+          [
+            387,
+            389,
+            1380
+          ],
+          [
+            385,
+            395,
+            1369
+          ],
+          [
+            385,
+            398,
+            1355
+          ],
+          [
+            386,
+            399,
+            1341
+          ],
+          [
+            387,
+            399,
+            1327
+          ],
+          [
+            387,
+            399,
+            1312
+          ],
+          [
+            388,
+            397,
+            1304
+          ]
+        ],
+        "radius_mm": [
+          10.7,
+          8.0,
+          9.5,
+          8.7,
+          9.3,
+          8.0,
+          8.0,
+          8.0,
+          8.1,
+          8.9,
+          8.7,
+          8.7,
+          8.5,
+          8.1,
+          8.0,
+          8.0
+        ],
+        "crop_half_width_mm": 23.3,
+        "crop_low_ijk": [
+          334,
+          299,
+          1274
+        ],
+        "crop_high_ijk_exclusive": [
+          419,
+          430,
+          1432
+        ],
+        "crop_voxels": 1759330,
+        "volume_stride": 3,
+        "slice_ijk": [
+          388,
+          379,
+          1391
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 174.32643476490946,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.7936319733163837,
+        "dilation_distance_mm": [
+          2.381,
+          4.762,
+          7.143
+        ],
+        "coa_distance_mm": [
+          1.587,
+          3.175,
+          4.762,
+          6.349,
+          7.936
+        ],
+        "inner_arch_distance_mm": 5.555,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260616",
+      "directory": "/home/aghorban/slurm/xcat/260616",
+      "par_path": "/home/aghorban/slurm/xcat/260616.par",
+      "par_sha256": "cd1609c97887787f6ee8e77680ef46a26350213b0cbbf3cd893c8512ba1c0c67",
+      "log_path": "/home/aghorban/slurm/xcat/260616/260616_log",
+      "log_sha256": "e2389f6d53a7ed77ff02a649d12cee722b3e7c7294d5476fbf3ab09bacd013e9",
+      "organ_file": "male_15yr_ref.nrb",
+      "heart_base": "male_15yr_ref_heart.nrb",
+      "sex_parameter": "0",
+      "provisional_anatomy_family": "xcat_reference_15yr",
+      "family_reviewed": false,
+      "shape_kji": [
+        1889,
+        763,
+        763
+      ],
+      "spacing_ijk_mm": [
+        0.8999999999999999,
+        0.8999999999999999,
+        0.8999999999999999
+      ],
+      "body_height_mm": 1662.1879,
+      "parameter_differences_from_260602": {
+        "organ_file": "male_15yr_ref.nrb",
+        "heart_base": "male_15yr_ref_heart.nrb",
+        "pixel_width": "0.09",
+        "slice_width": "0.09",
+        "x_array_size": "763",
+        "y_array_size": "763",
+        "endslice": "1889"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/male_15yr_ref.nrb",
+        "bytes": 65577391,
+        "sha256": "4ef3b0ab504688d98415dce49dbbbd0dc452e0c2cd7a455d2a079f7f07ea78ea"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/male_15yr_ref_heart.nrb",
+        "sha256": "73a3283fc5c62a7ac8992ac43e2386b263db1b4eda4e516aef2571a6f156b341"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 4398868964,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260616_1_body.raw",
+        "260616_1_bones.raw",
+        "260616_1_heart.raw",
+        "260616_1_muscle.raw",
+        "260616_1_organs.raw",
+        "260616_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260616/260616_act_1.bin",
+          "bytes": 4398868964,
+          "mtime_ns": 1785637850405508000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260616/260616_atn_1.bin",
+          "bytes": 4398868964,
+          "mtime_ns": 1785637920528286000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -830.0,
+        -821.0,
+        -816.0,
+        -812.0,
+        1014.0,
+        1016.0,
+        1018.0,
+        1019.0,
+        1027.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260616.json",
+      "localization_sha256": "ebd6086bdc1d8b49cf2c4d1675b1a8b5cbd32a170c2739e1d9f43f08f26370ba",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            389,
+            354,
+            1421
+          ],
+          [
+            383,
+            358,
+            1434
+          ],
+          [
+            375,
+            353,
+            1444
+          ],
+          [
+            374,
+            351,
+            1459
+          ],
+          [
+            375,
+            353,
+            1473
+          ],
+          [
+            379,
+            363,
+            1484
+          ],
+          [
+            388,
+            374,
+            1489
+          ],
+          [
+            395,
+            384,
+            1484
+          ],
+          [
+            395,
+            395,
+            1474
+          ],
+          [
+            396,
+            404,
+            1461
+          ],
+          [
+            397,
+            408,
+            1447
+          ],
+          [
+            397,
+            409,
+            1433
+          ],
+          [
+            398,
+            410,
+            1418
+          ],
+          [
+            399,
+            409,
+            1403
+          ],
+          [
+            399,
+            407,
+            1388
+          ],
+          [
+            399,
+            407,
+            1383
+          ]
+        ],
+        "radius_mm": [
+          9.5,
+          10.1,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5,
+          9.5
+        ],
+        "crop_half_width_mm": 24.4,
+        "crop_low_ijk": [
+          346,
+          323,
+          1355
+        ],
+        "crop_high_ijk_exclusive": [
+          428,
+          439,
+          1518
+        ],
+        "crop_voxels": 1550456,
+        "volume_stride": 3,
+        "slice_ijk": [
+          395,
+          395,
+          1474
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 203.75770821892797,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.9485607759559835,
+        "dilation_distance_mm": [
+          2.846,
+          5.691,
+          8.537
+        ],
+        "coa_distance_mm": [
+          1.897,
+          3.794,
+          5.691,
+          7.588,
+          9.486
+        ],
+        "inner_arch_distance_mm": 6.64,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260617",
+      "directory": "/home/aghorban/slurm/xcat/260617",
+      "par_path": "/home/aghorban/slurm/xcat/260617.par",
+      "par_sha256": "f3c074c306deefd1e48ae9958662d118ef08209450b1eb5593bea70a8254fca1",
+      "log_path": "/home/aghorban/slurm/xcat/260617/260617_log",
+      "log_sha256": "8fb0807f7af3137207175781d274952bb7269953ed245963015a8bd7cfe58fe4",
+      "organ_file": "female_infant_ref.nrb",
+      "heart_base": "female_infant_ref_heart.nrb",
+      "sex_parameter": "1",
+      "provisional_anatomy_family": "xcat_reference_infant",
+      "family_reviewed": false,
+      "shape_kji": [
+        1400,
+        554,
+        554
+      ],
+      "spacing_ijk_mm": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "body_height_mm": 518.8584,
+      "parameter_differences_from_260602": {
+        "gender": "1",
+        "organ_file": "female_infant_ref.nrb",
+        "heart_base": "female_infant_ref_heart.nrb",
+        "pixel_width": "0.04",
+        "slice_width": "0.04",
+        "x_array_size": "554",
+        "y_array_size": "554",
+        "endslice": "1400"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/female_infant_ref.nrb",
+        "bytes": 67246738,
+        "sha256": "bc0d355e3a54a9c8c8b2f16d096320d965f02ec75315d7109230731040767e2a"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/female_infant_ref_heart.nrb",
+        "sha256": "29362a2936e1a7d2d8504e27dbf36ea6026ce68e16673a0fe2f0c1e0bd1bc674"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 1718729600,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260617_1_body.raw",
+        "260617_1_bones.raw",
+        "260617_1_heart.raw",
+        "260617_1_muscle.raw",
+        "260617_1_organs.raw",
+        "260617_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260617/260617_act_1.bin",
+          "bytes": 1718729600,
+          "mtime_ns": 1786399065938518000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260617/260617_atn_1.bin",
+          "bytes": 1718729600,
+          "mtime_ns": 1786399096942699000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -802.0,
+        430.0,
+        431.0,
+        871.0,
+        872.0,
+        873.0,
+        874.0,
+        875.0,
+        876.0,
+        877.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260617.json",
+      "localization_sha256": "e13671e65e868a1021febb523642baee24699da74e67a9a6ef9ff473503fc4de",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            280,
+            236,
+            913
+          ],
+          [
+            272,
+            238,
+            919
+          ],
+          [
+            271,
+            238,
+            929
+          ],
+          [
+            273,
+            238,
+            940
+          ],
+          [
+            278,
+            238,
+            949
+          ],
+          [
+            286,
+            242,
+            953
+          ],
+          [
+            293,
+            248,
+            956
+          ],
+          [
+            297,
+            257,
+            954
+          ],
+          [
+            300,
+            267,
+            953
+          ],
+          [
+            301,
+            276,
+            948
+          ],
+          [
+            301,
+            284,
+            940
+          ],
+          [
+            300,
+            289,
+            932
+          ],
+          [
+            299,
+            293,
+            923
+          ],
+          [
+            297,
+            297,
+            914
+          ],
+          [
+            296,
+            300,
+            905
+          ],
+          [
+            295,
+            301,
+            894
+          ],
+          [
+            295,
+            302,
+            886
+          ]
+        ],
+        "radius_mm": [
+          3.5,
+          3.5,
+          4.1,
+          4.0,
+          3.8,
+          3.0,
+          3.0,
+          3.0,
+          3.6,
+          4.0,
+          3.9,
+          3.5,
+          3.4,
+          3.5,
+          3.4,
+          3.5,
+          3.6
+        ],
+        "crop_half_width_mm": 11.0,
+        "crop_low_ijk": [
+          243,
+          208,
+          858
+        ],
+        "crop_high_ijk_exclusive": [
+          330,
+          331,
+          985
+        ],
+        "crop_voxels": 1359027,
+        "volume_stride": 3,
+        "slice_ijk": [
+          300,
+          267,
+          953
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 70.2579807871101,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.2960969253327377,
+        "dilation_distance_mm": [
+          0.888,
+          1.777,
+          2.665
+        ],
+        "coa_distance_mm": [
+          0.592,
+          1.184,
+          1.777,
+          2.369,
+          2.961
+        ],
+        "inner_arch_distance_mm": 2.073,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260618",
+      "directory": "/home/aghorban/slurm/xcat/260618",
+      "par_path": "/home/aghorban/slurm/xcat/260618.par",
+      "par_sha256": "8801734a663180b61fe4c7614d68831954539c58e8a95bca96d9aa400d187517",
+      "log_path": "/home/aghorban/slurm/xcat/260618/260618_log",
+      "log_sha256": "c9189e2d021a2b1deaf15b77ca7de2caad843fb1c0ae4b1699c2efcec9da92a6",
+      "organ_file": "female_1yr_ref.nrb",
+      "heart_base": "female_1yr_ref_heart.nrb",
+      "sex_parameter": "1",
+      "provisional_anatomy_family": "xcat_reference_1yr",
+      "family_reviewed": false,
+      "shape_kji": [
+        1640,
+        657,
+        657
+      ],
+      "spacing_ijk_mm": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "body_height_mm": 770.0762,
+      "parameter_differences_from_260602": {
+        "gender": "1",
+        "organ_file": "female_1yr_ref.nrb",
+        "heart_base": "female_1yr_ref_heart.nrb",
+        "pixel_width": "0.05",
+        "slice_width": "0.05",
+        "x_array_size": "657",
+        "y_array_size": "657",
+        "endslice": "1640"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/female_1yr_ref.nrb",
+        "bytes": 66925371,
+        "sha256": "32ae575578d1dac87dab264868fea5eb84787f250ee467dfb1fdeebf7872aa83"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/female_1yr_ref_heart.nrb",
+        "sha256": "06bc933b50bddd76e3d68af771fa8697443071eab3a03d9f594386384ddc4411"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 2831617440,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260618_1_body.raw",
+        "260618_1_bones.raw",
+        "260618_1_heart.raw",
+        "260618_1_muscle.raw",
+        "260618_1_organs.raw",
+        "260618_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260618/260618_act_1.bin",
+          "bytes": 2831617440,
+          "mtime_ns": 1786399186462226000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260618/260618_atn_1.bin",
+          "bytes": 2831617440,
+          "mtime_ns": 1786399237297381000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -825.0,
+        -817.0,
+        -814.0,
+        -802.0,
+        584.0,
+        871.0,
+        872.0,
+        873.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260618.json",
+      "localization_sha256": "df5c5ae36a0f55bcc908aeaeef6b49a023ece01452e024d79c9976b202696843",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            323,
+            306,
+            1121
+          ],
+          [
+            314,
+            311,
+            1125
+          ],
+          [
+            311,
+            311,
+            1137
+          ],
+          [
+            311,
+            312,
+            1150
+          ],
+          [
+            312,
+            317,
+            1160
+          ],
+          [
+            320,
+            319,
+            1169
+          ],
+          [
+            330,
+            321,
+            1175
+          ],
+          [
+            340,
+            328,
+            1173
+          ],
+          [
+            347,
+            337,
+            1168
+          ],
+          [
+            352,
+            346,
+            1162
+          ],
+          [
+            353,
+            355,
+            1156
+          ],
+          [
+            353,
+            360,
+            1144
+          ],
+          [
+            353,
+            363,
+            1133
+          ],
+          [
+            351,
+            365,
+            1121
+          ],
+          [
+            350,
+            365,
+            1108
+          ],
+          [
+            349,
+            365,
+            1095
+          ],
+          [
+            348,
+            365,
+            1089
+          ]
+        ],
+        "radius_mm": [
+          4.6,
+          5.7,
+          6.4,
+          5.5,
+          5.7,
+          5.2,
+          5.2,
+          4.4,
+          4.4,
+          4.4,
+          5.2,
+          4.9,
+          4.9,
+          4.5,
+          4.4,
+          4.5,
+          4.5
+        ],
+        "crop_half_width_mm": 14.9,
+        "crop_low_ijk": [
+          281,
+          276,
+          1059
+        ],
+        "crop_high_ijk_exclusive": [
+          384,
+          396,
+          1206
+        ],
+        "crop_voxels": 1816920,
+        "volume_stride": 3,
+        "slice_ijk": [
+          347,
+          337,
+          1168
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 102.52751839196874,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.4394593883262146,
+        "dilation_distance_mm": [
+          1.318,
+          2.637,
+          3.955
+        ],
+        "coa_distance_mm": [
+          0.879,
+          1.758,
+          2.637,
+          3.516,
+          4.395
+        ],
+        "inner_arch_distance_mm": 3.076,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260619",
+      "directory": "/home/aghorban/slurm/xcat/260619",
+      "par_path": "/home/aghorban/slurm/xcat/260619.par",
+      "par_sha256": "8373d2f5ee864b28fab319afb9bbd85c24daaf225f80ae14900fcaeb8ce44119",
+      "log_path": "/home/aghorban/slurm/xcat/260619/260619_log",
+      "log_sha256": "2707178be60e893332212f9e2f133664705d780073b7cc4f941b20d60ecb3e7c",
+      "organ_file": "female_5yr_ref.nrb",
+      "heart_base": "female_5yr_ref_heart.nrb",
+      "sex_parameter": "1",
+      "provisional_anatomy_family": "xcat_reference_5yr",
+      "family_reviewed": false,
+      "shape_kji": [
+        1934,
+        782,
+        782
+      ],
+      "spacing_ijk_mm": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "body_height_mm": 1126.8391,
+      "parameter_differences_from_260602": {
+        "gender": "1",
+        "organ_file": "female_5yr_ref.nrb",
+        "heart_base": "female_5yr_ref_heart.nrb",
+        "pixel_width": "0.06",
+        "slice_width": "0.06",
+        "x_array_size": "782",
+        "y_array_size": "782",
+        "endslice": "1934"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/female_5yr_ref.nrb",
+        "bytes": 65812718,
+        "sha256": "d71768a97703a8a250c5be2e74f707356e04b1d0a6f9ce3fd6f092145c2570b8"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/female_5yr_ref_heart.nrb",
+        "sha256": "10a53ee81d858b017032371aed9d23f0f1859b6219a999c50fe14fd515444c5c"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 4730749664,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260619_1_body.raw",
+        "260619_1_bones.raw",
+        "260619_1_heart.raw",
+        "260619_1_muscle.raw",
+        "260619_1_organs.raw",
+        "260619_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260619/260619_act_1.bin",
+          "bytes": 4730749664,
+          "mtime_ns": 1786399352714818000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260619/260619_atn_1.bin",
+          "bytes": 4730749664,
+          "mtime_ns": 1786399457351005000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -830.0,
+        -821.0,
+        -806.0,
+        887.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260619.json",
+      "localization_sha256": "1c0302d97b11b3e0334194b4d1d4b18fbff1017d9d505c4eff30c2f15e61ccf5",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            394,
+            332,
+            1411
+          ],
+          [
+            383,
+            332,
+            1421
+          ],
+          [
+            380,
+            329,
+            1434
+          ],
+          [
+            380,
+            325,
+            1449
+          ],
+          [
+            387,
+            325,
+            1462
+          ],
+          [
+            397,
+            329,
+            1473
+          ],
+          [
+            405,
+            340,
+            1476
+          ],
+          [
+            410,
+            353,
+            1474
+          ],
+          [
+            409,
+            366,
+            1467
+          ],
+          [
+            407,
+            377,
+            1457
+          ],
+          [
+            407,
+            388,
+            1446
+          ],
+          [
+            407,
+            396,
+            1433
+          ],
+          [
+            409,
+            402,
+            1419
+          ],
+          [
+            411,
+            406,
+            1406
+          ],
+          [
+            413,
+            408,
+            1391
+          ],
+          [
+            416,
+            408,
+            1377
+          ],
+          [
+            417,
+            408,
+            1372
+          ]
+        ],
+        "radius_mm": [
+          6.9,
+          7.6,
+          7.6,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.9,
+          6.8,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.5,
+          6.5
+        ],
+        "crop_half_width_mm": 18.2,
+        "crop_low_ijk": [
+          349,
+          294,
+          1341
+        ],
+        "crop_high_ijk_exclusive": [
+          449,
+          440,
+          1508
+        ],
+        "crop_voxels": 2438200,
+        "volume_stride": 3,
+        "slice_ijk": [
+          409,
+          366,
+          1467
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 147.9938497912412,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.6430532739851746,
+        "dilation_distance_mm": [
+          1.929,
+          3.858,
+          5.787
+        ],
+        "coa_distance_mm": [
+          1.286,
+          2.572,
+          3.858,
+          5.144,
+          6.431
+        ],
+        "inner_arch_distance_mm": 4.501,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260620",
+      "directory": "/home/aghorban/slurm/xcat/260620",
+      "par_path": "/home/aghorban/slurm/xcat/260620.par",
+      "par_sha256": "9e3dbc4b29c9a8e40c048e4e1ef6e5db02b3d25aead2fe91692c62dfc80ea818",
+      "log_path": "/home/aghorban/slurm/xcat/260620/260620_log",
+      "log_sha256": "004add0d50585ad64232887fa3eba8b107999fa3d040cff3ad7beef02f6194cf",
+      "organ_file": "female_10yr_ref.nrb",
+      "heart_base": "female_10yr_ref_heart.nrb",
+      "sex_parameter": "1",
+      "provisional_anatomy_family": "xcat_reference_10yr",
+      "family_reviewed": false,
+      "shape_kji": [
+        1838,
+        741,
+        741
+      ],
+      "spacing_ijk_mm": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "body_height_mm": 1390.7021,
+      "parameter_differences_from_260602": {
+        "gender": "1",
+        "organ_file": "female_10yr_ref.nrb",
+        "heart_base": "female_10yr_ref_heart.nrb",
+        "pixel_width": "0.08",
+        "slice_width": "0.08",
+        "x_array_size": "741",
+        "y_array_size": "741",
+        "endslice": "1838"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/female_10yr_ref.nrb",
+        "bytes": 64903850,
+        "sha256": "575cc90db023c84862cc78bac545cc5fd971ab0148b6448161503e14f6808abc"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/female_10yr_ref_heart.nrb",
+        "sha256": "f37069c32d1bb15ea63317e7ecdd0d616729682ab37cdf44b51be6d847273f7e"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 4036843512,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260620_1_body.raw",
+        "260620_1_bones.raw",
+        "260620_1_heart.raw",
+        "260620_1_muscle.raw",
+        "260620_1_organs.raw",
+        "260620_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260620/260620_act_1.bin",
+          "bytes": 4036843512,
+          "mtime_ns": 1786399348692973000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260620/260620_atn_1.bin",
+          "bytes": 4036843512,
+          "mtime_ns": 1786399448735755000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [
+        -827.0,
+        -820.0,
+        -816.0,
+        586.0,
+        887.0
+      ],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260620.json",
+      "localization_sha256": "05655ae9bddb6aab1e91a6d24af3f6705e13bda08a9481d70f975cc23b03a687",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            375,
+            333,
+            1340
+          ],
+          [
+            365,
+            334,
+            1350
+          ],
+          [
+            364,
+            329,
+            1363
+          ],
+          [
+            366,
+            330,
+            1377
+          ],
+          [
+            370,
+            336,
+            1388
+          ],
+          [
+            376,
+            346,
+            1395
+          ],
+          [
+            383,
+            355,
+            1401
+          ],
+          [
+            388,
+            368,
+            1400
+          ],
+          [
+            388,
+            379,
+            1391
+          ],
+          [
+            387,
+            389,
+            1380
+          ],
+          [
+            385,
+            395,
+            1369
+          ],
+          [
+            385,
+            398,
+            1355
+          ],
+          [
+            386,
+            399,
+            1341
+          ],
+          [
+            387,
+            399,
+            1327
+          ],
+          [
+            387,
+            399,
+            1312
+          ],
+          [
+            388,
+            397,
+            1304
+          ]
+        ],
+        "radius_mm": [
+          10.7,
+          8.0,
+          9.5,
+          8.7,
+          9.3,
+          8.0,
+          8.0,
+          8.0,
+          8.1,
+          8.9,
+          8.7,
+          8.7,
+          8.5,
+          8.1,
+          8.0,
+          8.0
+        ],
+        "crop_half_width_mm": 23.3,
+        "crop_low_ijk": [
+          334,
+          299,
+          1274
+        ],
+        "crop_high_ijk_exclusive": [
+          419,
+          430,
+          1432
+        ],
+        "crop_voxels": 1759330,
+        "volume_stride": 3,
+        "slice_ijk": [
+          388,
+          379,
+          1391
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 174.32643476490946,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.7936319733163837,
+        "dilation_distance_mm": [
+          2.381,
+          4.762,
+          7.143
+        ],
+        "coa_distance_mm": [
+          1.587,
+          3.175,
+          4.762,
+          6.349,
+          7.936
+        ],
+        "inner_arch_distance_mm": 5.555,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    },
+    {
+      "case_id": "260621",
+      "directory": "/home/aghorban/slurm/xcat/260621",
+      "par_path": "/home/aghorban/slurm/xcat/260621.par",
+      "par_sha256": "7327cf55a73df2bcd56019d6a2adc05baee0ca552bbff57b332d657b72201839",
+      "log_path": "/home/aghorban/slurm/xcat/260621/260621_log",
+      "log_sha256": "aa60ea052d218c251e12f653bc42dec913c9db1bdc6bbc65e600a895373bc6e2",
+      "organ_file": "female_15yr_ref.nrb",
+      "heart_base": "female_15yr_ref_heart.nrb",
+      "sex_parameter": "1",
+      "provisional_anatomy_family": "xcat_reference_15yr",
+      "family_reviewed": false,
+      "shape_kji": [
+        1889,
+        763,
+        763
+      ],
+      "spacing_ijk_mm": [
+        0.8999999999999999,
+        0.8999999999999999,
+        0.8999999999999999
+      ],
+      "body_height_mm": 1615.4364,
+      "parameter_differences_from_260602": {
+        "gender": "1",
+        "organ_file": "female_15yr_ref.nrb",
+        "heart_base": "female_15yr_ref_heart.nrb",
+        "pixel_width": "0.09",
+        "slice_width": "0.09",
+        "x_array_size": "763",
+        "y_array_size": "763",
+        "endslice": "1889"
+      },
+      "source_template": {
+        "path": "/home/aghorban/slurm/xcat/female_15yr_ref.nrb",
+        "bytes": 66237628,
+        "sha256": "f51fff62ec58ebb395592ffbec06afcf176fdaf343999afc31a883f339cdb6e3"
+      },
+      "heart_template": {
+        "path": "/home/aghorban/slurm/xcat/female_15yr_ref_heart.nrb",
+        "sha256": "41f0028cc67e76177673edfdc89b1ff4d78560fb46270b5cf339b1fa5b8bed1e"
+      },
+      "binary_count": 104,
+      "raw_count": 306,
+      "instantaneous_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ],
+      "expected_volume_bytes": 4398868964,
+      "missing_frame_channels": [],
+      "binary_size_mismatches": [],
+      "averages_present": true,
+      "raw_frame_1_groups": [
+        "260621_1_body.raw",
+        "260621_1_bones.raw",
+        "260621_1_heart.raw",
+        "260621_1_muscle.raw",
+        "260621_1_organs.raw",
+        "260621_1_vessels.raw"
+      ],
+      "frame_1": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260621/260621_act_1.bin",
+          "bytes": 4398868964,
+          "mtime_ns": 1786399385628091000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260621/260621_atn_1.bin",
+          "bytes": 4398868964,
+          "mtime_ns": 1786399455452903000
+        }
+      },
+      "prior_audit_par_log_mismatches": {},
+      "prior_sampled_unknown_ids": [],
+      "review_status": "awaiting_roi_review",
+      "localization_path": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260621.json",
+      "localization_sha256": "6fc49be4a1105eed9215c21740f901794d3e9cd291e53671f90ff3d7813337df",
+      "provisional_arch_roi": {
+        "shape": "tube",
+        "tissue": "artery",
+        "source_ids": [],
+        "center_ijk": [
+          [
+            386,
+            369,
+            1351
+          ],
+          [
+            378,
+            366,
+            1363
+          ],
+          [
+            373,
+            364,
+            1375
+          ],
+          [
+            372,
+            364,
+            1390
+          ],
+          [
+            374,
+            369,
+            1403
+          ],
+          [
+            382,
+            377,
+            1412
+          ],
+          [
+            390,
+            388,
+            1416
+          ],
+          [
+            393,
+            401,
+            1411
+          ],
+          [
+            393,
+            410,
+            1400
+          ],
+          [
+            391,
+            416,
+            1388
+          ],
+          [
+            390,
+            420,
+            1374
+          ],
+          [
+            390,
+            421,
+            1360
+          ],
+          [
+            390,
+            420,
+            1344
+          ],
+          [
+            392,
+            419,
+            1331
+          ],
+          [
+            394,
+            417,
+            1317
+          ],
+          [
+            394,
+            417,
+            1314
+          ]
+        ],
+        "radius_mm": [
+          9.3,
+          9.6,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3,
+          9.3
+        ],
+        "crop_half_width_mm": 23.6,
+        "crop_low_ijk": [
+          345,
+          337,
+          1287
+        ],
+        "crop_high_ijk_exclusive": [
+          422,
+          449,
+          1444
+        ],
+        "crop_voxels": 1353968,
+        "volume_stride": 3,
+        "slice_ijk": [
+          393,
+          410,
+          1400
+        ],
+        "coordinate_reviewed": false,
+        "path_length_mm": 196.64816277597745,
+        "path_order": "low-j limb ascending to superior arch to high-j limb descending; anatomical interpretation requires review",
+        "path_method": "26-neighbor minimum inverse-square interior-distance path, sampled approximately every 15*body_scale mm",
+        "radius_method": "max(10*body_scale, interior EDT+3*body_scale) mm rounded up to 0.1 mm; selection envelope only"
+      },
+      "scale_initialization": {
+        "reference_body_height_mm": 1752.3262,
+        "body_height_ratio": 0.9218810972523267,
+        "dilation_distance_mm": [
+          2.766,
+          5.531,
+          8.297
+        ],
+        "coa_distance_mm": [
+          1.844,
+          3.688,
+          5.531,
+          7.375,
+          9.219
+        ],
+        "inner_arch_distance_mm": 6.453,
+        "note": "Initialization only; comparable body scale is not equivalent vessel size or disease severity."
+      }
+    }
+  ],
+  "family_policy": "Provisional conservative grouping by age template family across sex. File names identify model templates, not independently sampled patients. All frames/edits of a source stay in one family.",
+  "source_mutation": false,
+  "scope": "Metadata/stat checks cover all channels. Optional localization reads sparse complete axial planes plus one bounded native crop, never full volumes.",
+  "validation": {
+    "case_count": 12,
+    "all_binary_sizes_match": true,
+    "all_frame_channels_present": true,
+    "family_assignments_reviewed": false,
+    "roi_review_still_required": [
+      "260611",
+      "260612",
+      "260613",
+      "260614",
+      "260615",
+      "260616",
+      "260617",
+      "260618",
+      "260619",
+      "260620",
+      "260621"
+    ]
+  }
+}

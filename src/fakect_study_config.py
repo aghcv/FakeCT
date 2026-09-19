@@ -30,6 +30,9 @@ def load_study_config(path, *, repo_root=None):
         raise ValueError(f'Invalid study input: {error}') from error
     if parser.defaults():
         raise ValueError('[DEFAULT] settings are unsupported')
+    if 'study' in parser and parser['study'].get('schema_version') == 'fakect.recipe-cohort/1':
+        from fakect_cohort_config import parse_cohort_sections
+        return parse_cohort_sections(parser, root)
     if 'study' in parser and parser['study'].get('schema_version') == 'fakect.recipe-study/1':
         from fakect_recipe_study_config import parse_recipe_study_sections
         return parse_recipe_study_sections(parser, root)

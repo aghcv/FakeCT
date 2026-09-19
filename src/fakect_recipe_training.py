@@ -27,6 +27,7 @@ from fakect_training_data import (SCHEMA, IMAGE_WARNING, SPLIT_WARNING, _array_h
 
 
 PREFLIGHT_SCHEMA = 'fakect.recipe-preflight/1'
+UNASSIGNED_WARNING = 'Prepared cases have no model split. A separate frozen model experiment assigns entire anatomy families to train, validation and test.'
 TARGET_SEMANTICS = (
     'Surviving selected target ancestry and its offspring. The original target is '
     'selected tissue inside the main ROI; descendants outside that selector remain '
@@ -64,7 +65,8 @@ def recipe_provenance(config, resolved):
             'catalog_sha256': resolved['catalog_sha256'], 'audit_sha256': resolved['audit_sha256'],
             'source_files': sources, 'source_metadata_sha256': metadata,
             'source_integrity_scope': 'File size/mtime plus saved crop hashes; full source volumes are not hashed',
-            'code_sha256': {name: _file_hash(Path(__file__).with_name(name)) for name in _MODULES}}
+            'code_sha256': {name: _file_hash(Path(__file__).with_name(name)) for name in
+                           (_MODULES + ('fakect_cohort_config.py',) if config['study']['schema_version'] == 'fakect.recipe-cohort/1' else _MODULES)}}
 
 
 def _fingerprint(config, resolved):
@@ -153,6 +155,11 @@ def _assign_geometry_splits(samples, config, baseline_hash):
     for sample in samples:
         if sample['status'] == 'ok':
             groups.setdefault(sample['mask_sha256'], []).append(sample)
+    if config['train']['split_mode'] == 'unassigned':
+        for rows in groups.values():
+            for index, row in enumerate(rows):
+                row.update(split='unassigned', duplicate_of=rows[0]['variant_id'] if index else None)
+        return
     seed = config['train']['split_seed']
     ranked = sorted((key for key in groups if key != baseline_hash),
                     key=lambda key: hashlib.sha256(f'{seed}:{key}'.encode()).digest())
@@ -178,6 +185,15 @@ def _assign_geometry_splits(samples, config, baseline_hash):
 
 def _split_diagnostics(samples, config):
     successful = [row for row in samples if row['status'] == 'ok']
+    if config['train']['split_mode'] == 'unassigned':
+        count = len({row['mask_sha256'] for row in successful})
+        return {'split_counts': {'unassigned': len(successful)},
+                'geometry_group_counts': {'unassigned': count}, 'unique_geometry_count': count,
+                'duplicate_variant_count': sum(row.get('duplicate_of') is not None for row in successful),
+                'baseline_equivalent_count': sum(row['baseline_equivalent'] for row in successful),
+                'zero_change_count': sum(row['zero_change'] for row in successful),
+                'split_errors': [] if count else ['No successfully prepared geometry'],
+                'fit_ready': False, 'cohort_ready': bool(count)}
     split_counts = {split: sum(row['split'] == split for row in successful)
                     for split in ('train', 'validation', 'test')}
     geometry_counts = {split: len({row['mask_sha256'] for row in successful if row['split'] == split})
@@ -228,7 +244,7 @@ def _write_review(output, document):
                '<style>body{font:16px system-ui,sans-serif;margin:2rem;color:#1d2630}table{border-collapse:collapse;width:100%}'
                'td,th{border:1px solid #ccd3da;padding:.55rem;text-align:left}th{background:#edf2f6}</style>'
                '<h1>Recipe cohort preflight</h1><p>' + escape(TARGET_SEMANTICS) + '</p><p>' +
-               escape(IMAGE_WARNING) + ' ' + escape(SPLIT_WARNING) + '</p><p>' + escape(PREFLIGHT_WARNING) + '</p>'
+               escape(IMAGE_WARNING) + ' ' + escape(document.get('split_warning', SPLIT_WARNING)) + '</p><p>' + escape(PREFLIGHT_WARNING) + '</p>'
                f"<p>{document['successful_variants']} successful variants; {document['failed_variants']} failures; "
                f"{document['unique_geometry_count']} distinct target geometries. "
                f"Training readiness: {'ready' if document['fit_ready'] and not document['failed_variants'] else 'not ready'}.</p>"
@@ -245,6 +261,10 @@ def _run(config, resolved, input_bytes, *, prepare):
     if input_bytes is not None and not isinstance(input_bytes, bytes):
         raise ValueError('input_bytes must contain the exact captured input bytes')
     variants = validate_recipe_study_plan(config, resolved)
+    freeze = None
+    if prepare and config['study']['schema_version'] == 'fakect.recipe-cohort/1':
+        from fakect_cohort_config import validate_cohort_freeze
+        freeze = validate_cohort_freeze(config, resolved, input_bytes)
     provenance = recipe_provenance(config, resolved)
     fingerprint = hashlib.sha256(_canonical(provenance).encode()).hexdigest()
     key = 'dataset_directory' if prepare else 'preflight_directory'
@@ -257,6 +277,8 @@ def _run(config, resolved, input_bytes, *, prepare):
     baseline_hash = _array_hash(original_mask)
     geometry = _geometry(resolved)
     _reserve(config, resolved, output, input_bytes, provenance, prepare=prepare)
+    if freeze is not None:
+        _write_json(output/'cohort-freeze.json', freeze)
     snapshot = {'source_crop_sha256': original_hashes, 'array_order': 'kji',
                 'shape_kji': list(arrays['act'].shape),
                 'dtypes': {key: str(arrays[key].dtype) for key in original_hashes},
@@ -333,7 +355,9 @@ def _run(config, resolved, input_bytes, *, prepare):
                 'input_config_sha256': hashlib.sha256(input_bytes).hexdigest() if input_bytes is not None else None,
                 'split_assignment_semantics': 'After native execution, distinct non-baseline target-mask hashes are ranked deterministically using split_seed. Identical geometry stays together; baseline-equivalent geometry stays in train.',
                 'accepted_distance_semantics': 'The accepted safeguarded edit budget is not measured achieved displacement; review added/removed, unresolved voxels and geometry.',
-                'warnings': [IMAGE_WARNING, SPLIT_WARNING, PREFLIGHT_WARNING]}
+                'split_mode': config['train']['split_mode'],
+                'split_warning': UNASSIGNED_WARNING if config['train']['split_mode'] == 'unassigned' else SPLIT_WARNING,
+                'warnings': [IMAGE_WARNING, UNASSIGNED_WARNING if config['train']['split_mode'] == 'unassigned' else SPLIT_WARNING, PREFLIGHT_WARNING]}
     document['fit_ready'] = document['fit_ready'] and failed == 0
     if any(row.get('baseline_equivalent') for row in samples if row['operation'] != 'none'):
         document['warnings'].append('Some edited variants preserve baseline target geometry; grid spacing, policy or safeguards can collapse distinct requested settings.')
@@ -360,7 +384,7 @@ def _run(config, resolved, input_bytes, *, prepare):
                 'input_snapshot': 'input.ini' if input_bytes is not None else None,
                 'input_config_sha256': document['input_config_sha256'],
                 'anatomy_family': config['train']['anatomy_family'], 'case_id': config['input']['case_id'],
-                'frame': config['input']['frame'], 'split_mode': 'scenario_only', 'split_warning': SPLIT_WARNING,
+                'frame': config['input']['frame'], 'split_mode': config['train']['split_mode'], 'split_warning': document['split_warning'],
                 'image_method': 'attenuation_copy_proxy', 'image_units': 'cm^-1', 'image_warning': IMAGE_WARNING,
                 'target_scope': 'selected_lineage', 'target_semantics': TARGET_SEMANTICS,
                 'candidate_source_ids': list(resolved['source_ids']), 'geometry': geometry, 'source_files': sources,

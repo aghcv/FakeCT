@@ -207,8 +207,8 @@ def plan_recipe_variants(config):
     train = config['train']
     if train.get('target_scope') != 'selected_lineage' or config['recipe'].get('roi_role') != 'selection':
         raise ValueError('Recipe studies require train.target_scope=selected_lineage and recipe.roi_role=selection')
-    if train.get('image_method') != 'attenuation_copy_proxy' or train.get('split_mode') != 'scenario_only':
-        raise ValueError('Recipe studies require attenuation_copy_proxy images and scenario_only splits')
+    if train.get('image_method') != 'attenuation_copy_proxy' or train.get('split_mode') not in ('scenario_only', 'unassigned'):
+        raise ValueError('Recipe preparation requires attenuation_copy_proxy images and a supported split policy')
     maximum = train['max_variants']
     if isinstance(maximum, bool) or not isinstance(maximum, Integral) or not 1 <= maximum <= MAX_VARIANTS:
         raise ValueError(f'train.max_variants must be an integer between 1 and {MAX_VARIANTS}')
@@ -270,6 +270,10 @@ def plan_recipe_variants(config):
         record = {**base, 'operation': 'recipe', 'edits': edits, 'parameters': parameters}
         digest = hashlib.sha256(_json({'scenario': record, 'recipe_settings': identity}).encode()).hexdigest()[:16]
         edited.append({**record, 'variant_id': 'recipe-' + digest, 'split': 'train'})
+    if train['split_mode'] == 'unassigned':
+        if any(fractions):
+            raise ValueError('Unassigned cohorts cannot specify holdout fractions')
+        return [{**row, 'split': 'unassigned'} for row in variants + edited]
     ranked = sorted(edited, key=lambda item: hashlib.sha256(f'{seed}:{item["variant_id"]}'.encode()).digest())
     counts = [max(1, math.floor(len(edited) * fraction)) if fraction else 0 for fraction in fractions]
     if sum(counts) > len(edited) or (sum(counts) >= len(edited) and not variants):

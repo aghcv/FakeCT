@@ -17,12 +17,14 @@ from fakect_training_data import (IMAGE_WARNING, SPLIT_WARNING, dataset_fingerpr
                                   prepare_training_dataset, validate_dataset, validate_study_plan)
 from preview_roi import json_value
 
-ALL_STAGES = STAGES | {'preflight'}
+ALL_STAGES = STAGES | {'preflight', 'freeze'}
 
 
 def study_plan(config, resolved, variants):
     shape = [int(b-a) for a, b in zip(resolved['crop_low_ijk'], resolved['crop_high_ijk_exclusive'])][::-1]
     if 'recipe' in config:
+        from fakect_recipe_training import UNASSIGNED_WARNING
+        unassigned = config['train']['split_mode'] == 'unassigned'
         return json_value({
             'schema_version': 'fakect.recipe-study-plan/1', 'stage': config['train']['stage'],
             'dataset_prepared': False, 'model_fitted': False,
@@ -35,13 +37,14 @@ def study_plan(config, resolved, variants):
             'variant_count': len(variants), 'variants': variants, 'sweeps': config['sweeps'],
             'recipe_steps': config['recipe']['steps'],
             'planned_split_counts': dict(Counter(v['split'] for v in variants)),
-            'split_assignment_status': 'Provisional until native execution groups identical target masks; baseline-equivalent masks stay in training.',
+            'split_assignment_status': 'Deferred to a separate model experiment.' if unassigned else 'Provisional until native execution groups identical target masks; baseline-equivalent masks stay in training.',
             'image_method': config['train']['image_method'], 'image_warning': IMAGE_WARNING,
-            'split_mode': config['train']['split_mode'], 'split_warning': SPLIT_WARNING,
+            'split_mode': config['train']['split_mode'], 'split_warning': UNASSIGNED_WARNING if unassigned else SPLIT_WARNING,
             'validation_scope': 'Metadata checks every discrete combination and requested halo. Native preflight is needed to measure actual edits, safeguard reductions, unresolved reassignment, and duplicate geometries.',
-            'model': config['model'], 'dataset_directory': config['train']['dataset_directory'],
+            'model': config.get('model', {}), 'dataset_directory': config['train']['dataset_directory'],
             'preflight_directory': config['train']['preflight_directory'],
-            'model_directory': config['train']['model_directory'],
+            'model_directory': config['train'].get('model_directory'),
+            'freeze_directory': config['train'].get('freeze_directory'),
         })
     return json_value({
         'schema_version': 'fakect.study-plan/1', 'stage': config['train']['stage'],
@@ -74,9 +77,15 @@ def run(config_path, stage=None, validate_only=False):
             raise ValueError('Unsupported study stage')
         config['train']['stage'] = stage
     stage = config['train']['stage']
+    cohort_only = config['study']['schema_version'] == 'fakect.recipe-cohort/1'
+    if (cohort_only and stage == 'fit') or (stage == 'freeze' and not cohort_only):
+        raise ValueError('Generation-only cohorts use freeze/prepare; fitting belongs to a separate model experiment')
     resolved = resolve_preview(config)
-    variants = validate_study_plan(config, resolved)
-    plan = study_plan(config, resolved, variants)
+    # Native recipe backends validate every variant themselves. Do not repeat
+    # this potentially expensive geometry planning before entering them.
+    native_recipe = not validate_only and 'recipe' in config and stage in ('preflight', 'prepare')
+    variants = [] if native_recipe else validate_study_plan(config, resolved)
+    plan = {} if native_recipe else study_plan(config, resolved, variants)
     plan['input_config_sha256'] = hashlib.sha256(input_bytes).hexdigest()
     plan['stage_override'] = stage if stage != configured_stage else None
     if config_path.read_bytes() != input_bytes:
@@ -94,6 +103,8 @@ def run(config_path, stage=None, validate_only=False):
                                          ROOT/'src/fakect_segmentation.py']
         if 'recipe' in config:
             extra += [ROOT/'src/fakect_recipe_study_config.py', ROOT/'src/fakect_recipe_training.py']
+        if cohort_only:
+            extra += [ROOT/'src/fakect_cohort_config.py']
         return preview(config_path, config_override=config, training_plan=plan, expected_input_bytes=input_bytes,
                        extra_code_files=extra)
     elif stage == 'plan':
@@ -111,6 +122,9 @@ def run(config_path, stage=None, validate_only=False):
         (output/'artifact-manifest.json').write_text(json.dumps(inventory, indent=2)+'\n')
         result = {'stage': stage, 'plan': str(output/'plan.json'), 'variant_count': len(variants),
                   'planned_split_counts': plan['planned_split_counts'], 'voxel_payloads_read': False}
+    elif stage == 'freeze':
+        from fakect_cohort_config import freeze_cohort
+        result = freeze_cohort(config, resolved, input_bytes)
     elif stage == 'preflight':
         from fakect_recipe_training import preflight_recipe_dataset
         result = preflight_recipe_dataset(config, resolved, input_bytes=input_bytes)
@@ -147,7 +161,7 @@ def main():
     try:
         result = run(args.config, args.stage, args.validate_only)
         if (not args.validate_only and isinstance(result, dict) and result.get('stage') == 'preflight'
-                and (not result.get('execution_valid') or not result.get('fit_ready'))):
+                and (not result.get('execution_valid') or not (result.get('fit_ready') or result.get('cohort_ready')))):
             parser.exit(2, 'error: native preflight found failed simulations or insufficient distinct holdouts; '
                         f'inspect {result.get("report_path", "the preflight report")}\n')
     except (ValueError, OSError, KeyError, ImportError) as exc:
