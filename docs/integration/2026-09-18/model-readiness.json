@@ -1,0 +1,80 @@
+{
+  "evaluation": "Initial multi-phantom review milestone; dataset publication and ancestry review are pending.",
+  "config": "configs/models/coa.ini",
+  "command": "python3 scripts/model_experiment.py --config configs/models/coa.ini --validate-only",
+  "expected_exit_code": 2,
+  "schema_version": "fakect.model-experiment/1",
+  "ready": false,
+  "model_fitted": false,
+  "outputs_written": false,
+  "missing_datasets": [
+    "coa-260611-r1",
+    "coa-260612-r1",
+    "coa-260613-r1",
+    "coa-260614-r1",
+    "coa-260615-r1",
+    "coa-260616-r1",
+    "coa-260617-r1",
+    "coa-260618-r1",
+    "coa-260619-r1",
+    "coa-260620-r1",
+    "coa-260621-r1"
+  ],
+  "unverified_datasets": [
+    "coa-260602-r1"
+  ],
+  "errors": [
+    "Prepare and register the missing dataset versions before locking this experiment",
+    "Verify source anatomy provenance and register reviewed family identities before making independent-family splits",
+    "At least three verified independent anatomy families are required for train, validation, and test"
+  ],
+  "family_assignment": {},
+  "split_counts": {
+    "train": 0,
+    "validation": 0,
+    "test": 0
+  },
+  "family_count": 1,
+  "sample_count": 16,
+  "warnings": [
+    "Family verification is a recorded provenance decision; distinct case IDs alone do not prove independent anatomy.",
+    "Saved per-dataset scenario splits are ignored. All variants of each anatomy family receive one experiment split.",
+    "Model-time resampling preserves the native archives but changes the model grid; linear images and nearest labels can lose small structures when downsampling."
+  ],
+  "input_contract": {
+    "image_units": "cm^-1",
+    "array_order": "kji",
+    "spacing_ijk_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "orientation": "Native index grid; physical origin and anatomical orientation unverified",
+    "image_method": "attenuation_copy_proxy",
+    "target_scope": "selected_lineage",
+    "target_semantics": "Surviving selected target ancestry and its offspring. The original target is selected tissue inside the main ROI; descendants outside that selector remain positive, while unrelated same-tissue anatomy stays negative."
+  },
+  "preprocessing": {
+    "schema_version": "fakect.model-resampling/1",
+    "target_spacing_mm": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "array_order": "kji",
+    "grid_alignment": "lower_voxel_face",
+    "shape_rule": "ceil(native_count * native_spacing / target_spacing - 1e-9), minimum 1",
+    "image_interpolation": "linear",
+    "mask_interpolation": "nearest",
+    "boundary_mode": "nearest",
+    "prefilter": false,
+    "implementation_sha256": {
+      "fakect_model_resampling.py": "a34a614930c87be47090ea581092e4c41a19627f29cf45a3ba9b94e7685a2840",
+      "fakect_segmentation.py": "99039c1a33074dbf6cc2e5281b47fe7323db79f00ac4ee9579faa5bf6c497118"
+    },
+    "dependency_versions": {
+      "numpy": "2.0.2",
+      "scipy": "1.13.1"
+    }
+  }
+}

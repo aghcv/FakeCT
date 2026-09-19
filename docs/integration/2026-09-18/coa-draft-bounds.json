@@ -1,0 +1,2715 @@
+{
+  "schema_version": "fakect.coa-draft-bounds/1",
+  "semantics": "Metadata bounds for provisional review only. Every non-reference ROI and parameter range requires human review; no new cases frozen or paired. Source IDs remain optional. Only initial crop margin and displacement budgets adjusted, without changing ROI nodes, radii, tissue stiffness, or manual safeguards.",
+  "native_morphology_budget_voxels": 2000000,
+  "draft_crop_budget_voxels": 1900000,
+  "cases": [
+    {
+      "case_id": "260602",
+      "input_before_sha256": "6b40c9cb976b3e6284491db867be7c96ce49aaa6da2aabdd5c83414adaf8a69e",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": true,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 33.0,
+      "distance_scale_from_body_scaled_seed": 1.0,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": true,
+      "input_sha256": "6b40c9cb976b3e6284491db867be7c96ce49aaa6da2aabdd5c83414adaf8a69e",
+      "config_path": "configs/cohorts/coa/260602.ini",
+      "preview_report_path": "outputs/cohorts/coa/260602/review-r1/report.html",
+      "preview_report_json_sha256": "91b0e84b214a20806f426f5122251bfa2cbe43cace339fad72212b4b14cdc656",
+      "source_crop_sha256": {
+        "act": "effd235742d126fb0c002acbabaa14ec5ad7fcd887dcf95bd841523fef63d586",
+        "atn": "3930649ed15b664a356921c3c40d6c7e2b1e506a73be43e9915fcf1697920b87"
+      },
+      "spacing_ijk_mm": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "crop_shape_kji": [
+        168,
+        126,
+        87
+      ],
+      "preview_generated_at_utc": "2026-09-19T02:45:09.598366+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "explicit_validate_only_and_preview",
+        "explicit_validate_only_invoked": true
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 52576,
+        "crop_voxels": 1841616,
+        "counts": {
+          "before": 52576,
+          "after": 52307,
+          "added": 635,
+          "removed": 904,
+          "changed": 1539,
+          "scalar_changed": 1539,
+          "ever_changed": 1539,
+          "proposed_added": 4858,
+          "proposed_removed": 3144,
+          "blocked": 4223,
+          "unresolved": 2240,
+          "changed_outside_selection_roi": 52,
+          "added_outside_selection_roi": 52,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 52
+        },
+        "volume_mm3": {
+          "before": 52576.0,
+          "after": 52307.0,
+          "added": 635.0,
+          "removed": 904.0
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 9.0,
+            "counts": {
+              "before": 21581,
+              "after": 22216,
+              "proposed_added": 4858,
+              "proposed_removed": 0,
+              "added": 635,
+              "removed": 0,
+              "blocked": 4223,
+              "unresolved": 0,
+              "changed": 635,
+              "changed_outside_selection_roi": 52,
+              "added_outside_selection_roi": 52,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 7.0,
+            "counts": {
+              "before": 16458,
+              "after": 16399,
+              "proposed_added": 0,
+              "proposed_removed": 754,
+              "added": 0,
+              "removed": 59,
+              "blocked": 0,
+              "unresolved": 695,
+              "changed": 59,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 813,
+              "release_suppressed_by_target_stiffness": 59
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 10.0,
+            "counts": {
+              "before": 4042,
+              "after": 3197,
+              "proposed_added": 0,
+              "proposed_removed": 2390,
+              "added": 0,
+              "removed": 845,
+              "blocked": 0,
+              "unresolved": 1545,
+              "changed": 845,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 2429,
+              "release_suppressed_by_target_stiffness": 39
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 2791,
+              "retained_volume_ratio": 0.7676017601760176,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 142525,
+                  "surviving_voxels": 141680,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 10.0,
+              "accepted_distance_mm": 10.0,
+              "baseline_target_voxels": 3636,
+              "baseline_volume_mm3": 3636.0,
+              "retained_volume_mm3": 2791.0,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 10.0,
+                  "retained_target_voxels": 2791,
+                  "retained_volume_ratio": 0.7676017601760176,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 142525,
+                      "surviving_voxels": 141680,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 142602782,
+        "manifest_sha256": "2e9ab96a71982f998713e7735233dd03e719cae6094fc70f5621e0ab0dfdc7d2"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": false,
+      "report_code_differences": {
+        "src/fakect_segmentation.py": {
+          "recorded_sha256": "e103535d06fd6b3050beb7d1f6e81701f98769fe63f3924d40b2ace7648cbe89",
+          "current_sha256": "99039c1a33074dbf6cc2e5281b47fe7323db79f00ac4ee9579faa5bf6c497118"
+        }
+      },
+      "report_code_difference_note": "Model-only PatchDataset resampling and model metadata changed after this preview. Recorded report/source artifacts and current INI still match exactly; morphology/preview code is unchanged. Current-code native preflight remains necessary before freeze.",
+      "requires_coordinate_review": false,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": []
+    },
+    {
+      "case_id": "260611",
+      "input_before_sha256": "c6302fe07bbb89d1e042ba76cfba59b7373206a6ea3569d085968c772fdd2e1c",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 32.78,
+      "distance_scale_from_body_scaled_seed": 1.0,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": true,
+      "input_sha256": "c6302fe07bbb89d1e042ba76cfba59b7373206a6ea3569d085968c772fdd2e1c",
+      "config_path": "configs/cohorts/coa/260611.ini",
+      "preview_report_path": "outputs/cohorts/coa/260611/review-r1/report.html",
+      "preview_report_json_sha256": "e4cc9609cf784663e3f69e908c0953c62c6f01b9372927f488573e69e4be1bf7",
+      "source_crop_sha256": {
+        "act": "c72c487119acbf4a642fe2351b5e7bc2b9b6d0fce87a95a6166290b2fa9457e5",
+        "atn": "2a1cd2c8e9c7d198ce8008adf84ed3dc2f50bd0924ee61fcac80adce0e1aedbe"
+      },
+      "spacing_ijk_mm": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "crop_shape_kji": [
+        157,
+        123,
+        86
+      ],
+      "preview_generated_at_utc": "2026-09-19T02:45:36.885874+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "explicit_validate_only_and_preview",
+        "explicit_validate_only_invoked": true
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 38367,
+        "crop_voxels": 1660746,
+        "counts": {
+          "before": 38367,
+          "after": 38220,
+          "added": 582,
+          "removed": 729,
+          "changed": 1311,
+          "scalar_changed": 1311,
+          "ever_changed": 1311,
+          "proposed_added": 3697,
+          "proposed_removed": 1966,
+          "blocked": 3115,
+          "unresolved": 1237,
+          "changed_outside_selection_roi": 394,
+          "added_outside_selection_roi": 394,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 394
+        },
+        "volume_mm3": {
+          "before": 38367.0,
+          "after": 38220.0,
+          "added": 582.0,
+          "removed": 729.0
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 8.374,
+            "counts": {
+              "before": 15305,
+              "after": 15887,
+              "proposed_added": 3697,
+              "proposed_removed": 0,
+              "added": 582,
+              "removed": 0,
+              "blocked": 3115,
+              "unresolved": 0,
+              "changed": 582,
+              "changed_outside_selection_roi": 394,
+              "added_outside_selection_roi": 394,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 47,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 6.513,
+            "counts": {
+              "before": 11302,
+              "after": 11302,
+              "proposed_added": 0,
+              "proposed_removed": 376,
+              "added": 0,
+              "removed": 0,
+              "blocked": 0,
+              "unresolved": 376,
+              "changed": 0,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 389,
+              "release_suppressed_by_target_stiffness": 13
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 9.304,
+            "counts": {
+              "before": 2649,
+              "after": 1920,
+              "proposed_added": 0,
+              "proposed_removed": 1590,
+              "added": 0,
+              "removed": 729,
+              "blocked": 0,
+              "unresolved": 861,
+              "changed": 729,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1622,
+              "release_suppressed_by_target_stiffness": 32
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 1652,
+              "retained_volume_ratio": 0.6938261234775305,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 117122,
+                  "surviving_voxels": 116393,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 9.304,
+              "accepted_distance_mm": 9.304,
+              "baseline_target_voxels": 2381,
+              "baseline_volume_mm3": 2381.0,
+              "retained_volume_mm3": 1652.0,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 9.304,
+                  "retained_target_voxels": 1652,
+                  "retained_volume_ratio": 0.6938261234775305,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 117122,
+                      "surviving_voxels": 116393,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 137407723,
+        "manifest_sha256": "45cc38a6fb423bf72bea4c0b589a97c07109b9066f3cf1ec40c63fbccaa7e8d1"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": false,
+      "report_code_differences": {
+        "src/fakect_segmentation.py": {
+          "recorded_sha256": "e103535d06fd6b3050beb7d1f6e81701f98769fe63f3924d40b2ace7648cbe89",
+          "current_sha256": "99039c1a33074dbf6cc2e5281b47fe7323db79f00ac4ee9579faa5bf6c497118"
+        }
+      },
+      "report_code_difference_note": "Model-only PatchDataset resampling and model metadata changed after this preview. Recorded report/source artifacts and current INI still match exactly; morphology/preview code is unchanged. Current-code native preflight remains necessary before freeze.",
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": [
+        "arch_inner_narrow"
+      ]
+    },
+    {
+      "case_id": "260612",
+      "input_before_sha256": "b24665ffd1f1a3f2ceb7db727ea8b0173d0ec0a1d73f0cef477a2f307b1d03cb",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 13.13,
+      "distance_scale_from_body_scaled_seed": 1.0,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": true,
+      "input_sha256": "b24665ffd1f1a3f2ceb7db727ea8b0173d0ec0a1d73f0cef477a2f307b1d03cb",
+      "config_path": "configs/cohorts/coa/260612.ini",
+      "preview_report_path": "outputs/cohorts/coa/260612/review-r1/report.html",
+      "preview_report_json_sha256": "1adb643760b234d29359bd6bcce9c6e03cd6d101a4905efd06f5d7b64621bbe0",
+      "source_crop_sha256": {
+        "act": "e70d8b5b645dd6d8559709f1b968b2c8be03d9f9f6c1e117a73ab1a1a3ccba0d",
+        "atn": "aae67a5f6bd82539874d725131c007b804c38dcdaeb93605815ac1075aaf2eaa"
+      },
+      "spacing_ijk_mm": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "crop_shape_kji": [
+        137,
+        133,
+        97
+      ],
+      "preview_generated_at_utc": "2026-09-19T02:45:28.498208+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "explicit_validate_only_and_preview",
+        "explicit_validate_only_invoked": true
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 31868,
+        "crop_voxels": 1767437,
+        "counts": {
+          "before": 31868,
+          "after": 31554,
+          "added": 759,
+          "removed": 1073,
+          "changed": 1832,
+          "scalar_changed": 1832,
+          "ever_changed": 1832,
+          "proposed_added": 831,
+          "proposed_removed": 1568,
+          "blocked": 72,
+          "unresolved": 495,
+          "changed_outside_selection_roi": 397,
+          "added_outside_selection_roi": 397,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 397
+        },
+        "volume_mm3": {
+          "before": 2039.5520000000006,
+          "after": 2019.4560000000006,
+          "added": 48.576000000000015,
+          "removed": 68.67200000000001
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 2.665,
+            "counts": {
+              "before": 11606,
+              "after": 12365,
+              "proposed_added": 831,
+              "proposed_removed": 0,
+              "added": 759,
+              "removed": 0,
+              "blocked": 72,
+              "unresolved": 0,
+              "changed": 759,
+              "changed_outside_selection_roi": 397,
+              "added_outside_selection_roi": 397,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 98,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 2.073,
+            "counts": {
+              "before": 8663,
+              "after": 8433,
+              "proposed_added": 0,
+              "proposed_removed": 230,
+              "added": 0,
+              "removed": 230,
+              "blocked": 0,
+              "unresolved": 0,
+              "changed": 230,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 245,
+              "release_suppressed_by_target_stiffness": 15
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 2.961,
+            "counts": {
+              "before": 2601,
+              "after": 1758,
+              "proposed_added": 0,
+              "proposed_removed": 1338,
+              "added": 0,
+              "removed": 843,
+              "blocked": 0,
+              "unresolved": 495,
+              "changed": 843,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1383,
+              "release_suppressed_by_target_stiffness": 45
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 1491,
+              "retained_volume_ratio": 0.6388174807197944,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 124256,
+                  "surviving_voxels": 123413,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 2.961,
+              "accepted_distance_mm": 2.961,
+              "baseline_target_voxels": 2334,
+              "baseline_volume_mm3": 149.37600000000003,
+              "retained_volume_mm3": 95.42400000000002,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 2.961,
+                  "retained_target_voxels": 1491,
+                  "retained_volume_ratio": 0.6388174807197944,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 124256,
+                      "surviving_voxels": 123413,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 139472407,
+        "manifest_sha256": "7e3d5b91a8bac51ffbb2f775d678bba8b6dba2e1cc5c1ecaddbe7f2126fe01f8"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": false,
+      "report_code_differences": {
+        "src/fakect_segmentation.py": {
+          "recorded_sha256": "e103535d06fd6b3050beb7d1f6e81701f98769fe63f3924d40b2ace7648cbe89",
+          "current_sha256": "99039c1a33074dbf6cc2e5281b47fe7323db79f00ac4ee9579faa5bf6c497118"
+        }
+      },
+      "report_code_difference_note": "Model-only PatchDataset resampling and model metadata changed after this preview. Recorded report/source artifacts and current INI still match exactly; morphology/preview code is unchanged. Current-code native preflight remains necessary before freeze.",
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": []
+    },
+    {
+      "case_id": "260613",
+      "input_before_sha256": "858d8af9c2eff4d771279621ddf7cac3314b869d7155be1ff955492669341c4d",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 14.75,
+      "original_crop_half_width_mm": 18.25,
+      "crop_voxels": 1816920,
+      "distance_scale_from_body_scaled_seed": 0.85,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": false,
+      "input_sha256": "cb2a05eb4f2201ac6c01debe8f902a52549528caa62eb603d911c53ca2e741f9",
+      "edit_distances_mm": {
+        "arch_outer_expand": 3.362,
+        "arch_inner_narrow": 2.615,
+        "coa_narrow": 3.736
+      },
+      "sweeps": {
+        "arch_outer_expand": {
+          "distance_mm": [
+            1.12,
+            2.241,
+            3.362
+          ]
+        },
+        "coa_narrow": {
+          "distance_mm": [
+            0.747,
+            1.494,
+            2.241,
+            2.989,
+            3.736
+          ]
+        }
+      },
+      "config_path": "configs/cohorts/coa/260613.ini",
+      "preview_report_path": "outputs/cohorts/coa/260613/review-r1/report.html",
+      "preview_report_json_sha256": "65ed1f877b17a84e313b3edffee7a2052a473da33f2ff9f6b56c92539abda6e8",
+      "source_crop_sha256": {
+        "act": "8da6f1e42a6c8eaea2b4de53d82a6d5763b1207ad5918886670d4b7895d6a446",
+        "atn": "191c5e2165270e1a69b74c46f77c08b4b83924eef522cef94a1f2df3252a3bb9"
+      },
+      "spacing_ijk_mm": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "crop_shape_kji": [
+        147,
+        120,
+        103
+      ],
+      "preview_generated_at_utc": "2026-09-19T03:12:18.836105+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "explicit_validate_only_and_preview",
+        "explicit_validate_only_invoked": true
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 45610,
+        "crop_voxels": 1816920,
+        "counts": {
+          "before": 45610,
+          "after": 47110,
+          "added": 2873,
+          "removed": 1373,
+          "changed": 4246,
+          "scalar_changed": 4031,
+          "ever_changed": 4246,
+          "proposed_added": 3098,
+          "proposed_removed": 1979,
+          "blocked": 225,
+          "unresolved": 606,
+          "changed_outside_selection_roi": 1629,
+          "added_outside_selection_roi": 1629,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 1629
+        },
+        "volume_mm3": {
+          "before": 5701.25,
+          "after": 5888.75,
+          "added": 359.125,
+          "removed": 171.625
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 3.362,
+            "counts": {
+              "before": 17910,
+              "after": 20783,
+              "proposed_added": 3098,
+              "proposed_removed": 0,
+              "added": 2873,
+              "removed": 0,
+              "blocked": 225,
+              "unresolved": 0,
+              "changed": 2873,
+              "changed_outside_selection_roi": 1629,
+              "added_outside_selection_roi": 1629,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 87,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 2.615,
+            "counts": {
+              "before": 14292,
+              "after": 14096,
+              "proposed_added": 0,
+              "proposed_removed": 196,
+              "added": 0,
+              "removed": 196,
+              "blocked": 0,
+              "unresolved": 0,
+              "changed": 196,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 213,
+              "release_suppressed_by_target_stiffness": 17
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 3.736,
+            "counts": {
+              "before": 3543,
+              "after": 2366,
+              "proposed_added": 0,
+              "proposed_removed": 1783,
+              "added": 0,
+              "removed": 1177,
+              "blocked": 0,
+              "unresolved": 606,
+              "changed": 1177,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1851,
+              "release_suppressed_by_target_stiffness": 68
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 2033,
+              "retained_volume_ratio": 0.6333333333333333,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 142569,
+                  "surviving_voxels": 141392,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 3.736,
+              "accepted_distance_mm": 3.736,
+              "baseline_target_voxels": 3210,
+              "baseline_volume_mm3": 401.25,
+              "retained_volume_mm3": 254.125,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 3.736,
+                  "retained_target_voxels": 2033,
+                  "retained_volume_ratio": 0.6333333333333333,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 142569,
+                      "surviving_voxels": 141392,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 137190923,
+        "manifest_sha256": "e46c52c1ea51b3536e83d24c16748c1dd03e559d906e86e8a1617308c1b34060"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": true,
+      "report_code_differences": {},
+      "report_code_difference_note": null,
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": []
+    },
+    {
+      "case_id": "260614",
+      "input_before_sha256": "a1606419359c68c9caeeee31961f4a39abc89382eee9a7c9a407dbefe9126f94",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 14.42,
+      "original_crop_half_width_mm": 23.42,
+      "crop_voxels": 1827760,
+      "distance_scale_from_body_scaled_seed": 0.4437053124999999,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": false,
+      "input_sha256": "18936af71e54e948d6141a4a2d5cf9548ee13c4b382ea2a87da74763387f9e02",
+      "edit_distances_mm": {
+        "arch_outer_expand": 2.568,
+        "arch_inner_narrow": 1.997,
+        "coa_narrow": 2.853
+      },
+      "sweeps": {
+        "arch_outer_expand": {
+          "distance_mm": [
+            0.856,
+            1.712,
+            2.568
+          ]
+        },
+        "coa_narrow": {
+          "distance_mm": [
+            0.571,
+            1.141,
+            1.712,
+            2.282,
+            2.853
+          ]
+        }
+      },
+      "config_path": "configs/cohorts/coa/260614.ini",
+      "preview_report_path": "outputs/cohorts/coa/260614/review-r1/report.html",
+      "preview_report_json_sha256": "bb7982b3ec9db406b504f5bfab0476b177cc64de218c06523fb08cd50333b161",
+      "source_crop_sha256": {
+        "act": "5ad397d6254d802e3e7f8a6cb49861ea4498256c2bf8fd48131978001aed011b",
+        "atn": "736091c183cb8f4edf2c6d89469ec0f1863338e1c7e90f862fc06c423d759279"
+      },
+      "spacing_ijk_mm": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "crop_shape_kji": [
+        155,
+        134,
+        88
+      ],
+      "preview_generated_at_utc": "2026-09-19T03:12:09.222419+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "explicit_validate_only_and_preview",
+        "explicit_validate_only_invoked": true
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 55228,
+        "crop_voxels": 1827760,
+        "counts": {
+          "before": 55228,
+          "after": 54508,
+          "added": 235,
+          "removed": 955,
+          "changed": 1190,
+          "scalar_changed": 1190,
+          "ever_changed": 1190,
+          "proposed_added": 1132,
+          "proposed_removed": 1497,
+          "blocked": 897,
+          "unresolved": 542,
+          "changed_outside_selection_roi": 86,
+          "added_outside_selection_roi": 86,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 86
+        },
+        "volume_mm3": {
+          "before": 11929.248,
+          "after": 11773.728,
+          "added": 50.76,
+          "removed": 206.28
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 2.568,
+            "counts": {
+              "before": 21940,
+              "after": 22175,
+              "proposed_added": 1132,
+              "proposed_removed": 0,
+              "added": 235,
+              "removed": 0,
+              "blocked": 897,
+              "unresolved": 0,
+              "changed": 235,
+              "changed_outside_selection_roi": 86,
+              "added_outside_selection_roi": 86,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 23,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 1.997,
+            "counts": {
+              "before": 17069,
+              "after": 17012,
+              "proposed_added": 0,
+              "proposed_removed": 313,
+              "added": 0,
+              "removed": 57,
+              "blocked": 0,
+              "unresolved": 256,
+              "changed": 57,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 346,
+              "release_suppressed_by_target_stiffness": 33
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 2.853,
+            "counts": {
+              "before": 3198,
+              "after": 2300,
+              "proposed_added": 0,
+              "proposed_removed": 1184,
+              "added": 0,
+              "removed": 898,
+              "blocked": 0,
+              "unresolved": 286,
+              "changed": 898,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1222,
+              "release_suppressed_by_target_stiffness": 38
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 1965,
+              "retained_volume_ratio": 0.6863429968564443,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 3,
+                  "before_voxels": 162423,
+                  "surviving_voxels": 161525,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 2.853,
+              "accepted_distance_mm": 2.853,
+              "baseline_target_voxels": 2863,
+              "baseline_volume_mm3": 618.408,
+              "retained_volume_mm3": 424.44,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 2.853,
+                  "retained_target_voxels": 1965,
+                  "retained_volume_ratio": 0.6863429968564443,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 3,
+                      "before_voxels": 162423,
+                      "surviving_voxels": 161525,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 140705033,
+        "manifest_sha256": "7b1f852ed19a1e3e1b597d2212f9ab619930f5fc14ea9577121394669f9563b9"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": true,
+      "report_code_differences": {},
+      "report_code_difference_note": null,
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": []
+    },
+    {
+      "case_id": "260615",
+      "input_before_sha256": "e736b95ea3e241892937a6c1a9b1919318ad6e7a212dca24425d3fac9151c33f",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 24.78,
+      "original_crop_half_width_mm": 29.58,
+      "crop_voxels": 1851360,
+      "distance_scale_from_body_scaled_seed": 1.0,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": false,
+      "input_sha256": "e0bc9c8ed8a886ce3d013d1bed20fcef03d93792fe241ccba8097ef362c9a068",
+      "edit_distances_mm": {
+        "arch_outer_expand": 7.143,
+        "arch_inner_narrow": 5.555,
+        "coa_narrow": 7.936
+      },
+      "sweeps": {
+        "arch_outer_expand": {
+          "distance_mm": [
+            2.381,
+            4.762,
+            7.143
+          ]
+        },
+        "coa_narrow": {
+          "distance_mm": [
+            1.587,
+            3.175,
+            4.762,
+            6.349,
+            7.936
+          ]
+        }
+      },
+      "config_path": "configs/cohorts/coa/260615.ini",
+      "preview_report_path": "outputs/cohorts/coa/260615/review-r1/report.html",
+      "preview_report_json_sha256": "33ae76e5adcee172888fe2c30a871ea01bfc192e869cd7904f2e94d2428dd2ae",
+      "source_crop_sha256": {
+        "act": "97cf9a93156ce9dfeb22d652dfe55394d9b22aee92768680cfc188bc8e19594b",
+        "atn": "01678aa615b99e7f7754eb976ebe067723d41159c3b49d184445b427441244a6"
+      },
+      "spacing_ijk_mm": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "crop_shape_kji": [
+        160,
+        133,
+        87
+      ],
+      "preview_generated_at_utc": "2026-09-19T03:19:22.782642+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "explicit_validate_only_and_preview",
+        "explicit_validate_only_invoked": true
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 54829,
+        "crop_voxels": 1851360,
+        "counts": {
+          "before": 54829,
+          "after": 55672,
+          "added": 1657,
+          "removed": 814,
+          "changed": 2471,
+          "scalar_changed": 2471,
+          "ever_changed": 2471,
+          "proposed_added": 3855,
+          "proposed_removed": 3287,
+          "blocked": 2198,
+          "unresolved": 2473,
+          "changed_outside_selection_roi": 887,
+          "added_outside_selection_roi": 887,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 887
+        },
+        "volume_mm3": {
+          "before": 28072.448000000008,
+          "after": 28504.064000000006,
+          "added": 848.3840000000002,
+          "removed": 416.7680000000001
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 7.143,
+            "counts": {
+              "before": 19183,
+              "after": 20840,
+              "proposed_added": 3855,
+              "proposed_removed": 0,
+              "added": 1657,
+              "removed": 0,
+              "blocked": 2198,
+              "unresolved": 0,
+              "changed": 1657,
+              "changed_outside_selection_roi": 887,
+              "added_outside_selection_roi": 887,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 65,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 5.555,
+            "counts": {
+              "before": 15652,
+              "after": 15652,
+              "proposed_added": 0,
+              "proposed_removed": 513,
+              "added": 0,
+              "removed": 0,
+              "blocked": 0,
+              "unresolved": 513,
+              "changed": 0,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 534,
+              "release_suppressed_by_target_stiffness": 21
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 7.936,
+            "counts": {
+              "before": 4986,
+              "after": 4172,
+              "proposed_added": 0,
+              "proposed_removed": 2774,
+              "added": 0,
+              "removed": 814,
+              "blocked": 0,
+              "unresolved": 1960,
+              "changed": 814,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 2867,
+              "release_suppressed_by_target_stiffness": 93
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 3678,
+              "retained_volume_ratio": 0.8187889581478184,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 151348,
+                  "surviving_voxels": 150534,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 7.936,
+              "accepted_distance_mm": 7.936,
+              "baseline_target_voxels": 4492,
+              "baseline_volume_mm3": 2299.9040000000005,
+              "retained_volume_mm3": 1883.1360000000004,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 7.936,
+                  "retained_target_voxels": 3678,
+                  "retained_volume_ratio": 0.8187889581478184,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 151348,
+                      "surviving_voxels": 150534,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 143933505,
+        "manifest_sha256": "9ea119d5f49dbc5a1ea393c4c2c84caa4ab8c0fa744cb175e113ac0a671db2a1"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": true,
+      "report_code_differences": {},
+      "report_code_difference_note": null,
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": [
+        "arch_inner_narrow"
+      ]
+    },
+    {
+      "case_id": "260616",
+      "input_before_sha256": "fff717722a9628e9f7eeb9c4c572271b70df3e06c610c4286bd83638334240c6",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 27.52,
+      "original_crop_half_width_mm": 32.02,
+      "crop_voxels": 1814384,
+      "distance_scale_from_body_scaled_seed": 0.85,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": false,
+      "input_sha256": "e1ad22548eafe2d380d31d971fa413400731758d4f98fe1661aacaf8e7ffa4dd",
+      "edit_distances_mm": {
+        "arch_outer_expand": 7.256,
+        "arch_inner_narrow": 5.644,
+        "coa_narrow": 8.063
+      },
+      "sweeps": {
+        "arch_outer_expand": {
+          "distance_mm": [
+            2.419,
+            4.837,
+            7.256
+          ]
+        },
+        "coa_narrow": {
+          "distance_mm": [
+            1.612,
+            3.225,
+            4.837,
+            6.45,
+            8.063
+          ]
+        }
+      },
+      "config_path": "configs/cohorts/coa/260616.ini",
+      "preview_report_path": "outputs/cohorts/coa/260616/review-r1/report.html",
+      "preview_report_json_sha256": "24b9dd46cb1aff3200cad305151b68d01afd5c2bd46f586990c066e21d12f750",
+      "source_crop_sha256": {
+        "act": "21ebf24dfb1371f7fe910b45f00ebc0936b378458429f9c7c9a68d13af305575",
+        "atn": "2d77657b8d535c3e93bd1078f762213d07a7f2410fd8cf0faaeb2cb3315036ad"
+      },
+      "spacing_ijk_mm": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "crop_shape_kji": [
+        169,
+        122,
+        88
+      ],
+      "preview_generated_at_utc": "2026-09-19T03:19:30.169554+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "explicit_validate_only_and_preview",
+        "explicit_validate_only_invoked": true
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 44421,
+        "crop_voxels": 1814384,
+        "counts": {
+          "before": 44421,
+          "after": 45958,
+          "added": 2573,
+          "removed": 1036,
+          "changed": 3609,
+          "scalar_changed": 3399,
+          "ever_changed": 3609,
+          "proposed_added": 3847,
+          "proposed_removed": 2145,
+          "blocked": 1274,
+          "unresolved": 1109,
+          "changed_outside_selection_roi": 1307,
+          "added_outside_selection_roi": 1307,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 1307
+        },
+        "volume_mm3": {
+          "before": 32382.909000000003,
+          "after": 33503.382000000005,
+          "added": 1875.7170000000003,
+          "removed": 755.2440000000001
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 7.256,
+            "counts": {
+              "before": 18018,
+              "after": 20591,
+              "proposed_added": 3847,
+              "proposed_removed": 0,
+              "added": 2573,
+              "removed": 0,
+              "blocked": 1274,
+              "unresolved": 0,
+              "changed": 2573,
+              "changed_outside_selection_roi": 1307,
+              "added_outside_selection_roi": 1307,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 225,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 5.644,
+            "counts": {
+              "before": 14734,
+              "after": 14606,
+              "proposed_added": 0,
+              "proposed_removed": 450,
+              "added": 0,
+              "removed": 128,
+              "blocked": 0,
+              "unresolved": 322,
+              "changed": 128,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 468,
+              "release_suppressed_by_target_stiffness": 18
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 8.063,
+            "counts": {
+              "before": 2807,
+              "after": 1899,
+              "proposed_added": 0,
+              "proposed_removed": 1695,
+              "added": 0,
+              "removed": 908,
+              "blocked": 0,
+              "unresolved": 787,
+              "changed": 908,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1720,
+              "release_suppressed_by_target_stiffness": 25
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 1620,
+              "retained_volume_ratio": 0.6408227848101266,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 151394,
+                  "surviving_voxels": 150486,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 8.063,
+              "accepted_distance_mm": 8.063,
+              "baseline_target_voxels": 2528,
+              "baseline_volume_mm3": 1842.9120000000003,
+              "retained_volume_mm3": 1180.9800000000002,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 8.063,
+                  "retained_target_voxels": 1620,
+                  "retained_volume_ratio": 0.6408227848101266,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 151394,
+                      "surviving_voxels": 150486,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 143792935,
+        "manifest_sha256": "382d2b1e8fdfc6d4d634bf446c5d573e8979166e10b6e5b94394db4c9bf7d22b"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": true,
+      "report_code_differences": {},
+      "report_code_difference_note": null,
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": []
+    },
+    {
+      "case_id": "260617",
+      "input_before_sha256": "156f9a8cc05012f465194453c0adaee58cda74ade7f27f82e0e0f7d5e9558b08",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 13.13,
+      "original_crop_half_width_mm": 13.13,
+      "crop_voxels": 1767437,
+      "distance_scale_from_body_scaled_seed": 1.0,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": false,
+      "input_sha256": "80a74540d060d8cd0464e496f6a89574687e6f546b575f4a99b4b629e9afa6fc",
+      "edit_distances_mm": {
+        "arch_outer_expand": 2.665,
+        "arch_inner_narrow": 2.073,
+        "coa_narrow": 2.961
+      },
+      "sweeps": {
+        "arch_outer_expand": {
+          "distance_mm": [
+            0.888,
+            1.777,
+            2.665
+          ]
+        },
+        "coa_narrow": {
+          "distance_mm": [
+            0.592,
+            1.184,
+            1.777,
+            2.369,
+            2.961
+          ]
+        }
+      },
+      "config_path": "configs/cohorts/coa/260617.ini",
+      "preview_report_path": "outputs/cohorts/coa/260617/review-r1/report.html",
+      "preview_report_json_sha256": "154817387b88e1a05fb3ff48bb49dbaed17d902ff337b05f0ff6bf1ead35f39b",
+      "source_crop_sha256": {
+        "act": "5b336ecd6d28830ffda8789380c135a46ce56e2e9176679683295cd571e4578c",
+        "atn": "ded3916ca4bf93f706d946aabda8d2cf135a8763c2edae195a493c0d6cac3047"
+      },
+      "spacing_ijk_mm": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "crop_shape_kji": [
+        137,
+        133,
+        97
+      ],
+      "preview_generated_at_utc": "2026-09-19T03:20:32.614206+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "preview_embedded_full_grid_validator",
+        "explicit_validate_only_invoked": false
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 31485,
+        "crop_voxels": 1767437,
+        "counts": {
+          "before": 31485,
+          "after": 31156,
+          "added": 692,
+          "removed": 1021,
+          "changed": 1713,
+          "scalar_changed": 1713,
+          "ever_changed": 1713,
+          "proposed_added": 759,
+          "proposed_removed": 1507,
+          "blocked": 67,
+          "unresolved": 486,
+          "changed_outside_selection_roi": 273,
+          "added_outside_selection_roi": 273,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 273
+        },
+        "volume_mm3": {
+          "before": 2015.0400000000004,
+          "after": 1993.9840000000004,
+          "added": 44.28800000000001,
+          "removed": 65.34400000000002
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 2.665,
+            "counts": {
+              "before": 11772,
+              "after": 12464,
+              "proposed_added": 759,
+              "proposed_removed": 0,
+              "added": 692,
+              "removed": 0,
+              "blocked": 67,
+              "unresolved": 0,
+              "changed": 692,
+              "changed_outside_selection_roi": 273,
+              "added_outside_selection_roi": 273,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 75,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 2.073,
+            "counts": {
+              "before": 8685,
+              "after": 8475,
+              "proposed_added": 0,
+              "proposed_removed": 210,
+              "added": 0,
+              "removed": 210,
+              "blocked": 0,
+              "unresolved": 0,
+              "changed": 210,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 216,
+              "release_suppressed_by_target_stiffness": 6
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 2.961,
+            "counts": {
+              "before": 2515,
+              "after": 1704,
+              "proposed_added": 0,
+              "proposed_removed": 1297,
+              "added": 0,
+              "removed": 811,
+              "blocked": 0,
+              "unresolved": 486,
+              "changed": 811,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1349,
+              "release_suppressed_by_target_stiffness": 52
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 1455,
+              "retained_volume_ratio": 0.6421006178287731,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 123002,
+                  "surviving_voxels": 122191,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 2.961,
+              "accepted_distance_mm": 2.961,
+              "baseline_target_voxels": 2266,
+              "baseline_volume_mm3": 145.02400000000003,
+              "retained_volume_mm3": 93.12000000000002,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 2.961,
+                  "retained_target_voxels": 1455,
+                  "retained_volume_ratio": 0.6421006178287731,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 123002,
+                      "surviving_voxels": 122191,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 139318802,
+        "manifest_sha256": "c848ea46e2586dcb96be05ff04aeb464825e1b5e909e51673412f369c09a5b38"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": true,
+      "report_code_differences": {},
+      "report_code_difference_note": null,
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": []
+    },
+    {
+      "case_id": "260618",
+      "input_before_sha256": "7df0b04b1bb08db68d40e97b476404525bc44ce913b32fcd559b2ccc2a61c9b6",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 14.75,
+      "original_crop_half_width_mm": 18.25,
+      "crop_voxels": 1816920,
+      "distance_scale_from_body_scaled_seed": 0.85,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": false,
+      "input_sha256": "8e46550154c4662aaa0f79cbfad2bbb9beba31c76b76d2bf3e0fbb7885ad70e5",
+      "edit_distances_mm": {
+        "arch_outer_expand": 3.362,
+        "arch_inner_narrow": 2.615,
+        "coa_narrow": 3.736
+      },
+      "sweeps": {
+        "arch_outer_expand": {
+          "distance_mm": [
+            1.12,
+            2.241,
+            3.362
+          ]
+        },
+        "coa_narrow": {
+          "distance_mm": [
+            0.747,
+            1.494,
+            2.241,
+            2.989,
+            3.736
+          ]
+        }
+      },
+      "config_path": "configs/cohorts/coa/260618.ini",
+      "preview_report_path": "outputs/cohorts/coa/260618/review-r1/report.html",
+      "preview_report_json_sha256": "a23d4a414b755606cc3d0663b03e014193ce4558e449878343b3fd4d1619e1ca",
+      "source_crop_sha256": {
+        "act": "c08e133eb017e193194b2c53437f929a2e2b49ad520715a19206032e9a576c77",
+        "atn": "191c5e2165270e1a69b74c46f77c08b4b83924eef522cef94a1f2df3252a3bb9"
+      },
+      "spacing_ijk_mm": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "crop_shape_kji": [
+        147,
+        120,
+        103
+      ],
+      "preview_generated_at_utc": "2026-09-19T03:25:28.696475+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "preview_embedded_full_grid_validator",
+        "explicit_validate_only_invoked": false
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 45610,
+        "crop_voxels": 1816920,
+        "counts": {
+          "before": 45610,
+          "after": 47110,
+          "added": 2873,
+          "removed": 1373,
+          "changed": 4246,
+          "scalar_changed": 4031,
+          "ever_changed": 4246,
+          "proposed_added": 3098,
+          "proposed_removed": 1979,
+          "blocked": 225,
+          "unresolved": 606,
+          "changed_outside_selection_roi": 1629,
+          "added_outside_selection_roi": 1629,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 1629
+        },
+        "volume_mm3": {
+          "before": 5701.25,
+          "after": 5888.75,
+          "added": 359.125,
+          "removed": 171.625
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 3.362,
+            "counts": {
+              "before": 17910,
+              "after": 20783,
+              "proposed_added": 3098,
+              "proposed_removed": 0,
+              "added": 2873,
+              "removed": 0,
+              "blocked": 225,
+              "unresolved": 0,
+              "changed": 2873,
+              "changed_outside_selection_roi": 1629,
+              "added_outside_selection_roi": 1629,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 87,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 2.615,
+            "counts": {
+              "before": 14292,
+              "after": 14096,
+              "proposed_added": 0,
+              "proposed_removed": 196,
+              "added": 0,
+              "removed": 196,
+              "blocked": 0,
+              "unresolved": 0,
+              "changed": 196,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 213,
+              "release_suppressed_by_target_stiffness": 17
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 3.736,
+            "counts": {
+              "before": 3543,
+              "after": 2366,
+              "proposed_added": 0,
+              "proposed_removed": 1783,
+              "added": 0,
+              "removed": 1177,
+              "blocked": 0,
+              "unresolved": 606,
+              "changed": 1177,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1851,
+              "release_suppressed_by_target_stiffness": 68
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 2033,
+              "retained_volume_ratio": 0.6333333333333333,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 142569,
+                  "surviving_voxels": 141392,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 3.736,
+              "accepted_distance_mm": 3.736,
+              "baseline_target_voxels": 3210,
+              "baseline_volume_mm3": 401.25,
+              "retained_volume_mm3": 254.125,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 3.736,
+                  "retained_target_voxels": 2033,
+                  "retained_volume_ratio": 0.6333333333333333,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 142569,
+                      "surviving_voxels": 141392,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 137193555,
+        "manifest_sha256": "9854ed8992b3bfa0c27ad6bb581117b6bb2190416108c6853d7418648d839cd9"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": true,
+      "report_code_differences": {},
+      "report_code_difference_note": null,
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": []
+    },
+    {
+      "case_id": "260619",
+      "input_before_sha256": "133678d8c738c416e07bcab2be5684f37f7dcf0543c3cadf402ca730ce4d1321",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 14.42,
+      "original_crop_half_width_mm": 23.42,
+      "crop_voxels": 1827760,
+      "distance_scale_from_body_scaled_seed": 0.4437053124999999,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": false,
+      "input_sha256": "29c272d7840eb6b4014b55bace5c8e3c06410ce3f243bbcae9ed1dff1bf583e9",
+      "edit_distances_mm": {
+        "arch_outer_expand": 2.568,
+        "arch_inner_narrow": 1.997,
+        "coa_narrow": 2.853
+      },
+      "sweeps": {
+        "arch_outer_expand": {
+          "distance_mm": [
+            0.856,
+            1.712,
+            2.568
+          ]
+        },
+        "coa_narrow": {
+          "distance_mm": [
+            0.571,
+            1.141,
+            1.712,
+            2.282,
+            2.853
+          ]
+        }
+      },
+      "config_path": "configs/cohorts/coa/260619.ini",
+      "preview_report_path": "outputs/cohorts/coa/260619/review-r1/report.html",
+      "preview_report_json_sha256": "e27d94822650999550f017133521e32c09d989ad260d36bd70614dabea0533aa",
+      "source_crop_sha256": {
+        "act": "5ad397d6254d802e3e7f8a6cb49861ea4498256c2bf8fd48131978001aed011b",
+        "atn": "736091c183cb8f4edf2c6d89469ec0f1863338e1c7e90f862fc06c423d759279"
+      },
+      "spacing_ijk_mm": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "crop_shape_kji": [
+        155,
+        134,
+        88
+      ],
+      "preview_generated_at_utc": "2026-09-19T03:25:59.201732+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "preview_embedded_full_grid_validator",
+        "explicit_validate_only_invoked": false
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 55228,
+        "crop_voxels": 1827760,
+        "counts": {
+          "before": 55228,
+          "after": 54508,
+          "added": 235,
+          "removed": 955,
+          "changed": 1190,
+          "scalar_changed": 1190,
+          "ever_changed": 1190,
+          "proposed_added": 1132,
+          "proposed_removed": 1497,
+          "blocked": 897,
+          "unresolved": 542,
+          "changed_outside_selection_roi": 86,
+          "added_outside_selection_roi": 86,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 86
+        },
+        "volume_mm3": {
+          "before": 11929.248,
+          "after": 11773.728,
+          "added": 50.76,
+          "removed": 206.28
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 2.568,
+            "counts": {
+              "before": 21940,
+              "after": 22175,
+              "proposed_added": 1132,
+              "proposed_removed": 0,
+              "added": 235,
+              "removed": 0,
+              "blocked": 897,
+              "unresolved": 0,
+              "changed": 235,
+              "changed_outside_selection_roi": 86,
+              "added_outside_selection_roi": 86,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 23,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 1.997,
+            "counts": {
+              "before": 17069,
+              "after": 17012,
+              "proposed_added": 0,
+              "proposed_removed": 313,
+              "added": 0,
+              "removed": 57,
+              "blocked": 0,
+              "unresolved": 256,
+              "changed": 57,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 346,
+              "release_suppressed_by_target_stiffness": 33
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 2.853,
+            "counts": {
+              "before": 3198,
+              "after": 2300,
+              "proposed_added": 0,
+              "proposed_removed": 1184,
+              "added": 0,
+              "removed": 898,
+              "blocked": 0,
+              "unresolved": 286,
+              "changed": 898,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1222,
+              "release_suppressed_by_target_stiffness": 38
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 1965,
+              "retained_volume_ratio": 0.6863429968564443,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 3,
+                  "before_voxels": 162423,
+                  "surviving_voxels": 161525,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 2.853,
+              "accepted_distance_mm": 2.853,
+              "baseline_target_voxels": 2863,
+              "baseline_volume_mm3": 618.408,
+              "retained_volume_mm3": 424.44,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 2.853,
+                  "retained_target_voxels": 1965,
+                  "retained_volume_ratio": 0.6863429968564443,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 3,
+                      "before_voxels": 162423,
+                      "surviving_voxels": 161525,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 140709900,
+        "manifest_sha256": "fde533487f46f3c1d42c578a11f06c1906a8484e8049625e2e32deb5851a48c3"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": true,
+      "report_code_differences": {},
+      "report_code_difference_note": null,
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": []
+    },
+    {
+      "case_id": "260620",
+      "input_before_sha256": "16778039503545f032094bcc3d058b87a7918ad81c2caf6f1c1fef0cd56a1837",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 24.78,
+      "original_crop_half_width_mm": 29.58,
+      "crop_voxels": 1851360,
+      "distance_scale_from_body_scaled_seed": 1.0,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": false,
+      "input_sha256": "f8c071b338240515ab56a6562d2149cf0044cc86bc91c5e1e69a03285945a944",
+      "edit_distances_mm": {
+        "arch_outer_expand": 7.143,
+        "arch_inner_narrow": 5.555,
+        "coa_narrow": 7.936
+      },
+      "sweeps": {
+        "arch_outer_expand": {
+          "distance_mm": [
+            2.381,
+            4.762,
+            7.143
+          ]
+        },
+        "coa_narrow": {
+          "distance_mm": [
+            1.587,
+            3.175,
+            4.762,
+            6.349,
+            7.936
+          ]
+        }
+      },
+      "config_path": "configs/cohorts/coa/260620.ini",
+      "preview_report_path": "outputs/cohorts/coa/260620/review-r1/report.html",
+      "preview_report_json_sha256": "85534a13276286d04cea1dd78b0023c358f1b2cd73ac89dfaec070c145adfa1e",
+      "source_crop_sha256": {
+        "act": "8e873d50a11c89138ca171715288db285670316dc3c510957a110a32f768aec4",
+        "atn": "01678aa615b99e7f7754eb976ebe067723d41159c3b49d184445b427441244a6"
+      },
+      "spacing_ijk_mm": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "crop_shape_kji": [
+        160,
+        133,
+        87
+      ],
+      "preview_generated_at_utc": "2026-09-19T03:28:48.083811+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "preview_embedded_full_grid_validator",
+        "explicit_validate_only_invoked": false
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 54829,
+        "crop_voxels": 1851360,
+        "counts": {
+          "before": 54829,
+          "after": 55672,
+          "added": 1657,
+          "removed": 814,
+          "changed": 2471,
+          "scalar_changed": 2471,
+          "ever_changed": 2471,
+          "proposed_added": 3855,
+          "proposed_removed": 3287,
+          "blocked": 2198,
+          "unresolved": 2473,
+          "changed_outside_selection_roi": 887,
+          "added_outside_selection_roi": 887,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 887
+        },
+        "volume_mm3": {
+          "before": 28072.448000000008,
+          "after": 28504.064000000006,
+          "added": 848.3840000000002,
+          "removed": 416.7680000000001
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 7.143,
+            "counts": {
+              "before": 19183,
+              "after": 20840,
+              "proposed_added": 3855,
+              "proposed_removed": 0,
+              "added": 1657,
+              "removed": 0,
+              "blocked": 2198,
+              "unresolved": 0,
+              "changed": 1657,
+              "changed_outside_selection_roi": 887,
+              "added_outside_selection_roi": 887,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 65,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 5.555,
+            "counts": {
+              "before": 15652,
+              "after": 15652,
+              "proposed_added": 0,
+              "proposed_removed": 513,
+              "added": 0,
+              "removed": 0,
+              "blocked": 0,
+              "unresolved": 513,
+              "changed": 0,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 534,
+              "release_suppressed_by_target_stiffness": 21
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 7.936,
+            "counts": {
+              "before": 4986,
+              "after": 4172,
+              "proposed_added": 0,
+              "proposed_removed": 2774,
+              "added": 0,
+              "removed": 814,
+              "blocked": 0,
+              "unresolved": 1960,
+              "changed": 814,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 2867,
+              "release_suppressed_by_target_stiffness": 93
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 3678,
+              "retained_volume_ratio": 0.8187889581478184,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 151348,
+                  "surviving_voxels": 150534,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 7.936,
+              "accepted_distance_mm": 7.936,
+              "baseline_target_voxels": 4492,
+              "baseline_volume_mm3": 2299.9040000000005,
+              "retained_volume_mm3": 1883.1360000000004,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 7.936,
+                  "retained_target_voxels": 3678,
+                  "retained_volume_ratio": 0.8187889581478184,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 151348,
+                      "surviving_voxels": 150534,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 143939087,
+        "manifest_sha256": "d8ca2cf0449b21f0230b13c6e6d447bbec21abbc8ec3caed5bf7ac10b8ad57cc"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": true,
+      "report_code_differences": {},
+      "report_code_difference_note": null,
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": [
+        "arch_inner_narrow"
+      ]
+    },
+    {
+      "case_id": "260621",
+      "input_before_sha256": "432c57c9d216724a457c87143116872fc95aa854c809497bca8820320a45debd",
+      "candidate_nodes_and_radii_preserved": true,
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "crop_half_width_mm": 29.22,
+      "original_crop_half_width_mm": 31.02,
+      "crop_voxels": 1865084,
+      "distance_scale_from_body_scaled_seed": 1.0,
+      "initial_max_recipe_metadata_valid": true,
+      "existing_preview_reused": false,
+      "input_sha256": "3713635da3aa860f045c45414c4d55b98c691b40b80e5b92358ca5fdbe5b858b",
+      "edit_distances_mm": {
+        "arch_outer_expand": 8.297,
+        "arch_inner_narrow": 6.453,
+        "coa_narrow": 9.219
+      },
+      "sweeps": {
+        "arch_outer_expand": {
+          "distance_mm": [
+            2.766,
+            5.531,
+            8.297
+          ]
+        },
+        "coa_narrow": {
+          "distance_mm": [
+            1.844,
+            3.688,
+            5.531,
+            7.375,
+            9.219
+          ]
+        }
+      },
+      "config_path": "configs/cohorts/coa/260621.ini",
+      "preview_report_path": "outputs/cohorts/coa/260621/review-r1/report.html",
+      "preview_report_json_sha256": "a4ed38608fad11da17d18ef38b03dac082be29b2b8c62fd3f5dd6a70343dd5aa",
+      "source_crop_sha256": {
+        "act": "0dfa6ca8200a3f0c746defb1f7537ce76b27ab3895fabd4bd0922be729745ba4",
+        "atn": "335b909f837d550f4ee4f0a37c2209a471451b1525e952235836f30bcc59faf1"
+      },
+      "spacing_ijk_mm": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "crop_shape_kji": [
+        169,
+        124,
+        89
+      ],
+      "preview_generated_at_utc": "2026-09-19T03:29:20.514405+00:00",
+      "metadata_validation": {
+        "valid": true,
+        "planned_discrete_variants_checked": 16,
+        "voxel_payloads_read_by_metadata_check": false,
+        "method": "preview_embedded_full_grid_validator",
+        "explicit_validate_only_invoked": false
+      },
+      "native_preview": {
+        "success": true,
+        "recipes_executed": 1,
+        "all_sweep_variants_executed": false,
+        "selected_voxels": 35596,
+        "crop_voxels": 1865084,
+        "counts": {
+          "before": 35596,
+          "after": 37862,
+          "added": 3069,
+          "removed": 803,
+          "changed": 3872,
+          "scalar_changed": 3690,
+          "ever_changed": 3872,
+          "proposed_added": 4706,
+          "proposed_removed": 1843,
+          "blocked": 1637,
+          "unresolved": 1040,
+          "changed_outside_selection_roi": 1023,
+          "added_outside_selection_roi": 1023,
+          "removed_outside_selection_roi": 0,
+          "changed_outside_edit_selectors": 1023
+        },
+        "volume_mm3": {
+          "before": 25949.484000000004,
+          "after": 27601.398000000005,
+          "added": 2237.3010000000004,
+          "removed": 585.3870000000001
+        },
+        "steps": [
+          {
+            "name": "arch_outer_expand",
+            "operation": "dilation",
+            "distance_mm": 8.297,
+            "counts": {
+              "before": 14053,
+              "after": 17122,
+              "proposed_added": 4706,
+              "proposed_removed": 0,
+              "added": 3069,
+              "removed": 0,
+              "blocked": 1637,
+              "unresolved": 0,
+              "changed": 3069,
+              "changed_outside_selection_roi": 1023,
+              "added_outside_selection_roi": 1023,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 34,
+              "requested_removed_before_stiffness": 0,
+              "release_suppressed_by_target_stiffness": 0
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "arch_inner_narrow",
+            "operation": "erosion",
+            "distance_mm": 6.453,
+            "counts": {
+              "before": 12512,
+              "after": 12378,
+              "proposed_added": 0,
+              "proposed_removed": 375,
+              "added": 0,
+              "removed": 134,
+              "blocked": 0,
+              "unresolved": 241,
+              "changed": 134,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 395,
+              "release_suppressed_by_target_stiffness": 20
+            },
+            "erosion_safeguard": null
+          },
+          {
+            "name": "coa_narrow",
+            "operation": "erosion",
+            "distance_mm": 9.219,
+            "counts": {
+              "before": 2279,
+              "after": 1610,
+              "proposed_added": 0,
+              "proposed_removed": 1468,
+              "added": 0,
+              "removed": 669,
+              "blocked": 0,
+              "unresolved": 799,
+              "changed": 669,
+              "changed_outside_selection_roi": 0,
+              "added_outside_selection_roi": 0,
+              "removed_outside_selection_roi": 0,
+              "unselected_target_contact_voxels": 0,
+              "requested_removed_before_stiffness": 1491,
+              "release_suppressed_by_target_stiffness": 23
+            },
+            "erosion_safeguard": {
+              "min_volume_ratio": 0.1,
+              "backoff_factor": 0.5,
+              "preserve_connectivity": true,
+              "max_backoff_steps": 8,
+              "enabled": true,
+              "retained_target_voxels": 1369,
+              "retained_volume_ratio": 0.6717369970559371,
+              "connectivity_ok": true,
+              "affected_components": 1,
+              "component_details": [
+                {
+                  "component_id": 1,
+                  "before_voxels": 138289,
+                  "surviving_voxels": 137620,
+                  "surviving_components": 1,
+                  "ok": true
+                }
+              ],
+              "reasons": [],
+              "accepted": true,
+              "status": "accepted",
+              "requested_distance_mm": 9.219,
+              "accepted_distance_mm": 9.219,
+              "baseline_target_voxels": 2038,
+              "baseline_volume_mm3": 1485.7020000000002,
+              "retained_volume_mm3": 998.0010000000001,
+              "scope_semantics": "Pre-step selected target within the positive longitudinal profile support. For a ranged tube this uses its selected arc interval and Gaussian window, including the full selected cross-section before angular weighting, tissue resistance or distance-threshold proposals. The rest of the parent ROI is excluded.",
+              "reference_semantics": "Fixed immediately before this edit step, after earlier recipe steps; reused unchanged across its iterations and retries. Different named edits have separate references.",
+              "connectivity_semantics": "Each affected pre-step full-crop target component must retain exactly one six-face-connected survivor component. Pre-existing disconnected components are checked separately; no repair or minimum caliber is implied.",
+              "attempts": [
+                {
+                  "distance_mm": 9.219,
+                  "retained_target_voxels": 1369,
+                  "retained_volume_ratio": 0.6717369970559371,
+                  "connectivity_ok": true,
+                  "affected_components": 1,
+                  "component_details": [
+                    {
+                      "component_id": 1,
+                      "before_voxels": 138289,
+                      "surviving_voxels": 137620,
+                      "surviving_components": 1,
+                      "ok": true
+                    }
+                  ],
+                  "reasons": [],
+                  "accepted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "artifact_inventory": {
+        "verified": true,
+        "files": 46,
+        "bytes": 143702588,
+        "manifest_sha256": "fb21eac6dc8e8ed439f47409aa6a9bfd1abe441df78e0015b62f3a04846e3b79"
+      },
+      "source_stats_unchanged": true,
+      "report_code_hashes_match": true,
+      "report_code_differences": {},
+      "report_code_difference_note": null,
+      "requires_coordinate_review": true,
+      "requires_parameter_review": true,
+      "status": "preview_ready_for_review",
+      "zero_realized_active_edits": []
+    }
+  ],
+  "exact_source_crop_duplicates": [
+    [
+      "260614",
+      "260619"
+    ]
+  ],
+  "source_crop_duplicate_scope": "Exact ACT and ATN crop bytes, array shape and physical spacing; this does not compare full phantoms or establish source ancestry.",
+  "zero_realized_active_edit_review": [
+    {
+      "case_id": "260611",
+      "edit_names": [
+        "arch_inner_narrow"
+      ]
+    },
+    {
+      "case_id": "260615",
+      "edit_names": [
+        "arch_inner_narrow"
+      ]
+    },
+    {
+      "case_id": "260620",
+      "edit_names": [
+        "arch_inner_narrow"
+      ]
+    }
+  ],
+  "completed_utc": "2026-09-19T03:29:50.075398+00:00",
+  "case_count": 12,
+  "metadata_variants_checked": 192,
+  "native_base_recipes_previewed": 12,
+  "native_sweep_preflight_performed": false,
+  "new_cohorts_frozen": 0,
+  "new_paired_datasets_prepared": 0,
+  "models_fitted": 0,
+  "next_step": "Review each case ROI and achieved base edits; iterate with a fresh review directory. Native preflight still must evaluate each full grid before freezing and preparing new datasets. Original 260602 paired v2 dataset remains reusable separately.",
+  "draft_crop_budget_scope": "The 1,900,000-voxel target applies only to newly bounded provisional drafts; the three previously completed previews are retained under the hard 2,000,000-voxel morphology limit."
+}

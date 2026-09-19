@@ -103,6 +103,29 @@ class CohortRegistryTests(unittest.TestCase):
         self.assertEqual(result['samples'][0]['shape_kji'], [3, 4, 5])
         self.assertEqual(Path(result['samples'][0]['_path']).parent.name, 'variants')
 
+    def test_missing_registry_revision_is_distinct_from_corrupt_published_data(self):
+        with self.assertRaises(FileNotFoundError):
+            registry.load_registry_entry(self.registry, 'not-yet-prepared')
+        self.assertFalse(self.registry.exists())
+        registered = registry.register_dataset(self.registry, self.dataset, 'case-v1', 'family-a')
+        Path(registered['manifest_path']).unlink()
+        with self.assertRaisesRegex(ValueError, 'Missing or unsafe artifact'):
+            registry.load_registry_entry(self.registry, 'case-v1')
+
+    def test_native_xcat_integer_valued_float_source_labels_are_preserved(self):
+        path = self.dataset.parent/'source.npz'
+        with np.load(path) as saved:
+            arrays = {key: saved[key] for key in saved.files}
+        arrays['original_labels'] = arrays['original_labels'].astype(np.float32)
+        np.savez_compressed(path, **arrays)
+        self.mutate_manifest(lambda m: m['artifacts_sha256'].update({'source.npz': registry._hash(path)}))
+        self.assertEqual(registry.verify_prepared_manifest(self.dataset)['sample_count'], 1)
+        arrays['original_labels'][0, 0, 0] = .5
+        np.savez_compressed(path, **arrays)
+        self.mutate_manifest(lambda m: m['artifacts_sha256'].update({'source.npz': registry._hash(path)}))
+        with self.assertRaisesRegex(ValueError, 'Source labels'):
+            registry.verify_prepared_manifest(self.dataset)
+
     def test_legacy_original_id_and_unassigned_datasets_supported(self):
         for index, options in enumerate(({'lineage': False}, {'unassigned': True})):
             path = fixture_dataset(self.root/f'other{index}', **options)
@@ -209,7 +232,7 @@ class CohortRegistryTests(unittest.TestCase):
             if Path(path).suffix == '.npz':
                 raise AssertionError('NPZ payload must not be read')
             return original_hash(path)
-        with patch.object(registry.np, 'load', side_effect=AssertionError('No array read')),
+        with patch.object(registry.np, 'load', side_effect=AssertionError('No array read')), \
                 patch.object(registry, '_hash', side_effect=protected_hash):
             result = registry.verify_prepared_manifest(self.dataset, verify_payloads=False)
         self.assertEqual(result['sample_count'], 1)

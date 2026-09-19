@@ -1,0 +1,103 @@
+{
+  "schema_version": "fakect.cohort-project/1",
+  "name": "CoA multi-phantom review",
+  "registry": "data/cohorts/coa/registry",
+  "cases": [
+    {
+      "case_id": "260602",
+      "config": "configs/cohorts/coa/260602.ini",
+      "registry_name": "coa-260602-r1",
+      "template": "vmale50.nrb",
+      "provisional_family": "xcat_reference_adult",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260602.json"
+    },
+    {
+      "case_id": "260611",
+      "config": "configs/cohorts/coa/260611.ini",
+      "registry_name": "coa-260611-r1",
+      "template": "vfemale50.nrb",
+      "provisional_family": "xcat_reference_adult",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260611.json"
+    },
+    {
+      "case_id": "260612",
+      "config": "configs/cohorts/coa/260612.ini",
+      "registry_name": "coa-260612-r1",
+      "template": "male_infant_ref.nrb",
+      "provisional_family": "xcat_reference_infant",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260612.json"
+    },
+    {
+      "case_id": "260613",
+      "config": "configs/cohorts/coa/260613.ini",
+      "registry_name": "coa-260613-r1",
+      "template": "male_1yr_ref.nrb",
+      "provisional_family": "xcat_reference_1yr",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260613.json"
+    },
+    {
+      "case_id": "260614",
+      "config": "configs/cohorts/coa/260614.ini",
+      "registry_name": "coa-260614-r1",
+      "template": "male_5yr_ref.nrb",
+      "provisional_family": "xcat_reference_5yr",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260614.json"
+    },
+    {
+      "case_id": "260615",
+      "config": "configs/cohorts/coa/260615.ini",
+      "registry_name": "coa-260615-r1",
+      "template": "male_10yr_ref.nrb",
+      "provisional_family": "xcat_reference_10yr",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260615.json"
+    },
+    {
+      "case_id": "260616",
+      "config": "configs/cohorts/coa/260616.ini",
+      "registry_name": "coa-260616-r1",
+      "template": "male_15yr_ref.nrb",
+      "provisional_family": "xcat_reference_15yr",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260616.json"
+    },
+    {
+      "case_id": "260617",
+      "config": "configs/cohorts/coa/260617.ini",
+      "registry_name": "coa-260617-r1",
+      "template": "female_infant_ref.nrb",
+      "provisional_family": "xcat_reference_infant",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260617.json"
+    },
+    {
+      "case_id": "260618",
+      "config": "configs/cohorts/coa/260618.ini",
+      "registry_name": "coa-260618-r1",
+      "template": "female_1yr_ref.nrb",
+      "provisional_family": "xcat_reference_1yr",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260618.json"
+    },
+    {
+      "case_id": "260619",
+      "config": "configs/cohorts/coa/260619.ini",
+      "registry_name": "coa-260619-r1",
+      "template": "female_5yr_ref.nrb",
+      "provisional_family": "xcat_reference_5yr",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260619.json"
+    },
+    {
+      "case_id": "260620",
+      "config": "configs/cohorts/coa/260620.ini",
+      "registry_name": "coa-260620-r1",
+      "template": "female_10yr_ref.nrb",
+      "provisional_family": "xcat_reference_10yr",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260620.json"
+    },
+    {
+      "case_id": "260621",
+      "config": "configs/cohorts/coa/260621.ini",
+      "registry_name": "coa-260621-r1",
+      "template": "female_15yr_ref.nrb",
+      "provisional_family": "xcat_reference_15yr",
+      "localization": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/outputs/cohorts/coa/localization/260621.json"
+    }
+  ]
+}

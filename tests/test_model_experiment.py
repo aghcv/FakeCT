@@ -145,6 +145,90 @@ seed = 1729
         self.assertEqual(report['unverified_datasets'], ['case-0'])
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    def test_missing_real_registry_reports_all_pending_names(self):
+        patch.stopall()
+        report = plan_model_experiment(self.config)
+        self.assertFalse(report['ready'])
+        self.assertEqual(report['missing_datasets'], list(self.entries))
+        self.assertFalse(Path(self.config['experiment']['registry']).exists())
+        self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
+
+    def test_optional_preprocessing_ini_requires_explicit_positive_spacing(self):
+        path = self.root/'model.ini'
+        path.write_text(self.ini()+'\n[preprocess]\ntarget_spacing_mm = 1, 1, 2\n')
+        parsed = load_model_experiment_config(path, repo_root=self.root)
+        self.assertEqual(parsed['preprocess'], {'target_spacing_mm': [1., 1., 2.]})
+        for text in ('target_spacing_mm = 1,0,2', 'target_spacing_mm = 1,nan,2',
+                     'target_spacing_mm = 1,1', 'target_spacing_mm = 1,1,1\nmethod=nearest',
+                     'target_spacing_mm = 1,\n  1,1'):
+            path.write_text(self.ini()+'\n[preprocess]\n'+text+'\n')
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                load_model_experiment_config(path, repo_root=self.root)
+
+    def enable_resampling(self):
+        self.config['preprocess'] = {'target_spacing_mm': [1., 1., 1.]}
+        # The same physical orientation and semantics may have distinct native grids.
+        for index, entry in enumerate(self.entries.values()):
+            entry['manifest']['geometry']['spacing_ijk_mm'] = [1., 1.+index/2, 2.]
+
+    def test_resampling_harmonizes_spacing_without_mutating_native_archives(self):
+        self.enable_resampling()
+        original = {s['_path']: Path(s['_path']).read_bytes()
+                    for entry in self.entries.values() for s in entry['manifest']['samples']}
+        path = self.freeze()
+        checked = inspect_experiment_lock(path)
+        self.assertEqual(checked['data']['geometry']['spacing_ijk_mm'], [1., 1., 1.])
+        self.assertEqual(checked['data']['preprocessing']['mask_interpolation'], 'nearest')
+        test_paths = {s['_path'] for s in checked['samples'] if s['split'] == 'test'}
+        with patch('fakect_segmentation.np.load', wraps=np.load) as load:
+            dataset = PatchDataset(path, self.config['model'])
+            for split in ('train', 'validation'):
+                valid_voxels = 0
+                for images, masks, valid in dataset.batches(split):
+                    self.assertTrue(np.isfinite(images).all())
+                    self.assertTrue(np.isin(masks, [0., 1.]).all())
+                    valid_voxels += int(valid.sum())
+                self.assertEqual(valid_voxels, sum(np.prod(s['shape_kji']) for s in checked['samples'] if s['split'] == split))
+            self.assertTrue(all(Path(call.args[0]) not in test_paths for call in load.call_args_list))
+        self.assertTrue(all(Path(path).read_bytes() == before for path, before in original.items()))
+        self.assertTrue(any(s['shape_kji'] != s['source_shape_kji'] for s in checked['samples']))
+
+    def reseal_lock(self, path, lock):
+        lock.pop('lock_fingerprint', None)
+        lock['lock_fingerprint'] = hashlib.sha256(json.dumps(lock, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
+        path.write_text(json.dumps(lock))
+        (path.parent/'experiment-lock.sha256').write_text(digest(path))
+
+    def test_resampling_lock_rejects_code_and_dependency_changes(self):
+        self.enable_resampling()
+        path = self.freeze()
+        from fakect_model_resampling import resampling_contract
+        for key in ('implementation_sha256', 'dependency_versions'):
+            changed = resampling_contract([1., 1., 1.])
+            changed[key][next(iter(changed[key]))] = 'changed'
+            with patch('fakect_model_resampling.resampling_contract', return_value=changed):
+                with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'resampling contract'):
+                    inspect_experiment_lock(path)
+
+    def test_resealed_lock_cannot_invent_resampled_geometry_or_family_membership(self):
+        self.enable_resampling()
+        path = self.freeze()
+        original = json.loads(path.read_text())
+        for key, value in (('source_spacing_ijk_mm', [9., 9., 9.]),
+                           ('target_spacing_ijk_mm', [2., 2., 2.]),
+                           ('shape_kji', [1, 1, 1]), ('anatomy_family', 'family-1')):
+            changed = copy.deepcopy(original)
+            changed['plan']['samples'][0][key] = value
+            self.reseal_lock(path, changed)
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'resampling geometry|anatomy family'):
+                inspect_experiment_lock(path)
+        changed = copy.deepcopy(original)
+        changed['plan']['samples'].pop()
+        changed['plan']['sample_count'] -= 1
+        self.reseal_lock(path, changed)
+        with self.assertRaisesRegex(ValueError, 'omits prepared samples'):
+            inspect_experiment_lock(path)
+
     def test_three_verified_families_are_required(self):
         self.config['experiment']['datasets'] = ['case-0', 'case-1']
         report = plan_model_experiment(self.config)

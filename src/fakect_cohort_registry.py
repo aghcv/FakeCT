@@ -125,7 +125,9 @@ def _source_arrays(root, manifest, shape):
             raise ValueError('Source snapshot lacks required arrays')
         labels, attenuation = data['original_labels'], data['original_attenuation_per_pixel']
         target, roi = data['target_mask'], data['roi_mask']
-        if labels.shape != shape or labels.dtype.kind != 'i' or np.any(labels == -(2**31)):
+        if (labels.shape != shape or labels.dtype.kind not in 'iuf' or
+                not np.isfinite(labels).all() or np.any(labels <= -(2**31)) or
+                np.any(labels >= 2**31) or not np.equal(labels, np.trunc(labels)).all()):
             raise ValueError('Source labels are invalid or contain diagnostic released voxels')
         if attenuation.shape != shape or attenuation.dtype.kind != 'f' or not np.isfinite(attenuation).all():
             raise ValueError('Source attenuation must be finite and match the crop')
@@ -321,7 +323,9 @@ def _registry_lock(root):
 def load_registry_entry(registry, name, verify=True):
     """Read a pinned revision; verify=False never opens sample/source NPZs."""
     root = _registry_root(registry)
-    entry_path = _safe_file(root, f'entries/{_name(name)}.json')
+    entry_path = _safe_file(root, f'entries/{_name(name)}.json', must_exist=False)
+    if not entry_path.is_file():
+        raise FileNotFoundError(f'Registry entry has not been published: {name}')
     entry = _json(entry_path.read_text())
     if entry.get('schema_version') != ENTRY_SCHEMA or entry.get('name') != name:
         raise ValueError('Registry entry identity/schema mismatch')

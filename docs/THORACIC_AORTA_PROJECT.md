@@ -3,15 +3,14 @@
 **First study:** thoracic aorta segmentation across synthetic aortic arch
 hypoplasia, coarctation-like narrowing, and combined geometries.  
 **Date:** 2026-09-17. **Development branch:** `fakect.26.09.16`.  
-**Status:** the first staged training-study prototype now supports aorta preview,
-parameter planning, paired-data preparation and a 2D segmentation trainer.
-Start with the [practical study guide](TRAINING_STUDIES.md) and
-[aorta INI](../configs/studies/thoracic-aorta.ini). The user has reviewed the
-overall ROI through three iterations. [Named ROI recipes](EDIT_RECIPES.md) now
-support sequential regional edits and combined previews; their local regions
-and edit strengths are the next review step. No aorta cohort or GPU training has
-been launched. The broader multi-anatomy benchmark, `[test]` and `[generate]`
-methods below remain planned work.
+**Current status:** case 260602 has sixteen reviewed prepared samples registered
+for reuse. Twelve per-case INIs now separate ROI/range review, native preflight,
+freezing and generation from a model-only experiment. Start with the
+[multi-phantom cohort guide](MULTIPHANTOM_COHORTS.md). The eleven additional
+ROIs and their proposed edit ranges require review before preparation. No GPU
+training has been launched. The broader benchmark, `[test]` and `[generate]`
+methods below remain planned work; the original outline is retained as the
+research roadmap.
 
 ## 1. Objective and first research question
 

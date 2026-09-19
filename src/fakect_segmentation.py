@@ -1,9 +1,10 @@
 """Small reproducible 2D U-Net experiment on prepared synthetic XCAT crops.
 
 TensorFlow is imported only when building, fitting or loading a model. Dataset
-inspection and patch preprocessing use NumPy alone. The first dataset protocol
-holds out synthetic scenarios from one anatomy; it does not measure transfer to
-independent patients. Test payloads are never opened by this training runner.
+inspection and patch preprocessing use NumPy, plus SciPy for optional physical
+resampling. Legacy datasets hold out scenarios from one anatomy; model-only
+experiments hold out reviewed anatomy families. Test payloads are never opened
+by this training runner.
 """
 import hashlib
 import json
@@ -228,7 +229,7 @@ class PatchDataset:
             raise ValueError(f'Sample file hash changed: {sample["variant_id"]}')
         with np.load(path, allow_pickle=False) as archive:
             image, mask = archive['image'], archive['mask']
-        shape = tuple(sample.get('shape_kji', self.shape))
+        shape = tuple(sample.get('source_shape_kji', sample.get('shape_kji', self.shape)))
         if image.dtype != np.float32 or image.shape != shape or not np.all(np.isfinite(image)):
             raise ValueError('Sample image must be finite float32 matching crop_shape_kji')
         if mask.dtype != np.uint8 or mask.shape != shape or not np.all((mask == 0) | (mask == 1)):
@@ -236,6 +237,11 @@ class PatchDataset:
         for array, name in ((image, 'image_sha256'), (mask, 'mask_sha256')):
             if hashlib.sha256(array.tobytes(order='C')).hexdigest() != sample[name]:
                 raise ValueError(f'Sample {name} disagrees with its payload')
+        if 'target_spacing_ijk_mm' in sample:
+            from fakect_model_resampling import resample_pair
+            image, mask = resample_pair(image, mask, sample['source_spacing_ijk_mm'], sample['target_spacing_ijk_mm'])
+            if image.shape != tuple(sample['shape_kji']):
+                raise ValueError('Resampled shape disagrees with frozen experiment geometry')
         # Do not retain a second full normalized volume in the cache.
         self._cache = (image, mask)
         self._cache_path = path
@@ -398,7 +404,8 @@ def train_segmentation(config, manifest_path):
     if data['split_mode'] == 'anatomy_family':
         metadata.update(
             evaluation_scope='Holdout of verified source anatomy families; synthetic CT proxy data, not a patient-generalization claim.',
-            family_assignment=data['family_assignment'], source_datasets=data['source_datasets'])
+            family_assignment=data['family_assignment'], source_datasets=data['source_datasets'],
+            preprocessing=data.get('preprocessing', {}))
     (output / 'model-metadata.json').write_text(json.dumps(metadata, indent=2, allow_nan=False) + '\n')
     return metadata
 

@@ -1,3 +1,7 @@
+> Multi-phantom CoA preparation: [workflow and registry guide](docs/MULTIPHANTOM_COHORTS.md),
+> [per-case inputs](configs/cohorts/coa), and [separate model INI](configs/models/coa.ini).
+> Refresh the local review dashboard with `python3 scripts/cohort_status.py`.
+>
 > Explore without anatomical IDs using [Global and Local report tabs](docs/ROI_EXPLORATION.md)
 > and the [aorta exploration input](configs/studies/thoracic-aorta-explore.ini).
 > Start tissue-only ROI review with the [tube INI input](configs/examples/xcat-roi-tube.ini)
@@ -15,9 +19,10 @@
 > Integration branch `fakect.26.09.16`: start with
 > [the evaluation and milestone plan](docs/integration/2026-09-16/PLAN.md).
 > This branch assembles the existing phantom GUI, TensorFlow trainer, and XCAT
-> utilities. A bounded, one-anatomy training-study prototype is available; its
-> overall aorta ROI has been reviewed; local edit regions are being refined. The broad unified cohort configuration remains a
-> **design draft**, and multi-anatomy benchmark/inference work is still planned.
+> utilities. Reviewed pairs from case 260602 are registered for reuse; twelve
+> per-case inputs support iterative ROI review, preflight, freezing and paired
+> preparation. Model experiments select published datasets separately.
+> Independent-family provenance, benchmark evaluation and inference remain planned work.
 
 # FakeCT — Minimal synthetic CT / voxelization toolkit
 

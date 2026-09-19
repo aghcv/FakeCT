@@ -1,5 +1,11 @@
 # CoA recipe cohorts
 
+For the current per-phantom preparation, immutable dataset registry and separate
+model experiment, use the [multi-phantom cohort guide](MULTIPHANTOM_COHORTS.md).
+That workflow uses `fakect.recipe-cohort/1` and leaves prepared samples unassigned
+until a model experiment splits complete anatomy families. This page documents
+the earlier combined study interface and its single-phantom scenario splits.
+
 The staged training runner now accepts `fakect.recipe-study/1`: a complete ordered
 recipe plus named parameter sweeps. The editable starter is
 [thoracic-aorta-cohort.ini](../configs/studies/thoracic-aorta-cohort.ini).

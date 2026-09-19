@@ -1,5 +1,10 @@
 # Review an aorta study, prepare pairs, then train
 
+For the current multi-case workflow, start with the
+[multi-phantom cohort guide](MULTIPHANTOM_COHORTS.md). It separates per-phantom
+review and generation from registry publication and model experiments. The
+instructions below describe the original single-edit pilot.
+
 Start with [thoracic-aorta.ini](../configs/studies/thoracic-aorta.ini) and
 [its first HTML review report](../outputs/studies/thoracic-aorta/preview-v1/report.html).
 The initial study is **unreviewed** and defaults to `train.stage = preview`.

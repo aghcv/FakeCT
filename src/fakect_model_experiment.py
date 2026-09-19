@@ -56,8 +56,8 @@ def load_model_experiment_config(path, *, repo_root=None):
             parser.read_file(stream)
     except configparser.Error as exc:
         raise ValueError(f'Invalid model experiment INI: {exc}') from exc
-    if parser.defaults() or set(parser.sections()) != {'experiment', 'split', 'model'}:
-        raise ValueError('Model experiments require only [experiment], [split], and [model]; no ROI or generation inputs')
+    if parser.defaults() or set(parser.sections()) not in ({'experiment', 'split', 'model'}, {'experiment', 'split', 'model', 'preprocess'}):
+        raise ValueError('Model experiments require [experiment], [split], [model], and optional [preprocess]; no ROI or generation inputs')
     for section, fields in (('experiment', EXPERIMENT_FIELDS), ('split', SPLIT_FIELDS), ('model', MODEL_FIELDS)):
         found = set(parser[section])
         if found != fields:
@@ -90,7 +90,15 @@ def load_model_experiment_config(path, *, repo_root=None):
                        **{key: float(model[key]) for key in ('clip_min', 'clip_max', 'learning_rate')}}
     except (ValueError, OverflowError) as exc:
         raise ValueError(f'Invalid model setting: {exc}') from exc
-    return {'experiment': experiment, 'split': split, 'model': model_settings({'model': typed_model})}
+    result = {'experiment': experiment, 'split': split, 'model': model_settings({'model': typed_model})}
+    if 'preprocess' in parser:
+        from fakect_model_resampling import spacing
+        if set(parser['preprocess']) != {'target_spacing_mm'}:
+            raise ValueError('[preprocess] requires only target_spacing_mm')
+        if '\n' in parser['preprocess']['target_spacing_mm']:
+            raise ValueError('[preprocess] target_spacing_mm must occupy one line')
+        result['preprocess'] = {'target_spacing_mm': list(spacing(parser['preprocess']['target_spacing_mm'].split(',')))}
+    return result
 
 
 def _family_splits(families, settings):
@@ -106,7 +114,7 @@ def _family_splits(families, settings):
             for i, family in enumerate(ordered)}
 
 
-def _contract(manifest):
+def _contract(manifest, target_spacing=None):
     geometry = manifest['geometry']
     spacing = geometry.get('spacing_ijk_mm')
     if (not isinstance(spacing, (list, tuple)) or len(spacing) != 3
@@ -123,7 +131,7 @@ def _contract(manifest):
     if not isinstance(orientation, str) or not orientation:
         raise ValueError('Every prepared dataset must declare its native orientation convention')
     return {'image_units': manifest['image_units'], 'array_order': geometry['array_order'],
-            'spacing_ijk_mm': list(spacing), 'orientation': orientation,
+            'spacing_ijk_mm': list(target_spacing or spacing), 'orientation': orientation,
             'image_method': manifest.get('image_method'), 'target_scope': manifest.get('target_scope'),
             'target_semantics': manifest.get('target_semantics')}
 
@@ -173,9 +181,10 @@ def plan_model_experiment(config, *, verify_payloads=True):
             if manifest is None:
                 from fakect_cohort_registry import verify_prepared_manifest
                 manifest = verify_prepared_manifest(entry['manifest_path'], verify_payloads=verify_payloads)
-            contract = _contract(manifest)
+            target_spacing = config.get('preprocess', {}).get('target_spacing_mm')
+            contract = _contract(manifest, target_spacing)
             if common is not None and common != contract:
-                raise ValueError('Dataset units, spacing, orientation, image method, or target semantics differ; use a separately versioned harmonized dataset')
+                raise ValueError('Dataset units, spacing, orientation, image method, or target semantics differ; [preprocess] target_spacing_mm can harmonize spacing only')
             common = contract
             for identity in _source_identity(entry, manifest):
                 previous = identity_families.setdefault(identity, family)
@@ -191,18 +200,28 @@ def plan_model_experiment(config, *, verify_payloads=True):
             rows = []
             for sample in manifest['samples']:
                 shape = sample.get('shape_kji', manifest['geometry']['crop_shape_kji'])
+                native_shape = list(shape)
+                if target_spacing:
+                    from fakect_model_resampling import output_shape
+                    shape = output_shape(shape, manifest['geometry']['spacing_ijk_mm'], target_spacing)
                 for key in (('sample_bytes', sample['sha256']),
-                            ('mask_geometry', _canonical([shape, sample['mask_sha256'], contract['spacing_ijk_mm']]))):
+                            ('mask_geometry', _canonical([native_shape, sample['mask_sha256'],
+                                                          [float(v) for v in manifest['geometry']['spacing_ijk_mm']]]))):
                     previous = geometry_families.setdefault(key, family)
                     if previous != family:
                         raise ValueError('Duplicate sample bytes or target geometry occurs across anatomy families; refusing split leakage')
-                rows.append({'variant_id': f'{name}:{sample["variant_id"]}',
+                row = {'variant_id': f'{name}:{sample["variant_id"]}',
                              'source_variant_id': sample['variant_id'], 'dataset_name': name,
                              'path': str(Path(sample['_path']).resolve()), 'anatomy_family': family,
                              'case_id': manifest['case_id'], 'frame': manifest['frame'],
                              'geometry_group': f'{family}:{sample["mask_sha256"]}',
                              'shape_kji': list(shape), 'sha256': sample['sha256'],
-                             'mask_sha256': sample['mask_sha256'], 'image_sha256': sample['image_sha256']})
+                             'mask_sha256': sample['mask_sha256'], 'image_sha256': sample['image_sha256']}
+                if target_spacing:
+                    row.update(source_shape_kji=native_shape,
+                               source_spacing_ijk_mm=manifest['geometry']['spacing_ijk_mm'],
+                               target_spacing_ijk_mm=list(target_spacing))
+                rows.append(row)
             result['datasets'].append(source)
             result['samples'].extend(rows)
         except (KeyError, TypeError, ValueError, OSError) as exc:
@@ -227,7 +246,17 @@ def plan_model_experiment(config, *, verify_payloads=True):
     result['family_count'] = len(families)
     result['sample_count'] = len(result['samples'])
     result['verified_payloads'] = verify_payloads
+    result['preprocessing'] = _preprocessing_contract(config)
+    if result['preprocessing']:
+        result['warnings'].append('Model-time resampling preserves the native archives but changes the model grid; linear images and nearest labels can lose small structures when downsampling.')
     return result
+
+
+def _preprocessing_contract(config):
+    if not config.get('preprocess'):
+        return {}
+    from fakect_model_resampling import resampling_contract
+    return resampling_contract(config['preprocess']['target_spacing_mm'])
 
 
 def freeze_model_experiment(config, input_bytes):
@@ -275,7 +304,13 @@ def inspect_experiment_lock(path):
     plan = lock['plan']
     if not plan.get('ready') or any(not d['family_verified'] for d in plan['datasets']):
         raise ValueError('Experiment lock must contain reviewed independent anatomy families')
-    by_name = {}
+    if plan.get('preprocessing', {}) != _preprocessing_contract(lock['config']):
+        raise ValueError('Frozen resampling contract, implementation, or dependency version changed; create a new experiment')
+    target_spacing = lock['config'].get('preprocess', {}).get('target_spacing_mm')
+    assignment = _family_splits({d['anatomy_family'] for d in plan['datasets']}, lock['config']['split'])
+    if assignment != plan['family_assignment']:
+        raise ValueError('Frozen anatomy-family assignment disagrees with experiment split settings')
+    by_name, native_geometry, dataset_families = {}, {}, {}
     for source in plan['datasets']:
         entry = load_registry_entry(lock['config']['experiment']['registry'], source['name'], verify=False)
         for key in ('manifest_sha256', 'dataset_fingerprint', 'anatomy_family', 'family_verified'):
@@ -287,20 +322,50 @@ def inspect_experiment_lock(path):
                 or _sha256(source['manifest_path']) != source['manifest_sha256']):
             raise ValueError(f'Registry receipt or prepared manifest changed: {source["name"]}')
         manifest = verify_prepared_manifest(source['manifest_path'], verify_payloads=False)
+        if source['name'] in by_name or source['geometry'] != manifest['geometry']:
+            raise ValueError('Frozen dataset identity or native geometry changed')
+        if _contract(manifest, target_spacing) != plan['input_contract']:
+            raise ValueError('Frozen model input contract disagrees with prepared data')
         by_name[source['name']] = {s['variant_id']: s for s in manifest['samples']}
+        native_geometry[source['name']] = manifest['geometry']
+        dataset_families[source['name']] = source['anatomy_family']
+    if set(by_name) != set(lock['config']['experiment']['datasets']):
+        raise ValueError('Frozen datasets disagree with experiment configuration')
     samples, counts, families = [], {'train': 0, 'validation': 0, 'test': 0}, {}
+    expected_samples = {(name, variant) for name, entries in by_name.items() for variant in entries}
+    seen = set()
     for frozen in plan['samples']:
+        identity = (frozen['dataset_name'], frozen['source_variant_id'])
+        if identity in seen or identity not in expected_samples:
+            raise ValueError('Frozen sample identity is duplicate or absent from prepared data')
+        seen.add(identity)
         sample = by_name[frozen['dataset_name']][frozen['source_variant_id']]
         for key in ('sha256', 'image_sha256', 'mask_sha256', 'shape_kji'):
-            if sample[key] != frozen[key]:
+            expected = frozen.get('source_shape_kji', frozen[key]) if key == 'shape_kji' else frozen[key]
+            if sample[key] != expected:
                 raise ValueError(f'Frozen sample metadata changed: {frozen["variant_id"]} {key}')
         if str(Path(sample['_path']).resolve()) != frozen['path']:
             raise ValueError('Frozen sample path changed')
         split, family = frozen['split'], frozen['anatomy_family']
+        if family != dataset_families[frozen['dataset_name']] or split != assignment.get(family):
+            raise ValueError('Frozen sample anatomy family or split disagrees with registry assignment')
+        if target_spacing:
+            from fakect_model_resampling import output_shape
+            geometry = native_geometry[frozen['dataset_name']]
+            expected_shape = output_shape(sample['shape_kji'], geometry['spacing_ijk_mm'], target_spacing)
+            if (frozen.get('source_spacing_ijk_mm') != geometry['spacing_ijk_mm'] or
+                    frozen.get('target_spacing_ijk_mm') != target_spacing or
+                    frozen.get('source_shape_kji') != sample['shape_kji'] or
+                    frozen['shape_kji'] != list(expected_shape)):
+                raise ValueError('Frozen resampling geometry disagrees with original data and target spacing')
+        elif any(key in frozen for key in ('source_spacing_ijk_mm', 'target_spacing_ijk_mm', 'source_shape_kji')):
+            raise ValueError('Frozen sample unexpectedly enables resampling')
         if split not in counts or families.setdefault(family, split) != split:
             raise ValueError('Anatomy family crosses experiment splits')
         counts[split] += 1
         samples.append({**frozen, '_path': Path(frozen['path'])})
+    if seen != expected_samples or len(samples) != plan['sample_count']:
+        raise ValueError('Frozen experiment omits prepared samples')
     if counts != plan['split_counts'] or not all(counts.values()):
         raise ValueError('Invalid frozen split counts')
     contract = plan['input_contract']
@@ -308,7 +373,8 @@ def inspect_experiment_lock(path):
             'anatomy_family': sorted(families), 'geometry': {
                 **contract, 'crop_shapes_kji': sorted({tuple(s['shape_kji']) for s in samples})},
             'image_method': contract['image_method'], 'image_units': contract['image_units'],
-            'family_assignment': plan['family_assignment'], 'source_datasets': plan['datasets']}
+            'family_assignment': plan['family_assignment'], 'source_datasets': plan['datasets'],
+            'preprocessing': plan.get('preprocessing', {})}
     return {'path': path, 'sha256': lock_hash, 'data': data, 'samples': samples,
             'shape_kji': None, 'split_sizes': counts, 'lock': lock}
 

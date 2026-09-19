@@ -14,6 +14,7 @@ from fakect_cohort_config import SCHEMA, parse_cohort_sections, freeze_cohort, v
 from fakect_recipe_study_config import plan_recipe_variants
 from fakect_recipe_training import preflight_recipe_dataset, prepare_recipe_dataset
 from fakect_training_data import validate_dataset
+from fakect_cohort_registry import register_dataset, load_registry_entry
 
 
 class CohortPreparationTests(unittest.TestCase):
@@ -84,6 +85,13 @@ class CohortPreparationTests(unittest.TestCase):
         self.assertEqual({row['split'] for row in manifest['samples']}, {'unassigned'})
         self.assertIn('cohort-freeze.json', manifest['artifacts_sha256'])
         self.assertFalse((config['train']['dataset_directory']/'INCOMPLETE').exists())
+        registry = fixture.root/'registry'
+        register_dataset(registry, config['train']['dataset_directory']/'dataset-manifest.json',
+                         'fixture-r1', 'fixture-family')
+        published = load_registry_entry(registry, 'fixture-r1')
+        self.assertEqual(published['sample_count'], 2)
+        self.assertEqual(published['manifest']['split_mode'], 'unassigned')
+        self.assertFalse(published['family_verified'])
 
     def test_changed_ini_or_recipe_cannot_reuse_freeze(self):
         fixture = self.fixture()
