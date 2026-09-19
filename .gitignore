@@ -25,6 +25,10 @@ env/
 *.log
 
 # ---- Outputs & Artifacts ----
+# Generated volumes and complete cohort registry objects stay on dataset storage.
+# Keep editable recipes, project definitions and model INIs under configs/.
+*.npz
+/data/cohorts/
 outputs/
 output/
 temp/
