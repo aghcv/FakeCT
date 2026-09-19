@@ -25,8 +25,12 @@ env/
 *.log
 
 # ---- Outputs & Artifacts ----
-outputs/
+# Keep local datasets out of status; already tracked VTI fixtures remain tracked.
 data/
+outputs/
+output/
+temp/
+tmp/
 demos/outputs/
 *.nii
 *.nii.gz
@@ -34,7 +38,6 @@ demos/outputs/
 *.raw
 *.nrrd
 *.vtk
-*.vti
 *.vtp
 *.vtu
 

@@ -4,43 +4,40 @@ Instructions shows how to load a mesh, voxelize it into a CT-like grid,
 create in/on/out masks and inspect the result with a simple viewer.
 
 This README includes instructions for installing prerequisites (VS Code, Git, Conda),
-cloning the repo, creating an environment, installing the package (editable), and running the demo.
+cloning the repo, creating an environment, installing runtime dependencies, and running the demo.
 
-<!--
+## Main branch viewers
+
+Both viewer implementations are retained after reconciling the local stenosis
+work with the remote VTI work:
+
+- `src/fakect.py` is the VTI/mesh viewer with scalar transfer functions and label layers. Its `--out` argument is an output **directory**.
+- `src/fakect_stenosis.py` preserves the existing mesh stenosis viewer, including ROI erosion/dilation and iteration schedules. Its `--out` argument is an NPZ **filename**.
+
+```bash
+# VTI import without opening a browser
+python3 src/fakect.py --in data/arm.vti --out outputs/vti --no-show
+
+# Existing mesh stenosis workflow
+python3 src/fakect_stenosis.py --in /path/to/mesh.stl --n 7 --out outputs/mesh_masks.npz
+```
+
+The INI-based XCAT cohort workflow remains on the separate `fakect.26.09.16`
+branch. Synchronizing `main` does not merge that development branch.
+
 ## Current Version
 <img width="1899" height="991" alt="Screenshot 2025-10-13 at 13 20 37" src="https://github.com/user-attachments/assets/5df4d975-da4d-40c0-a29c-85d6af4d81eb" />
 
+
 ## Next Version - Stenosis Tool
 <img width="3095" height="1615" alt="image" src="https://github.com/user-attachments/assets/7513c9f2-93ba-4769-968e-10bfc146692f" />
--->
-
-
-## fakect.py ROI workflow (interactive masks)
-These examples show how `fakect.py` supports ROI creation for bitwise morphology manipulation.
-
-![ROI creation for interactive mask editing](images/ROI.png)
-
-![Stenosis ROI example](images/stenosis.png)
-
-
-## fakenoise.py training previews (context + context step)
-These previews show how `fakenoise.py` trains across context settings to generate grayscale images from a slice neighborhood around the target mask.
-
-Default context (single target mask slice):
-![Training preview default context](images/train_preview_1_na.png)
-
-`--context 4 --context_step 1`:
-![Training preview context 4 step 1](images/train_preview_4_1.png)
-
-`--context 4 --context_step 10`:
-![Training preview context 4 step 10](images/train_preview_4_10.png)
 
 
 
 ## Your Tasks:
 ```bash
 1- Install the prerequisites
-2- Follow the 4 steps of the quickstart guideline to try demo exmaples: demo_cube, demo_sphere, and demo_carotid 
+2- Follow the quick start to try the demo examples: cube, sphere, and carotid
 3- Identify user inputs you think is needed needed for the stenosis tool
 ```
 
@@ -69,61 +66,148 @@ Before following the quick start, make sure you have these tools installed. The 
 		```
 
 - Conda (Miniconda recommended) — environment and package manager
-	# FakeCT — Minimal synthetic CT / voxelization toolkit
+	- Miniconda: https://docs.conda.io/en/latest/miniconda.html
+	- macOS (Homebrew) one-liner:
 
-	This repository provides a small educational pipeline to convert a surface mesh
-	into voxelized "inside / on / out" masks and optionally inspect results with a
-	Dash viewer.
+		```bash
+		brew install --cask miniconda
+		# initialize conda for zsh and reload your shell
+		conda init zsh
+		exec $SHELL
+		```
 
-	Quick start
-	-----------
-	The canonical quick start lives in the header of `fakect.py` —
-	that file contains usage examples and platform-specific install notes (conda vs pip).
+	If you prefer Anaconda, use the Anaconda installer instead. Follow the official installer pages for platform-specific guidance.
 
-	Minimal example (conda recommended):
+## Quick start
 
-	```bash
-	conda create -n fakect python=3.10 -y
-	conda activate fakect
-	conda install -c conda-forge trimesh scipy scikit-image plotly dash -y
-	# Optional, if available on your platform:
-	conda install -c conda-forge python-igl -y
+1. Clone the repository:
 
 ```bash
-bash examples/demo_cube.sh
+git clone https://github.com/aghcv/FakeCT.git
+cd FakeCT
 ```
 
-Note on demo meshes:
-
-Example scripts expect demo geometry to live in the repository-global `data/` folder
-at the repository root. To populate that folder with small demo meshes, run:
+2. Create and activate a Conda environment:
 
 ```bash
-# from repo root
-python scripts/generate_demo_meshes.py
-# This writes: data/cube.stl, data/sphere.stl, data/carotid.stl
+conda create -n fakect python=3.10 -y
+conda activate fakect
 ```
 
-By default the demo will pop up a small matplotlib-based viewer showing three orthogonal
-slices and a sparse 3D proxy of boundary voxels.
-
-## Script usage examples
-
-### fakect.py (winding-based masks + viewer)
-
-Run the pipeline directly (from repo root):
+3. Install the runtime dependencies:
 
 ```bash
-python src/fakect.py --in data/cube.stl --n 8 --out outputs/cube_masks.npz
+conda install -c conda-forge python-igl trimesh scipy scikit-image plotly dash -y
 ```
 
-Run without opening the viewer (headless):
+If you prefer a pip-based environment for the pure Python packages, use:
 
 ```bash
-python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs/carotid_masks.npz --no-show
+pip install --upgrade pip
+pip install trimesh scipy scikit-image plotly dash
 ```
 
-### fakenoise.py (NRRD viewer + paired dataset CSV)
+`igl` is typically easiest to install from `conda-forge`.
+
+
+4. Run the demo:
+
+```bash
+# cube
+python src/fakect.py --in data/cube.stl --n 8 --out outputs
+
+# sphere
+python src/fakect.py --in data/sphere.stl --n 8 --out outputs
+
+# carotid
+python src/fakect.py --in data/carotid.stl --n 9 --margin 0.10 --out outputs
+```
+
+To skip opening the Dash viewer, add `--no-show`.
+
+`--out` now expects a directory path. The tool auto-generates an NPZ filename from the input name (for example, `cube_masks.npz` or `vti_masks.npz`) inside that directory.
+
+You can inspect the available CLI options with:
+
+```bash
+python src/fakect.py --help
+```
+
+## VTI Import Test
+
+You can start testing VTI import now. The CLI supports both a single `.vti` file and a directory of tiled `.vti` files.
+
+The bundled `data/vti/activity_grid_000_000_000.vti` is `CellData` named `activity` with `Float32`
+values from about `-1011` to `2213`, so the tool treats it as scalar/range data rather than
+integer anatomy labels. Scalar VTI files keep their sampled value volume in the saved NPZ as
+`scalar_values` and open in a volume-rendering workflow.
+
+```bash
+# Directory of VTI tiles (uses the sample folder in this repo)
+python src/fakect.py --in data/vti --out outputs --no-show
+
+# Optional: full-resolution sampling (can be much heavier)
+python src/fakect.py --in data/vti --vti-max-dim 0 --out outputs --no-show
+
+# Single VTI file example
+python src/fakect.py --in data/vti/activity_grid_000_000_000.vti --out outputs --no-show
+```
+
+Useful VTI-specific flags:
+
+```bash
+--vti-array <name>          # choose a DataArray by name
+--vti-background <value>    # set the background label/scalar value
+--vti-background-eps <eps>  # tolerance for floating-point background matching
+--vti-max-dim <int>         # browser-friendly downsampling cap (0 = full resolution)
+--vti-max-labels <int>      # max number of discrete labels split into layers
+```
+
+In the 3D panel, discrete integer-label VTI files use per-label visibility and opacity controls.
+Scalar/range VTI files use a ParaView-style transfer map: choose one color scheme for the full
+range, add or remove opacity points, type exact opacity values, and drag points horizontally on the
+map to reposition them.
+
+By default the Dash viewer opens with three orthogonal slices and a linked 3D view. Use `--no-show`
+for a headless import/export smoke test.
+
+## Developer instructions (make changes & run tests)
+
+1. Make code changes in `src/fakect.py` using your editor of choice.
+
+2. There is currently no packaged test suite in this repository. Use the CLI directly to validate changes:
+
+```bash
+python src/fakect.py --in data/cube.stl --n 8 --out outputs --no-show
+```
+
+3. If you change runtime dependencies, update this README with the revised install command.
+
+4. To try your changes interactively, run `python src/fakect.py --help` or one of the demo commands above.
+
+5. Linting and formatting are not configured in this repository yet. If you add them later, document the commands here.
+
+## Continuous integration (notes for maintainers)
+
+- The `tests/` directory contains VTI input fixtures; an automated CI test suite is not configured.
+- Recommended CI steps:
+	- Set up a Python 3.10 runner
+	- Install the runtime dependencies listed above
+	- Run `python src/fakect.py --help` as a smoke test
+	- Add targeted automated tests before relying on CI for behavior changes
+
+## Contact / contributing
+
+Open an issue or submit a pull request. Keep changes small and add tests for new behavior.
+
+---
+Small, clear, and focused so students can follow the flow from clone → run → edit → test.
+
+# Relevant Papers
+Douglass, M. J. J., et al. (2025). “An open-source tool for converting 3D mesh volumes into synthetic DICOM CT images for medical physics research.” (LINK:https://doi.org/10.1007/s13246-025-01599-x)
+
+
+## Existing FakeNoise and XCAT cluster workflows
 
 Open a web-based viewer for a single NRRD volume:
 
@@ -185,44 +269,4 @@ Disable OBJ conversion if you only want raw outputs:
 ```bash
 sbatch scripts/xcat_job.sh --phantom_id phantom_A --convert_raw 0
 ```
-
-## Developer instructions (make changes & run tests)
-
-1. Make code changes in `src/fakect/` using your editor of choice.
-
-2. Run the unit tests with pytest. The project includes a small placeholder test so you can
-	 validate the test/CI pipeline:
-
-```bash
-# from the repo root, with the venv activated
-pytest
-```
-
-3. If you change package metadata or dependencies, update `pyproject.toml`.
-
-4. To try your changes interactively, install the package in editable mode (step 3 above)
-	 so that imports pick up the local source without reinstalling.
-
-5. Linting and formatting (recommended):
-
-```bash
-black src tests
-flake8
-isort src tests
-```
-
-
-
-	Notes
-	-----
-	- `python-igl` is recommended from `conda-forge` when available; pip installs of `igl`
-	  often fail on many systems. On macOS x86_64, conda-forge does not provide a build,
-	  so the CLI falls back to a slower `trimesh.contains` method by default.
-	- To force a method, use `--method winding` (requires python-igl) or `--method trimesh`.
-
-	Relevant paper
-	--------------
-	Douglass, M. J. J., et al. (2025). “An open-source tool for converting 3D mesh volumes into
-	synthetic DICOM CT images for medical physics research.” https://doi.org/10.1007/s13246-025-01599-x
-
 
