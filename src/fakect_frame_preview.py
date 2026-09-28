@@ -13,12 +13,13 @@ import re
 import numpy as np
 
 from fakect_volume_preview import occupancy_grid, _surface
+from fakect_limits import MAX_NATIVE_EDIT_VOXELS
 
 
 COLORS = {'target': '#8fcbd3', 'original': '#64748b', 'spline': '#5b35ad',
           'inner': '#d84a26', 'outer': '#147daa', 'tangent': '#2e8b48',
           'binormal': '#b28a08', 'unreliable': '#8b8b8b'}
-MAX_SOURCE_VOXELS = 2_000_000
+MAX_SOURCE_VOXELS = MAX_NATIVE_EDIT_VOXELS
 MAX_CONTEXT_CELLS = 120_000
 MAX_CONTEXT_TRIANGLES = 100_000
 MAX_ARROWS_PER_DIRECTION = 14
@@ -106,7 +107,7 @@ def _arrow_lines(points, vectors, length):
 def _target_context(arrays, resolved, config):
     target = np.asarray(arrays['candidates'])
     if target.dtype != np.bool_ or target.ndim != 3 or target.size > MAX_SOURCE_VOXELS:
-        raise ValueError('Frame target context requires a Boolean crop of at most 2,000,000 voxels')
+        raise ValueError(f'Frame target context requires a Boolean crop of at most {MAX_SOURCE_VOXELS:,} voxels')
     origin = np.asarray(resolved['crop_low_ijk'], dtype=float)
     spacing = np.asarray(resolved['spacing_ijk_mm'], dtype=float)
     if origin.shape != (3,) or spacing.shape != (3,) or not np.isfinite(origin).all() or not np.isfinite(spacing).all() or np.any(spacing <= 0):

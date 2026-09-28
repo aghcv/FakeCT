@@ -38,7 +38,7 @@ PREFLIGHT_WARNING = (
     'Review the requested and achieved geometry before preparing a cohort.')
 _TRAIN_DATA_KEYS = ('target_scope', 'anatomy_family', 'include_baseline', 'max_variants',
                     'image_method', 'split_mode', 'validation_fraction', 'test_fraction', 'split_seed')
-_MODULES = ('fakect_recipe_training.py', 'fakect_recipe_study_config.py', 'fakect_training_data.py',
+_MODULES = ('fakect_recipe_training.py', 'fakect_recipe_study_config.py', 'fakect_training_data.py', 'fakect_limits.py',
             'fakect_recipe.py', 'fakect_recipe_config.py', 'fakect_config.py', 'fakect_study_config.py',
             'fakect_morphology.py', 'fakect_erosion_guard.py', 'fakect_reassignment.py',
             'fakect_released.py', 'fakect_roi.py', 'fakect_tissues.py', 'fakect_growth.py',

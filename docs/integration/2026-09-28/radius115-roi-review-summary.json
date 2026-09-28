@@ -1,0 +1,1094 @@
+{
+  "schema_version": "fakect.radius115-roi-review-summary/1",
+  "generated_at_utc": "2026-09-28T16:22:37.341208+00:00",
+  "scope": "Compact version-controlled baseline ROI review evidence. This record does not establish completion of native lesion sweeps, a frozen cohort, extracted training pairs, whole-aorta coverage, or clinical validity.",
+  "source_artifacts": {
+    "review": {
+      "path": "outputs/cohorts/coa/radius115/roi-review-r1/review.json",
+      "sha256": "3ae06b6d1caa301dc873d452d10c3523c741ff28ca8ded732573dbdaf17f6fe6"
+    },
+    "component_details": {
+      "path": "outputs/cohorts/coa/radius115/roi-review-r1/component-details.json",
+      "sha256": "40b293f5f6a03c8ee42caa247bca87c713871417b87cbed16e036078cc3bf2a0"
+    },
+    "report": {
+      "path": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "sha256": "46638451e91f388b6b317e8fdcc632a08ca528e619fff32631e083bc328f091a"
+    },
+    "montage": {
+      "path": "outputs/cohorts/coa/radius115/roi-review-r1/montage.png",
+      "sha256": "29ce77f1c2f45fe3c62c5f437ef81534b5d55e8adfff9d774f38939fe25d64bb"
+    },
+    "input_changes": {
+      "path": "docs/integration/2026-09-28/radius115-input-changes.json",
+      "sha256": "4de27f09bcbbe1082542971a1322e6ea2c317a7d115853b3d69c759c017295a5"
+    }
+  },
+  "source_review_project_sha256": "32c2d57df74f8062398e5d4d1c71138fda0325210e857d35bf08a95902eaa213",
+  "roi_review_code_sha256": "0eae66af41967c8c0437b516c8c2f7a5725f09dd46f6c93e753c152b524b0085",
+  "component_review_code_sha256": "08818a76b0c347611972bd71c62f9ead4dc3d74cc64a25c359de5efb8552d906",
+  "case_count": 12,
+  "planned_scenarios_per_case": 16,
+  "planned_scenario_count": 192,
+  "planned_scenario_definition": "Per phantom: one baseline and a Cartesian product of three dilation distances and five CoA erosion distances; arch erosion parameters initially remain fixed within that phantom.",
+  "aggregate": {
+    "all_radius_scales_exact_1_15": true,
+    "all_centerline_points_unchanged": true,
+    "all_centerline_nodes_selected": true,
+    "all_selected_masks_inside_roi_and_admitted_ids": true,
+    "total_unconnected_retained_roi_voxels": 0,
+    "single_component_case_count": 10,
+    "cases_with_baseline_roi_clipped_fragments": [
+      "260613",
+      "260618"
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "260602",
+      "config": "configs/cohorts/coa/radius115/260602.ini",
+      "input_sha256_at_roi_review": "1db08fa7089b0debc413ecff537fea17c38bfe27308e105e8dfca7efbeebae11",
+      "anatomy_selection_sha256": "258052f6b435a3b58716a70bf73656d405a27e8e1841a1a22917366c704286dc",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260602.json",
+        "sha256": "6a8038c064d8a9d34f36ded018ef25d64483cc057ada5440e35b3797363ffde6"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260602.png",
+        "sha256": "94fb1d18dc58ed48c8eef898acbe5614b2aa3599a302c87389525f00d89dbaa9"
+      },
+      "selected_voxels": 54050,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 359
+        },
+        {
+          "original_id": 1547,
+          "original_name": "arteries",
+          "voxels": 313
+        },
+        {
+          "original_id": 1550,
+          "original_name": "arteries",
+          "voxels": 785
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 95
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 157
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 52341
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        54050
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          365,
+          349,
+          1304
+        ],
+        "high_ijk_exclusive": [
+          403,
+          428,
+          1429
+        ]
+      },
+      "centerline_node_count": 14,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260602.ini",
+      "reference_config_sha256": "6b40c9cb976b3e6284491db867be7c96ce49aaa6da2aabdd5c83414adaf8a69e",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    },
+    {
+      "case_id": "260611",
+      "config": "configs/cohorts/coa/radius115/260611.ini",
+      "input_sha256_at_roi_review": "efa90f9b8becb0abfd1ae57caed221c81b71ff3cc94e81444ddc06cd70133918",
+      "anatomy_selection_sha256": "734f94095ea3b9eec7030decddd67f96275b3d58e8591daf656b455acea5ef04",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260611.json",
+        "sha256": "dd8383d70394648818ee9a8f2c270165471e6f4171327211a85d29cf2f954dcd"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260611.png",
+        "sha256": "ed1ff11f49e78929f0de9748dbc78db9d4b6f93da33ad8e7bc45dfda48052616"
+      },
+      "selected_voxels": 40254,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 156
+        },
+        {
+          "original_id": 1559,
+          "original_name": "arteries",
+          "voxels": 194
+        },
+        {
+          "original_id": 1568,
+          "original_name": "arteries",
+          "voxels": 128
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 62
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 147
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 39567
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        40254
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          333,
+          317,
+          1202
+        ],
+        "high_ijk_exclusive": [
+          370,
+          391,
+          1314
+        ]
+      },
+      "centerline_node_count": 16,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260611.ini",
+      "reference_config_sha256": "c6302fe07bbb89d1e042ba76cfba59b7373206a6ea3569d085968c772fdd2e1c",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    },
+    {
+      "case_id": "260612",
+      "config": "configs/cohorts/coa/radius115/260612.ini",
+      "input_sha256_at_roi_review": "9b7112c4429b28ee926a883bee8d35e3a5345644a8257aba5db5feb9b620a6ff",
+      "anatomy_selection_sha256": "46ae3efacd8bb9e4ddf9c1787ed725a217e1791d9bbe166d2f7a2179221c0017",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260612.json",
+        "sha256": "6c486c9a5556973318ce6ab4010b1cbc9f912139dedf853f3bc322465defbeec"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260612.png",
+        "sha256": "622021856529d4e9368bb4d1bb84f50502d28942b39b4f5cc4062f1ad914f81f"
+      },
+      "selected_voxels": 33989,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 162
+        },
+        {
+          "original_id": 1578,
+          "original_name": "arteries",
+          "voxels": 155
+        },
+        {
+          "original_id": 1580,
+          "original_name": "arteries",
+          "voxels": 193
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 61
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 111
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 33307
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        33989
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          263,
+          227,
+          876
+        ],
+        "high_ijk_exclusive": [
+          309,
+          311,
+          965
+        ]
+      },
+      "centerline_node_count": 17,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260612.ini",
+      "reference_config_sha256": "b24665ffd1f1a3f2ceb7db727ea8b0173d0ec0a1d73f0cef477a2f307b1d03cb",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    },
+    {
+      "case_id": "260613",
+      "config": "configs/cohorts/coa/radius115/260613.ini",
+      "input_sha256_at_roi_review": "0490e6de6fe3dbcc1a2196f68a4f25a0eb1f720b46326bad148435974043c9e4",
+      "anatomy_selection_sha256": "3bf061be83cafaece2a85b433b5884c851b06730b3b944d0aa52d9619a682c39",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260613.json",
+        "sha256": "30fb88e189640c009a79ff7213fe85feaf338f2866de7e1a461c0cf5b398393e"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260613.png",
+        "sha256": "a5985e0c30212e5780f26bd9b2c056564f64af6011e551af4761b47101299a2a"
+      },
+      "selected_voxels": 49032,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 138
+        },
+        {
+          "original_id": 1551,
+          "original_name": "arteries",
+          "voxels": 175
+        },
+        {
+          "original_id": 1564,
+          "original_name": "arteries",
+          "voxels": 320
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 93
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 185
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 48121
+        }
+      ],
+      "selected_components_6": 2,
+      "selected_component_voxels_6": [
+        49030,
+        2
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          300,
+          296,
+          1079
+        ],
+        "high_ijk_exclusive": [
+          362,
+          372,
+          1187
+        ]
+      },
+      "centerline_node_count": 17,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260613.ini",
+      "reference_config_sha256": "cb2a05eb4f2201ac6c01debe8f902a52549528caa62eb603d911c53ca2e741f9",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [
+        "Selected target has multiple 6-connected components; inspect branches and isolated pieces"
+      ],
+      "minor_component_details": [
+        {
+          "component_label": 2,
+          "voxels": 2,
+          "labels": [
+            {
+              "original_id": 1186,
+              "original_name": "internal_carotid_right",
+              "voxels": 2
+            }
+          ],
+          "bbox_ijk": {
+            "low_ijk": [
+              334,
+              322,
+              1186
+            ],
+            "high_ijk_exclusive": [
+              335,
+              324,
+              1187
+            ]
+          },
+          "centroid_ijk": [
+            334.0,
+            322.5,
+            1186.0
+          ],
+          "connects_to_main_aortic_anchor_through_native_admitted_ids": true,
+          "connects_to_main_aortic_anchor_through_native_atlas_eligible_ids": true,
+          "native_contact_connectivity": 6,
+          "connection_must_leave_roi": true,
+          "interpretation": "Baseline ROI clipping: disconnected inside the selector, but joins the main aortic anchor through native admitted labels outside the ROI.",
+          "voxels_native": [
+            {
+              "ijk": [
+                334,
+                322,
+                1186
+              ],
+              "original_id": 1186,
+              "parent_arc_distance_mm": 36.86895012766821,
+              "parent_path_percent": 39.17950320468828,
+              "edit_selector_membership": {
+                "arch_outer_expand": true,
+                "arch_inner_narrow": true,
+                "coa_narrow": false
+              }
+            },
+            {
+              "ijk": [
+                334,
+                323,
+                1186
+              ],
+              "original_id": 1186,
+              "parent_arc_distance_mm": 37.151908356877264,
+              "parent_path_percent": 39.480194241718095,
+              "edit_selector_membership": {
+                "arch_outer_expand": true,
+                "arch_inner_narrow": true,
+                "coa_narrow": false
+              }
+            }
+          ],
+          "parent_path_percent_range": [
+            39.17950320468828,
+            39.480194241718095
+          ],
+          "edit_selector_voxel_counts": {
+            "arch_outer_expand": 2,
+            "arch_inner_narrow": 2,
+            "coa_narrow": 0
+          },
+          "edit_membership_scope": "Original voxel membership in exact named/ranged selectors; Gaussian and angular weights, reassignment, lineage and safeguards are not executed."
+        }
+      ]
+    },
+    {
+      "case_id": "260614",
+      "config": "configs/cohorts/coa/radius115/260614.ini",
+      "input_sha256_at_roi_review": "a78a499c18fac13b278f7ca87812e0cf315c6bb7828a2e48f1dfa1613e3569c1",
+      "anatomy_selection_sha256": "9653c1195177989a8d217f8fce6babd0649768e7483769770290d6672d4e11c7",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260614.json",
+        "sha256": "d2c6a107c0ebd9b3be068543cf60ddf4386ae567cc46277e94d8ea3d049b90ab"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260614.png",
+        "sha256": "e7eede56a6fd287a544e031f9960758751112ba3b8681a970957d79483d75b5f"
+      },
+      "selected_voxels": 58832,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 237
+        },
+        {
+          "original_id": 1577,
+          "original_name": "arteries",
+          "voxels": 397
+        },
+        {
+          "original_id": 1586,
+          "original_name": "arteries",
+          "voxels": 307
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 201
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 100
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 57590
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        58832
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          370,
+          313,
+          1360
+        ],
+        "high_ijk_exclusive": [
+          428,
+          417,
+          1488
+        ]
+      },
+      "centerline_node_count": 17,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260614.ini",
+      "reference_config_sha256": "18936af71e54e948d6141a4a2d5cf9548ee13c4b382ea2a87da74763387f9e02",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    },
+    {
+      "case_id": "260615",
+      "config": "configs/cohorts/coa/radius115/260615.ini",
+      "input_sha256_at_roi_review": "6c457c094ea814ff84258941d86caf05fd4412ae221730fb77e2a5e2307b075b",
+      "anatomy_selection_sha256": "37f6af7c9343cfeecc37ddd7ff44e7fae6f93144e0bcc1303e77647de6e7ea69",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260615.json",
+        "sha256": "c66125a58c4de9261a3a80976206f492306ee6a4c0288a6aada26a8ec3055e37"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260615.png",
+        "sha256": "bec774ad1fc9cee9e61d3e22f75bdf3ac7b16be37db671464e2315652202b3da"
+      },
+      "selected_voxels": 56334,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 153
+        },
+        {
+          "original_id": 1549,
+          "original_name": "arteries",
+          "voxels": 101
+        },
+        {
+          "original_id": 1554,
+          "original_name": "arteries",
+          "voxels": 492
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 143
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 204
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 55241
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        56334
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          356,
+          320,
+          1293
+        ],
+        "high_ijk_exclusive": [
+          399,
+          407,
+          1413
+        ]
+      },
+      "centerline_node_count": 16,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260615.ini",
+      "reference_config_sha256": "e0bc9c8ed8a886ce3d013d1bed20fcef03d93792fe241ccba8097ef362c9a068",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    },
+    {
+      "case_id": "260616",
+      "config": "configs/cohorts/coa/radius115/260616.ini",
+      "input_sha256_at_roi_review": "9649016f9b4b004174e9628579e6eaa4ac8dcc2f031d8dc07a5752b6204c250f",
+      "anatomy_selection_sha256": "1bda4a93b193bf68787a563d66312865dd0281da2b3583f937f23dcb49a56e88",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260616.json",
+        "sha256": "03dfb44881e995612cebc1e305b00787ecefe367a5cd9c197082f534509f1941"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260616.png",
+        "sha256": "8f6e0eff4f1427f6e7dcb76524880b2bfe450b5b81dd55b0ed57affb6d95c0a5"
+      },
+      "selected_voxels": 45036,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 293
+        },
+        {
+          "original_id": 1555,
+          "original_name": "arteries",
+          "voxels": 399
+        },
+        {
+          "original_id": 1595,
+          "original_name": "arteries",
+          "voxels": 199
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 129
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 167
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 43849
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        45036
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          366,
+          343,
+          1371
+        ],
+        "high_ijk_exclusive": [
+          407,
+          417,
+          1502
+        ]
+      },
+      "centerline_node_count": 16,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260616.ini",
+      "reference_config_sha256": "e1ad22548eafe2d380d31d971fa413400731758d4f98fe1661aacaf8e7ffa4dd",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    },
+    {
+      "case_id": "260617",
+      "config": "configs/cohorts/coa/radius115/260617.ini",
+      "input_sha256_at_roi_review": "5bae50f5b1b0e24101e6e2816b801ba677a5acbdd96bbf73e908dc2cc1823ace",
+      "anatomy_selection_sha256": "021cd65af957a48770088a2a3052d6d960004399ea2110abbe80791d1e3be9fd",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260617.json",
+        "sha256": "87f3a8b698d2ef97e9d6d3734611ca55b857743b8300cd0fafb2d92b643e0e0b"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260617.png",
+        "sha256": "8f702aec89d565fd026c9a46db339fec54b3f2e5b28453dc113bde3f5f5515aa"
+      },
+      "selected_voxels": 33483,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 148
+        },
+        {
+          "original_id": 1560,
+          "original_name": "arteries",
+          "voxels": 192
+        },
+        {
+          "original_id": 1562,
+          "original_name": "arteries",
+          "voxels": 144
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 63
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 98
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 32838
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        33483
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          263,
+          226,
+          876
+        ],
+        "high_ijk_exclusive": [
+          309,
+          309,
+          965
+        ]
+      },
+      "centerline_node_count": 17,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260617.ini",
+      "reference_config_sha256": "80a74540d060d8cd0464e496f6a89574687e6f546b575f4a99b4b629e9afa6fc",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    },
+    {
+      "case_id": "260618",
+      "config": "configs/cohorts/coa/radius115/260618.ini",
+      "input_sha256_at_roi_review": "dfc37f827a7f78106260459dc0612166b402e75d5c27a66ed5a9750c5345ebb5",
+      "anatomy_selection_sha256": "151a2039e866febaebb667efca61573e61ca9687d47ff3ad5ce061b98a347501",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260618.json",
+        "sha256": "087c9be9070e1d5e689bcda49ac5bead718d4e627998d21d95d6e493bd5a1d26"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260618.png",
+        "sha256": "1d7b400cc30dca7579f1f3ffda359ae96485b2e6d291b3bcf81ca2795408fea7"
+      },
+      "selected_voxels": 49032,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 138
+        },
+        {
+          "original_id": 1576,
+          "original_name": "arteries",
+          "voxels": 320
+        },
+        {
+          "original_id": 1589,
+          "original_name": "arteries",
+          "voxels": 175
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 93
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 185
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 48121
+        }
+      ],
+      "selected_components_6": 2,
+      "selected_component_voxels_6": [
+        49030,
+        2
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          300,
+          296,
+          1079
+        ],
+        "high_ijk_exclusive": [
+          362,
+          372,
+          1187
+        ]
+      },
+      "centerline_node_count": 17,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260618.ini",
+      "reference_config_sha256": "8e46550154c4662aaa0f79cbfad2bbb9beba31c76b76d2bf3e0fbb7885ad70e5",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [
+        "Selected target has multiple 6-connected components; inspect branches and isolated pieces"
+      ],
+      "minor_component_details": [
+        {
+          "component_label": 2,
+          "voxels": 2,
+          "labels": [
+            {
+              "original_id": 1186,
+              "original_name": "internal_carotid_right",
+              "voxels": 2
+            }
+          ],
+          "bbox_ijk": {
+            "low_ijk": [
+              334,
+              322,
+              1186
+            ],
+            "high_ijk_exclusive": [
+              335,
+              324,
+              1187
+            ]
+          },
+          "centroid_ijk": [
+            334.0,
+            322.5,
+            1186.0
+          ],
+          "connects_to_main_aortic_anchor_through_native_admitted_ids": true,
+          "connects_to_main_aortic_anchor_through_native_atlas_eligible_ids": true,
+          "native_contact_connectivity": 6,
+          "connection_must_leave_roi": true,
+          "interpretation": "Baseline ROI clipping: disconnected inside the selector, but joins the main aortic anchor through native admitted labels outside the ROI.",
+          "voxels_native": [
+            {
+              "ijk": [
+                334,
+                322,
+                1186
+              ],
+              "original_id": 1186,
+              "parent_arc_distance_mm": 36.86895012766821,
+              "parent_path_percent": 39.17950320468828,
+              "edit_selector_membership": {
+                "arch_outer_expand": true,
+                "arch_inner_narrow": true,
+                "coa_narrow": false
+              }
+            },
+            {
+              "ijk": [
+                334,
+                323,
+                1186
+              ],
+              "original_id": 1186,
+              "parent_arc_distance_mm": 37.151908356877264,
+              "parent_path_percent": 39.480194241718095,
+              "edit_selector_membership": {
+                "arch_outer_expand": true,
+                "arch_inner_narrow": true,
+                "coa_narrow": false
+              }
+            }
+          ],
+          "parent_path_percent_range": [
+            39.17950320468828,
+            39.480194241718095
+          ],
+          "edit_selector_voxel_counts": {
+            "arch_outer_expand": 2,
+            "arch_inner_narrow": 2,
+            "coa_narrow": 0
+          },
+          "edit_membership_scope": "Original voxel membership in exact named/ranged selectors; Gaussian and angular weights, reassignment, lineage and safeguards are not executed."
+        }
+      ]
+    },
+    {
+      "case_id": "260619",
+      "config": "configs/cohorts/coa/radius115/260619.ini",
+      "input_sha256_at_roi_review": "b2eb1fa9cdc353dba1b73f8e30882a83f3721e721166b6f7ebff9ac1c48dc7e1",
+      "anatomy_selection_sha256": "473a1bf1faa2e58e53b50f7ddea373af0d986ee1259fe4882ce9222155aa38ca",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260619.json",
+        "sha256": "1720031637a8998d4e150e08609f4f09e73ad0fb398f36f572f3fdfd67f74920"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260619.png",
+        "sha256": "b63d29be4d7791181707c3e79c5a2f3e76f12cd3555b63b1a9f711e33a91ea82"
+      },
+      "selected_voxels": 58832,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 237
+        },
+        {
+          "original_id": 1577,
+          "original_name": "arteries",
+          "voxels": 397
+        },
+        {
+          "original_id": 1586,
+          "original_name": "arteries",
+          "voxels": 307
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 201
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 100
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 57590
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        58832
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          370,
+          313,
+          1360
+        ],
+        "high_ijk_exclusive": [
+          428,
+          417,
+          1488
+        ]
+      },
+      "centerline_node_count": 17,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260619.ini",
+      "reference_config_sha256": "29c272d7840eb6b4014b55bace5c8e3c06410ce3f243bbcae9ed1dff1bf583e9",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    },
+    {
+      "case_id": "260620",
+      "config": "configs/cohorts/coa/radius115/260620.ini",
+      "input_sha256_at_roi_review": "51cca473dba9ccdf36edcdedcd609e7c355e4552480f5e199e6a7d7e03cf9e29",
+      "anatomy_selection_sha256": "9c1b2496c3fd57f36c93797f671e6de695ead0720b0d29ac50ddfbb546e65d0c",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260620.json",
+        "sha256": "9b04170921a794a25fa98c5e07a5647d7a43f795e0f138ad2b03a39a00ed943b"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260620.png",
+        "sha256": "1606609824ba5d975459ed718d3a7318cb46115924352c3aaa9efd6fd31aebeb"
+      },
+      "selected_voxels": 56334,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 153
+        },
+        {
+          "original_id": 1588,
+          "original_name": "arteries",
+          "voxels": 492
+        },
+        {
+          "original_id": 1593,
+          "original_name": "arteries",
+          "voxels": 101
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 143
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 204
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 55241
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        56334
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          356,
+          320,
+          1293
+        ],
+        "high_ijk_exclusive": [
+          399,
+          407,
+          1413
+        ]
+      },
+      "centerline_node_count": 16,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260620.ini",
+      "reference_config_sha256": "f8c071b338240515ab56a6562d2149cf0044cc86bc91c5e1e69a03285945a944",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    },
+    {
+      "case_id": "260621",
+      "config": "configs/cohorts/coa/radius115/260621.ini",
+      "input_sha256_at_roi_review": "74604e86205bb1ed5155c17717950971f60aa1dc6a861ad2f1b79be5345bf9c7",
+      "anatomy_selection_sha256": "d785fb87c82f5e47db822aeb53671fcb7aee1c2640d5438fcc2f7fe9730963ca",
+      "roi_review": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260621.json",
+        "sha256": "039f2ae4d7b2ce353c6d9ded581d3dc5ff8235dc1fac9ebd590ecdb43847f1c5"
+      },
+      "image": {
+        "path": "outputs/cohorts/coa/radius115/roi-review-r1/260621.png",
+        "sha256": "071764dd5114f741940dc8399467ade07c64b0b33dd01c5895b36aaf45ac3397"
+      },
+      "selected_voxels": 35023,
+      "selected_original_labels": [
+        {
+          "original_id": 1186,
+          "original_name": "internal_carotid_right",
+          "voxels": 191
+        },
+        {
+          "original_id": 1564,
+          "original_name": "arteries",
+          "voxels": 225
+        },
+        {
+          "original_id": 1587,
+          "original_name": "arteries",
+          "voxels": 162
+        },
+        {
+          "original_id": 2912,
+          "original_name": "dias_rca1",
+          "voxels": 49
+        },
+        {
+          "original_id": 2914,
+          "original_name": "dias_lad1",
+          "voxels": 186
+        },
+        {
+          "original_id": 2922,
+          "original_name": "dias_aorta",
+          "voxels": 34210
+        }
+      ],
+      "selected_components_6": 1,
+      "selected_component_voxels_6": [
+        35023
+      ],
+      "selected_is_subset_of_roi_and_admitted_ids": true,
+      "selected_bbox_ijk": {
+        "low_ijk": [
+          365,
+          355,
+          1303
+        ],
+        "high_ijk_exclusive": [
+          402,
+          427,
+          1428
+        ]
+      },
+      "centerline_node_count": 16,
+      "all_centerline_nodes_inside_selected_label": true,
+      "all_centerline_nodes_inside_crop": true,
+      "unconnected_retained_roi_voxels": 0,
+      "reference_config": "configs/cohorts/coa/260621.ini",
+      "reference_config_sha256": "3713635da3aa860f045c45414c4d55b98c691b40b80e5b92358ca5fdbe5b858b",
+      "all_roi_radii_exact_scale_1_15": true,
+      "all_centerline_points_unchanged": true,
+      "flags_at_roi_review": [],
+      "minor_component_details": []
+    }
+  ]
+}

@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 
 from fakect_morphology import tube_position_mm
+from fakect_limits import MAX_NATIVE_EDIT_VOXELS
 
 
 SERIES = {'before': 'target_mask_before', 'after': 'target_mask_after',
@@ -38,8 +39,8 @@ def build_arc_profile(edit, resolved, config, edit_region):
             or nodes.ndim != 2 or nodes.shape[1:] != (3,) or not 2 <= len(nodes) <= 512
             or not np.isfinite(nodes).all()):
         raise ValueError('Arc profiles require a finite tube and positive physical spacing')
-    if region.ndim != 3 or not region.size or region.size > 2_000_000:
-        raise ValueError('Arc profiles require a nonempty crop of at most 2,000,000 voxels')
+    if region.ndim != 3 or not region.size or region.size > MAX_NATIVE_EDIT_VOXELS:
+        raise ValueError(f'Arc profiles require a nonempty crop of at most {MAX_NATIVE_EDIT_VOXELS:,} voxels')
     lengths = np.linalg.norm(np.diff(nodes * spacing, axis=0), axis=1)
     node_distances = np.r_[0., np.cumsum(lengths)]
     total = float(node_distances[-1])

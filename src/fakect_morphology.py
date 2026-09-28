@@ -16,10 +16,11 @@ from fakect_direction import directional_spec, direction_weight_field
 from fakect_released import (RELEASED_LABEL_ID, released_catalog,
                             release_assignment_metadata, uses_diagnostic_release)
 from fakect_erosion_guard import erosion_guard_spec, apply_guarded_erosion
+from fakect_limits import MAX_NATIVE_EDIT_VOXELS
 
 
 ENGINE = 'weighted_6_neighbor_mm_v1'
-MAX_MORPHOLOGY_VOXELS = 2_000_000
+MAX_MORPHOLOGY_VOXELS = MAX_NATIVE_EDIT_VOXELS
 MAX_DISTANCE_MM = 50.0
 _TOL = 1e-9
 _STRUCTURE = ndimage.generate_binary_structure(3, 1)

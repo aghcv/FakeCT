@@ -1,0 +1,990 @@
+{
+  "schema_version": "fakect.cohort-manual-acceptance/1",
+  "complete": true,
+  "reviewed_at_utc": "2026-09-28T17:02:30.778094+00:00",
+  "case_count": 12,
+  "variant_count": 192,
+  "paired_dataset_prepared": false,
+  "model_trained": false,
+  "cases": [
+    {
+      "case_id": "260602",
+      "config": "configs/cohorts/coa/radius115/260602.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260602/preflight-r2/preflight.json",
+      "preflight_sha256": "3f5ba81ef12d57f56510fe92fafb92b3f719a040a0591e80d889bd23170956c8",
+      "freeze_path": "outputs/cohorts/coa/radius115/260602/freeze-r2/freeze.json",
+      "freeze_sha256": "ce8cf76d502f482ef5d24c4ae0669acde95f7c72f531b27f0b3ffb641678a947",
+      "input_before_review_sha256": "19fae06f2871b421692a70faa14f5d216b2c24ecfea5c43e4969b45d97702a2d",
+      "input_frozen_sha256": "baf2578e1e92171a4334365d510a29082536e3028f4ffe2b5a30ef789d716aac",
+      "dataset_fingerprint": "94336c31d0bdd53d73a2b9371d08d4b5aea069e7c592b1c94bbea8be67f5da0b",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260602.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit.",
+        "Maximum dilation includes arch-branch junctions; continuity is preserved, but within-tree shortcuts and full vascular topology are not certified."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.6716171617161716,
+        0.8910891089108911
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260611",
+      "config": "configs/cohorts/coa/radius115/260611.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260611/preflight-r2/preflight.json",
+      "preflight_sha256": "ea88461ada49d9eae0b10e1804bf148f51cdadfdb9426c36b168241190e686c6",
+      "freeze_path": "outputs/cohorts/coa/radius115/260611/freeze-r2/freeze.json",
+      "freeze_sha256": "16343bd5cc736bfaeb892edfca435a7751deda99a131dc37406c3dfee94881cf",
+      "input_before_review_sha256": "7c86f145f41026215295d21eb2cd87e5b6cf04d2ea38ab8198a631eac4996659",
+      "input_frozen_sha256": "23c65d75cf807c0d620648b1e27a22eeebd7e2b001582857f31be7ba277a0b80",
+      "dataset_fingerprint": "05bed254fdb6d63c8dd9e84acdab813f63ae101a4ad25204342b7b68a43d40bd",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260611.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit.",
+        "Maximum dilation includes arch-branch junctions; continuity is preserved, but within-tree shortcuts and full vascular topology are not certified."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.621167576648467,
+        0.878202435951281
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260612",
+      "config": "configs/cohorts/coa/radius115/260612.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260612/preflight-r2/preflight.json",
+      "preflight_sha256": "468106a438186066c1bfcc84c22cd701c016f4ca2da832a9cad4f4088107f9d5",
+      "freeze_path": "outputs/cohorts/coa/radius115/260612/freeze-r2/freeze.json",
+      "freeze_sha256": "8c658699517ec8dac363a3c54d14a16d7e782c48149e0a81fb8a0c4c3f5158d9",
+      "input_before_review_sha256": "3088a220dfc3f68294c07d3e745b288f6f35411416d30922f0b2bd5dee4b3875",
+      "input_frozen_sha256": "557e27edf94edf8bc31e4620919816970e0def7e92359f0d1c0ea839b3394f4b",
+      "dataset_fingerprint": "55b5253ca649d3c4ffd69ea7d6894607a23f840ab957b97984dbe54e3c067ead",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260612.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Maximum CoA: severe, nearly occlusive native-grid limit; connectivity alone does not establish minimum caliber."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.4264894984997857,
+        0.911701671667381
+      ],
+      "severe_resolution_limited_variants": [
+        "recipe-802c366a0de61096",
+        "recipe-271e7c54a43e9f0c",
+        "recipe-a633c86e0630ed40"
+      ]
+    },
+    {
+      "case_id": "260613",
+      "config": "configs/cohorts/coa/radius115/260613.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260613/preflight-r2/preflight.json",
+      "preflight_sha256": "2206fb026e317eba4e9ab6b77e5d416f45d40b5816538f263affc4a065b759f1",
+      "freeze_path": "outputs/cohorts/coa/radius115/260613/freeze-r2/freeze.json",
+      "freeze_sha256": "7c531423fad72e3efab6a2094b81e40900ea893e83741061ee175b14c55710dc",
+      "input_before_review_sha256": "840c3a32f82ce16c2061b2ace6b02e937223647588946d8aaa1ba14c7796af9d",
+      "input_frozen_sha256": "50bd676c657f479bb66ef4c2845c557921a50dafaedd7ab1ae980a3de0659538",
+      "dataset_fingerprint": "23f967f4b91d69765faa7717285964467472ee1dfbc40ed289b6fee5ad023090",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260613.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit.",
+        "Two baseline ROI-clipped carotid voxels connect through admitted anatomy outside the ROI; no native connection was cut. Three unreliable-direction envelope cells are safely skipped at maximum dilation; 3,079 additions remain."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.4708631972577127,
+        0.9161732626986601
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260614",
+      "config": "configs/cohorts/coa/radius115/260614.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260614/preflight-r2/preflight.json",
+      "preflight_sha256": "e39d64c70c06d2781f75f83f0b5854932ec1cb04e83982082f6db20e8c214037",
+      "freeze_path": "outputs/cohorts/coa/radius115/260614/freeze-r2/freeze.json",
+      "freeze_sha256": "24b89d24170a3a314d09ebdd931368342446d70e1da9e00825252d401d8ac27a",
+      "input_before_review_sha256": "3e6fd11d92cc868719a91ac7d2840e9991e9c496447a3f191d629af7a4e155dd",
+      "input_frozen_sha256": "ae1c030295e600315560d89f40c06bd9f462ac32af603aa0590a39cec90a533d",
+      "dataset_fingerprint": "e9fd4185222994a1f65e0496b3fdc667a052d42e07fba22e8b9e9d2b2dd3885e",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260614.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit.",
+        "Minimum CoA raised from 0.571 to 0.8 mm to produce native erosion. These cases have matching ACT/ATN source crops."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.603213412504366,
+        0.9238560950052392
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260615",
+      "config": "configs/cohorts/coa/radius115/260615.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260615/preflight-r2/preflight.json",
+      "preflight_sha256": "57678dcf5b29a52c4d8eb28ee81f851149acb56fcc45be4c79eb3517d2f60805",
+      "freeze_path": "outputs/cohorts/coa/radius115/260615/freeze-r2/freeze.json",
+      "freeze_sha256": "96b4c8bd1a057b33ceef3540fecca5b75ffd386433ce66229247e06b8deca6b2",
+      "input_before_review_sha256": "5935e56419058a22e04edb289032e7a2030556f0a16133ba5c7c72264a24cf3d",
+      "input_frozen_sha256": "f51754e49a785cdd9be38330cb624777a8786de500c33763de3c3c9e5dcd38ed",
+      "dataset_fingerprint": "c018c63a0558beb2dcba717a23ff29590a3767e740cddebf05eb92df4f9bd338",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260615.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.5966162065894924,
+        0.9058325912733749
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260616",
+      "config": "configs/cohorts/coa/radius115/260616.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260616/preflight-r2/preflight.json",
+      "preflight_sha256": "f455bd86de47a46db71198f44e7ddd2c5a28201712daf9d4e5e27521114f4c54",
+      "freeze_path": "outputs/cohorts/coa/radius115/260616/freeze-r2/freeze.json",
+      "freeze_sha256": "f917fd337bcab264e2e92f07ad1063c14fa9e9b5a18a48d9e8c17b4adcdaf799",
+      "input_before_review_sha256": "96ca7ef0742e3d6a946b92d7bb476baf80df22737282ab4dbd231bec0fdd42c8",
+      "input_frozen_sha256": "b73bf909dc32e1b4eb2accefbbafaf678cda3852f6c55eb6cc1466df2d0bcc26",
+      "dataset_fingerprint": "665cd5d18f47659378c30b2dc10418a3bb3930d9adaca29328f384686a47bd65",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260616.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit.",
+        "Maximum dilation includes arch-branch junctions; continuity is preserved, but within-tree shortcuts and full vascular topology are not certified."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.4877373417721519,
+        0.8793512658227848
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260617",
+      "config": "configs/cohorts/coa/radius115/260617.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260617/preflight-r4/preflight.json",
+      "preflight_sha256": "7224524f0c618576a28d8d53058b6be0e16d5dba7986e0458d823b5474560c2d",
+      "freeze_path": "outputs/cohorts/coa/radius115/260617/freeze-r4/freeze.json",
+      "freeze_sha256": "0733d53a4950143fb7797935d973f584c1ab02f7fc19588c95d278bfb8fb2454",
+      "input_before_review_sha256": "cf8c259cf776e09dd1e659c26eb1ef65d6a1fd8fa8d2007efc05157888afa030",
+      "input_frozen_sha256": "0235945703376b25637537e4e62cc942134fb9e4a6a876c9002ad2b655de8961",
+      "dataset_fingerprint": "be9e3301978e9bb7e94b6fc951b04fb6a8e61ff6121482ef97c0d5d66c64d915",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260617.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "CoA range capped at 1.4805 mm with five distinct increasing achieved severities; no final-grid backoff."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.6887417218543046,
+        0.9077262693156732
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260618",
+      "config": "configs/cohorts/coa/radius115/260618.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260618/preflight-r2/preflight.json",
+      "preflight_sha256": "424a27404cf7bc03669ec2e34fcf6cee18b158f5a8349fd8c6a87487e604616d",
+      "freeze_path": "outputs/cohorts/coa/radius115/260618/freeze-r2/freeze.json",
+      "freeze_sha256": "5767e04df8150cabde147ae08a5903daa7055bc0089654d30c76e694cfb089a2",
+      "input_before_review_sha256": "58c0983703f301f30e8f452a77d22a6d3755fb41b85bfaca83d861d819f6d3b6",
+      "input_frozen_sha256": "1e449459863975633319e57e9275ac9192a383d0d6f1349fd0832d6b509e9746",
+      "dataset_fingerprint": "e806bee87f81eb52d8f9924a9dc13574843270896093b8eab516dd15e89a6e9d",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260618.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit.",
+        "Two baseline ROI-clipped carotid voxels connect through admitted anatomy outside the ROI; no native connection was cut. Three unreliable-direction envelope cells are safely skipped at maximum dilation; 3,079 additions remain."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.4708631972577127,
+        0.9161732626986601
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260619",
+      "config": "configs/cohorts/coa/radius115/260619.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260619/preflight-r2/preflight.json",
+      "preflight_sha256": "a304cadecfef1e20a0f87116e921b065f225ff4973dbb8b82fcc3c6ab3433227",
+      "freeze_path": "outputs/cohorts/coa/radius115/260619/freeze-r2/freeze.json",
+      "freeze_sha256": "24edc5bae51551ace6c04be2edce3f922342b094d7d073e7b12a09be726bbbea",
+      "input_before_review_sha256": "11afe26d7d13b8c2b0b2269e8956d67a0f783b88d53f5ad94c284a6ba2210a5b",
+      "input_frozen_sha256": "7a5c967b580300ac1a88d36d5a0c9146d44765ebc16eddce67089af04439ce4f",
+      "dataset_fingerprint": "673a5974aa4e7f57a2c4e10d961c9c76cdf01437ee20867c81030fa7c3cc51e4",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260619.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit.",
+        "Minimum CoA raised from 0.571 to 0.8 mm to produce native erosion. These cases have matching ACT/ATN source crops."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.603213412504366,
+        0.9238560950052392
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260620",
+      "config": "configs/cohorts/coa/radius115/260620.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260620/preflight-r2/preflight.json",
+      "preflight_sha256": "c4e2cf3c9eaa4b49d0ce52b589ca4e1720314cb42061aaebfc76b2222f793249",
+      "freeze_path": "outputs/cohorts/coa/radius115/260620/freeze-r2/freeze.json",
+      "freeze_sha256": "f04c9afe79c646b6712f0e3417ac50221694f2b86b271ed4f62ec1038328b403",
+      "input_before_review_sha256": "4815d01236e7d03f5f7bb521920dd1b1ec0813a17531bc87002656d1fad529de",
+      "input_frozen_sha256": "39ab1f105e83cdc12646d4417b8063c83684ed79b277bc1f5393cf62575811f2",
+      "dataset_fingerprint": "c77ac794d535ba14807ad5dbdf9059d609df095753229913354912b10583c954",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260620.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.5966162065894924,
+        0.9058325912733749
+      ],
+      "severe_resolution_limited_variants": []
+    },
+    {
+      "case_id": "260621",
+      "config": "configs/cohorts/coa/radius115/260621.ini",
+      "preflight_path": "outputs/cohorts/coa/radius115/260621/preflight-r2/preflight.json",
+      "preflight_sha256": "0d3f3eab22b99281ea9a162a3f1d0ee2917f75dc4afd9383b509be4694229bff",
+      "freeze_path": "outputs/cohorts/coa/radius115/260621/freeze-r2/freeze.json",
+      "freeze_sha256": "ea5014b0bf93d2a1bd172a3bacdddc5072cee2a3734fe61bbd128ba48b1b7deb",
+      "input_before_review_sha256": "1ff320a0376a03c0457f3b9fcf5677297d431b9575151bc19618643178e725f3",
+      "input_frozen_sha256": "2a39795cb9d0fbcdb6a820cb2fa1138adbfda37ebf6d22ca40099e978f0413ed",
+      "dataset_fingerprint": "ed0c69ec469fa9ba37d564b21976f74d3c5fafaef6de37340eca887b8345857c",
+      "variant_count": 16,
+      "unique_geometry_count": 16,
+      "visual_report": "outputs/cohorts/coa/radius115/trial-visual-review-r2/report.html",
+      "visual_image": "outputs/cohorts/coa/radius115/trial-visual-review-r2/260621.png",
+      "roi_report": "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+      "decision": "accepted_and_frozen_for_paired_extraction",
+      "review_notes": [
+        "Accepted after native grid and maximum before/after review; no failed or ineffective active edit, duplicate within-case mask, nonmonotonic distance response, or accepted connectivity violation.",
+        "Recipient-limited partial erosions accepted; achieved volumes and unresolved counts remain in the native audit.",
+        "Maximum dilation includes arch-branch junctions; continuity is preserved, but within-tree shortcuts and full vascular topology are not certified."
+      ],
+      "local_coa_retained_ratio_min_max": [
+        0.43719332679097156,
+        0.8503434739941119
+      ],
+      "severe_resolution_limited_variants": []
+    }
+  ],
+  "reviewer": "Codex manual engineering review under user authorization; not clinical validation",
+  "audit": "outputs/cohorts/coa/radius115/outcome-review-final.json",
+  "audit_sha256": "7b89497e03b02c3e4452aef7b5383e3523076d356dae3ce0cb8d78cd764c3130",
+  "visual_review": "outputs/cohorts/coa/radius115/trial-visual-review-r2/review.json",
+  "visual_review_sha256": "2cce004afde044f3fe130b1be6b90590a75ebf04b0d4de0dcf9a719c74d255e5",
+  "spatial_evidence": "docs/integration/2026-09-28/radius115-internal-fill-review-r2.json",
+  "spatial_evidence_sha256": "90858025c882576d0333e21c40c035b2ed47979610aad7083dab3dc475919c8d",
+  "duplicate_source_crops": [
+    {
+      "case_ids": [
+        "260614",
+        "260619"
+      ],
+      "act_sha256": "b528e07598dbeddac3083b211ba23fcd7152bdfbe35883f4971eafc591bbefb8",
+      "atn_sha256": "f6ad81bb6d6dbb0b98a1fc9750ff2457cabd1a171593789a5876e31c9ad09976"
+    }
+  ],
+  "duplicate_target_masks": [
+    {
+      "mask_sha256": "d9556d37dc68640d1c46c03e652cdb1c9579ba909f8a10ec3807035e57271ed5",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "baseline"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "baseline"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "cb11a21070c7a4218936c35f830bf6ac93c3ab787315066eacb72deeb3c296c0",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-b52da67e36d7adba"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-e71241a927e47af0"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "8f4d6e95526bacca8a1aff85d4e685789e93b87fe4df1fdff9219f2777c38e11",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-f340ba47017d0317"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-b2f8411d25313f95"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "82671f6986c3de58b5dfc45a4f10b4ebb88c238392eaf14cb8b20960859df32e",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-71793f50bf7332d4"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-a8881446d70a5cee"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "23bcaea2d035d4a34c760a9715ab7ff2f5356a1aa856faa4e58b97b6742c9e00",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-8c8ad150e44d69de"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-fcd101c092f59d1f"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "748abea43fc41c0e14d82ca16c09927764237555a3f06ad2ee6b1431e151fadc",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-e8886b2784bd1833"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-d382f5cd19d43af8"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "14c12ed45eb84ce6bf19692bc70ad94f56990a03d44bc72b97d1ddb99e06f652",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-f33397daefc97224"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-19c8f408cf505ca5"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "698d463068e879260ba9b28e4d7abe68131e5222b1c7dad3bc40a90de427cd0a",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-f54625680253ea82"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-16523c6f3cc67559"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "f1515e2b8b2525022e08ff07891aaa6c595b6d3a4a92ec5f78dbf33cf51dc48e",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-c35014cee0bb3b8a"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-d9fa2f3ab76b7488"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "e1aa9edb776c80b8a288de03e3e1959357130aa282c31934f7f4b72f496226f1",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-f85704abb436fafa"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-c65cb066663889e8"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "ee4e29d7a83fa0989693326c65fdf78194f71304740d2536d84674d4ddc01c16",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-60ca026e2d54fc78"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-6651b787b5b1d269"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "6e318c926d428f44841b583d13ecbf4d79872e581d57ae755df48506ec7a3f0b",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-2aa08a3fd87e7b4e"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-f38bf9b7430970ff"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "a0cb60a16deeb83c64f2166f2305f1498b09a5a587673de53fea85f0411b93f4",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-aaa20d6304a45e5c"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-1e8a493eed208fa7"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "7e59d984794ce947eb8d50060ca258e066d389cecccb72fd0a30af57a7b84e11",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-95645ddcba6711ea"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-9aa7671015a793d7"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "672b7bfe2ce75f930b36de75b0ccd19db85b0628b98d2d8f12c85d378f16f39e",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-b45794280fc8ea47"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-b5973ed99f3b69c8"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "00aba46c76136accdc44429b12670023b45d28f76d3e1c4ed0ab16a40d729234",
+      "members": [
+        {
+          "case_id": "260613",
+          "variant_id": "recipe-c0e9d646e9c00d5f"
+        },
+        {
+          "case_id": "260618",
+          "variant_id": "recipe-97c4e23a41877d44"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "a941f8d8a07b80ffdc120033bec238602f710a1f3e484b711175b3fc6fb28bd1",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "baseline"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "baseline"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "247ae43b4e4e49f91b1b7e8e9c7604c38f527e143706e4f1d2e2ef2fb3988c21",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-f5873d57bc42baf4"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-b041d9c0d9c99032"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "2aedc2bf0d01e50586c1a95d1b9c4825e6dc1d265314fe198107ea420b508e80",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-408d77d0d7c5c341"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-4c07e527f3eb5baf"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "a675ed220caa4df858c323ad1a98014abd93d361a364cd0e81df338d5d975bd9",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-a5999abcca07168c"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-6c6fee0903bc0da2"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "871fe62b0c58719a7888eb0133c9e4f8342abacc53a1813021ce6fd458968ca7",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-7312f6f1fcf712b8"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-c1d9924def8618c0"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "05962cb081c3a1ec11d4ed3bb2d6f0507c6b5ccfe648e5c66733a437fd00f178",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-9055f55e05f41530"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-1e29a39d2b7c4641"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "516ba61c3090d4c754edcd42b07468fd76933a7446bad25a8fe72b29b101147d",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-ca7027d7d695f266"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-cf6e5e5a930c116b"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "36765de8486bba731b3d5ebff606a0a38144fa0de461a79e379cf76c99f832d4",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-7c4a6460e34602f1"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-e77e851d07562ade"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "393233cab463a7751a4fd0b7e35bab94d01e36100d976898105235c8aa3a4e6b",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-74616aeae3c9dcd9"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-b2853aef81c0a4d0"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "72710857a7a00bee402b2d8faa7c94a0f8588730b14ad0b6ec920b8100def964",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-91579f08654aafab"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-b9998388011b171c"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "b7ea7f213578f76427d0aaf9934a76b753423bd6030f2ccf0b4fe40aafc000bf",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-6e1e18a769a54488"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-2613367f4faf8829"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "d44f67f3716b755996d11981730341c2e9c7bfd979eadce5266b92f20eabf5f3",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-40f17cec5f34157e"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-d7ca8f27609fbd63"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "9245b9208ba24bf25b947188b19a082dc642f476636db9ad4246ccd54f2317bc",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-fdb9556ac79d70c5"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-402bbb7adef0eda9"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "8c6bbbf13d2d142496724c1b4c04d9bc4970a5229acfd8a6e69822f87ac521e5",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-4f350b964e052ef6"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-1b98c6102f334c96"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "ffe1b6cd225196872c801515e318e2e4c65c9ca42651f6432e4018e20b45c222",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-c4beb6f20be18f9c"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-d48125cefa3d6734"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "c5ad637758afd2bc9d585a5fe8d0cec5ceed81e032016bc6eb1c5a15a74b990a",
+      "members": [
+        {
+          "case_id": "260614",
+          "variant_id": "recipe-302cee07e9c57ada"
+        },
+        {
+          "case_id": "260619",
+          "variant_id": "recipe-74fbdf5d544a0a2d"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "edc4f8e58075ecec4b709a778d9a8066b6cadadfad29acefdc292886c7322ec9",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "baseline"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "baseline"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "b3537e058dade11862bb6096807a09ba25646560551f48c2b6cc7da9ceba2bde",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-0ac0150e9d39c30b"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-e51b97ff067a4546"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "b8b8ee61d5d39e3feaf962a5a16fe5eeeb747f4be81daa95102e3e559b58fbbf",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-bf2b38376f94bd0c"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-98c58b93eb0ad1b3"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "cef3c6d0adc44748d6e1d6190e2bae02ba38a0a57bb8d98b1aeab7c4f6d3911f",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-ef32bb57b5f163de"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-1de5d4c19a95581c"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "37577ad3bf6fccb1564008528024131b08110a1cbccb872f64711dd56e329947",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-cadb84cdd7887b66"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-59161a5022df4076"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "75c96ef9538c37884660676803fb236859008aad69bb8f4b2a8849241aecdb22",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-ba95c7e0cef6d9d8"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-fa17bf9eebc61518"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "80acc8436dd9c66ff3d4bfdb4db8260c4b6c92d584c2548cfe6f198969d3b2e9",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-cb822cc04c340d16"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-f06512e23c00acd9"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "77bb466e83af0cc476e15562348139e45dc8a4f1e2f527ae99bf5c2b87eecf12",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-aeb3034d3ddb2cdf"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-de9f7d7d2bc1f25a"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "e107598079d21c9d14efe81dec7b055c5c1f14421d9095b2fbfbea10616b57df",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-1db531eb8a157100"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-ff89d83cd942280a"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "74556bf9e032d815e12b2053d7a58505800974f90be67151b079c8786d177da9",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-5d5c8d4708b8a8c2"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-4bd16d9d44d78a93"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "1d288f3f58269f19c83b670a76fb1727b7f8c9ebfce6bd1bd9eee2c040199b09",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-f6b90fea6baa955e"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-902f8e6dc25e6ec2"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "53f0d88f5c500a99d4e9a5367e7b6ebeeb107624c8a270ac31c8be561c9a2964",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-a50e1067245c2286"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-b18a9e1361b52501"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "bee9203a4304b0486dc24087145e00d7d588ef9c62b0cea5c7d8cabde09c439f",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-eca99b342d3058d8"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-314435c6f4002220"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "6c2be35023647f794aaa1d668e89c610d8a3489fe5091a244deed88cea249b4b",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-2cb15fdaff7517d3"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-ff3131ba3a15560e"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "b42317b047a28dde62fe282192d43ec554c78df1833d61ff4502a2293cff31c8",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-3c7506c28f72c483"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-3fafb6c4d633bdac"
+        }
+      ]
+    },
+    {
+      "mask_sha256": "940d3df94fb01fae88c108d87950b2587d63602d83cc063616534e2b9d99db57",
+      "members": [
+        {
+          "case_id": "260615",
+          "variant_id": "recipe-193c9684c0e76e3a"
+        },
+        {
+          "case_id": "260620",
+          "variant_id": "recipe-c65b36bdd14b0723"
+        }
+      ]
+    }
+  ],
+  "summary_notes": [
+    "All 12 phantom ROI tube diameters increased exactly 15%; centerline nodes unchanged. Selection uses artery tissue plus the optional thoracic-aorta anatomy filter.",
+    "192 native scenarios executed: 12 baselines and 180 edited variants. Each phantom has 16 distinct masks; all active edits change voxels, both swept distance axes give strictly increasing achieved changes, and erosion guards pass.",
+    "Manually corrected internal chest fill stiffness, ineffective minimum CoA distances in 260614/260619, and nonmonotonic safeguarded CoA requests in 260617. Arch connectivity protection adds no volume floor.",
+    "Large maximum dilations include branch junctions. Native component continuity checks do not certify minimum caliber, absence of within-tree shortcuts, or complete vascular topology.",
+    "At maximum dilation in 260613/260618, three of 67,022 envelope voxels have unreliable curvature directions. The engine assigns zero directional weight and asserts no changes there; those cells are skipped, with 3,079 additions elsewhere. No direction is invented.",
+    "Partial surrounding-tissue reassignment is accepted where recorded: unresolved releases preserve their original target labels. Accepted distance is a budget, not measured vessel displacement.",
+    "260612 maximum CoA cases are severe and nearly occlusive at native resolution. They preserve connectivity but minimum caliber and clinical realism are not certified.",
+    "Repeated anatomy is retained with case provenance. 260614/260619 have identical native ACT/ATN crops; additional paired cases share aortic masks. These are not 12 independent anatomies; keep anatomy families together in later model splits.",
+    "Freeze locks reviewed inputs and native audits for reproducible paired extraction. Every scenario has been computed, but the full paired NPZ collection has not been exported and no model has been trained.",
+    "After native review, only the parameters_reviewed flag and documentation comments change. Parsed generation settings are checked unchanged; each freeze validates the existing generation fingerprint and artifact hashes."
+  ]
+}

@@ -1,0 +1,238 @@
+{
+  "schema_version": "fakect.manual-cohort-review/1",
+  "stage": "proposed corrections before native trials",
+  "evidence": [
+    "outputs/cohorts/coa/radius115/roi-review-r1/report.html",
+    "outputs/cohorts/coa/radius115/roi-review-r1/component-details.json",
+    "docs/integration/2026-09-28/radius115-internal-fill-review.json"
+  ],
+  "notes": [
+    "Initial sweep interrupted after downstream resource-limit failure; logs and partial outputs preserved.",
+    "All 12 ROIs reviewed: exact 15% diameter expansion, unchanged nodes, and native anatomy filtering. Two baseline ROI-clipped carotid fragments connect outside the ROI, so arch connectivity protection is required.",
+    "The shared native editing/preview resource limit is 3 million voxels; the actual maximum crop contains 2,145,882 voxels."
+  ],
+  "cases": [
+    {
+      "case_id": "260602",
+      "config": "configs/cohorts/coa/radius115/260602.ini",
+      "before_sha256": "1db08fa7089b0debc413ecff537fea17c38bfe27308e105e8dfca7efbeebae11",
+      "after_sha256": "19fae06f2871b421692a70faa14f5d216b2c24ecfea5c43e4969b45d97702a2d",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260611",
+      "config": "configs/cohorts/coa/radius115/260611.ini",
+      "before_sha256": "efa90f9b8becb0abfd1ae57caed221c81b71ff3cc94e81444ddc06cd70133918",
+      "after_sha256": "7c86f145f41026215295d21eb2cd87e5b6cf04d2ea38ab8198a631eac4996659",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260612",
+      "config": "configs/cohorts/coa/radius115/260612.ini",
+      "before_sha256": "9b7112c4429b28ee926a883bee8d35e3a5345644a8257aba5db5feb9b620a6ff",
+      "after_sha256": "3088a220dfc3f68294c07d3e745b288f6f35411416d30922f0b2bd5dee4b3875",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260613",
+      "config": "configs/cohorts/coa/radius115/260613.ini",
+      "before_sha256": "0490e6de6fe3dbcc1a2196f68a4f25a0eb1f720b46326bad148435974043c9e4",
+      "after_sha256": "840c3a32f82ce16c2061b2ace6b02e937223647588946d8aaa1ba14c7796af9d",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260614",
+      "config": "configs/cohorts/coa/radius115/260614.ini",
+      "before_sha256": "a78a499c18fac13b278f7ca87812e0cf315c6bb7828a2e48f1dfa1613e3569c1",
+      "after_sha256": "b43aa0afa0f2fc1ce2730ac54661981c6bc82dd66154baa0354f4906f5c89192",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260615",
+      "config": "configs/cohorts/coa/radius115/260615.ini",
+      "before_sha256": "6c457c094ea814ff84258941d86caf05fd4412ae221730fb77e2a5e2307b075b",
+      "after_sha256": "5935e56419058a22e04edb289032e7a2030556f0a16133ba5c7c72264a24cf3d",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260616",
+      "config": "configs/cohorts/coa/radius115/260616.ini",
+      "before_sha256": "9649016f9b4b004174e9628579e6eaa4ac8dcc2f031d8dc07a5752b6204c250f",
+      "after_sha256": "96ca7ef0742e3d6a946b92d7bb476baf80df22737282ab4dbd231bec0fdd42c8",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260617",
+      "config": "configs/cohorts/coa/radius115/260617.ini",
+      "before_sha256": "5bae50f5b1b0e24101e6e2816b801ba677a5acbdd96bbf73e908dc2cc1823ace",
+      "after_sha256": "a457a65387be186a795443447d1070f56796943fb04c8861df3b934bbf4f4878",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260618",
+      "config": "configs/cohorts/coa/radius115/260618.ini",
+      "before_sha256": "dfc37f827a7f78106260459dc0612166b402e75d5c27a66ed5a9750c5345ebb5",
+      "after_sha256": "58c0983703f301f30e8f452a77d22a6d3755fb41b85bfaca83d861d819f6d3b6",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260619",
+      "config": "configs/cohorts/coa/radius115/260619.ini",
+      "before_sha256": "b2eb1fa9cdc353dba1b73f8e30882a83f3721e721166b6f7ebff9ac1c48dc7e1",
+      "after_sha256": "8f06654ab318620e5dd97e68c8df00c1f56752f7ae9edbfd7cd2205c1e93bb05",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260620",
+      "config": "configs/cohorts/coa/radius115/260620.ini",
+      "before_sha256": "51cca473dba9ccdf36edcdedcd609e7c355e4552480f5e199e6a7d7e03cf9e29",
+      "after_sha256": "4815d01236e7d03f5f7bb521920dd1b1ec0813a17531bc87002656d1fad529de",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    },
+    {
+      "case_id": "260621",
+      "config": "configs/cohorts/coa/radius115/260621.ini",
+      "before_sha256": "74604e86205bb1ed5155c17717950971f60aa1dc6a861ad2f1b79be5345bf9c7",
+      "after_sha256": "1ff320a0376a03c0457f3b9fcf5677297d431b9575151bc19618643178e725f3",
+      "changes": {
+        "stiffness.labels.4": 0.05,
+        "edit.arch_inner_narrow.preserve_connectivity": true,
+        "edit.arch_inner_narrow.backoff_factor": 0.5,
+        "edit.arch_inner_narrow.max_backoff_steps": 8,
+        "roi.coordinate_reviewed": true,
+        "output_revision": "r2",
+        "train.parameters_reviewed": false
+      }
+    }
+  ],
+  "subsequent_corrections": [
+    {
+      "case_id": "260614",
+      "before_sha256": "b43aa0afa0f2fc1ce2730ac54661981c6bc82dd66154baa0354f4906f5c89192",
+      "after_sha256": "3e6fd11d92cc868719a91ac7d2840e9991e9c496447a3f191d629af7a4e155dd",
+      "change": "sweep.coa_narrow.distance_mm minimum 0.571 -> 0.8 mm",
+      "reason": "Both native minimum trials removed zero CoA voxels; resolution 0.6 mm and artery resistance suppress the subvoxel request.",
+      "evidence": "outputs/cohorts/coa/radius115/260614/trial-r2/trial.json"
+    },
+    {
+      "case_id": "260619",
+      "before_sha256": "8f06654ab318620e5dd97e68c8df00c1f56752f7ae9edbfd7cd2205c1e93bb05",
+      "after_sha256": "11afe26d7d13b8c2b0b2269e8956d67a0f783b88d53f5ad94c284a6ba2210a5b",
+      "change": "sweep.coa_narrow.distance_mm minimum 0.571 -> 0.8 mm",
+      "reason": "Both native minimum trials removed zero CoA voxels; resolution 0.6 mm and artery resistance suppress the subvoxel request.",
+      "evidence": "outputs/cohorts/coa/radius115/260619/trial-r2/trial.json"
+    },
+    {
+      "case_id": "260617",
+      "before_sha256": "a457a65387be186a795443447d1070f56796943fb04c8861df3b934bbf4f4878",
+      "after_sha256": "cf8c259cf776e09dd1e659c26eb1ef65d6a1fd8fa8d2007efc05157888afa030",
+      "change": {
+        "sweep.coa_narrow.distance_mm": [
+          0.592,
+          0.8,
+          1.0,
+          1.2,
+          1.4805
+        ],
+        "edit.coa_narrow.distance_mm": 1.4805,
+        "output_revision": "r4"
+      },
+      "reason": "Maximum trial at 2.961 mm split an affected native component; safeguard accepted 1.4805 mm. Cap requests at that visibly narrowed, connected endpoint and require full-grid distinct monotonic outcomes.",
+      "evidence": "outputs/cohorts/coa/radius115/260617/trial-r2/trial.json",
+      "superseded_jobs": [
+        "6855124_7",
+        "6855162",
+        "6855164"
+      ],
+      "job_note": "Original sweep canceled for range correction. Two replacement r3 jobs were canceled before correction after an exact-text assertion rejected an incorrectly transcribed prior value; their diagnostics are preserved. Fresh r4 jobs use the corrected input."
+    }
+  ]
+}

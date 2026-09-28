@@ -1,0 +1,601 @@
+{
+  "schema_version": "fakect.direction-supplement-review/1",
+  "cases": [
+    {
+      "case_id": "260613",
+      "trial_sha256": "e055bcee20601369c21c5b6c63128ddca6be0ca35b9746c5770437fd03ec4e3b",
+      "input_config_sha256": "840c3a32f82ce16c2061b2ace6b02e937223647588946d8aaa1ba14c7796af9d",
+      "payload_sha256": "0ab693c706b3704ca81c96114c150de293df807bc9b13337c5dfdaa9100382f9",
+      "direction_summary": {
+        "direction": "outer",
+        "angular_width_deg": 180.0,
+        "settings": {
+          "smoothing_mm": 1.0,
+          "sample_step_mm": 1.0,
+          "min_curvature_per_mm": 0.002
+        },
+        "frame_metadata": {
+          "schema_version": "fakect-centerline-frame-1",
+          "input_node_count": 17,
+          "sample_count": 94,
+          "spline_degree": 3,
+          "smoothing_mm": 1.0,
+          "smoothing_residual_budget_mm2": 17.0,
+          "fit_residual_sum_mm2": 17.00020437457382,
+          "fit_rms_displacement_mm": 1.0000060109988085,
+          "fit_max_displacement_mm": 1.7432840320664624,
+          "parent_total_length_mm": 94.10264835429669,
+          "sampled_spline_length_mm": 92.44226412816552,
+          "sample_step_mm": 1.0,
+          "actual_sample_step_mm": 0.9940028400878013,
+          "arc_quadrature_samples": 1040,
+          "min_curvature_per_mm": 0.002,
+          "numerical_curvature_floor_per_mm": 1.0626693483003769e-12,
+          "stationary_speed_floor_mm_per_parent_fraction": 1.0090684201159121e-10,
+          "reliable_count": 92,
+          "reliable_fraction": 0.9787234042553191,
+          "low_curvature_count": 0,
+          "endpoint_count": 2,
+          "degenerate_tangent_count": 0,
+          "inflection_candidate_count": 0,
+          "ambiguous_transport_count": 0,
+          "parent_node_fraction": [
+            0.0,
+            0.058687832969383874,
+            0.12441030249161493,
+            0.19368786820536443,
+            0.2533300374568598,
+            0.3181876999626799,
+            0.381056066438675,
+            0.44677853596090605,
+            0.5129291694219051,
+            0.5762450032279198,
+            0.6339627225544887,
+            0.7030362301940132,
+            0.7636177039909235,
+            0.8291250421028112,
+            0.8984026078165607,
+            0.9676801735303102,
+            1.0
+          ],
+          "spacing_ijk_mm": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "original_nodes_ijk": [
+            [
+              323.0,
+              306.0,
+              1121.0
+            ],
+            [
+              314.0,
+              311.0,
+              1125.0
+            ],
+            [
+              311.0,
+              311.0,
+              1137.0
+            ],
+            [
+              311.0,
+              312.0,
+              1150.0
+            ],
+            [
+              312.0,
+              317.0,
+              1160.0
+            ],
+            [
+              320.0,
+              319.0,
+              1169.0
+            ],
+            [
+              330.0,
+              321.0,
+              1175.0
+            ],
+            [
+              340.0,
+              328.0,
+              1173.0
+            ],
+            [
+              347.0,
+              337.0,
+              1168.0
+            ],
+            [
+              352.0,
+              346.0,
+              1162.0
+            ],
+            [
+              353.0,
+              355.0,
+              1156.0
+            ],
+            [
+              353.0,
+              360.0,
+              1144.0
+            ],
+            [
+              353.0,
+              363.0,
+              1133.0
+            ],
+            [
+              351.0,
+              365.0,
+              1121.0
+            ],
+            [
+              350.0,
+              365.0,
+              1108.0
+            ],
+            [
+              349.0,
+              365.0,
+              1095.0
+            ],
+            [
+              348.0,
+              365.0,
+              1089.0
+            ]
+          ],
+          "fitted_controls_xyz_mm": [
+            [
+              161.46313093856708,
+              153.19393279845755,
+              560.2491299605176
+            ],
+            [
+              157.33067932105556,
+              155.10828046331022,
+              562.8447866459348
+            ],
+            [
+              155.01647409974683,
+              155.94491325643037,
+              568.3139292023932
+            ],
+            [
+              155.00980121334456,
+              156.3247896973523,
+              575.1925510246178
+            ],
+            [
+              156.8276142477426,
+              157.05964790309346,
+              580.5286584060888
+            ],
+            [
+              160.4228215095356,
+              158.9386042901284,
+              584.4502191632774
+            ],
+            [
+              164.81587452609264,
+              161.69441152614297,
+              586.2909203332399
+            ],
+            [
+              169.49961712060855,
+              165.2188894157442,
+              586.3316144067791
+            ],
+            [
+              173.40974027154306,
+              169.0773656257597,
+              584.6152657158832
+            ],
+            [
+              175.73757356127126,
+              172.75042534017288,
+              581.5162175520622
+            ],
+            [
+              176.7517945659724,
+              175.8956868836221,
+              577.6742333971447
+            ],
+            [
+              176.9227820271906,
+              179.19258925341018,
+              572.1092591603258
+            ],
+            [
+              176.44340129083696,
+              181.4772065751209,
+              566.6332076640895
+            ],
+            [
+              175.59827530359698,
+              183.10346006395912,
+              560.3839919880967
+            ],
+            [
+              174.71425062099837,
+              183.63605868407413,
+              553.7416876178495
+            ],
+            [
+              174.24734385551287,
+              182.6980415880763,
+              547.4271734234756
+            ],
+            [
+              174.28882552638404,
+              181.68569663514518,
+              544.6971543382242
+            ]
+          ],
+          "parameterization": "Spline parameter u is original polyline physical arc fraction; arc-length resampling does not redefine u",
+          "smoothing_semantics": "RMS 3D residual budget at supplied controls; FITPACK s=n*smoothing_mm^2; no per-point displacement guarantee",
+          "sampling_semantics": "Uniform fitted-spline arc distance from bounded dense trapezoidal speed quadrature and monotone linear inversion",
+          "frame_semantics": "T follows supplied order; N follows principal curvature toward inner bend; B=T cross N; outer=-N",
+          "reliability_semantics": "Inner/outer valid only where reliable: sufficient curvature and no endpoint, stationary tangent, or sampled normal-turn ambiguity",
+          "transport_semantics": "Minimum-rotation reference normals are display-only in low curvature; never substitute them for valid inner/outer directions",
+          "stationary_tangent_semantics": "Nearest valid fitted tangent is display-only fallback; if all samples are stationary, original parent-segment direction is used",
+          "inflection_semantics": "Opposing transported principal normals flag an inflection or unresolved normal-turn candidate; true Frenet normals are not flipped",
+          "endpoint_policy": "First and last fitted samples excluded from reliable inner/outer semantics",
+          "limits": {
+            "input_nodes": 512,
+            "samples": 4096,
+            "arc_grid": 65537
+          },
+          "references": [
+            "https://docs.scipy.org/doc/scipy-1.13.1/reference/generated/scipy.interpolate.splprep.html",
+            "https://docs.scipy.org/doc/scipy-1.13.1/reference/generated/scipy.interpolate.BSpline.html",
+            "https://www.cis.upenn.edu/~cis6100/gma-v2-chap19.pdf"
+          ],
+          "source_arrays_modified": false
+        },
+        "roi_voxels": 67022,
+        "unreliable_roi_voxels": 3,
+        "axis_undefined_roi_voxels": 0,
+        "angular_supported_roi_voxels": 41209,
+        "weight_range_in_roi": [
+          0.0,
+          0.9999999989631532
+        ],
+        "weight_semantics": "0.5*(1+cos(pi*angle/half_width)) inside the angular sector, zero elsewhere; multiplied by longitudinal edit distance before tissue resistance",
+        "direction_semantics": "Inner is principal curvature normal N; outer is -N; binormal B=T cross N",
+        "mapping": "Original parent closest-arc fraction maps to bracketing arc-resampled spline frames; reliable vectors interpolated and re-orthogonalized",
+        "undefined_policy": "Skip low-curvature, endpoint, opposing-normal interpolation intervals and points on the transverse axis",
+        "roi_geometry_changed": false
+      },
+      "unreliable_global_ijk": [
+        [
+          327,
+          303,
+          1138
+        ],
+        [
+          328,
+          305,
+          1138
+        ],
+        [
+          329,
+          307,
+          1138
+        ]
+      ],
+      "unreliable_labels": [
+        2897.0,
+        2897.0,
+        2897.0
+      ],
+      "unreliable_weight_nonzero_count": 0,
+      "unreliable_label_changed_final_count": 0,
+      "unreliable_attenuation_changed_final_count": 0
+    },
+    {
+      "case_id": "260618",
+      "trial_sha256": "82e457a286da29080fdeb137bc09fe4f65efb81212e60065a819d4cdd59e51cc",
+      "input_config_sha256": "58c0983703f301f30e8f452a77d22a6d3755fb41b85bfaca83d861d819f6d3b6",
+      "payload_sha256": "51187a815df0a259eb03f1b59ad39085a21cacabc29f049d1227696393e1f9a2",
+      "direction_summary": {
+        "direction": "outer",
+        "angular_width_deg": 180.0,
+        "settings": {
+          "smoothing_mm": 1.0,
+          "sample_step_mm": 1.0,
+          "min_curvature_per_mm": 0.002
+        },
+        "frame_metadata": {
+          "schema_version": "fakect-centerline-frame-1",
+          "input_node_count": 17,
+          "sample_count": 94,
+          "spline_degree": 3,
+          "smoothing_mm": 1.0,
+          "smoothing_residual_budget_mm2": 17.0,
+          "fit_residual_sum_mm2": 17.00020437457382,
+          "fit_rms_displacement_mm": 1.0000060109988085,
+          "fit_max_displacement_mm": 1.7432840320664624,
+          "parent_total_length_mm": 94.10264835429669,
+          "sampled_spline_length_mm": 92.44226412816552,
+          "sample_step_mm": 1.0,
+          "actual_sample_step_mm": 0.9940028400878013,
+          "arc_quadrature_samples": 1040,
+          "min_curvature_per_mm": 0.002,
+          "numerical_curvature_floor_per_mm": 1.0626693483003769e-12,
+          "stationary_speed_floor_mm_per_parent_fraction": 1.0090684201159121e-10,
+          "reliable_count": 92,
+          "reliable_fraction": 0.9787234042553191,
+          "low_curvature_count": 0,
+          "endpoint_count": 2,
+          "degenerate_tangent_count": 0,
+          "inflection_candidate_count": 0,
+          "ambiguous_transport_count": 0,
+          "parent_node_fraction": [
+            0.0,
+            0.058687832969383874,
+            0.12441030249161493,
+            0.19368786820536443,
+            0.2533300374568598,
+            0.3181876999626799,
+            0.381056066438675,
+            0.44677853596090605,
+            0.5129291694219051,
+            0.5762450032279198,
+            0.6339627225544887,
+            0.7030362301940132,
+            0.7636177039909235,
+            0.8291250421028112,
+            0.8984026078165607,
+            0.9676801735303102,
+            1.0
+          ],
+          "spacing_ijk_mm": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "original_nodes_ijk": [
+            [
+              323.0,
+              306.0,
+              1121.0
+            ],
+            [
+              314.0,
+              311.0,
+              1125.0
+            ],
+            [
+              311.0,
+              311.0,
+              1137.0
+            ],
+            [
+              311.0,
+              312.0,
+              1150.0
+            ],
+            [
+              312.0,
+              317.0,
+              1160.0
+            ],
+            [
+              320.0,
+              319.0,
+              1169.0
+            ],
+            [
+              330.0,
+              321.0,
+              1175.0
+            ],
+            [
+              340.0,
+              328.0,
+              1173.0
+            ],
+            [
+              347.0,
+              337.0,
+              1168.0
+            ],
+            [
+              352.0,
+              346.0,
+              1162.0
+            ],
+            [
+              353.0,
+              355.0,
+              1156.0
+            ],
+            [
+              353.0,
+              360.0,
+              1144.0
+            ],
+            [
+              353.0,
+              363.0,
+              1133.0
+            ],
+            [
+              351.0,
+              365.0,
+              1121.0
+            ],
+            [
+              350.0,
+              365.0,
+              1108.0
+            ],
+            [
+              349.0,
+              365.0,
+              1095.0
+            ],
+            [
+              348.0,
+              365.0,
+              1089.0
+            ]
+          ],
+          "fitted_controls_xyz_mm": [
+            [
+              161.46313093856708,
+              153.19393279845755,
+              560.2491299605176
+            ],
+            [
+              157.33067932105556,
+              155.10828046331022,
+              562.8447866459348
+            ],
+            [
+              155.01647409974683,
+              155.94491325643037,
+              568.3139292023932
+            ],
+            [
+              155.00980121334456,
+              156.3247896973523,
+              575.1925510246178
+            ],
+            [
+              156.8276142477426,
+              157.05964790309346,
+              580.5286584060888
+            ],
+            [
+              160.4228215095356,
+              158.9386042901284,
+              584.4502191632774
+            ],
+            [
+              164.81587452609264,
+              161.69441152614297,
+              586.2909203332399
+            ],
+            [
+              169.49961712060855,
+              165.2188894157442,
+              586.3316144067791
+            ],
+            [
+              173.40974027154306,
+              169.0773656257597,
+              584.6152657158832
+            ],
+            [
+              175.73757356127126,
+              172.75042534017288,
+              581.5162175520622
+            ],
+            [
+              176.7517945659724,
+              175.8956868836221,
+              577.6742333971447
+            ],
+            [
+              176.9227820271906,
+              179.19258925341018,
+              572.1092591603258
+            ],
+            [
+              176.44340129083696,
+              181.4772065751209,
+              566.6332076640895
+            ],
+            [
+              175.59827530359698,
+              183.10346006395912,
+              560.3839919880967
+            ],
+            [
+              174.71425062099837,
+              183.63605868407413,
+              553.7416876178495
+            ],
+            [
+              174.24734385551287,
+              182.6980415880763,
+              547.4271734234756
+            ],
+            [
+              174.28882552638404,
+              181.68569663514518,
+              544.6971543382242
+            ]
+          ],
+          "parameterization": "Spline parameter u is original polyline physical arc fraction; arc-length resampling does not redefine u",
+          "smoothing_semantics": "RMS 3D residual budget at supplied controls; FITPACK s=n*smoothing_mm^2; no per-point displacement guarantee",
+          "sampling_semantics": "Uniform fitted-spline arc distance from bounded dense trapezoidal speed quadrature and monotone linear inversion",
+          "frame_semantics": "T follows supplied order; N follows principal curvature toward inner bend; B=T cross N; outer=-N",
+          "reliability_semantics": "Inner/outer valid only where reliable: sufficient curvature and no endpoint, stationary tangent, or sampled normal-turn ambiguity",
+          "transport_semantics": "Minimum-rotation reference normals are display-only in low curvature; never substitute them for valid inner/outer directions",
+          "stationary_tangent_semantics": "Nearest valid fitted tangent is display-only fallback; if all samples are stationary, original parent-segment direction is used",
+          "inflection_semantics": "Opposing transported principal normals flag an inflection or unresolved normal-turn candidate; true Frenet normals are not flipped",
+          "endpoint_policy": "First and last fitted samples excluded from reliable inner/outer semantics",
+          "limits": {
+            "input_nodes": 512,
+            "samples": 4096,
+            "arc_grid": 65537
+          },
+          "references": [
+            "https://docs.scipy.org/doc/scipy-1.13.1/reference/generated/scipy.interpolate.splprep.html",
+            "https://docs.scipy.org/doc/scipy-1.13.1/reference/generated/scipy.interpolate.BSpline.html",
+            "https://www.cis.upenn.edu/~cis6100/gma-v2-chap19.pdf"
+          ],
+          "source_arrays_modified": false
+        },
+        "roi_voxels": 67022,
+        "unreliable_roi_voxels": 3,
+        "axis_undefined_roi_voxels": 0,
+        "angular_supported_roi_voxels": 41209,
+        "weight_range_in_roi": [
+          0.0,
+          0.9999999989631532
+        ],
+        "weight_semantics": "0.5*(1+cos(pi*angle/half_width)) inside the angular sector, zero elsewhere; multiplied by longitudinal edit distance before tissue resistance",
+        "direction_semantics": "Inner is principal curvature normal N; outer is -N; binormal B=T cross N",
+        "mapping": "Original parent closest-arc fraction maps to bracketing arc-resampled spline frames; reliable vectors interpolated and re-orthogonalized",
+        "undefined_policy": "Skip low-curvature, endpoint, opposing-normal interpolation intervals and points on the transverse axis",
+        "roi_geometry_changed": false
+      },
+      "unreliable_global_ijk": [
+        [
+          327,
+          303,
+          1138
+        ],
+        [
+          328,
+          305,
+          1138
+        ],
+        [
+          329,
+          307,
+          1138
+        ]
+      ],
+      "unreliable_labels": [
+        2897.0,
+        2897.0,
+        2897.0
+      ],
+      "unreliable_weight_nonzero_count": 0,
+      "unreliable_label_changed_final_count": 0,
+      "unreliable_attenuation_changed_final_count": 0
+    }
+  ],
+  "freeze_approved": false,
+  "scope": "Reconstruct first-step expanded selection and directional weights from immutable maximum trial inputs, and compare unreliable cells against final native changes; successful per-pass runtime invariant independently rejects any edit to unreliable cells."
+}

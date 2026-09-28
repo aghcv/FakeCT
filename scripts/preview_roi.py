@@ -177,7 +177,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                   ROOT/'src/fakect_volume_preview.py', ROOT/'src/fakect_tissues.py', ROOT/'src/fakect_preview_report.py',
                   ROOT/'src/fakect_morphology.py', ROOT/'src/fakect_reassignment.py',
                   ROOT/'src/fakect_edit_preview.py', ROOT/'src/fakect_arc_profile.py', ROOT/'src/fakect_global_preview.py',
-                  ROOT/'src/fakect_surface_overlay.py']
+                  ROOT/'src/fakect_surface_overlay.py', ROOT/'src/fakect_limits.py']
     code_files += [ROOT/'src/fakect_direction.py', ROOT/'src/fakect_centerline_frame.py', ROOT/'src/fakect_released.py',
                    ROOT/'src/fakect_erosion_guard.py']
     code_files += [Path(p) for p in extra_code_files]

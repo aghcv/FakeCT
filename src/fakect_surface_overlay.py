@@ -17,12 +17,13 @@ import os
 import numpy as np
 
 from fakect_volume_preview import occupancy_grid, _surface, COLORS as TISSUE_COLORS
+from fakect_limits import MAX_NATIVE_EDIT_VOXELS
 
 
 COLORS = {'before': '#0077b6', 'after': '#e54b1b'}
 OPACITY_PRESETS = (.15, .45, .8)
 INITIAL_OPACITY = {'before': .15, 'after': .45}
-MAX_SOURCE_VOXELS = 2_000_000
+MAX_SOURCE_VOXELS = MAX_NATIVE_EDIT_VOXELS
 MAX_SURFACE_TRIANGLES = 600_000
 MAX_CONTEXT_TRIANGLES = 600_000
 TARGET_CONTEXT_TRIANGLES = 60_000
@@ -241,8 +242,8 @@ def render_surface_overlay(before_mask, after_mask, *, crop_origin_ijk, spacing_
 
     ``volume_stride`` records the ordinary volume preview setting for provenance;
     this comparison always uses native stride 1 to preserve small edits. The
-    bounded crop must contain at most two million voxels, and the pair of meshes
-    at most 600,000 triangles. A smaller crop is required if either limit is hit.
+    crop must fit the shared native edit budget, and the pair of meshes at most
+    600,000 triangles. A smaller crop is required if either limit is hit.
     Optional final tissue contexts have a separate 600,000-triangle budget and
     individual visibility/opacity controls. They use native meshes where possible,
     then bounded occupancy pooling, except category 254 which remains native.
@@ -255,7 +256,7 @@ def render_surface_overlay(before_mask, after_mask, *, crop_origin_ijk, spacing_
         raise ValueError('Before and after masks must have Boolean dtype')
     final_tissues, category_names = _context_inputs(before_tissue_labels, after_tissue_labels, catalog, before.shape)
     if before.size > MAX_SOURCE_VOXELS:
-        raise ValueError('Surface overlay is limited to 2,000,000 native voxels; use a smaller crop')
+        raise ValueError(f'Surface overlay is limited to {MAX_SOURCE_VOXELS:,} native voxels; use a smaller crop')
     if isinstance(volume_stride, bool) or not isinstance(volume_stride, (int, np.integer)) or volume_stride < 1:
         raise ValueError('volume_stride must be a positive integer')
     origin, spacing = np.asarray(crop_origin_ijk, dtype=float), np.asarray(spacing_ijk_mm, dtype=float)

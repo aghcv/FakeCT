@@ -1,0 +1,2799 @@
+{
+  "schema_version": "fakect.internal-fill-spatial-review/2",
+  "project": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/project-radius115.json",
+  "generated_at_utc": "2026-09-28T16:43:20.859481+00:00",
+  "label_id": 4,
+  "margin_mm": 3.0,
+  "complete": true,
+  "cases": [
+    {
+      "case_id": "260602",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260602.ini",
+      "config_sha256": "19fae06f2871b421692a70faa14f5d216b2c24ecfea5c43e4969b45d97702a2d",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260602/260602_act_1.bin",
+          "bytes": 4185000000,
+          "mtime_ns": 1786328260487208000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260602/260602_atn_1.bin",
+          "bytes": 4185000000,
+          "mtime_ns": 1786328328749713000
+        }
+      },
+      "act_crop_sha256": "3d9d0cb837aa64c2463d0eb88a19cd75cb29bf3b70d829bb5a6361c479bb8d05",
+      "atn_crop_sha256": "57f95b217b996a75296f79045a8182968104693b3e6796869a4b382d7e4904cc",
+      "crop_low_ijk": [
+        338,
+        325,
+        1281
+      ],
+      "crop_high_ijk_exclusive": [
+        429,
+        455,
+        1453
+      ],
+      "spacing_ijk_mm": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "roi_nodes_ijk": [
+        [
+          387.0,
+          360.0,
+          1352.0
+        ],
+        [
+          378.0,
+          365.0,
+          1363.0
+        ],
+        [
+          373.0,
+          362.0,
+          1374.0
+        ],
+        [
+          373.0,
+          363.0,
+          1389.0
+        ],
+        [
+          376.0,
+          366.0,
+          1409.0
+        ],
+        [
+          385.0,
+          375.0,
+          1415.0
+        ],
+        [
+          392.0,
+          386.0,
+          1417.0
+        ],
+        [
+          393.0,
+          398.0,
+          1409.0
+        ],
+        [
+          390.0,
+          408.0,
+          1394.0
+        ],
+        [
+          387.0,
+          414.0,
+          1383.0
+        ],
+        [
+          387.0,
+          419.0,
+          1370.0
+        ],
+        [
+          387.0,
+          419.0,
+          1356.0
+        ],
+        [
+          389.0,
+          419.0,
+          1341.0
+        ],
+        [
+          391.0,
+          416.0,
+          1316.0
+        ]
+      ],
+      "roi_radii_mm": [
+        11.5,
+        11.5,
+        11.5,
+        13.8,
+        12.65,
+        11.5,
+        11.5,
+        14.95,
+        13.8,
+        12.65,
+        12.65,
+        12.65,
+        12.65,
+        12.65
+      ],
+      "conservative_dilation_budget_mm": 9.0,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 9.0,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 42049,
+        "center_clearance_mm_min": 14.0,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          14.0,
+          27.0,
+          32.0,
+          37.0,
+          46.0
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 12.267949192431123,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 3498,
+        "center_clearance_mm_min": 25.0,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          25.0,
+          32.0,
+          36.0,
+          39.0,
+          46.0
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 23.26794919243112,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260611",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260611.ini",
+      "config_sha256": "7c86f145f41026215295d21eb2cd87e5b6cf04d2ea38ab8198a631eac4996659",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260611/260611_act_1.bin",
+          "bytes": 3275568000,
+          "mtime_ns": 1786398886837978000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260611/260611_atn_1.bin",
+          "bytes": 3275568000,
+          "mtime_ns": 1786398945847371000
+        }
+      },
+      "act_crop_sha256": "6ee856e06e4b7a9bfe96e8be028b198e5655f4374767f94a06ed938ed3d83a0a",
+      "atn_crop_sha256": "669eddb0e2175d1685baaa39501524b8c820655138464dcc7dfcdd5ecb645837",
+      "crop_low_ijk": [
+        307,
+        293,
+        1178
+      ],
+      "crop_high_ijk_exclusive": [
+        397,
+        420,
+        1339
+      ],
+      "spacing_ijk_mm": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "roi_nodes_ijk": [
+        [
+          354.0,
+          328.0,
+          1246.0
+        ],
+        [
+          347.0,
+          331.0,
+          1257.0
+        ],
+        [
+          342.0,
+          329.0,
+          1268.0
+        ],
+        [
+          342.0,
+          330.0,
+          1281.0
+        ],
+        [
+          345.0,
+          333.0,
+          1294.0
+        ],
+        [
+          353.0,
+          341.0,
+          1301.0
+        ],
+        [
+          361.0,
+          350.0,
+          1303.0
+        ],
+        [
+          361.0,
+          362.0,
+          1298.0
+        ],
+        [
+          360.0,
+          371.0,
+          1288.0
+        ],
+        [
+          357.0,
+          377.0,
+          1278.0
+        ],
+        [
+          356.0,
+          382.0,
+          1266.0
+        ],
+        [
+          356.0,
+          384.0,
+          1253.0
+        ],
+        [
+          357.0,
+          384.0,
+          1240.0
+        ],
+        [
+          358.0,
+          383.0,
+          1227.0
+        ],
+        [
+          359.0,
+          381.0,
+          1214.0
+        ],
+        [
+          359.0,
+          381.0,
+          1213.0
+        ]
+      ],
+      "roi_radii_mm": [
+        11.73,
+        12.075,
+        12.305,
+        12.765,
+        11.27,
+        10.81,
+        10.81,
+        11.73,
+        11.385,
+        10.81,
+        10.81,
+        10.81,
+        10.81,
+        10.925,
+        10.925,
+        11.04
+      ],
+      "conservative_dilation_budget_mm": 8.374,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 8.374,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 35321,
+        "center_clearance_mm_min": 16.0,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          16.0,
+          28.0,
+          32.0,
+          37.0,
+          45.0
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 14.267949192431123,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 3079,
+        "center_clearance_mm_min": 25.0,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          25.0,
+          31.0,
+          34.0,
+          38.0,
+          45.0
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 23.26794919243112,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260612",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260612.ini",
+      "config_sha256": "3088a220dfc3f68294c07d3e745b288f6f35411416d30922f0b2bd5dee4b3875",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260612/260612_act_1.bin",
+          "bytes": 1718729600,
+          "mtime_ns": 1785637615126601000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260612/260612_atn_1.bin",
+          "bytes": 1718729600,
+          "mtime_ns": 1785637646074168000
+        }
+      },
+      "act_crop_sha256": "9d4b54e93447d83deb03a2ec37e36b39db51ec79473466279ee23d7d36a4e3fb",
+      "atn_crop_sha256": "5f60b7e6097d8ada2ee63acaf07c93879c712335f3ecde94d360e53889f907b9",
+      "crop_low_ijk": [
+        236,
+        202,
+        851
+      ],
+      "crop_high_ijk_exclusive": [
+        337,
+        339,
+        992
+      ],
+      "spacing_ijk_mm": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "roi_nodes_ijk": [
+        [
+          281.0,
+          237.0,
+          913.0
+        ],
+        [
+          273.0,
+          240.0,
+          918.0
+        ],
+        [
+          271.0,
+          240.0,
+          929.0
+        ],
+        [
+          272.0,
+          240.0,
+          939.0
+        ],
+        [
+          277.0,
+          240.0,
+          948.0
+        ],
+        [
+          286.0,
+          242.0,
+          953.0
+        ],
+        [
+          293.0,
+          249.0,
+          956.0
+        ],
+        [
+          297.0,
+          259.0,
+          954.0
+        ],
+        [
+          298.0,
+          269.0,
+          954.0
+        ],
+        [
+          301.0,
+          277.0,
+          949.0
+        ],
+        [
+          301.0,
+          285.0,
+          941.0
+        ],
+        [
+          300.0,
+          290.0,
+          933.0
+        ],
+        [
+          299.0,
+          294.0,
+          924.0
+        ],
+        [
+          297.0,
+          298.0,
+          915.0
+        ],
+        [
+          296.0,
+          301.0,
+          905.0
+        ],
+        [
+          295.0,
+          303.0,
+          896.0
+        ],
+        [
+          295.0,
+          303.0,
+          886.0
+        ]
+      ],
+      "roi_radii_mm": [
+        4.14,
+        4.14,
+        4.715,
+        4.715,
+        4.37,
+        3.45,
+        3.45,
+        3.45,
+        4.14,
+        4.6,
+        4.485,
+        4.14,
+        3.91,
+        4.025,
+        3.91,
+        3.91,
+        4.025
+      ],
+      "conservative_dilation_budget_mm": 2.665,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 2.665,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 31364,
+        "center_clearance_mm_min": 7.6000000000000005,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          7.6000000000000005,
+          12.0,
+          14.4,
+          16.8,
+          20.400000000000002
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 6.90717967697245,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 1999,
+        "center_clearance_mm_min": 11.200000000000001,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          11.200000000000001,
+          13.600000000000001,
+          15.200000000000001,
+          16.8,
+          18.400000000000002
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 10.50717967697245,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260613",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260613.ini",
+      "config_sha256": "840c3a32f82ce16c2061b2ace6b02e937223647588946d8aaa1ba14c7796af9d",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260613/260613_act_1.bin",
+          "bytes": 2831617440,
+          "mtime_ns": 1785637689740962000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260613/260613_atn_1.bin",
+          "bytes": 2831617440,
+          "mtime_ns": 1785637740795822000
+        }
+      },
+      "act_crop_sha256": "36b3fb07a3eb58529b57ef962b9573b2358902956a9c94c078c813d40cea3bcf",
+      "atn_crop_sha256": "a6f9f0518bd8c4af8c22e7367b859eb608286e74443354d658973e0c87b20f34",
+      "crop_low_ijk": [
+        279,
+        274,
+        1057
+      ],
+      "crop_high_ijk_exclusive": [
+        386,
+        398,
+        1208
+      ],
+      "spacing_ijk_mm": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "roi_nodes_ijk": [
+        [
+          323.0,
+          306.0,
+          1121.0
+        ],
+        [
+          314.0,
+          311.0,
+          1125.0
+        ],
+        [
+          311.0,
+          311.0,
+          1137.0
+        ],
+        [
+          311.0,
+          312.0,
+          1150.0
+        ],
+        [
+          312.0,
+          317.0,
+          1160.0
+        ],
+        [
+          320.0,
+          319.0,
+          1169.0
+        ],
+        [
+          330.0,
+          321.0,
+          1175.0
+        ],
+        [
+          340.0,
+          328.0,
+          1173.0
+        ],
+        [
+          347.0,
+          337.0,
+          1168.0
+        ],
+        [
+          352.0,
+          346.0,
+          1162.0
+        ],
+        [
+          353.0,
+          355.0,
+          1156.0
+        ],
+        [
+          353.0,
+          360.0,
+          1144.0
+        ],
+        [
+          353.0,
+          363.0,
+          1133.0
+        ],
+        [
+          351.0,
+          365.0,
+          1121.0
+        ],
+        [
+          350.0,
+          365.0,
+          1108.0
+        ],
+        [
+          349.0,
+          365.0,
+          1095.0
+        ],
+        [
+          348.0,
+          365.0,
+          1089.0
+        ]
+      ],
+      "roi_radii_mm": [
+        5.29,
+        6.555,
+        7.36,
+        6.325,
+        6.555,
+        5.98,
+        5.98,
+        5.06,
+        5.06,
+        5.06,
+        5.98,
+        5.635,
+        5.635,
+        5.175,
+        5.06,
+        5.175,
+        5.175
+      ],
+      "conservative_dilation_budget_mm": 3.362,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 3.362,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 35174,
+        "center_clearance_mm_min": 6.5,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          6.5,
+          12.5,
+          15.5,
+          18.0,
+          25.0
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 5.633974596215562,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 2108,
+        "center_clearance_mm_min": 10.5,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          10.5,
+          14.0,
+          16.5,
+          18.0,
+          21.0
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 9.63397459621556,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260614",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260614.ini",
+      "config_sha256": "3e6fd11d92cc868719a91ac7d2840e9991e9c496447a3f191d629af7a4e155dd",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260614/260614_act_1.bin",
+          "bytes": 4730749664,
+          "mtime_ns": 1785637797319335000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260614/260614_atn_1.bin",
+          "bytes": 4730749664,
+          "mtime_ns": 1785637870946544000
+        }
+      },
+      "act_crop_sha256": "b528e07598dbeddac3083b211ba23fcd7152bdfbe35883f4971eafc591bbefb8",
+      "atn_crop_sha256": "f6ad81bb6d6dbb0b98a1fc9750ff2457cabd1a171593789a5876e31c9ad09976",
+      "crop_low_ijk": [
+        353,
+        298,
+        1345
+      ],
+      "crop_high_ijk_exclusive": [
+        445,
+        436,
+        1504
+      ],
+      "spacing_ijk_mm": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "roi_nodes_ijk": [
+        [
+          394.0,
+          332.0,
+          1411.0
+        ],
+        [
+          383.0,
+          332.0,
+          1421.0
+        ],
+        [
+          380.0,
+          329.0,
+          1434.0
+        ],
+        [
+          380.0,
+          325.0,
+          1449.0
+        ],
+        [
+          387.0,
+          325.0,
+          1462.0
+        ],
+        [
+          397.0,
+          329.0,
+          1473.0
+        ],
+        [
+          405.0,
+          340.0,
+          1476.0
+        ],
+        [
+          410.0,
+          353.0,
+          1474.0
+        ],
+        [
+          409.0,
+          366.0,
+          1467.0
+        ],
+        [
+          407.0,
+          377.0,
+          1457.0
+        ],
+        [
+          407.0,
+          388.0,
+          1446.0
+        ],
+        [
+          407.0,
+          396.0,
+          1433.0
+        ],
+        [
+          409.0,
+          402.0,
+          1419.0
+        ],
+        [
+          411.0,
+          406.0,
+          1406.0
+        ],
+        [
+          413.0,
+          408.0,
+          1391.0
+        ],
+        [
+          416.0,
+          408.0,
+          1377.0
+        ],
+        [
+          417.0,
+          408.0,
+          1372.0
+        ]
+      ],
+      "roi_radii_mm": [
+        7.935,
+        8.74,
+        8.74,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.935,
+        7.82,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.475
+      ],
+      "conservative_dilation_budget_mm": 2.568,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 2.568,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 48482,
+        "center_clearance_mm_min": 7.199999999999999,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          7.199999999999999,
+          12.0,
+          16.2,
+          20.4,
+          27.599999999999998
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 6.160769515458673,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 4710,
+        "center_clearance_mm_min": 9.6,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          9.6,
+          14.399999999999999,
+          18.0,
+          21.0,
+          27.599999999999998
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 8.560769515458674,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260615",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260615.ini",
+      "config_sha256": "5935e56419058a22e04edb289032e7a2030556f0a16133ba5c7c72264a24cf3d",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260615/260615_act_1.bin",
+          "bytes": 4036843512,
+          "mtime_ns": 1785637745845064000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260615/260615_atn_1.bin",
+          "bytes": 4036843512,
+          "mtime_ns": 1785637816053990000
+        }
+      },
+      "act_crop_sha256": "103d1fec25d1eb0cd2e131d053e3caf64e47b108cdfcb8412ff9e649e02c08bb",
+      "atn_crop_sha256": "19ffbe0a19655721f9ac008182df0410075d960d4ab929ae2b7cabb8a7253c59",
+      "crop_low_ijk": [
+        330,
+        295,
+        1270
+      ],
+      "crop_high_ijk_exclusive": [
+        423,
+        434,
+        1436
+      ],
+      "spacing_ijk_mm": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "roi_nodes_ijk": [
+        [
+          375.0,
+          333.0,
+          1340.0
+        ],
+        [
+          365.0,
+          334.0,
+          1350.0
+        ],
+        [
+          364.0,
+          329.0,
+          1363.0
+        ],
+        [
+          366.0,
+          330.0,
+          1377.0
+        ],
+        [
+          370.0,
+          336.0,
+          1388.0
+        ],
+        [
+          376.0,
+          346.0,
+          1395.0
+        ],
+        [
+          383.0,
+          355.0,
+          1401.0
+        ],
+        [
+          388.0,
+          368.0,
+          1400.0
+        ],
+        [
+          388.0,
+          379.0,
+          1391.0
+        ],
+        [
+          387.0,
+          389.0,
+          1380.0
+        ],
+        [
+          385.0,
+          395.0,
+          1369.0
+        ],
+        [
+          385.0,
+          398.0,
+          1355.0
+        ],
+        [
+          386.0,
+          399.0,
+          1341.0
+        ],
+        [
+          387.0,
+          399.0,
+          1327.0
+        ],
+        [
+          387.0,
+          399.0,
+          1312.0
+        ],
+        [
+          388.0,
+          397.0,
+          1304.0
+        ]
+      ],
+      "roi_radii_mm": [
+        12.305,
+        9.2,
+        10.925,
+        10.005,
+        10.695,
+        9.2,
+        9.2,
+        9.2,
+        9.315,
+        10.235,
+        10.005,
+        10.005,
+        9.775,
+        9.315,
+        9.2,
+        9.2
+      ],
+      "conservative_dilation_budget_mm": 7.143,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 7.143,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 79384,
+        "center_clearance_mm_min": 11.200000000000001,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          11.200000000000001,
+          21.6,
+          26.400000000000002,
+          32.0,
+          37.6
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 9.8143593539449,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 4616,
+        "center_clearance_mm_min": 19.200000000000003,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          19.200000000000003,
+          24.0,
+          28.0,
+          32.0,
+          37.6
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 17.8143593539449,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260616",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260616.ini",
+      "config_sha256": "96ca7ef0742e3d6a946b92d7bb476baf80df22737282ab4dbd231bec0fdd42c8",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260616/260616_act_1.bin",
+          "bytes": 4398868964,
+          "mtime_ns": 1785637850405508000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260616/260616_atn_1.bin",
+          "bytes": 4398868964,
+          "mtime_ns": 1785637920528286000
+        }
+      },
+      "act_crop_sha256": "85e7ac4faecc268211dc21795d89abad0280cd1cf9b844a0a94aaaa4f448e597",
+      "atn_crop_sha256": "e1736cd6b82c9365ede52430f9368ff2f948344e68c6e9927c24188e97f85940",
+      "crop_low_ijk": [
+        340,
+        317,
+        1349
+      ],
+      "crop_high_ijk_exclusive": [
+        434,
+        445,
+        1524
+      ],
+      "spacing_ijk_mm": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "roi_nodes_ijk": [
+        [
+          389.0,
+          354.0,
+          1421.0
+        ],
+        [
+          383.0,
+          358.0,
+          1434.0
+        ],
+        [
+          375.0,
+          353.0,
+          1444.0
+        ],
+        [
+          374.0,
+          351.0,
+          1459.0
+        ],
+        [
+          375.0,
+          353.0,
+          1473.0
+        ],
+        [
+          379.0,
+          363.0,
+          1484.0
+        ],
+        [
+          388.0,
+          374.0,
+          1489.0
+        ],
+        [
+          395.0,
+          384.0,
+          1484.0
+        ],
+        [
+          395.0,
+          395.0,
+          1474.0
+        ],
+        [
+          396.0,
+          404.0,
+          1461.0
+        ],
+        [
+          397.0,
+          408.0,
+          1447.0
+        ],
+        [
+          397.0,
+          409.0,
+          1433.0
+        ],
+        [
+          398.0,
+          410.0,
+          1418.0
+        ],
+        [
+          399.0,
+          409.0,
+          1403.0
+        ],
+        [
+          399.0,
+          407.0,
+          1388.0
+        ],
+        [
+          399.0,
+          407.0,
+          1383.0
+        ]
+      ],
+      "roi_radii_mm": [
+        10.925,
+        11.615,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925,
+        10.925
+      ],
+      "conservative_dilation_budget_mm": 7.256,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 7.256,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 31373,
+        "center_clearance_mm_min": 13.5,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          13.5,
+          22.5,
+          28.8,
+          36.0,
+          42.300000000000004
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 11.94115427318801,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807545683450168,
+          0.14807545683450168
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 2762,
+        "center_clearance_mm_min": 21.6,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          21.6,
+          28.8,
+          33.300000000000004,
+          36.0,
+          41.4
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 20.041154273188013,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807545683450168,
+          0.14807545683450168
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260617",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260617.ini",
+      "config_sha256": "cf8c259cf776e09dd1e659c26eb1ef65d6a1fd8fa8d2007efc05157888afa030",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260617/260617_act_1.bin",
+          "bytes": 1718729600,
+          "mtime_ns": 1786399065938518000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260617/260617_atn_1.bin",
+          "bytes": 1718729600,
+          "mtime_ns": 1786399096942699000
+        }
+      },
+      "act_crop_sha256": "011d4000db802cd25dc8b92abcea9d158b73d961fe24c8501cd53523e4d35965",
+      "atn_crop_sha256": "696ada92b95fe6ac0ac3e45d0df08104ef3a26f75bc22807311c63b0b3f10d1c",
+      "crop_low_ijk": [
+        236,
+        201,
+        851
+      ],
+      "crop_high_ijk_exclusive": [
+        337,
+        338,
+        992
+      ],
+      "spacing_ijk_mm": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "roi_nodes_ijk": [
+        [
+          280.0,
+          236.0,
+          913.0
+        ],
+        [
+          272.0,
+          238.0,
+          919.0
+        ],
+        [
+          271.0,
+          238.0,
+          929.0
+        ],
+        [
+          273.0,
+          238.0,
+          940.0
+        ],
+        [
+          278.0,
+          238.0,
+          949.0
+        ],
+        [
+          286.0,
+          242.0,
+          953.0
+        ],
+        [
+          293.0,
+          248.0,
+          956.0
+        ],
+        [
+          297.0,
+          257.0,
+          954.0
+        ],
+        [
+          300.0,
+          267.0,
+          953.0
+        ],
+        [
+          301.0,
+          276.0,
+          948.0
+        ],
+        [
+          301.0,
+          284.0,
+          940.0
+        ],
+        [
+          300.0,
+          289.0,
+          932.0
+        ],
+        [
+          299.0,
+          293.0,
+          923.0
+        ],
+        [
+          297.0,
+          297.0,
+          914.0
+        ],
+        [
+          296.0,
+          300.0,
+          905.0
+        ],
+        [
+          295.0,
+          301.0,
+          894.0
+        ],
+        [
+          295.0,
+          302.0,
+          886.0
+        ]
+      ],
+      "roi_radii_mm": [
+        4.025,
+        4.025,
+        4.715,
+        4.6,
+        4.37,
+        3.45,
+        3.45,
+        3.45,
+        4.14,
+        4.6,
+        4.485,
+        4.025,
+        3.91,
+        4.025,
+        3.91,
+        4.025,
+        4.14
+      ],
+      "conservative_dilation_budget_mm": 2.665,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 2.665,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 30852,
+        "center_clearance_mm_min": 7.6000000000000005,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          7.6000000000000005,
+          12.0,
+          14.8,
+          16.8,
+          20.400000000000002
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 6.90717967697245,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 2011,
+        "center_clearance_mm_min": 11.200000000000001,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          11.200000000000001,
+          13.600000000000001,
+          15.200000000000001,
+          16.8,
+          18.400000000000002
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 10.50717967697245,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260618",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260618.ini",
+      "config_sha256": "58c0983703f301f30e8f452a77d22a6d3755fb41b85bfaca83d861d819f6d3b6",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260618/260618_act_1.bin",
+          "bytes": 2831617440,
+          "mtime_ns": 1786399186462226000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260618/260618_atn_1.bin",
+          "bytes": 2831617440,
+          "mtime_ns": 1786399237297381000
+        }
+      },
+      "act_crop_sha256": "4ad48107acd1f233ebfd67c6a84284bbbf77be2b58fcc938b374028335cede28",
+      "atn_crop_sha256": "a6f9f0518bd8c4af8c22e7367b859eb608286e74443354d658973e0c87b20f34",
+      "crop_low_ijk": [
+        279,
+        274,
+        1057
+      ],
+      "crop_high_ijk_exclusive": [
+        386,
+        398,
+        1208
+      ],
+      "spacing_ijk_mm": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "roi_nodes_ijk": [
+        [
+          323.0,
+          306.0,
+          1121.0
+        ],
+        [
+          314.0,
+          311.0,
+          1125.0
+        ],
+        [
+          311.0,
+          311.0,
+          1137.0
+        ],
+        [
+          311.0,
+          312.0,
+          1150.0
+        ],
+        [
+          312.0,
+          317.0,
+          1160.0
+        ],
+        [
+          320.0,
+          319.0,
+          1169.0
+        ],
+        [
+          330.0,
+          321.0,
+          1175.0
+        ],
+        [
+          340.0,
+          328.0,
+          1173.0
+        ],
+        [
+          347.0,
+          337.0,
+          1168.0
+        ],
+        [
+          352.0,
+          346.0,
+          1162.0
+        ],
+        [
+          353.0,
+          355.0,
+          1156.0
+        ],
+        [
+          353.0,
+          360.0,
+          1144.0
+        ],
+        [
+          353.0,
+          363.0,
+          1133.0
+        ],
+        [
+          351.0,
+          365.0,
+          1121.0
+        ],
+        [
+          350.0,
+          365.0,
+          1108.0
+        ],
+        [
+          349.0,
+          365.0,
+          1095.0
+        ],
+        [
+          348.0,
+          365.0,
+          1089.0
+        ]
+      ],
+      "roi_radii_mm": [
+        5.29,
+        6.555,
+        7.36,
+        6.325,
+        6.555,
+        5.98,
+        5.98,
+        5.06,
+        5.06,
+        5.06,
+        5.98,
+        5.635,
+        5.635,
+        5.175,
+        5.06,
+        5.175,
+        5.175
+      ],
+      "conservative_dilation_budget_mm": 3.362,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 3.362,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 35174,
+        "center_clearance_mm_min": 6.5,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          6.5,
+          12.5,
+          15.5,
+          18.0,
+          25.0
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 5.633974596215562,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 2108,
+        "center_clearance_mm_min": 10.5,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          10.5,
+          14.0,
+          16.5,
+          18.0,
+          21.0
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 9.63397459621556,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260619",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260619.ini",
+      "config_sha256": "11afe26d7d13b8c2b0b2269e8956d67a0f783b88d53f5ad94c284a6ba2210a5b",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260619/260619_act_1.bin",
+          "bytes": 4730749664,
+          "mtime_ns": 1786399352714818000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260619/260619_atn_1.bin",
+          "bytes": 4730749664,
+          "mtime_ns": 1786399457351005000
+        }
+      },
+      "act_crop_sha256": "b528e07598dbeddac3083b211ba23fcd7152bdfbe35883f4971eafc591bbefb8",
+      "atn_crop_sha256": "f6ad81bb6d6dbb0b98a1fc9750ff2457cabd1a171593789a5876e31c9ad09976",
+      "crop_low_ijk": [
+        353,
+        298,
+        1345
+      ],
+      "crop_high_ijk_exclusive": [
+        445,
+        436,
+        1504
+      ],
+      "spacing_ijk_mm": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "roi_nodes_ijk": [
+        [
+          394.0,
+          332.0,
+          1411.0
+        ],
+        [
+          383.0,
+          332.0,
+          1421.0
+        ],
+        [
+          380.0,
+          329.0,
+          1434.0
+        ],
+        [
+          380.0,
+          325.0,
+          1449.0
+        ],
+        [
+          387.0,
+          325.0,
+          1462.0
+        ],
+        [
+          397.0,
+          329.0,
+          1473.0
+        ],
+        [
+          405.0,
+          340.0,
+          1476.0
+        ],
+        [
+          410.0,
+          353.0,
+          1474.0
+        ],
+        [
+          409.0,
+          366.0,
+          1467.0
+        ],
+        [
+          407.0,
+          377.0,
+          1457.0
+        ],
+        [
+          407.0,
+          388.0,
+          1446.0
+        ],
+        [
+          407.0,
+          396.0,
+          1433.0
+        ],
+        [
+          409.0,
+          402.0,
+          1419.0
+        ],
+        [
+          411.0,
+          406.0,
+          1406.0
+        ],
+        [
+          413.0,
+          408.0,
+          1391.0
+        ],
+        [
+          416.0,
+          408.0,
+          1377.0
+        ],
+        [
+          417.0,
+          408.0,
+          1372.0
+        ]
+      ],
+      "roi_radii_mm": [
+        7.935,
+        8.74,
+        8.74,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.935,
+        7.82,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.475,
+        7.475
+      ],
+      "conservative_dilation_budget_mm": 2.568,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 2.568,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 48482,
+        "center_clearance_mm_min": 7.199999999999999,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          7.199999999999999,
+          12.0,
+          16.2,
+          20.4,
+          27.599999999999998
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 6.160769515458673,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 4710,
+        "center_clearance_mm_min": 9.6,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          9.6,
+          14.399999999999999,
+          18.0,
+          21.0,
+          27.599999999999998
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 8.560769515458674,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260620",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260620.ini",
+      "config_sha256": "4815d01236e7d03f5f7bb521920dd1b1ec0813a17531bc87002656d1fad529de",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260620/260620_act_1.bin",
+          "bytes": 4036843512,
+          "mtime_ns": 1786399348692973000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260620/260620_atn_1.bin",
+          "bytes": 4036843512,
+          "mtime_ns": 1786399448735755000
+        }
+      },
+      "act_crop_sha256": "a097790fd7faff8be7597d6d9a1a7c9a18db30b0f973daa140fdcb86b06e545e",
+      "atn_crop_sha256": "19ffbe0a19655721f9ac008182df0410075d960d4ab929ae2b7cabb8a7253c59",
+      "crop_low_ijk": [
+        330,
+        295,
+        1270
+      ],
+      "crop_high_ijk_exclusive": [
+        423,
+        434,
+        1436
+      ],
+      "spacing_ijk_mm": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "roi_nodes_ijk": [
+        [
+          375.0,
+          333.0,
+          1340.0
+        ],
+        [
+          365.0,
+          334.0,
+          1350.0
+        ],
+        [
+          364.0,
+          329.0,
+          1363.0
+        ],
+        [
+          366.0,
+          330.0,
+          1377.0
+        ],
+        [
+          370.0,
+          336.0,
+          1388.0
+        ],
+        [
+          376.0,
+          346.0,
+          1395.0
+        ],
+        [
+          383.0,
+          355.0,
+          1401.0
+        ],
+        [
+          388.0,
+          368.0,
+          1400.0
+        ],
+        [
+          388.0,
+          379.0,
+          1391.0
+        ],
+        [
+          387.0,
+          389.0,
+          1380.0
+        ],
+        [
+          385.0,
+          395.0,
+          1369.0
+        ],
+        [
+          385.0,
+          398.0,
+          1355.0
+        ],
+        [
+          386.0,
+          399.0,
+          1341.0
+        ],
+        [
+          387.0,
+          399.0,
+          1327.0
+        ],
+        [
+          387.0,
+          399.0,
+          1312.0
+        ],
+        [
+          388.0,
+          397.0,
+          1304.0
+        ]
+      ],
+      "roi_radii_mm": [
+        12.305,
+        9.2,
+        10.925,
+        10.005,
+        10.695,
+        9.2,
+        9.2,
+        9.2,
+        9.315,
+        10.235,
+        10.005,
+        10.005,
+        9.775,
+        9.315,
+        9.2,
+        9.2
+      ],
+      "conservative_dilation_budget_mm": 7.143,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 7.143,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 79384,
+        "center_clearance_mm_min": 11.200000000000001,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          11.200000000000001,
+          21.6,
+          26.400000000000002,
+          32.0,
+          37.6
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 9.8143593539449,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 4616,
+        "center_clearance_mm_min": 19.200000000000003,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          19.200000000000003,
+          24.0,
+          28.0,
+          32.0,
+          37.6
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 17.8143593539449,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807544648647308,
+          0.14807544648647308
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    },
+    {
+      "case_id": "260621",
+      "status": "ok",
+      "config": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/radius115/260621.ini",
+      "config_sha256": "1ff320a0376a03c0457f3b9fcf5677297d431b9575151bc19618643178e725f3",
+      "catalog_sha256": "52b32bdd6bc5ef7a5de41c669c1b42434cae56296422183608d32fb8421d6336",
+      "audit_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "source_files": {
+        "act": {
+          "path": "/home/aghorban/slurm/xcat/260621/260621_act_1.bin",
+          "bytes": 4398868964,
+          "mtime_ns": 1786399385628091000
+        },
+        "atn": {
+          "path": "/home/aghorban/slurm/xcat/260621/260621_atn_1.bin",
+          "bytes": 4398868964,
+          "mtime_ns": 1786399455452903000
+        }
+      },
+      "act_crop_sha256": "87b6a71cb36ff7c186c2a3134c0c64174b69fbbbf4ceae32f22eb69378466d4a",
+      "atn_crop_sha256": "673db37d89645d698b68192749953b398c508afdc8c735dfe7d6645c8bd2187c",
+      "crop_low_ijk": [
+        337,
+        329,
+        1279
+      ],
+      "crop_high_ijk_exclusive": [
+        430,
+        457,
+        1452
+      ],
+      "spacing_ijk_mm": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "roi_nodes_ijk": [
+        [
+          386.0,
+          369.0,
+          1351.0
+        ],
+        [
+          378.0,
+          366.0,
+          1363.0
+        ],
+        [
+          373.0,
+          364.0,
+          1375.0
+        ],
+        [
+          372.0,
+          364.0,
+          1390.0
+        ],
+        [
+          374.0,
+          369.0,
+          1403.0
+        ],
+        [
+          382.0,
+          377.0,
+          1412.0
+        ],
+        [
+          390.0,
+          388.0,
+          1416.0
+        ],
+        [
+          393.0,
+          401.0,
+          1411.0
+        ],
+        [
+          393.0,
+          410.0,
+          1400.0
+        ],
+        [
+          391.0,
+          416.0,
+          1388.0
+        ],
+        [
+          390.0,
+          420.0,
+          1374.0
+        ],
+        [
+          390.0,
+          421.0,
+          1360.0
+        ],
+        [
+          390.0,
+          420.0,
+          1344.0
+        ],
+        [
+          392.0,
+          419.0,
+          1331.0
+        ],
+        [
+          394.0,
+          417.0,
+          1317.0
+        ],
+        [
+          394.0,
+          417.0,
+          1314.0
+        ]
+      ],
+      "roi_radii_mm": [
+        10.695,
+        11.04,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695,
+        10.695
+      ],
+      "conservative_dilation_budget_mm": 8.297,
+      "budget_steps": [
+        {
+          "step_name": "arch_outer_expand",
+          "max_distance_mm": 8.297,
+          "max_iterations": 1
+        }
+      ],
+      "label_id": 4,
+      "margin_mm": 3.0,
+      "potential_borrowing_envelope": {
+        "voxels": 40713,
+        "center_clearance_mm_min": 14.4,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          14.4,
+          23.400000000000002,
+          30.6,
+          36.0,
+          42.300000000000004
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 12.84115427318801,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807545683450168,
+          0.14807545683450168
+        ]
+      },
+      "original_aorta_face_adjacent_label": {
+        "voxels": 2605,
+        "center_clearance_mm_min": 21.6,
+        "center_clearance_mm_quantiles_0_25_50_75_100": [
+          21.6,
+          28.8,
+          33.300000000000004,
+          36.9,
+          40.5
+        ],
+        "conservative_surface_clearance_lower_bound_mm": 20.041154273188013,
+        "voxels_within_margin": 0,
+        "attenuation_cm_inverse_min_max": [
+          0.14807545683450168,
+          0.14807545683450168
+        ]
+      },
+      "catalog_record": {
+        "original_id": 4,
+        "original_name": "chest_surface",
+        "classification": {
+          "normalized_name": "chest_surface",
+          "canonical_name": "chest_surface",
+          "system": "integumentary",
+          "subsystem": "skin",
+          "anatomical_region": "whole_body",
+          "structure_type": "organ",
+          "laterality": "",
+          "piece_number": "",
+          "temporal_phase": "",
+          "hierarchy_path": "11_Integumentary/Skin",
+          "secondary_systems": "",
+          "original_name": "chest_surface",
+          "confidence": "medium",
+          "status": "classified",
+          "evidence": [
+            {
+              "kind": "hierarchy_rules",
+              "priority": 89,
+              "rules": [
+                "region_surface_skin"
+              ],
+              "conflict": false
+            },
+            {
+              "kind": "tissue_policy",
+              "rule": "other_organ_anatomy"
+            }
+          ],
+          "atlas_rows": [],
+          "matched_rules": [
+            "region_surface_skin"
+          ],
+          "classifier_scope": "explicit_dpi_files_only",
+          "material_type": null,
+          "material_status": "unverified_anatomical_group",
+          "tissue_id": 1,
+          "tissue_name": "soft_tissue"
+        },
+        "dictionary_sources": [
+          "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/references/atlas/xcat/organ_ids.primary.txt",
+          "references/atlas/xcat/organ_ids.040.txt"
+        ]
+      },
+      "interior_margin_supported": true,
+      "automatic_override_approved": false
+    }
+  ],
+  "source_volumes_modified": false,
+  "script_sha256": "d206965b2c5d285fcbd9c3106df3e332b5b9eebca0584f6f3caaac9b820e92df",
+  "method": "Native ACT=0 is background. Pad the finite crop with background, compute exact Euclidean distance from voxel centers to any background center, and subtract the full native voxel diagonal (two half diagonals) to bound separation between entire donor and background voxel cells. Crop padding makes this clearance a lower bound. Form the exact native Euclidean distance expansion of the complete main ROI voxel mask by the maximum cumulative dilation budget (all swept distances and pass counts), a conservative superset of original selection and target growth including varying-radius tube transitions. Reject an envelope whose continuous coordinate bounds extend beyond the loaded crop. Internal ACT=0 cavities also count as background conservatively.",
+  "interpretation": "This supports a manually reviewed interior-fill exception only for the recorded source/config envelope; it does not prove tissue histology or reclassify the entire original label. A per-label override changes stiffness throughout this config, but mutations remain limited to edit regions. Any enlarged/repositioned ROI or edit budget requires new evidence. Erosion recipient seed voxels remain unchanged; dilation can borrow donor voxels. No override or freeze is automatically approved.",
+  "failed_case_count": 0
+}

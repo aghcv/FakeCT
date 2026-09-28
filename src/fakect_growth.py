@@ -1,9 +1,10 @@
 """Bounded edit regions and original-voxel ancestry for selection-only ROIs."""
 import numpy as np
 from scipy import ndimage
+from fakect_limits import MAX_NATIVE_EDIT_VOXELS
 
 
-MAX_VOXELS = 2_000_000
+MAX_VOXELS = MAX_NATIVE_EDIT_VOXELS
 LINEAGE_SEMANTICS = (
     'Each current target voxel stores its original target ancestor as a zero-based '
     'C-order flat index in the native k,j,i crop; -1 means non-target. Each edit '

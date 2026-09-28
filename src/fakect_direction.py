@@ -1,10 +1,11 @@
 """Curvature-relative angular budgets inside an existing native tube ROI."""
 import numpy as np
+from fakect_limits import MAX_NATIVE_EDIT_VOXELS
 
 
 DEFAULT_CENTERLINE = {'smoothing_mm': 1.0, 'sample_step_mm': 1.0,
                       'min_curvature_per_mm': .002}
-MAX_DIRECTION_VOXELS = 2_000_000
+MAX_DIRECTION_VOXELS = MAX_NATIVE_EDIT_VOXELS
 
 
 def directional_spec(resolved, config):

@@ -212,7 +212,7 @@ def _provenance(config, resolved):
         if _file_hash(config['input'][key]) != resolved[key + '_sha256']:
             raise ValueError(f'{key} changed after source resolution')
     modules = ('fakect_training_data.py', 'fakect_morphology.py', 'fakect_reassignment.py', 'fakect_released.py', 'fakect_erosion_guard.py',
-               'fakect_roi.py', 'fakect_tissues.py') + _anatomy_code_modules(resolved)
+               'fakect_roi.py', 'fakect_tissues.py', 'fakect_limits.py') + _anatomy_code_modules(resolved)
     metadata_sources = {str(resolved['case'][name]): _file_hash(resolved['case'][name])
                         for name in ('par_path', 'log_path') if name in resolved.get('case', {})}
     return {**_anatomy_provenance(resolved), 'input': config['input'], 'selection': config['selection'], 'roi': config['roi'],

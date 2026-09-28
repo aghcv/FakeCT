@@ -1,0 +1,1193 @@
+{
+  "schema_version": "fakect.radius115-input-changes/1",
+  "diameter_scale": "1.15",
+  "scope": "All 12 case ROI radii; native anatomy resolution, edit execution, and review remain required.",
+  "preserved": "Centerline points, edit recipe parameters, and sweep axes are unchanged from original case INIs.",
+  "source_phantoms_mutated": false,
+  "cases": [
+    {
+      "case_id": "260602",
+      "source_config": "configs/cohorts/coa/260602.ini",
+      "source_config_sha256": "6b40c9cb976b3e6284491db867be7c96ce49aaa6da2aabdd5c83414adaf8a69e",
+      "config": "configs/cohorts/coa/radius115/260602.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "10",
+            "10",
+            "10",
+            "12",
+            "11",
+            "10",
+            "10",
+            "13",
+            "12",
+            "11",
+            "11",
+            "11",
+            "11",
+            "11"
+          ],
+          "radius_mm": [
+            "11.5",
+            "11.5",
+            "11.5",
+            "13.8",
+            "12.65",
+            "11.5",
+            "11.5",
+            "14.95",
+            "13.8",
+            "12.65",
+            "12.65",
+            "12.65",
+            "12.65",
+            "12.65"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "33",
+        "after": "35.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        338,
+        325,
+        1281
+      ],
+      "crop_high_ijk_exclusive": [
+        429,
+        455,
+        1453
+      ],
+      "crop_shape_kji": [
+        172,
+        130,
+        91
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-608d5ddf6037a6f9",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 9.0
+          },
+          "coa_narrow": {
+            "distance_mm": 10.0
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 13.0,
+          "arch_inner_narrow": 20.0,
+          "coa_narrow": 14.0
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "1db08fa7089b0debc413ecff537fea17c38bfe27308e105e8dfca7efbeebae11",
+      "crop_voxels": 2034760
+    },
+    {
+      "case_id": "260611",
+      "source_config": "configs/cohorts/coa/260611.ini",
+      "source_config_sha256": "c6302fe07bbb89d1e042ba76cfba59b7373206a6ea3569d085968c772fdd2e1c",
+      "config": "configs/cohorts/coa/radius115/260611.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "10.2",
+            "10.5",
+            "10.7",
+            "11.1",
+            "9.8",
+            "9.4",
+            "9.4",
+            "10.2",
+            "9.9",
+            "9.4",
+            "9.4",
+            "9.4",
+            "9.4",
+            "9.5",
+            "9.5",
+            "9.6"
+          ],
+          "radius_mm": [
+            "11.73",
+            "12.075",
+            "12.305",
+            "12.765",
+            "11.27",
+            "10.81",
+            "10.81",
+            "11.73",
+            "11.385",
+            "10.81",
+            "10.81",
+            "10.81",
+            "10.81",
+            "10.925",
+            "10.925",
+            "11.04"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "32.78",
+        "after": "35.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        307,
+        293,
+        1178
+      ],
+      "crop_high_ijk_exclusive": [
+        397,
+        420,
+        1339
+      ],
+      "crop_shape_kji": [
+        161,
+        127,
+        90
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-a4a846609db4b4fc",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 8.374
+          },
+          "coa_narrow": {
+            "distance_mm": 9.304
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 12.374,
+          "arch_inner_narrow": 18.887,
+          "coa_narrow": 13.304
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "efa90f9b8becb0abfd1ae57caed221c81b71ff3cc94e81444ddc06cd70133918",
+      "crop_voxels": 1840230
+    },
+    {
+      "case_id": "260612",
+      "source_config": "configs/cohorts/coa/260612.ini",
+      "source_config_sha256": "b24665ffd1f1a3f2ceb7db727ea8b0173d0ec0a1d73f0cef477a2f307b1d03cb",
+      "config": "configs/cohorts/coa/radius115/260612.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "3.6",
+            "3.6",
+            "4.1",
+            "4.1",
+            "3.8",
+            "3.0",
+            "3.0",
+            "3.0",
+            "3.6",
+            "4.0",
+            "3.9",
+            "3.6",
+            "3.4",
+            "3.5",
+            "3.4",
+            "3.4",
+            "3.5"
+          ],
+          "radius_mm": [
+            "4.14",
+            "4.14",
+            "4.715",
+            "4.715",
+            "4.37",
+            "3.45",
+            "3.45",
+            "3.45",
+            "4.14",
+            "4.6",
+            "4.485",
+            "4.14",
+            "3.91",
+            "4.025",
+            "3.91",
+            "3.91",
+            "4.025"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "13.13",
+        "after": "14.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        236,
+        202,
+        851
+      ],
+      "crop_high_ijk_exclusive": [
+        337,
+        339,
+        992
+      ],
+      "crop_shape_kji": [
+        141,
+        137,
+        101
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-d59275a832e0bd48",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 2.665
+          },
+          "coa_narrow": {
+            "distance_mm": 2.961
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 6.065,
+          "arch_inner_narrow": 8.138000000000002,
+          "coa_narrow": 6.361000000000001
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "9b7112c4429b28ee926a883bee8d35e3a5345644a8257aba5db5feb9b620a6ff",
+      "crop_voxels": 1951017
+    },
+    {
+      "case_id": "260613",
+      "source_config": "configs/cohorts/coa/260613.ini",
+      "source_config_sha256": "cb2a05eb4f2201ac6c01debe8f902a52549528caa62eb603d911c53ca2e741f9",
+      "config": "configs/cohorts/coa/radius115/260613.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "4.6",
+            "5.7",
+            "6.4",
+            "5.5",
+            "5.7",
+            "5.2",
+            "5.2",
+            "4.4",
+            "4.4",
+            "4.4",
+            "5.2",
+            "4.9",
+            "4.9",
+            "4.5",
+            "4.4",
+            "4.5",
+            "4.5"
+          ],
+          "radius_mm": [
+            "5.29",
+            "6.555",
+            "7.36",
+            "6.325",
+            "6.555",
+            "5.98",
+            "5.98",
+            "5.06",
+            "5.06",
+            "5.06",
+            "5.98",
+            "5.635",
+            "5.635",
+            "5.175",
+            "5.06",
+            "5.175",
+            "5.175"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "14.75",
+        "after": "16.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        279,
+        274,
+        1057
+      ],
+      "crop_high_ijk_exclusive": [
+        386,
+        398,
+        1208
+      ],
+      "crop_shape_kji": [
+        151,
+        124,
+        107
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-71537b7e82e3f0da",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 3.362
+          },
+          "coa_narrow": {
+            "distance_mm": 3.736
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 6.862,
+          "arch_inner_narrow": 9.477,
+          "coa_narrow": 7.236000000000001
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "0490e6de6fe3dbcc1a2196f68a4f25a0eb1f720b46326bad148435974043c9e4",
+      "crop_voxels": 2003468
+    },
+    {
+      "case_id": "260614",
+      "source_config": "configs/cohorts/coa/260614.ini",
+      "source_config_sha256": "18936af71e54e948d6141a4a2d5cf9548ee13c4b382ea2a87da74763387f9e02",
+      "config": "configs/cohorts/coa/radius115/260614.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "6.9",
+            "7.6",
+            "7.6",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.9",
+            "6.8",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5"
+          ],
+          "radius_mm": [
+            "7.935",
+            "8.74",
+            "8.74",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.935",
+            "7.82",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "14.42",
+        "after": "16.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        353,
+        298,
+        1345
+      ],
+      "crop_high_ijk_exclusive": [
+        445,
+        436,
+        1504
+      ],
+      "crop_shape_kji": [
+        159,
+        138,
+        92
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-0a1a994bb5cb6e7d",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 2.568
+          },
+          "coa_narrow": {
+            "distance_mm": 2.853
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 6.167999999999999,
+          "arch_inner_narrow": 8.165,
+          "coa_narrow": 6.452999999999999
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "a78a499c18fac13b278f7ca87812e0cf315c6bb7828a2e48f1dfa1613e3569c1",
+      "crop_voxels": 2018664
+    },
+    {
+      "case_id": "260615",
+      "source_config": "configs/cohorts/coa/260615.ini",
+      "source_config_sha256": "e0bc9c8ed8a886ce3d013d1bed20fcef03d93792fe241ccba8097ef362c9a068",
+      "config": "configs/cohorts/coa/radius115/260615.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "10.7",
+            "8.0",
+            "9.5",
+            "8.7",
+            "9.3",
+            "8.0",
+            "8.0",
+            "8.0",
+            "8.1",
+            "8.9",
+            "8.7",
+            "8.7",
+            "8.5",
+            "8.1",
+            "8.0",
+            "8.0"
+          ],
+          "radius_mm": [
+            "12.305",
+            "9.2",
+            "10.925",
+            "10.005",
+            "10.695",
+            "9.2",
+            "9.2",
+            "9.2",
+            "9.315",
+            "10.235",
+            "10.005",
+            "10.005",
+            "9.775",
+            "9.315",
+            "9.2",
+            "9.2"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "24.78",
+        "after": "27.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        330,
+        295,
+        1270
+      ],
+      "crop_high_ijk_exclusive": [
+        423,
+        434,
+        1436
+      ],
+      "crop_shape_kji": [
+        166,
+        139,
+        93
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-7844c2a72950c999",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 7.143
+          },
+          "coa_narrow": {
+            "distance_mm": 7.936
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 10.943000000000001,
+          "arch_inner_narrow": 16.498,
+          "coa_narrow": 11.736
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "6c457c094ea814ff84258941d86caf05fd4412ae221730fb77e2a5e2307b075b",
+      "crop_voxels": 2145882
+    },
+    {
+      "case_id": "260616",
+      "source_config": "configs/cohorts/coa/260616.ini",
+      "source_config_sha256": "e1ad22548eafe2d380d31d971fa413400731758d4f98fe1661aacaf8e7ffa4dd",
+      "config": "configs/cohorts/coa/radius115/260616.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "9.5",
+            "10.1",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5",
+            "9.5"
+          ],
+          "radius_mm": [
+            "10.925",
+            "11.615",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925",
+            "10.925"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "27.52",
+        "after": "30.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        340,
+        317,
+        1349
+      ],
+      "crop_high_ijk_exclusive": [
+        434,
+        445,
+        1524
+      ],
+      "crop_shape_kji": [
+        175,
+        128,
+        94
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-28b8c84c56125578",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 7.256
+          },
+          "coa_narrow": {
+            "distance_mm": 8.063
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 11.156,
+          "arch_inner_narrow": 16.8,
+          "coa_narrow": 11.963000000000001
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "9649016f9b4b004174e9628579e6eaa4ac8dcc2f031d8dc07a5752b6204c250f",
+      "crop_voxels": 2105600
+    },
+    {
+      "case_id": "260617",
+      "source_config": "configs/cohorts/coa/260617.ini",
+      "source_config_sha256": "80a74540d060d8cd0464e496f6a89574687e6f546b575f4a99b4b629e9afa6fc",
+      "config": "configs/cohorts/coa/radius115/260617.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "3.5",
+            "3.5",
+            "4.1",
+            "4.0",
+            "3.8",
+            "3.0",
+            "3.0",
+            "3.0",
+            "3.6",
+            "4.0",
+            "3.9",
+            "3.5",
+            "3.4",
+            "3.5",
+            "3.4",
+            "3.5",
+            "3.6"
+          ],
+          "radius_mm": [
+            "4.025",
+            "4.025",
+            "4.715",
+            "4.6",
+            "4.37",
+            "3.45",
+            "3.45",
+            "3.45",
+            "4.14",
+            "4.6",
+            "4.485",
+            "4.025",
+            "3.91",
+            "4.025",
+            "3.91",
+            "4.025",
+            "4.14"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "13.13",
+        "after": "14.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        236,
+        201,
+        851
+      ],
+      "crop_high_ijk_exclusive": [
+        337,
+        338,
+        992
+      ],
+      "crop_shape_kji": [
+        141,
+        137,
+        101
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-973d9fa1cc20db4c",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 2.665
+          },
+          "coa_narrow": {
+            "distance_mm": 2.961
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 6.065,
+          "arch_inner_narrow": 8.138000000000002,
+          "coa_narrow": 6.361000000000001
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "5bae50f5b1b0e24101e6e2816b801ba677a5acbdd96bbf73e908dc2cc1823ace",
+      "crop_voxels": 1951017
+    },
+    {
+      "case_id": "260618",
+      "source_config": "configs/cohorts/coa/260618.ini",
+      "source_config_sha256": "8e46550154c4662aaa0f79cbfad2bbb9beba31c76b76d2bf3e0fbb7885ad70e5",
+      "config": "configs/cohorts/coa/radius115/260618.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "4.6",
+            "5.7",
+            "6.4",
+            "5.5",
+            "5.7",
+            "5.2",
+            "5.2",
+            "4.4",
+            "4.4",
+            "4.4",
+            "5.2",
+            "4.9",
+            "4.9",
+            "4.5",
+            "4.4",
+            "4.5",
+            "4.5"
+          ],
+          "radius_mm": [
+            "5.29",
+            "6.555",
+            "7.36",
+            "6.325",
+            "6.555",
+            "5.98",
+            "5.98",
+            "5.06",
+            "5.06",
+            "5.06",
+            "5.98",
+            "5.635",
+            "5.635",
+            "5.175",
+            "5.06",
+            "5.175",
+            "5.175"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "14.75",
+        "after": "16.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        279,
+        274,
+        1057
+      ],
+      "crop_high_ijk_exclusive": [
+        386,
+        398,
+        1208
+      ],
+      "crop_shape_kji": [
+        151,
+        124,
+        107
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-a64fc5e529a26c7a",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 3.362
+          },
+          "coa_narrow": {
+            "distance_mm": 3.736
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 6.862,
+          "arch_inner_narrow": 9.477,
+          "coa_narrow": 7.236000000000001
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "dfc37f827a7f78106260459dc0612166b402e75d5c27a66ed5a9750c5345ebb5",
+      "crop_voxels": 2003468
+    },
+    {
+      "case_id": "260619",
+      "source_config": "configs/cohorts/coa/260619.ini",
+      "source_config_sha256": "29c272d7840eb6b4014b55bace5c8e3c06410ce3f243bbcae9ed1dff1bf583e9",
+      "config": "configs/cohorts/coa/radius115/260619.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "6.9",
+            "7.6",
+            "7.6",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.9",
+            "6.8",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5",
+            "6.5"
+          ],
+          "radius_mm": [
+            "7.935",
+            "8.74",
+            "8.74",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.935",
+            "7.82",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475",
+            "7.475"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "14.42",
+        "after": "16.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        353,
+        298,
+        1345
+      ],
+      "crop_high_ijk_exclusive": [
+        445,
+        436,
+        1504
+      ],
+      "crop_shape_kji": [
+        159,
+        138,
+        92
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-6458b650bfce4e6a",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 2.568
+          },
+          "coa_narrow": {
+            "distance_mm": 2.853
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 6.167999999999999,
+          "arch_inner_narrow": 8.165,
+          "coa_narrow": 6.452999999999999
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "b2eb1fa9cdc353dba1b73f8e30882a83f3721e721166b6f7ebff9ac1c48dc7e1",
+      "crop_voxels": 2018664
+    },
+    {
+      "case_id": "260620",
+      "source_config": "configs/cohorts/coa/260620.ini",
+      "source_config_sha256": "f8c071b338240515ab56a6562d2149cf0044cc86bc91c5e1e69a03285945a944",
+      "config": "configs/cohorts/coa/radius115/260620.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "10.7",
+            "8.0",
+            "9.5",
+            "8.7",
+            "9.3",
+            "8.0",
+            "8.0",
+            "8.0",
+            "8.1",
+            "8.9",
+            "8.7",
+            "8.7",
+            "8.5",
+            "8.1",
+            "8.0",
+            "8.0"
+          ],
+          "radius_mm": [
+            "12.305",
+            "9.2",
+            "10.925",
+            "10.005",
+            "10.695",
+            "9.2",
+            "9.2",
+            "9.2",
+            "9.315",
+            "10.235",
+            "10.005",
+            "10.005",
+            "9.775",
+            "9.315",
+            "9.2",
+            "9.2"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "24.78",
+        "after": "27.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        330,
+        295,
+        1270
+      ],
+      "crop_high_ijk_exclusive": [
+        423,
+        434,
+        1436
+      ],
+      "crop_shape_kji": [
+        166,
+        139,
+        93
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-89229baa5fdafd96",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 7.143
+          },
+          "coa_narrow": {
+            "distance_mm": 7.936
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 10.943000000000001,
+          "arch_inner_narrow": 16.498,
+          "coa_narrow": 11.736
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "51cca473dba9ccdf36edcdedcd609e7c355e4552480f5e199e6a7d7e03cf9e29",
+      "crop_voxels": 2145882
+    },
+    {
+      "case_id": "260621",
+      "source_config": "configs/cohorts/coa/260621.ini",
+      "source_config_sha256": "3713635da3aa860f045c45414c4d55b98c691b40b80e5b92358ca5fdbe5b858b",
+      "config": "configs/cohorts/coa/radius115/260621.ini",
+      "roi_changes": [
+        {
+          "section": "roi",
+          "original_radius_mm": [
+            "9.3",
+            "9.6",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3",
+            "9.3"
+          ],
+          "radius_mm": [
+            "10.695",
+            "11.04",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695",
+            "10.695"
+          ],
+          "scale": "1.15"
+        }
+      ],
+      "crop_half_width_mm": {
+        "before": "29.22",
+        "after": "31.0",
+        "initial_rule": "ceil(original + max node radius increase), mm"
+      },
+      "volume_stride": {
+        "before": 3,
+        "after": 3
+      },
+      "crop_low_ijk": [
+        337,
+        329,
+        1279
+      ],
+      "crop_high_ijk_exclusive": [
+        430,
+        457,
+        1452
+      ],
+      "crop_shape_kji": [
+        173,
+        128,
+        93
+      ],
+      "coordinate_reviewed": false,
+      "parameters_reviewed": false,
+      "maximum_distance_metadata_check": {
+        "passed": true,
+        "variant_id": "recipe-001e1228938b228f",
+        "parameters": {
+          "arch_outer_expand": {
+            "distance_mm": 8.297
+          },
+          "coa_narrow": {
+            "distance_mm": 9.219
+          }
+        },
+        "variant_count": 16,
+        "step_halo_mm": {
+          "arch_outer_expand": 12.197000000000001,
+          "arch_inner_narrow": 18.65,
+          "coa_narrow": 13.119
+        },
+        "voxel_payloads_read": false,
+        "anatomy_resolution_applied": false,
+        "scope": "Maximum summed edit distance recipe only; native preflight will validate all variants after anatomy resolution."
+      },
+      "config_sha256_at_initial_creation": "74604e86205bb1ed5155c17717950971f60aa1dc6a861ad2f1b79be5345bf9c7",
+      "crop_voxels": 2059392
+    }
+  ],
+  "checks": {
+    "all_radius_values_exact_decimal_scale": true,
+    "centerline_points_unchanged": true,
+    "edit_and_sweep_settings_unchanged": true,
+    "all_maximum_distance_recipe_bounds_pass": true,
+    "review_flags_set": false,
+    "voxel_payloads_read": false,
+    "cohort_outputs_generated": false,
+    "required_morphology_voxel_limit": 3000000,
+    "largest_crop_voxels": 2145882
+  },
+  "resource_context": "Widened ROI envelopes require larger source context for inherited dilation and later erosion. The original 2,000,000-voxel morphology/direction bound is insufficient for nine conservative crops; all remain below 2,150,000 voxels. Root updated both consistent resource bounds to 3,000,000; preview stride stays 3 in every case."
+}
