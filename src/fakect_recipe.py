@@ -11,7 +11,7 @@ import numpy as np
 from scipy import ndimage
 
 from fakect_morphology import (ENGINE, MAX_MORPHOLOGY_VOXELS, apply_morphology,
-                               validate_edit_geometry, tube_position_mm)
+                               validate_edit_geometry, tube_position_mm, apply_anatomical_protection)
 from fakect_roi import _tube_nodes, sphere_mask, tube_mask
 from fakect_tissues import _validated_labels, coarse_labels
 from fakect_reassignment import reassignment_masks, stiffness_field
@@ -440,7 +440,9 @@ def apply_recipe(arrays, resolved, config, on_step=None):
         raise RuntimeError('Recipe changed values outside its active edit region union')
     if growing and np.any((changed | scalar_changed) & original['candidates'] & ~union):
         raise RuntimeError('Recipe changed an original target outside every active selection')
-    _, protected, reassignment_policy = reassignment_masks(labels, original['candidates'], resolved['catalog'], config['reassignment'])
+    eligible, protected, reassignment_policy = reassignment_masks(labels, original['candidates'], resolved['catalog'], config['reassignment'])
+    _, protected, reassignment_policy = apply_anatomical_protection(
+        labels, resolved, eligible, protected, reassignment_policy)
     if np.any((changed | scalar_changed) & protected):
         raise RuntimeError('Recipe changed an originally protected non-target voxel')
     added, removed = target_after & ~target_before, target_before & ~target_after

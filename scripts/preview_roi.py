@@ -26,6 +26,33 @@ def json_value(value):
     return value
 
 
+def capture_anatomy_selection(resolved, output):
+    """Keep the exact automatic selector snapshot, or capture manual names once."""
+    audit = resolved.get('anatomical_selection')
+    if not isinstance(audit, dict):
+        return None
+    raw = resolved.get('anatomy_selection_bytes')
+    if raw is None:
+        raw = (json.dumps(json_value(audit), indent=2, allow_nan=False) + '\n').encode('utf-8')
+    sha256 = hashlib.sha256(raw).hexdigest()
+    expected = resolved.get('anatomy_selection_sha256')
+    if (expected is not None and sha256 != expected) or json.loads(raw) != json_value(audit):
+        raise ValueError('Anatomical selector snapshot changed before preview capture')
+    with (Path(output) / 'anatomy-selection.json').open('xb') as handle:
+        handle.write(raw)
+    return {'path': 'anatomy-selection.json', 'sha256': sha256}
+
+
+def selection_title(config, resolved):
+    ids = ','.join(map(str, config['selection']['source_ids']))
+    selector = f'original IDs {ids if len(ids) < 55 else ids[:52] + "..."}' if ids else 'all source IDs in group'
+    if isinstance(resolved.get('anatomical_selection'), dict):
+        audit = resolved['anatomical_selection']
+        name = audit.get('anatomy') or 'named anatomical labels'
+        selector = f'{name}; {len(resolved["source_ids"])} accepted whole source IDs'
+    return f"{config['selection']['tissue']}; {selector}; bounded by ROI"
+
+
 def render_slices(arrays, resolved, config, output):
     os.environ.setdefault('MPLCONFIGDIR', '/tmp/fakect-matplotlib')
     import matplotlib
@@ -99,9 +126,7 @@ def render_slices(arrays, resolved, config, output):
               Line2D([0], [0], color='#00ffff', label='selected tissue inside ROI'),
               Line2D([0], [0], color='#7ad8e0', ls=':', label='tissue candidates in crop')]
     legend += [Patch(facecolor=COLORS.get(c['name'], '#999999'), edgecolor='#777777', label=c['name'].replace('_', ' ')) for c in catalog['categories']]
-    ids = ','.join(map(str, config['selection']['source_ids']))
-    selector = f'original IDs {ids if len(ids) < 55 else ids[:52] + "..."}' if ids else 'all source IDs in group'
-    target_title = f"{config['selection']['tissue']}; {selector}; bounded by ROI"
+    target_title = selection_title(config, resolved)
     roi_description = (f'Sphere center i,j,k={tuple(nodes[0])}; radius={radii[0]:g} mm' if roi_kind == 'sphere'
                        else f'Tube: {len(nodes)} ordered center points; radii {radii.min():g}–{radii.max():g} mm; focus i,j,k={center}')
     source_hash = catalog['sources']['atlas']['sha256'][:12] if 'atlas' in catalog['sources'] else 'see provenance'
@@ -156,6 +181,9 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
     code_files += [ROOT/'src/fakect_direction.py', ROOT/'src/fakect_centerline_frame.py', ROOT/'src/fakect_released.py',
                    ROOT/'src/fakect_erosion_guard.py']
     code_files += [Path(p) for p in extra_code_files]
+    if any(config['selection'].get(key) for key in ('anatomy', 'anatomical_labels', 'anatomy_file')):
+        code_files += [ROOT/'src/fakect_anatomy.py', ROOT/'src/fakect_anatomy_surfaces.py',
+                       ROOT/'src/fakect_anatomy_centerlines.py']
     recipe_requested = 'recipe' in config
     if recipe_requested:
         code_files += [ROOT/'src/fakect_recipe.py', ROOT/'src/fakect_recipe_config.py',
@@ -175,7 +203,9 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         raise ValueError(f'Output exists and is not empty: {output}; choose a new output.directory')
     if validate_only:
-        print(json.dumps(json_value({'status': 'metadata_valid; source voxel presence not checked',
+        print(json.dumps(json_value({'status': ('metadata_valid; anatomical selector resolved; native edit not run'
+                                                if resolved.get('anatomical_selection') is not None else
+                                                'metadata_valid; source voxel presence not checked'),
                                      'crop_low_ijk': resolved['crop_low_ijk'],
                                      'crop_high_ijk_exclusive': resolved['crop_high_ijk_exclusive'],
                                      'candidate_id_count': len(resolved['source_ids']),
@@ -195,6 +225,7 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
         from fakect_morphology import apply_morphology
         edit_result = apply_morphology(arrays, resolved, config)
     output.mkdir(parents=True, exist_ok=True)
+    anatomy_artifact = capture_anatomy_selection(resolved, output)
     if resolved['catalog'].get('diagnostic_extension'):
         (output/'derived-label-catalog.json').write_text(json.dumps(resolved['catalog'], indent=2) + '\n')
     if recipe_requested:
@@ -312,6 +343,13 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
               'code_sha256': code_hashes}
     if recipe_requested and config['recipe'].get('roi_role') == 'selection':
         report['source_ids_semantics'] = 'Candidate dictionary IDs; original selection is candidate tissue AND ROI. Final edited selection includes surviving original ancestors and their offspring outside the ROI.'
+    if anatomy_artifact is not None:
+        report['anatomy_selection_artifact'] = anatomy_artifact
+        report['source_ids_semantics'] = ('Anatomy-qualified whole dictionary IDs; initial selection is ROI '
+                                        'intersected with all accepted-ID voxels, including disconnected '
+                                        'pieces sharing an accepted ID. Connectivity, when requested, '
+                                        'qualifies IDs rather than filtering individual voxels. Edited selection tracks '
+                                        'surviving ancestors and their offspring when ROI role is selection.')
     if resolved['catalog'].get('diagnostic_extension'):
         report['derived_catalog'] = {'path': 'derived-label-catalog.json',
                                      'sha256': digest(output/'derived-label-catalog.json'),

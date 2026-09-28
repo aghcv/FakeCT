@@ -1,0 +1,349 @@
+{
+  "schema_version": "fakect.anatomy-evaluation/1",
+  "case_id": "260602",
+  "frame": 1,
+  "input": "configs/cohorts/coa/260602-anatomy.ini",
+  "selection": {
+    "path": "outputs/anatomy/coa/260602-r3/selection.json",
+    "sha256": "5f1a76bd8ccb9a5591e5f9ff2d70007a3accd072f601f8e68238b504d8ae2ecf",
+    "bytes": 5151346
+  },
+  "counts": {
+    "anchor_roi_voxels": 50485,
+    "artery_roi_voxels_before": 52576,
+    "connected_roi_voxels": 51889,
+    "selected_id_count": 6,
+    "selected_roi_voxels": 51889,
+    "unconnected_retained_roi_voxels": 0
+  },
+  "selected_source_ids": [
+    1186,
+    1547,
+    1550,
+    2912,
+    2914,
+    2922
+  ],
+  "roi_labels": [
+    {
+      "attenuation_cm_inverse": {
+        "max": 0.1838051825761795,
+        "mean": 0.1838052123785019,
+        "min": 0.1838051825761795
+      },
+      "canonical_name": "internal_carotid",
+      "connected_roi_voxels": 311,
+      "crop_voxels": 1252,
+      "decision": "included",
+      "hierarchy_path": "01_Cardiovascular/Cerebrovascular/Arteries",
+      "original_id": 1186,
+      "original_name": "internal_carotid_right",
+      "reason": "Qualified branch label connected to an aortic anchor and intersecting ROI",
+      "roi_voxels": 311,
+      "role": "branch"
+    },
+    {
+      "attenuation_cm_inverse": {
+        "max": 0.1838051825761795,
+        "mean": 0.1838052123785019,
+        "min": 0.1838051825761795
+      },
+      "canonical_name": "arteries",
+      "connected_roi_voxels": 265,
+      "crop_voxels": 1078,
+      "decision": "included",
+      "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+      "original_id": 1547,
+      "original_name": "arteries",
+      "reason": "Qualified branch label connected to an aortic anchor and intersecting ROI",
+      "roi_voxels": 265,
+      "role": "branch"
+    },
+    {
+      "attenuation_cm_inverse": {
+        "max": 0.1838051825761795,
+        "mean": 0.1838052123785019,
+        "min": 0.1838051825761795
+      },
+      "canonical_name": "arteries",
+      "connected_roi_voxels": 657,
+      "crop_voxels": 2579,
+      "decision": "included",
+      "hierarchy_path": "01_Cardiovascular/Systemic_Arteries",
+      "original_id": 1550,
+      "original_name": "arteries",
+      "reason": "Qualified branch label connected to an aortic anchor and intersecting ROI",
+      "roi_voxels": 657,
+      "role": "branch"
+    },
+    {
+      "attenuation_cm_inverse": {
+        "max": 0.1838051825761795,
+        "mean": 0.1838052123785019,
+        "min": 0.1838051825761795
+      },
+      "canonical_name": "pulmonary_artery",
+      "connected_roi_voxels": 0,
+      "crop_voxels": 6550,
+      "decision": "excluded",
+      "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+      "original_id": 1747,
+      "original_name": "right_pulmonary_arts",
+      "reason": "Pulmonary circulation excluded before connectivity analysis",
+      "roi_voxels": 76,
+      "role": "excluded"
+    },
+    {
+      "attenuation_cm_inverse": {
+        "max": 0.1838051825761795,
+        "mean": 0.1838052123785019,
+        "min": 0.1838051825761795
+      },
+      "canonical_name": "pulmonary_artery",
+      "connected_roi_voxels": 0,
+      "crop_voxels": 8023,
+      "decision": "excluded",
+      "hierarchy_path": "01_Cardiovascular/Pulmonary_Circulation/Arteries",
+      "original_id": 1969,
+      "original_name": "left_pulmonary_arts",
+      "reason": "Pulmonary circulation excluded before connectivity analysis",
+      "roi_voxels": 116,
+      "role": "excluded"
+    },
+    {
+      "attenuation_cm_inverse": {
+        "max": 0.1838051825761795,
+        "mean": 0.1838052123785019,
+        "min": 0.1838051825761795
+      },
+      "canonical_name": "rca",
+      "connected_roi_voxels": 59,
+      "crop_voxels": 2498,
+      "decision": "included",
+      "hierarchy_path": "01_Cardiovascular/Coronary_Circulation/Coronary_Arteries",
+      "original_id": 2912,
+      "original_name": "dias_rca1",
+      "reason": "Qualified branch label connected to an aortic anchor and intersecting ROI",
+      "roi_voxels": 59,
+      "role": "branch"
+    },
+    {
+      "attenuation_cm_inverse": {
+        "max": 0.1838051825761795,
+        "mean": 0.1838052123785019,
+        "min": 0.1838051825761795
+      },
+      "canonical_name": "left_anterior_descending_coronary_artery",
+      "connected_roi_voxels": 112,
+      "crop_voxels": 329,
+      "decision": "included",
+      "hierarchy_path": "01_Cardiovascular/Coronary_Circulation/Coronary_Arteries",
+      "original_id": 2914,
+      "original_name": "dias_lad1",
+      "reason": "Qualified branch label connected to an aortic anchor and intersecting ROI",
+      "roi_voxels": 112,
+      "role": "branch"
+    },
+    {
+      "attenuation_cm_inverse": {
+        "max": 0.1838051825761795,
+        "mean": 0.1838052123785019,
+        "min": 0.1838051825761795
+      },
+      "canonical_name": "pulmonary_artery",
+      "connected_roi_voxels": 0,
+      "crop_voxels": 50585,
+      "decision": "excluded",
+      "hierarchy_path": "01_Cardiovascular/Heart/Pulmonary_Artery",
+      "original_id": 2920,
+      "original_name": "dias_pul_art",
+      "reason": "Pulmonary circulation excluded before connectivity analysis",
+      "roi_voxels": 495,
+      "role": "excluded"
+    },
+    {
+      "attenuation_cm_inverse": {
+        "max": 0.1838051825761795,
+        "mean": 0.1838052123785019,
+        "min": 0.1838051825761795
+      },
+      "canonical_name": "aorta",
+      "connected_roi_voxels": 50485,
+      "crop_voxels": 57857,
+      "decision": "included",
+      "hierarchy_path": "01_Cardiovascular/Heart/Aorta",
+      "original_id": 2922,
+      "original_name": "dias_aorta",
+      "reason": "Aortic anchor in ROI",
+      "roi_voxels": 50485,
+      "role": "anchor"
+    }
+  ],
+  "raw_evidence": {
+    "total_surfaces": 2634,
+    "total_triangle_rows": 4336446,
+    "verified_arterial_centerlines": 643,
+    "coordinate_contract_status": "bounded_contract_validated",
+    "roi_centerline_samples": [
+      {
+        "group": "heart",
+        "local_surface_index": 15,
+        "original_name": "dias_rca1",
+        "native_centerline_samples": {
+          "matching_name_id_counts": {
+            "2912": 207
+          },
+          "roi_sample_voxels": 6,
+          "sample_voxels": 210,
+          "sampled_id_counts": {
+            "2908": 2,
+            "2912": 207,
+            "2913": 1
+          },
+          "semantics": "Existing native ACT cells sampled along verified RAW ring-centroid segments; name agreement corroborates a local ID mapping, not a unique whole-surface assignment."
+        }
+      },
+      {
+        "group": "heart",
+        "local_surface_index": 17,
+        "original_name": "dias_lad1",
+        "native_centerline_samples": {
+          "matching_name_id_counts": {
+            "2914": 14
+          },
+          "roi_sample_voxels": 7,
+          "sample_voxels": 19,
+          "sampled_id_counts": {
+            "2914": 14,
+            "2917": 4,
+            "2922": 1
+          },
+          "semantics": "Existing native ACT cells sampled along verified RAW ring-centroid segments; name agreement corroborates a local ID mapping, not a unique whole-surface assignment."
+        }
+      },
+      {
+        "group": "heart",
+        "local_surface_index": 25,
+        "original_name": "dias_aorta",
+        "native_centerline_samples": {
+          "matching_name_id_counts": {
+            "2922": 275
+          },
+          "roi_sample_voxels": 255,
+          "sample_voxels": 308,
+          "sampled_id_counts": {
+            "2898": 33,
+            "2922": 275
+          },
+          "semantics": "Existing native ACT cells sampled along verified RAW ring-centroid segments; name agreement corroborates a local ID mapping, not a unique whole-surface assignment."
+        }
+      },
+      {
+        "group": "organs",
+        "local_surface_index": 163,
+        "original_name": "internal_carotid_right",
+        "native_centerline_samples": {
+          "matching_name_id_counts": {
+            "1186": 58
+          },
+          "roi_sample_voxels": 17,
+          "sample_voxels": 58,
+          "sampled_id_counts": {
+            "1186": 58
+          },
+          "semantics": "Existing native ACT cells sampled along verified RAW ring-centroid segments; name agreement corroborates a local ID mapping, not a unique whole-surface assignment."
+        }
+      },
+      {
+        "group": "vessels",
+        "local_surface_index": 2,
+        "original_name": "arteries",
+        "native_centerline_samples": {
+          "matching_name_id_counts": {
+            "1547": 47
+          },
+          "roi_sample_voxels": 15,
+          "sample_voxels": 49,
+          "sampled_id_counts": {
+            "1547": 47,
+            "2922": 2
+          },
+          "semantics": "Existing native ACT cells sampled along verified RAW ring-centroid segments; name agreement corroborates a local ID mapping, not a unique whole-surface assignment."
+        }
+      },
+      {
+        "group": "vessels",
+        "local_surface_index": 5,
+        "original_name": "arteries",
+        "native_centerline_samples": {
+          "matching_name_id_counts": {
+            "1550": 42
+          },
+          "roi_sample_voxels": 13,
+          "sample_voxels": 43,
+          "sampled_id_counts": {
+            "1550": 42,
+            "2922": 1
+          },
+          "semantics": "Existing native ACT cells sampled along verified RAW ring-centroid segments; name agreement corroborates a local ID mapping, not a unique whole-surface assignment."
+        }
+      }
+    ]
+  },
+  "metadata_validation": {
+    "validated": true,
+    "stage": "preview",
+    "variant_count": 16,
+    "planned_split_counts": {
+      "unassigned": 16
+    },
+    "crop_shape_kji": [
+      168,
+      126,
+      87
+    ],
+    "outputs_written": false,
+    "voxel_payloads_read": false,
+    "validation_scope": "Metadata checks every discrete combination and requested halo. Native preflight is needed to measure actual edits, safeguard reductions, unresolved reassignment, and duplicate geometries.",
+    "native_simulations_checked": false
+  },
+  "warnings": [
+    "ID 1547 (arteries) has an ambiguous RAW-name join; local surface ordinals are not voxel IDs. Generic systemic branches remain generically named.",
+    "ID 1550 (arteries) has an ambiguous RAW-name join; local surface ordinals are not voxel IDs. Generic systemic branches remain generically named."
+  ],
+  "scope": "One optional 260602 review revision. Sweep execution, cohort freeze, paired dataset generation, and model training were not performed.",
+  "native_protection_check": {
+    "protected_artery_voxels_in_crop": 78639,
+    "protected_labels_changed": 0,
+    "protected_attenuation_changed": 0
+  },
+  "regression_tests": {
+    "passed": 476,
+    "failed": 0
+  },
+  "preview": {
+    "report": "outputs/cohorts/coa/260602/anatomy-review-r1/report.html",
+    "input_config_sha256": "a40ab0d80d6ec181e78fed613408865ce70f266c48bbcc17d75a44aad056a433",
+    "native_counts": {
+      "before": 51889,
+      "after": 51620,
+      "added": 635,
+      "removed": 904,
+      "changed": 1539,
+      "scalar_changed": 1539,
+      "ever_changed": 1539,
+      "proposed_added": 4858,
+      "proposed_removed": 3144,
+      "blocked": 4223,
+      "unresolved": 2240,
+      "changed_outside_selection_roi": 52,
+      "added_outside_selection_roi": 52,
+      "removed_outside_selection_roi": 0,
+      "changed_outside_edit_selectors": 52
+    },
+    "complete": true,
+    "portable_selection_bytes_verified": true,
+    "components_before": 1,
+    "components_after": 1
+  }
+}

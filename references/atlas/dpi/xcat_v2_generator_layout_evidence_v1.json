@@ -1,0 +1,283 @@
+{
+  "schema_version": "dpi.xcat_v2_generator_layout_evidence.v1",
+  "evidence_id": "evidence:xcat-v2-linux-64bit:field-layout-and-coordinates:v1",
+  "recorded_date": "2026-08-17",
+  "status": "bounded_evidence_not_vendor_specification",
+  "purpose": "Freeze the evidence and limitations behind the bounded XCAT-v2 frame-1 field-layout and coordinate contract without packaging the external generator executable.",
+  "scope": {
+    "campaign_config": "config/modeling/xcat_s1_frame1_cohort_v1.json",
+    "source_adapter": "xcat",
+    "selected_frame_ordinal": 1,
+    "phantom_ids": [
+      "260602",
+      "260611",
+      "260612",
+      "260613",
+      "260614",
+      "260615",
+      "260616",
+      "260617",
+      "260618",
+      "260619",
+      "260620",
+      "260621"
+    ],
+    "case_count": 12,
+    "diagnostic_axis_observation_count": 36,
+    "all_configured_x_dimensions_equal_y_dimensions": true
+  },
+  "external_generator": {
+    "observed_path": "/home/aghorban/slurm/xcat/dxcat2_linux_64bit",
+    "path_is_observational_and_nonportable": true,
+    "archive_policy": "external_reference_only_binary_explicitly_excluded",
+    "included_in_source_snapshot": false,
+    "included_in_release_archive": false,
+    "size_bytes": 825032,
+    "sha256": "83d279e12d3923b0296d1f08c44c08f538ca4496ba36aa36c872e9a204b5775f",
+    "file_observation": {
+      "format": "ELF64",
+      "data_encoding": "LSB_little_endian",
+      "elf_type": "PIE",
+      "machine": "x86-64",
+      "minimum_reported_kernel_abi": "GNU/Linux 3.2.0",
+      "stripped": false,
+      "gnu_build_id": "7e77f3c978bc7d849ced7253efee5ebfbe650a39"
+    }
+  },
+  "generator_static_analysis": {
+    "method": "ELF symbol-table inspection and x86-64 disassembly of the content-identified external executable",
+    "symbol": "SAVE_TO_FILE",
+    "symbol_virtual_address_hex": "0x00000000000a5600",
+    "observations": {
+      "scalar_write_function": "fwrite",
+      "scalar_write_size_bytes": 4,
+      "scalar_write_count": 1,
+      "scalar_value_type": "float32",
+      "loop_nesting_outer_to_inner": [
+        "z",
+        "y",
+        "x"
+      ],
+      "linear_index_zero_based": "x + X*(y + Y*z)",
+      "index_order": "x_fastest_y_middle_z_outer",
+      "header_bytes": 0,
+      "byte_order": "little_endian_native_float_bytes"
+    },
+    "claim_basis": "reverse_engineered_generator_behavior",
+    "not_claimed": "vendor-published file-format specification"
+  },
+  "empirical_endian_canary": {
+    "purpose": "Corroborate little-endian float decoding independently of file-size checks; this canary does not establish axis order.",
+    "phantom_id": "260612",
+    "logical_source_uri": "260612/260612_act_1.bin",
+    "observed_file_size_bytes": 1718729600,
+    "zero_based_index_xyz_under_declared_layout": [
+      277,
+      277,
+      600
+    ],
+    "linear_index": 184303335,
+    "byte_offset": 737213340,
+    "bytes_hex_in_file_order": "00008040",
+    "decoded_little_endian_float32": 4.0,
+    "decoded_big_endian_float32": 4.6007431180712394e-41,
+    "result": "supports_little_endian",
+    "interpretation": "The little-endian value is an exact integral XCAT structure code; the big-endian interpretation is an implausible denormal.",
+    "parameter_sha256": "11225615167155aaccca9d0406d1e263cdfd8c907ff9a7ef12e8a24ca8560ce1",
+    "generation_log_sha256": "367e4d4b7cfe0e45f649b888687616d195fce43853cf65b0ce07fe43bd772a60"
+  },
+  "parameter_file_authority": {
+    "cohort_parameter_template_observations": {
+      "all_case_startslice_values": {
+        "260602": 1,
+        "260611": 1,
+        "260612": 1,
+        "260613": 1,
+        "260614": 1,
+        "260615": 1,
+        "260616": 1,
+        "260617": 1,
+        "260618": 1,
+        "260619": 1,
+        "260620": 1,
+        "260621": 1
+      },
+      "all_startslice_equal_1": true,
+      "all_activ_output_format_equal_0": true,
+      "all_color_code_equal_1": true,
+      "all_activity_unit_equal_0": true,
+      "common_axis_note_excerpt_sha256": "dcf5cabf713f0fe9b44555776c0bc2a73f1e247c9fab8812788ba788836a54a4",
+      "common_profile_declaration_excerpt_sha256": "617ca21f6799e5571a21309010b87d426571b8001c9079412d29f92c383479f2"
+    },
+    "axis_direction": {
+      "x_positive": "right_to_left",
+      "y_positive": "front_to_back",
+      "z_positive": "feet_to_head",
+      "axis_mapping": "index_x_to_world_x;index_y_to_world_y;index_z_to_world_z",
+      "authority": "XCAT parameter-file notes describing the x, y, and z axes",
+      "convention_limit": "No RAS or LPS convention is claimed."
+    },
+    "spacing": {
+      "x_mm": "10*pixel_width_cm",
+      "y_mm": "10*pixel_width_cm",
+      "z_mm": "10*slice_width_cm"
+    },
+    "startslice_note_behavior": "A value of zero is just below the feet and increasing values move toward the head."
+  },
+  "authoritative_field_grid_contract": {
+    "association": "cell",
+    "cell_dimensions": [
+      "X",
+      "Y",
+      "Z"
+    ],
+    "vtk_point_dimensions": [
+      "X+1",
+      "Y+1",
+      "Z+1"
+    ],
+    "spacing_mm": [
+      "10*pixel_width_cm",
+      "10*pixel_width_cm",
+      "10*slice_width_cm"
+    ],
+    "grid_boundary_origin_mm_for_startslice_1": [
+      "-0.5*X*spacing_x_mm",
+      "-0.5*Y*spacing_y_mm",
+      "0"
+    ],
+    "index_to_world_transform": "positive_diagonal_grid_boundary_transform",
+    "registration_authority": "content-identified XCAT-v2 generator reverse engineering plus parameter-file coordinate contract",
+    "bbox_fit_is_registration_authority": false
+  },
+  "raw_coordinate_behavior": {
+    "format": "ASCII labeled triangle soup",
+    "coordinate_count_per_triangle": 9,
+    "coordinate_unit_for_bounded_profile": "mm",
+    "campaign_surface_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "campaign_surface_translation_mm": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "observed_behavior_for_startslice_1": "x and y use the centered physical generator coordinates; z is output-local and increases from the feet toward the head.",
+    "import_behavior": "Finite RAW coordinates are preserved without inferred axis permutation; source triangles are materialized as array-free vtkPolyData.",
+    "evidence_basis": "generator/parameter contract corroborated by frame-1 occupied-field-to-RAW bounding-box diagnostics"
+  },
+  "field_value_semantics": {
+    "activ_output_format_0": "numbered activity BIN values are stored as float32",
+    "color_code_1": "each structure is written using its unique XCAT structure code rather than physiological activity",
+    "activity_unit_0": "no voxel-volume activity scaling is applied",
+    "numbered_activity": {
+      "quantity": "xcat_structure_color_code",
+      "unit": "1",
+      "categorical": true,
+      "physical_activity_interpretation": false
+    },
+    "average_activity": {
+      "quantity": "xcat_temporal_mean_structure_color_code",
+      "unit": "1",
+      "categorical": false,
+      "diagnostic_only": true,
+      "label_authority": false
+    },
+    "attenuation": {
+      "quantity": "linear_attenuation_coefficient",
+      "stored_unit": "1/pixel",
+      "conversion_to_1_per_cm": "divide by pixel_width_cm"
+    }
+  },
+  "frame_1_bbox_diagnostic_observations": {
+    "role": "plausibility_diagnostic_not_independent_registration",
+    "case_count": 12,
+    "axis_observation_count": 36,
+    "diagnostic_to_authoritative_spacing_ratio": {
+      "minimum": {
+        "value": 0.993612366753655,
+        "phantom_id": "260617",
+        "axis": "y"
+      },
+      "maximum": {
+        "value": 1.00025842108508,
+        "phantom_id": "260616",
+        "axis": "z"
+      },
+      "maximum_absolute_deviation_from_1": {
+        "value": 0.006387633246345,
+        "percent": 0.6387633246345,
+        "phantom_id": "260617",
+        "axis": "y"
+      },
+      "mean_absolute_deviation_from_1_across_36_axes": 0.001980684936929,
+      "configured_acceptance_bounds_inclusive": [
+        0.98,
+        1.02
+      ]
+    },
+    "signed_diagnostic_origin_delta_ranges_mm": {
+      "x": [
+        -0.334133931,
+        0.351143926
+      ],
+      "y": [
+        -0.08648648,
+        1.20949337
+      ],
+      "z": [
+        -0.752219404,
+        0.0217592413
+      ]
+    },
+    "maximum_absolute_diagnostic_origin_delta_mm": {
+      "value": 1.20949337,
+      "signed_value": 1.20949337,
+      "phantom_id": "260611",
+      "axis": "y"
+    },
+    "origin_acceptance_rule_mm": "abs(delta_axis)<=max(2.0,2.0*native_spacing_mm_axis)",
+    "interpretation": "The close fit supports plausibility for this frame-1 cohort, but the diagnostic transform is constructed from the same occupied and RAW bounds and is not independent registration evidence."
+  },
+  "known_limits_and_fail_closed_rules": [
+    {
+      "limit": "Every frozen cohort case has X==Y dimensions.",
+      "consequence": "Dimensions and axis-aligned bounds cannot empirically distinguish an x/y permutation.",
+      "authority_retained": "The unswapped x/y mapping relies on generator reverse engineering and parameter-file axis notes."
+    },
+    {
+      "limit": "The headerless origin and x-fastest order are not established by a vendor-published format specification.",
+      "consequence": "They remain explicitly tied to the content-identified generator executable and its reverse-engineered SAVE_TO_FILE behavior."
+    },
+    {
+      "limit": "The occupied-field-to-RAW bounding-box fit is constructed from the compared bounds.",
+      "consequence": "Its near-zero constructed residual is numerical self-consistency, not an independent registration result."
+    },
+    {
+      "limit": "Only startslice=1 has bounded RAW/BIN z-origin evidence.",
+      "consequence": "startslice!=1 is unsupported and must fail closed until an independent fixture establishes its output-local z origin."
+    },
+    {
+      "limit": "The empirical endian canary observes one scalar in one frame-1 source field.",
+      "consequence": "It corroborates byte order but does not independently establish axis order, origin, or temporal generality."
+    },
+    {
+      "limit": "The empirical bounding-box observations cover frame 1 only.",
+      "consequence": "They do not establish registration or layout generality across all 51 frames."
+    }
+  ],
+  "readiness_effect": {
+    "supports": "bounded XCAT-v2 frame-1 source import and runtime-persistence evaluation",
+    "does_not_support": [
+      "vendor-format conformance claim",
+      "independent image-to-surface registration claim",
+      "startslice other than 1",
+      "all-frame temporal generality",
+      "anatomy or solver readiness",
+      "promotion_ready"
+    ],
+    "promotion_ready": false
+  }
+}

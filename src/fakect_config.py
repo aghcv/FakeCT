@@ -34,6 +34,8 @@ _EDIT_FIELDS = {
 }
 _EROSION_GUARD_FIELDS = {"min_volume_ratio", "preserve_connectivity", "backoff_factor", "max_backoff_steps"}
 _OPTIONAL_EDIT_FIELDS = {"assign_surrounding_tissue"} | _EROSION_GUARD_FIELDS
+_OPTIONAL_SELECTION_FIELDS = {"anatomy", "anatomical_labels", "anatomy_file", "include_branches",
+                              "connectivity", "protect_other_arteries"}
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*\Z")
 _CASE_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\Z")
 _TISSUE_NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
@@ -157,7 +159,7 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
     for section, base_fields in fields.items():
         expected = base_fields | ({"shape"} if section == "roi" and version != "fakect.preview/1" else set())
         actual = set(parser[section])
-        optional = {"source_ids"} if section == "selection" else set()
+        optional = ({"source_ids"} | _OPTIONAL_SELECTION_FIELDS) if section == "selection" else set()
         if section == "edit":
             optional |= _OPTIONAL_EDIT_FIELDS
         if actual - expected - optional or expected - actual - optional:
@@ -171,6 +173,27 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
                        for part in _parts(parser["selection"].get("source_ids", "").strip(), "selection.source_ids"))
     if len(set(source_ids)) != len(source_ids):
         raise ValueError("selection.source_ids must not contain duplicate IDs")
+    anatomical_selection = {}
+    if _OPTIONAL_SELECTION_FIELDS.intersection(parser["selection"]):
+        values = parser["selection"]
+        anatomy = re.sub(r"[^a-z0-9]+", "_", values.get("anatomy", "").strip().lower()).strip("_")
+        if values.get("anatomy", "").strip() and not anatomy:
+            raise ValueError("selection.anatomy must contain an anatomical name")
+        names = tuple(_parts(values.get("anatomical_labels", "").strip(), "selection.anatomical_labels"))
+        if len(set(names)) != len(names):
+            raise ValueError("selection.anatomical_labels must not contain duplicate names")
+        filename = values.get("anatomy_file", "").strip()
+        anatomical_selection = {"anatomy": anatomy, "anatomical_labels": names,
+                                "anatomy_file": _path(filename, "selection.anatomy_file", root) if filename else None}
+        for key in ("include_branches", "protect_other_arteries"):
+            value = values.get(key, "true").strip()
+            if value not in {"true", "false"}:
+                raise ValueError(f"selection.{key} must be true or false")
+            anatomical_selection[key] = value == "true"
+        connectivity = _integer(values.get("connectivity", "6").strip(), "selection.connectivity")
+        if connectivity not in (6, 26):
+            raise ValueError("selection.connectivity must be 6 or 26")
+        anatomical_selection["connectivity"] = connectivity
     contexts = tuple(_name(part, "preview.context_tissues", _TISSUE_NAME)
                      for part in _parts(read("preview", "context_tissues"), "preview.context_tissues"))
     if len(set(contexts)) != len(contexts):
@@ -211,7 +234,7 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
                   "audit": _path(read("input", "audit"), "input.audit", root),
                   "catalog": _path(read("input", "catalog"), "input.catalog", root)},
         "selection": {"tissue": _name(read("selection", "tissue"), "selection.tissue", _TISSUE_NAME),
-                      "source_ids": source_ids},
+                      "source_ids": source_ids, **anatomical_selection},
         "roi": {"shape": shape, "center_ijk": center,
                 "radius_mm": radius, "crop_half_width_mm": half_width,
                 "coordinate_reviewed": reviewed == "true"},

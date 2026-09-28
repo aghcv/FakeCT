@@ -357,6 +357,107 @@ def _selected_rows(report, selection):
             for label, count in pairs], 'Original signed IDs observed in the selected tissue–ROI intersection.'
 
 
+def _anatomical_selection(report):
+    selection = report.get('selection', report.get('selection_diagnostics', {}))
+    audit = selection.get('anatomical_selection', report.get('anatomical_selection'))
+    return audit if isinstance(audit, dict) else None
+
+
+def _anatomy_section(output, report, embedded):
+    """Present the captured optional selector without recomputing anatomy."""
+    audit = _anatomical_selection(report)
+    if audit is None:
+        return ''
+    rows, surfaces = [], {}
+    inventory = (audit.get('surface_evidence') or {}).get('records', [])
+    for record in audit.get('records', []):
+        rows.append([_text_value(record.get('original_id')),
+                     _text_value(record.get('original_name')),
+                     _text_value(record.get('canonical_name')),
+                     _text_value(record.get('hierarchy_path')),
+                     _number(record.get('roi_voxels')),
+                     _number(record.get('crop_voxels')),
+                     _number(record.get('connected_roi_voxels')),
+                     _text_value(record.get('decision')),
+                     _text_value(record.get('reason'))])
+        matches = list(record.get('surface_matches', []))
+        for reference in record.get('surface_refs', []):
+            if type(reference) is not int or not 0 <= reference < len(inventory):
+                raise ValueError('Anatomical selection contains an invalid surface reference')
+            matches.append(inventory[reference])
+        for surface in matches:
+            key = ((surface.get('source_file'), surface['group'], surface['local_surface_index'])
+                   if surface.get('group') is not None and surface.get('local_surface_index') is not None
+                   else ('unindexed_surface', id(surface)))
+            entry = surfaces.setdefault(key, {'surface': surface, 'ids': []})
+            if record.get('original_id') not in entry['ids']:
+                entry['ids'].append(record.get('original_id'))
+    surface_rows = []
+    for entry in surfaces.values():
+        surface = entry['surface']
+        samples = surface.get('native_centerline_samples', {})
+        surface_rows.append([_text_value(entry['ids']),
+                             _text_value(surface.get('source_file')),
+                             _text_value(surface.get('group')),
+                             _text_value(surface.get('local_surface_index')),
+                             _text_value(surface.get('original_name')),
+                             _text_value(surface.get('id_join_status')),
+                             _text_value(surface.get('bounds_overlap_roi_envelope')),
+                             _text_value(surface.get('centerline', {}).get('status')),
+                             _text_value(samples.get('matching_name_id_counts')),
+                             _number(samples.get('roi_sample_voxels'))])
+    evidence_summary = {key: value for key, value in (audit.get('surface_evidence') or {}).items()
+                        if key != 'records'}
+    if isinstance(audit.get('surface_evidence'), dict):
+        evidence_summary['surface_record_count'] = len(audit['surface_evidence'].get('records', []))
+    warnings = ''.join('<p class="warning">' + _escape(warning) + '</p>'
+                       for warning in audit.get('warnings', []))
+    download = '<p class="subtle">A captured anatomy-selection.json download is unavailable.</p>'
+    artifact = report.get('anatomy_selection_artifact', {})
+    if artifact.get('path') == 'anatomy-selection.json':
+        raw = (output / 'anatomy-selection.json').read_bytes()
+        sha256 = hashlib.sha256(raw).hexdigest()
+        if sha256 != artifact.get('sha256') or json.loads(raw) != audit:
+            raise ValueError('Captured anatomy selection does not match the report snapshot')
+        embedded['anatomy-selection.json'] = {'bytes': len(raw), 'sha256': sha256}
+        download = ('<p><a download="anatomy-selection.json" href="data:application/json;base64,' +
+                    base64.b64encode(raw).decode('ascii') + '">Download anatomy-selection.json</a> '
+                    '<span class="subtle">SHA256 <code class="hash">' + sha256 + '</code></span></p>')
+    return ('<section id="anatomical-selection"><h2>Optional anatomical filter</h2>'
+            '<p><strong>Anatomical region:</strong> ' + _text_value(audit.get('anatomy') or 'Manual anatomical label names') +
+            '. <strong>Accepted original IDs:</strong> <code>' +
+            _text_value(audit.get('selected_source_ids', [])) + '</code>.</p>' +
+            '<p>The atlas qualifies anatomical names. Automatic resolution uses native labeled voxels '
+            'to qualify whole IDs through ROI contact and configured connectivity. Manual-name selection '
+            'does not request a connectivity test. Generic artery labels remain generic when the atlas '
+            'cannot resolve their identity. Review the accepted and excluded labels before using '
+            'this mask as an anatomical training target.</p>' + warnings +
+            '<p class="rule"><strong>Native target = ROI ∩ all voxels with accepted original IDs.</strong> '
+            'Connectivity qualifies IDs; it does not remove disconnected pieces sharing an accepted ID. '
+            'Paths are bounded by the loaded crop, and voxel contact is not proof of physiological '
+            'connectivity. Review disconnected same-ID pieces or refine the ROI.</p>' +
+            '<p><strong>Connectivity scope:</strong> ' +
+            _text_value(audit.get('connectivity_scope')) + '</p>' +
+            _table(['Original signed ID', 'Original anatomical name', 'Atlas canonical name',
+                    'Atlas hierarchy', 'ROI voxels', 'Crop voxels', 'Connected ROI voxels',
+                    'Decision', 'Reason'], rows) +
+            '<details><summary>RAW surface evidence and uncertainty</summary>'
+            '<p>RAW bounding boxes provide candidate spatial evidence only. A bounding-box overlap '
+            'does not establish triangle intersection or a vascular connection. Surface ordinals '
+            'are local file positions, never voxel label IDs; names and recorded joins link these '
+            'representations. Verified two-pole/ring centerlines, when recorded, provide an additional '
+            'candidate screen without voxelizing the mesh. Unverified topology does not supply a '
+            'centerline. Native-volume contact is authoritative.</p>' +
+            _table(['Candidate voxel label IDs', 'Surface source', 'Group', 'Local surface ordinal',
+                    'Surface name', 'ID join status', 'Bounds overlap ROI envelope',
+                    'Centerline status', 'Name-compatible sampled ACT ID counts', 'Centerline sample voxels in ROI'], surface_rows,
+                   'No matching RAW surface evidence recorded.') +
+            '<pre>' + _escape(json.dumps({'counts': audit.get('counts', {}),
+                                         'surface_evidence': evidence_summary},
+                                        indent=2, ensure_ascii=False, allow_nan=False)) +
+            '</pre></details>' + download + '</section>')
+
+
 def _surface_overlay_section(output, edit, embedded, *, recipe=False):
     """One registered scene comparing original and final full-crop anatomy."""
     if not (output/'edit-overlay.html').is_file() and not (output/'edit-overlay.png').is_file():
@@ -1107,6 +1208,13 @@ def _global_section(output, report, embedded):
         'Choose <code>[selection] tissue</code> and leave <code>source_ids =</code> blank or omit it to '
         'consider every original label in that tissue group. Use a sphere or a narrow tube '
         'to isolate the structure you want when nearby vessels share the same tissue type.</p>')
+    if _anatomical_selection(report) is not None:
+        instruction = (
+            '<p class="rule"><strong>The optional anatomical filter is active.</strong> '
+            'Cyan is a sampled locator for the accepted original IDs across the phantom; '
+            'it is not the final target mask. Exact local selection intersects the saved ROI '
+            'with all voxels carrying accepted IDs, including disconnected same-ID pieces. Review the '
+            '<a href="#anatomical-selection">anatomical decisions</a> in Local view.</p>')
     workflow = ('<details><summary>Use global coordinates to refine the ROI</summary><ol><li>Explore the whole phantom with the global slice controls. Read native '
         '<code>i, j, k</code> coordinates and use the temporary ROI guide to estimate a location '
         'and radius.</li><li>Copy useful coordinates into <code>[roi]</code> or a named '
@@ -1185,8 +1293,10 @@ def write_preview_report(output_dir, report, input_ini_text):
     geometry = report.get('geometry', {})
     kind, nodes = _control_points(report)
     selection, candidate, selected, roi, component_count = _selection(report)
+    anatomy = _anatomical_selection(report)
     warnings = []
     for value in [report.get('selection_warning'), *selection.get('warnings', []),
+                  *((anatomy or {}).get('warnings', [])),
                   *report.get('volume', {}).get('warnings', [])]:
         if value and value not in warnings:
             warnings.append(str(value))
@@ -1209,6 +1319,7 @@ def write_preview_report(output_dir, report, input_ini_text):
     recipe_section = _recipe_section(output, report, embedded) if recipe_enabled else ''
     training_section = _training_section(output, report, embedded) if isinstance(report.get('training_plan'), dict) else ''
     selected_rows, selected_description = _selected_rows(report, selection)
+    anatomy_section = _anatomy_section(output, report, embedded)
     components = selection.get('components_voxels_6', [])
     component_rows = []
     for index, component in enumerate(components):
@@ -1238,6 +1349,13 @@ def write_preview_report(output_dir, report, input_ini_text):
     warning_html = ''.join('<p class="warning">' + _escape(w) + '</p>' for w in warnings)
     selection_filter = ('All original IDs mapped to this tissue are candidates.' if not explicit_ids else
                         'The tissue candidates are additionally restricted to ' + str(len(explicit_ids)) + ' configured original ID(s).')
+    if anatomy is not None:
+        selection_filter = ('Anatomy-qualified tissue candidates use ' +
+                            str(len(anatomy.get('selected_source_ids', []))) +
+                            ' accepted whole original ID(s). Every native voxel carrying one of these '
+                            'IDs inside the ROI is retained; connectivity qualifies IDs rather than voxels.')
+    selection_rule = ('Selected target = anatomy-qualified tissue candidates ∩ ROI.'
+                      if anatomy is not None else 'Selected target = tissue candidates ∩ ROI.')
     kind_explanation = ('The tube follows straight segments between ordered control points, with linearly varying radius and round caps. '
                         'The order is the path order: points are not sorted by coordinate.' if kind == 'tube' else
                         'The center and physical radius define a sphere in native voxel coordinates.')
@@ -1268,6 +1386,22 @@ def write_preview_report(output_dir, report, input_ini_text):
         edit_instruction = ('<li>Adjust named <code>[roi.NAME]</code> regions and <code>[edit.NAME]</code> '
                             'operations. Set their order in <code>[recipe] steps</code>; '
                             '<code>iterations</code> repeats one edit before the next named step.</li>')
+    anatomy_instruction = (
+        '<li>The optional <code>[selection] anatomy</code> region and '
+        '<code>anatomical_labels</code> names further filter the tissue category. '
+        '<code>anatomy_file</code> references the captured automatic selection. '
+        'Refresh that selection when its source inputs or ROI change, then inspect the '
+        '<a href="#anatomical-selection">accepted and excluded labels</a>. '
+        'Original voxel label IDs and local RAW surface ordinals are different identifiers.</li>'
+        if anatomy is not None else '')
+    selection_instruction = (
+        '<li>Choose a tissue in <code>[selection]</code>. Leave <code>source_ids =</code> '
+        'blank to avoid a numeric ID restriction. Original voxel IDs are optional; '
+        'the anatomical filter can supply the accepted IDs. Individual overrides in '
+        '<code>[stiffness.labels]</code> are optional too.</li>' if anatomy is not None else
+        '<li>Choose a tissue in <code>[selection]</code>. Leave <code>source_ids =</code> '
+        'blank for tissue-only selection. Original surface IDs are an optional extra filter; '
+        'individual overrides in <code>[stiffness.labels]</code> are optional too.</li>')
     # Plotly's bundled regl compiler constructs functions dynamically. Its inline
     # WebGL renderer therefore needs unsafe-eval as well as inline scripts.
     # The iframe stays sandboxed without same-origin access; network requests
@@ -1280,9 +1414,10 @@ def write_preview_report(output_dir, report, input_ini_text):
                 '<p class="subtle">' + caption + '</p><span class="status">' + status + '</span>',
                 '</header>' + tab_navigation + '<main><noscript><p>JavaScript is disabled. All report views are shown below; the links jump between them. Static images remain available.</p></noscript>',
                 _panel_start('global') + global_section + '</div>',
-                _panel_start('local') + '<div class="section-links"><a href="#overview">Overview</a><a href="#roi">ROI definition</a><a href="#slices">2D views</a><a href="#volume">3D views</a><a href="#selection">Selection detail</a></div>',
+                _panel_start('local') + '<div class="section-links"><a href="#overview">Overview</a><a href="#roi">ROI definition</a><a href="#slices">2D views</a><a href="#volume">3D views</a><a href="#selection">Selection detail</a>' +
+                ('<a href="#anatomical-selection">Anatomical filter</a>' if anatomy is not None else '') + '</div>',
                 '<section id="slices"><h2>Native 2D inspection' + before_suffix + '</h2><p>Inspect the transparent ROI against the tissue boundaries. Keep the intended target inside the overlay and adjacent structures outside it.</p>' + ''.join(figures[:2]) + '</section>',
-                '<section id="overview"><h2>Selection overview' + before_suffix + '</h2>' + original_notice + '<p class="rule"><strong>Selected target = tissue candidates ∩ ROI.</strong> ' + _escape(selection_filter) +
+                '<section id="overview"><h2>Selection overview' + before_suffix + '</h2>' + original_notice + '<p class="rule"><strong>' + selection_rule + '</strong> ' + _escape(selection_filter) +
                 ' A narrow tube can follow one nearby artery while leaving another outside the ROI.</p><div class="metrics">' + metric_html + '</div>' + warning_html,
                 '<p>Unknown or review-required voxels inside the ROI: <strong>' + _number(report.get('unknown_group_voxels_in_roi')) + '</strong>. Inspect magenta regions when reviewing the tissue selection.</p>',
                 '<p>Counts use native voxels in this crop. A single connected component does not prove that only one anatomical vessel is included; nearby vessels may meet or share an original label. Inspect the overlays before changing geometry. The original-label table is optional anatomical detail, not required input.</p></section>',
@@ -1297,10 +1432,10 @@ def write_preview_report(output_dir, report, input_ini_text):
                 '<details><summary>Connected components and crop composition</summary><p>Components use six-neighbor connectivity on the selected native mask. They are spatial diagnostics, not vessel identities.</p>',
                 _table(['Component', 'Voxels'], component_rows, 'Component sizes not recorded, or selection is empty.'),
                 '<h3>All tissue groups in the crop</h3><p>These counts include context outside the ROI.</p>', _table(['Tissue group', 'Crop voxels'], group_rows),
-                '<p>Unknown or review-required voxels in the crop: <strong>' + _number(report.get('unknown_group_voxels')) + '</strong>. Missing dictionary IDs: <code>' + _text_value(report.get('missing_dictionary_ids', [])) + '</code>.</p></details></section></div>',
+                '<p>Unknown or review-required voxels in the crop: <strong>' + _number(report.get('unknown_group_voxels')) + '</strong>. Missing dictionary IDs: <code>' + _text_value(report.get('missing_dictionary_ids', [])) + '</code>.</p></details></section>' + anatomy_section + '</div>',
                 edit_panel,
                 training_panel,
-                _panel_start('input') + '<section id="input"><h2>Adjust and regenerate</h2><ol><li>Choose a tissue in <code>[selection]</code>. Leave <code>source_ids =</code> blank for tissue-only selection. Original surface IDs are an optional extra filter; individual overrides in <code>[stiffness.labels]</code> are optional too.</li><li>Edit <code>center_ijk</code> and <code>radius_mm</code> below. For a tube, keep control points in path order and provide exactly one radius for each point.</li>' + edit_instruction + '<li>Set a new <code>output.directory</code> to preserve this comparison.</li><li>Download the edited INI and run the command below from the FakeCT checkout.</li></ol>',
+                _panel_start('input') + '<section id="input"><h2>Adjust and regenerate</h2><ol>' + selection_instruction + anatomy_instruction + '<li>Edit <code>center_ijk</code> and <code>radius_mm</code> below. For a tube, keep control points in path order and provide exactly one radius for each point.</li>' + edit_instruction + '<li>Set a new <code>output.directory</code> to preserve this comparison.</li><li>Download the edited INI and run the command below from the FakeCT checkout.</li></ol>',
                 '<pre>' + _escape(report.get('rerun_command', 'python3 scripts/preview_roi.py --config /path/to/xcat-roi.ini')) + '</pre>',
                 '<p class="subtle">Editing this text does not change the displayed figures. They remain the captured result until the preview command is run again.</p>',
                 '<label for="captured-input"><strong>Captured input, editable for the next run</strong></label><textarea id="captured-input" spellcheck="false" aria-describedby="input-status">\n' + _escape(input_ini_text) + '</textarea>',

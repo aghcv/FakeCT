@@ -176,6 +176,14 @@ def prepare_global(resolved, config, max_voxels=MAX_GLOBAL_VOXELS):
                 'display_window_cm_inverse': [lo, hi],
                 'warnings': ['Global views are sampled anatomical locators. Thin structures may be missed; review the regenerated native-grid local views before editing.',
                              'Moving the crosshair or temporary sphere changes this navigator only. Copy coordinates into the INI and rerun to regenerate the local views and edits.']}
+    if isinstance(resolved.get('anatomical_selection'), dict):
+        metadata['selection'].update(
+            anatomy_filter_active=True,
+            anatomy=resolved['anatomical_selection'].get('anatomy'),
+            display_scope='Sampled accepted-ID locator across the whole phantom; not the final target mask. '
+                          'Exact local selection intersects the native ROI with all accepted-ID voxels; '
+                          'ID qualification does not remove disconnected pieces sharing an accepted ID.')
+        metadata['warnings'].append(metadata['selection']['display_scope'])
     return arrays, metadata
 
 
@@ -225,12 +233,15 @@ def _render_static(arrays, metadata, output):
         ax.set_xlabel('ijk'[x]+' (native voxel index)')
         ax.set_ylabel('ijk'[y]+' (native voxel index)')
         ax.set_title(f'{name}: {"ijk"[fixed]} = {native[fixed]}')
-    handles = [Line2D([], [], color='#00efff', label='Selected tissue / optional IDs')]
+    filtered = metadata['selection'].get('anatomy_filter_active', False)
+    handles = [Line2D([], [], color='#00efff', label=('Accepted anatomical IDs (sampled locator)'
+                                                   if filtered else 'Selected tissue / optional IDs'))]
     handles.extend(Line2D([], [], color=r['color'] if r['color'] != '#ffffff' else '#666666',
                           label=r['name']+' ROI (centerline projected)') for r in metadata['rois'])
     fig.legend(handles=handles, loc='outside lower center' if tuple(map(int, matplotlib.__version__.split('.')[:2])) >= (3, 7)
                else 'lower center', ncol=min(len(handles), 4), fontsize=8)
-    fig.suptitle('Whole-phantom context · sampled source anatomy · ROI outlines at sampled planes\n'
+    fig.suptitle(('Whole-phantom context · accepted-ID locator · ROI outlines at sampled planes\n' if filtered else
+                  'Whole-phantom context · sampled source anatomy · ROI outlines at sampled planes\n') +
                  'Use Global navigator to move slices; use Local views for native-resolution review', fontsize=13)
     fig.savefig(output/'roi-global.png', dpi=125, facecolor='white')
     plt.close(fig)
@@ -279,7 +290,7 @@ textarea{box-sizing:border-box;width:100%;min-height:92px;font-family:monospace}
 @media(max-width:760px){.views{grid-template-columns:1fr}.frame{height:370px}}
 </style></head><body>
 <h1>Global · whole-phantom navigator</h1>
-<p class="muted">Start with a tissue type; surface IDs are optional. Move the slices or click an image to locate anatomy in native <b>i, j, k</b> coordinates. Cyan marks the selected tissue, optionally narrowed by IDs.</p>
+<p class="muted" id="selectionScope">Start with a tissue type; surface IDs are optional. Move the slices or click an image to locate anatomy in native <b>i, j, k</b> coordinates. Cyan marks the selected tissue, optionally narrowed by IDs.</p>
 <div class="controls"><label>View <select id="mode"><option value="attenuation">Attenuation</option><option value="tissue">Tissue categories</option></select></label>
 <label><input type="checkbox" id="target" checked> Selected tissue</label><label><input type="checkbox" id="rois" checked> Saved ROIs</label>
 <label><input type="checkbox" id="guide" checked> Temporary sphere guide</label>
@@ -328,7 +339,8 @@ function inside(p,roi){
  }return false;
 }
 function legend(container,color,label){const span=document.createElement('span'),swatch=document.createElement('span');swatch.className='swatch';swatch.style.background=color;span.append(swatch,document.createTextNode(label));container.append(span);}
-legend(el('roiLegend'),'#00efff',D.selection.source_ids_explicit?'Selected '+D.selection.tissue+' (IDs restricted)':'All '+D.selection.tissue+' labels');
+legend(el('roiLegend'),'#00efff',D.selection.anatomy_filter_active?'Accepted '+D.selection.tissue+' IDs (sampled locator)':D.selection.source_ids_explicit?'Selected '+D.selection.tissue+' (IDs restricted)':'All '+D.selection.tissue+' labels');
+if(D.selection.anatomy_filter_active)el('selectionScope').textContent='Cyan marks accepted anatomical IDs across the phantom: an ID locator, not the final target mask. Exact local selection intersects the native ROI with all accepted-ID voxels, including disconnected pieces sharing an accepted ID. Move the slices or click an image to locate anatomy in native i, j, k coordinates.';
 D.rois.forEach(r=>legend(el('roiLegend'),r.color,r.name+' ROI'));
 legend(el('roiLegend'),'#ffe06a','Temporary sphere / crosshair');
 D.categories.forEach(c=>legend(el('tissueLegend'),c.color,c.name));

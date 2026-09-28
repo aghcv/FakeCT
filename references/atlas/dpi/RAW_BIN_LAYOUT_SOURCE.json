@@ -1,0 +1,16 @@
+{
+  "schema_version": "fakect.raw-bin-layout-source/1",
+  "source_repository": "/home/aghorban/repo/dpi",
+  "source_commit": "c7532cfd3c0230cb6cf76f83afe924ed6d791edf",
+  "source_path": "/home/aghorban/repo/dpi/config/modeling/xcat_v2_generator_layout_evidence_v1.json",
+  "snapshot_path": "references/atlas/dpi/xcat_v2_generator_layout_evidence_v1.json",
+  "sha256": "a8207559fa6b39aa3ddc945f1c7e824ce98184f57b80943b95042b3282dd0d9e",
+  "copied_date": "2026-09-28",
+  "purpose": "Bounded coordinate evidence for optional RAW surface envelope diagnostics. Native BIN label contact remains authoritative; this is not independent registration or a surface-to-voxel ID map.",
+  "scope": "Only the twelve named case IDs at frame 1, startslice 1, with verified parameter geometry and a content-matching local XCAT generator.",
+  "centerline_method_reference": {
+    "path": "/home/aghorban/repo/dpi/src/native/surface_model.cpp",
+    "sha256": "c44ad4d2d4deef5e576eb98de2ba6bc84d842396f28056da0e2f88240d0c016d",
+    "implementation_scope": "FakeCT implements a conservative bounded topology proof inspired by DPI. It uses exhaustive graph-distance ring layers, accepts only simple ring cycles, and falls back when proof fails; it is not the full adaptive DPI surface pipeline."
+  }
+}

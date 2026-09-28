@@ -154,7 +154,7 @@ def _resolve_roi(roi, shape, spacing):
             'crop_low_ijk': bounds[0], 'crop_high_ijk_exclusive': bounds[1]}
 
 
-def resolve_preview(config):
+def resolve_preview(config, *, apply_anatomy=True):
     """Validate metadata/selection without reading voxel payloads."""
     input_config = config['input']
     audit_bytes = input_config['audit'].read_bytes()
@@ -236,12 +236,18 @@ def resolve_preview(config):
         source_files[channel] = path
     if shape[1] * shape[2] * 4 > 256 * 1024 ** 2:
         raise ValueError('Source axial plane exceeds the bounded preview reader limit')
-    return {'case': case, 'catalog': catalog, 'catalog_bytes': catalog_bytes,
+    result = {'case': case, 'catalog': catalog, 'catalog_bytes': catalog_bytes,
             'catalog_sha256': hashlib.sha256(catalog_bytes).hexdigest(),
             'audit_sha256': hashlib.sha256(audit_bytes).hexdigest(), 'source_ids': tuple(source_ids),
             'source_names': {str(key): available[key]['original_name'] for key in source_ids},
             'source_files': source_files, **roi,
             'slice_ijk': tuple(slices), 'shape_kji': tuple(shape), 'spacing_ijk_mm': tuple(spacing)}
+    if apply_anatomy and any(key in config['selection'] for key in
+                            ('anatomy', 'anatomical_labels', 'anatomy_file')):
+        from fakect_anatomy import resolve_selection_filter
+        result.update(resolve_selection_filter(config, result))
+        result['source_names'] = {str(key): available[key]['original_name'] for key in result['source_ids']}
+    return result
 
 
 def read_crop(path, shape_kji, low_ijk, high_ijk):
@@ -277,6 +283,9 @@ def read_crop(path, shape_kji, low_ijk, high_ijk):
 
 
 def prepare_crop(resolved, config):
+    if resolved.get('anatomical_selection') is not None:
+        from fakect_anatomy import verify_selection_sources
+        verify_selection_sources(resolved)
     arrays, sources = {}, {}
     for channel, path in resolved['source_files'].items():
         arrays[channel], sources[channel] = read_crop(path, resolved['shape_kji'],
@@ -293,6 +302,9 @@ def prepare_crop(resolved, config):
                                     config['roi']['center_ijk'], resolved['spacing_ijk_mm'], config['roi']['radius_mm'])
     arrays['selected'] = arrays['candidates'] & arrays['roi']
     arrays['attenuation_cm_inverse'] = arrays['atn'] / (resolved['spacing_ijk_mm'][0] / 10)
+    if resolved.get('anatomical_selection') is not None:
+        from fakect_anatomy import verify_selection_crop
+        verify_selection_crop(resolved, arrays)
     return arrays, sources
 
 
@@ -325,4 +337,6 @@ def selection_diagnostics(arrays, resolved=None):
     if resolved is not None:
         result['selected_original_names'] = {
             str(int(key)): resolved.get('source_names', {}).get(str(int(key))) for key in ids}
+        if resolved.get('anatomical_selection') is not None:
+            result['anatomical_selection'] = resolved['anatomical_selection']
     return result

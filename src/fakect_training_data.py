@@ -173,6 +173,31 @@ def _geometry(resolved):
             'orientation': 'Native index grid; physical origin and anatomical orientation unverified'}
 
 
+def _anatomy_provenance(resolved):
+    """Revalidate optional anatomical evidence before binding a data snapshot."""
+    if resolved.get('anatomical_selection') is None:
+        return {}
+    from fakect_anatomy import verify_selection_sources
+    verify_selection_sources(resolved)
+    return {'anatomical_selection': resolved['anatomical_selection'],
+            'anatomy_selection_sha256': resolved.get('anatomy_selection_sha256'),
+            'anatomical_protected_ids': list(resolved.get('anatomical_protected_ids', ()))}
+
+
+def _anatomy_code_modules(resolved):
+    return ('fakect_anatomy.py', 'fakect_anatomy_surfaces.py', 'fakect_anatomy_centerlines.py') if resolved.get('anatomical_selection') is not None else ()
+
+
+def _write_anatomical_selection_snapshot(output, resolved):
+    if resolved.get('anatomical_selection') is None:
+        return
+    payload = resolved.get('anatomy_selection_bytes')
+    if payload is None:
+        _write_json(output/'anatomical-selection.json', resolved['anatomical_selection'])
+    else:
+        (output/'anatomical-selection.json').write_bytes(payload)
+
+
 def _provenance(config, resolved):
     if _recipe_study(config):
         from fakect_recipe_training import recipe_provenance
@@ -187,10 +212,10 @@ def _provenance(config, resolved):
         if _file_hash(config['input'][key]) != resolved[key + '_sha256']:
             raise ValueError(f'{key} changed after source resolution')
     modules = ('fakect_training_data.py', 'fakect_morphology.py', 'fakect_reassignment.py', 'fakect_released.py', 'fakect_erosion_guard.py',
-               'fakect_roi.py', 'fakect_tissues.py')
+               'fakect_roi.py', 'fakect_tissues.py') + _anatomy_code_modules(resolved)
     metadata_sources = {str(resolved['case'][name]): _file_hash(resolved['case'][name])
                         for name in ('par_path', 'log_path') if name in resolved.get('case', {})}
-    return {'input': config['input'], 'selection': config['selection'], 'roi': config['roi'],
+    return {**_anatomy_provenance(resolved), 'input': config['input'], 'selection': config['selection'], 'roi': config['roi'],
             'edit': config['edit'], 'reassignment': config['reassignment'],
             'train': {key: config['train'][key] for key in _DATA_TRAIN_KEYS},
             'geometry': _geometry(resolved), 'source_ids': list(resolved['source_ids']),
@@ -306,6 +331,7 @@ def prepare_training_dataset(config, resolved, *, input_bytes=None):
                geometry_json=np.array(_canonical(geometry)),
                catalog_json=np.array(resolved['catalog_bytes'].decode('utf-8')))
     _write_json(output / 'data-config.json', provenance)
+    _write_anatomical_selection_snapshot(output, resolved)
     groups, samples = {}, []
     baseline_mask_hash = _array_hash(original_mask.astype(np.uint8))
     for variant in variants:

@@ -25,6 +25,32 @@ _TOL = 1e-9
 _STRUCTURE = ndimage.generate_binary_structure(3, 1)
 
 
+def apply_anatomical_protection(labels, resolved, eligible, protected, metadata):
+    """Keep excluded arteries out of donor/recipient ownership, with exact audit rows."""
+    ids = tuple(resolved.get('anatomical_protected_ids', ()))
+    if not ids:
+        return eligible, protected, metadata
+    mask = np.isin(labels, ids)
+    eligible = eligible & ~mask
+    protected = protected | mask
+    protected_rows = {row['original_id']: dict(row) for row in metadata['protected_input_labels']}
+    for row in metadata['eligible_input_labels']:
+        if row['original_id'] in ids:
+            protected_rows[row['original_id']] = dict(row)
+    for key in ids:
+        if key in protected_rows:
+            row = protected_rows[key]
+            row['reasons'] = list(row.get('reasons', ())) + ['excluded_anatomical_artery']
+    metadata = {**metadata,
+        'eligible_voxels': int(eligible.sum()), 'protected_voxels': int(protected.sum()),
+        'eligible_input_labels': [row for row in metadata['eligible_input_labels'] if row['original_id'] not in ids],
+        'protected_input_labels': [protected_rows[key] for key in sorted(protected_rows)],
+        'anatomical_protection': {
+            'source_ids': list(ids), 'input_voxels': int(mask.sum()),
+            'semantics': 'Arteries excluded by anatomical selection cannot be borrowed or seed recipient-label reassignment.'}}
+    return eligible, protected, metadata
+
+
 def _edit_spec(resolved, config):
     edit = config.get('edit', {})
     erosion_guard_spec(config)
@@ -67,6 +93,13 @@ def _edit_spec(resolved, config):
     target_ids = resolved.get('source_ids') or config['selection'].get('source_ids') or tuple(
         record['original_id'] for record in resolved['catalog']['records']
         if record['classification']['tissue_name'] == target)
+    anatomical_protected = tuple(resolved.get('anatomical_protected_ids', ()))
+    if anatomical_protected:
+        available = {record['original_id']: record for record in resolved['catalog']['records']}
+        if (set(anatomical_protected).intersection(target_ids) or any(
+                key not in available or available[key]['classification']['tissue_name'] != 'artery'
+                for key in anatomical_protected)):
+            raise ValueError('Anatomically protected IDs must be catalogued arteries outside the selected target IDs')
     validate_reassignment_policy(resolved['catalog'], policy, target, target_ids)
     if target not in categories or (operation != 'none' and target in ('unknown', 'background', 'released')):
         raise ValueError('The edit target must be a known anatomical tissue, not unknown/background')
@@ -74,7 +107,7 @@ def _edit_spec(resolved, config):
             'distance': distance, 'search': search, 'profile': profile,
             'axis': axis, 'shape_k': shape_k, 'window': window, 'unresolved': unresolved,
             'target_code': categories[target], 'allowed_codes': tuple(categories[n] for n in allowed),
-            'allowed_tissues': allowed}
+            'allowed_tissues': allowed, 'anatomical_protected_ids': anatomical_protected}
 
 
 def validate_edit_geometry(resolved, config):
@@ -382,6 +415,8 @@ def _apply_morphology_once(arrays, resolved, config):
     edited = labels.copy()
     proxy = attenuation.copy()
     eligible, protected, reassignment_policy = reassignment_masks(labels, candidates, resolved['catalog'], config.get('reassignment', {}))
+    eligible, protected, reassignment_policy = apply_anatomical_protection(
+        labels, resolved, eligible, protected, reassignment_policy)
     warnings = []
     target_seed_index = np.full(labels.shape, -1, dtype=np.int32) if selection_mode else None
     if directional is not None:

@@ -23,7 +23,8 @@ from fakect_released import RELEASED_LABEL_ID
 from fakect_roi import prepare_crop
 from fakect_training_data import (SCHEMA, IMAGE_WARNING, SPLIT_WARNING, _array_hash,
                                   _canonical, _file_hash, _geometry, _json_value,
-                                  _write_json, _write_npz)
+                                  _write_json, _write_npz, _anatomy_provenance,
+                                  _anatomy_code_modules, _write_anatomical_selection_snapshot)
 
 
 PREFLIGHT_SCHEMA = 'fakect.recipe-preflight/1'
@@ -56,7 +57,7 @@ def recipe_provenance(config, resolved):
             raise ValueError(f'{key} changed after source resolution')
     metadata = {str(resolved['case'][key]): _file_hash(resolved['case'][key])
                 for key in ('par_path', 'log_path') if key in resolved.get('case', {})}
-    return {'study_schema': config['study']['schema_version'],
+    return {**_anatomy_provenance(resolved), 'study_schema': config['study']['schema_version'],
             **{key: config[key] for key in ('input', 'selection', 'roi', 'rois', 'recipe', 'edits', 'reassignment')},
             'sweeps': config.get('sweeps', {}), 'centerline': config.get('centerline'),
             'train': {key: config['train'][key] for key in _TRAIN_DATA_KEYS},
@@ -66,7 +67,8 @@ def recipe_provenance(config, resolved):
             'source_files': sources, 'source_metadata_sha256': metadata,
             'source_integrity_scope': 'File size/mtime plus saved crop hashes; full source volumes are not hashed',
             'code_sha256': {name: _file_hash(Path(__file__).with_name(name)) for name in
-                           (_MODULES + ('fakect_cohort_config.py',) if config['study']['schema_version'] == 'fakect.recipe-cohort/1' else _MODULES)}}
+                           ((_MODULES + ('fakect_cohort_config.py',) if config['study']['schema_version'] == 'fakect.recipe-cohort/1' else _MODULES)
+                            + _anatomy_code_modules(resolved))}}
 
 
 def _fingerprint(config, resolved):
@@ -97,6 +99,7 @@ def _reserve(config, resolved, output, input_bytes, provenance, *, prepare):
     _write_json(output/'data-config.json', provenance)
     (output/'source-label-catalog.json').write_bytes(resolved['catalog_bytes'])
     (output/'source-audit.json').write_bytes(Path(config['input']['audit']).read_bytes())
+    _write_anatomical_selection_snapshot(output, resolved)
     if prepare:
         (output/'variants').mkdir()
 
