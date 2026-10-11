@@ -1,0 +1,3 @@
+# Optional offline ROI report interaction checks; core/ML environments stay separate.
+-r requirements-dev.txt
+playwright>=1.48,<2

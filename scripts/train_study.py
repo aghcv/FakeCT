@@ -65,7 +65,7 @@ def study_plan(config, resolved, variants):
     })
 
 
-def run(config_path, stage=None, validate_only=False):
+def run(config_path, stage=None, validate_only=False, *, preview_mode=None):
     config_path = Path(config_path).expanduser().resolve()
     input_bytes = config_path.read_bytes()
     config = load_study_config(config_path)
@@ -77,9 +77,22 @@ def run(config_path, stage=None, validate_only=False):
             raise ValueError('Unsupported study stage')
         config['train']['stage'] = stage
     stage = config['train']['stage']
+    if preview_mode is not None:
+        if stage != 'preview' or preview_mode not in ('full', 'roi-selection'):
+            raise ValueError('--preview-mode is supported only for the preview stage: full or roi-selection')
+        config['preview']['mode'] = preview_mode
     cohort_only = config['study']['schema_version'] == 'fakect.recipe-cohort/1'
     if (cohort_only and stage == 'fit') or (stage == 'freeze' and not cohort_only):
         raise ValueError('Generation-only cohorts use freeze/prepare; fitting belongs to a separate model experiment')
+    if stage == 'preview' and config['preview'].get('mode') == 'roi-selection':
+        # ROI placement is an independent display step. Do not execute or
+        # preflight a morphology sweep while a student is locating controls.
+        from preview_roi import run as preview
+        return preview(config_path, validate_only=validate_only,
+                       config_override=config, expected_input_bytes=input_bytes,
+                       extra_code_files=(Path(__file__), ROOT/'src/fakect_study_config.py',
+                                         ROOT/'src/fakect_cohort_config.py',
+                                         ROOT/'src/fakect_recipe_study_config.py'))
     resolved = resolve_preview(config)
     # Native recipe backends validate every variant themselves. Do not repeat
     # this potentially expensive geometry planning before entering them.
@@ -157,9 +170,11 @@ def main():
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--stage', choices=sorted(ALL_STAGES), help='Explicitly override train.stage; recipe preflight executes every planned combination without exporting training pairs')
     parser.add_argument('--validate-only', action='store_true', help='Check metadata and all planned edit bounds without reading voxels or writing outputs')
+    parser.add_argument('--preview-mode', choices=('roi-selection', 'full'),
+                        help='Preview only: use four-panel control-point review or the complete edit report, with the same INI')
     args = parser.parse_args()
     try:
-        result = run(args.config, args.stage, args.validate_only)
+        result = run(args.config, args.stage, args.validate_only, preview_mode=args.preview_mode)
         if (not args.validate_only and isinstance(result, dict) and result.get('stage') == 'preflight'
                 and (not result.get('execution_valid') or not (result.get('fit_ready') or result.get('cohort_ready')))):
             parser.exit(2, 'error: native preflight found failed simulations or insufficient distinct holdouts; '

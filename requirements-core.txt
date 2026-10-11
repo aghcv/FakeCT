@@ -1,0 +1,9 @@
+# Student CPU workflow: ROI review, morphology, cohorts and paired exports.
+# No TensorFlow, PyTorch, pretrained weights, GUI server or XCAT license required.
+# Python 3.10–3.12 is the CI-supported range. Keep NumPy 1.x for TF 2.17 reuse.
+numpy>=1.24,<2
+scipy>=1.10,<2
+scikit-image>=0.21,<1
+matplotlib>=3.7,<4
+plotly>=5.18,<7
+pillow>=10,<13

@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shlex
 import sys
 
 import numpy as np
@@ -165,12 +166,82 @@ def render_slices(arrays, resolved, config, output):
     return {'planes': selections, 'z_stack_k': levels, 'attenuation_window_cm_inverse': window}
 
 
+def run_roi_selection(config_path, config_bytes, config, resolved, arrays, sources, selection, code_files, code_hashes):
+    """Publish the deliberately small selection workbench without executing edits."""
+    from fakect_roi_selection_preview import render_control_point_panels, write_roi_selection_report
+
+    output = config['output']['directory']
+    output.mkdir(parents=True, exist_ok=True)
+    (output/'INCOMPLETE').write_text('ROI selection preview is incomplete; no final report has been published.\n')
+    anatomy_artifact = capture_anatomy_selection(resolved, output)
+    figures = render_control_point_panels(arrays, resolved, config, output)
+    geometry = {'array_order':'kji', 'source_shape_kji':resolved['shape_kji'],
+                'crop_origin_ijk':resolved['crop_low_ijk'], 'crop_high_ijk_exclusive':resolved['crop_high_ijk_exclusive'],
+                'crop_shape_kji':list(arrays['act'].shape), 'spacing_ijk_mm':resolved['spacing_ijk_mm'],
+                'roi_kind':resolved['roi_kind'], 'nodes_ijk':resolved['roi_nodes_ijk'],
+                'radii_mm':resolved['roi_radii_mm'], 'focus_ijk':resolved['focus_ijk'],
+                'roi_semantics':'Union of linearly varying-radius balls along exact ordered polyline; round caps',
+                'orientation':'Native indices; anatomical orientation and physical origin unverified'}
+    report = {'schema_version':'fakect.roi-preview/5', 'preview_mode':'roi-selection',
+              'generated_at_utc':datetime.now(timezone.utc).isoformat(),
+              'preview_only':True, 'geometry_edited':False, 'source_volumes_modified':False,
+              'scalar_recovery_performed':False, 'config':json_value(config),
+              'input_config_sha256':hashlib.sha256(config_bytes).hexdigest(),
+              'catalog_sha256':resolved['catalog_sha256'], 'audit_sha256':resolved['audit_sha256'],
+              'policy_version':resolved['catalog']['policy_version'], 'atlas_sources':resolved['catalog']['sources'],
+              'source_files':sources, 'source_ids':list(resolved['source_ids']),
+              'source_names':resolved['source_names'], 'selection':selection, 'geometry':geometry,
+              'source_ids_semantics':'Initial selected mask is candidate tissue AND ROI; source IDs and optional anatomy filter remain intact',
+              'crop_voxels':int(arrays['act'].size), 'selected_voxels':int(arrays['selected'].sum()),
+              'candidate_voxels':int(arrays['candidates'].sum()), 'roi_voxels':int(arrays['roi'].sum()),
+              'roi_selection':figures, 'code_sha256':code_hashes,
+              'rerun_command':f'python3 scripts/preview_roi.py --config {config_path}'}
+    quoted_config = shlex.quote(str(config_path))
+    if 'train' in config:
+        script = 'prepare_cohort.py' if config['study']['schema_version'] == 'fakect.recipe-cohort/1' else 'train_study.py'
+        report['rerun_command'] = f'python3 scripts/{script} --config {quoted_config} --stage preview --preview-mode roi-selection'
+    else:
+        report['rerun_command'] = f'python3 scripts/preview_roi.py --config {quoted_config}'
+    if anatomy_artifact is not None:
+        report['anatomy_selection_artifact'] = anatomy_artifact
+    if resolved['catalog'].get('diagnostic_extension'):
+        (output/'derived-label-catalog.json').write_text(json.dumps(resolved['catalog'],indent=2)+'\n')
+    np.savez_compressed(output/'crop.npz', original_labels=arrays['act'], tissue_labels=arrays['tissue'],
+                        attenuation_per_pixel=arrays['atn'], candidate_mask=arrays['candidates'],
+                        selected_mask=arrays['selected'], roi_mask=arrays['roi'],
+                        geometry_json=np.array(json.dumps(json_value(geometry))),
+                        catalog_sha256=np.array(resolved['catalog_sha256']),
+                        catalog_json=np.array(resolved['catalog_bytes'].decode('utf-8')))
+    (output/'input.ini').write_bytes(config_bytes)
+    (output/'resolved-config.json').write_text(json.dumps(json_value(config),indent=2)+'\n')
+    for source in sources.values():
+        stat = Path(source['path']).stat()
+        if stat.st_size != source['bytes'] or stat.st_mtime_ns != source['mtime_ns']:
+            raise ValueError('Source changed during ROI rendering; rerun to a new directory')
+    if Path(config_path).read_bytes() != config_bytes:
+        raise ValueError('INI changed during ROI rendering; rerun from the saved input to a new directory')
+    if any(digest(path) != code_hashes[str(path.relative_to(ROOT))] for path in code_files):
+        raise ValueError('Preview source code changed during rendering; retain partial outputs and rerun to a new directory')
+    report['artifacts_sha256'] = {str(path.relative_to(output)):digest(path) for path in output.rglob('*')
+                                 if path.is_file() and path.name != 'INCOMPLETE'}
+    report['html_report'] = write_roi_selection_report(output,json_value(report),config_bytes.decode('utf-8-sig'))
+    (output/'preview-report.json').write_text(json.dumps(json_value(report),indent=2,allow_nan=False)+'\n')
+    (output/'INCOMPLETE').unlink()
+    manifest = {str(path.relative_to(output)):digest(path) for path in output.rglob('*') if path.is_file()}
+    (output/'artifact-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+    print(json.dumps({'report':str(output/'report.html'), 'preview_mode':'roi-selection',
+                      'controls':sum(len(roi['points']) for roi in figures['rois']),
+                      'selected_voxels':report['selected_voxels'], 'source_volumes_modified':False},indent=2),flush=True)
+    return report
+
+
 def run(config_path, validate_only=False, *, config_override=None, training_plan=None, extra_code_files=(), expected_input_bytes=None):
     config_path = Path(config_path).expanduser().resolve()
     config_bytes = Path(config_path).read_bytes()
     if expected_input_bytes is not None and config_bytes != expected_input_bytes:
         raise ValueError('Input changed before rendering; rerun from the saved file')
     config = load_preview_config(config_path) if config_override is None else config_override
+    selection_only = config['preview'].get('mode', 'full') == 'roi-selection'
     if Path(config_path).read_bytes() != config_bytes:
         raise ValueError('INI changed while loading; rerun with the saved input')
     code_files = [Path(__file__), ROOT/'src/fakect_roi.py', ROOT/'src/fakect_config.py',
@@ -181,6 +252,8 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
     code_files += [ROOT/'src/fakect_direction.py', ROOT/'src/fakect_centerline_frame.py', ROOT/'src/fakect_released.py',
                    ROOT/'src/fakect_erosion_guard.py']
     code_files += [Path(p) for p in extra_code_files]
+    if selection_only:
+        code_files.append(ROOT/'src/fakect_roi_selection_preview.py')
     if any(config['selection'].get(key) for key in ('anatomy', 'anatomical_labels', 'anatomy_file')):
         code_files += [ROOT/'src/fakect_anatomy.py', ROOT/'src/fakect_anatomy_surfaces.py',
                        ROOT/'src/fakect_anatomy_centerlines.py']
@@ -193,10 +266,10 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
     resolved = resolve_preview(config)
     edit_requested = config.get('edit', {}).get('operation', 'none') != 'none'
     recipe_plan = None
-    if recipe_requested:
+    if recipe_requested and not selection_only:
         from fakect_recipe import validate_recipe
         recipe_plan = validate_recipe(config, resolved)
-    if 'edit' in config:
+    if 'edit' in config and not selection_only:
         from fakect_morphology import validate_edit_geometry
         validate_edit_geometry(resolved, config)
     output = config['output']['directory']
@@ -211,12 +284,15 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
                                      'candidate_id_count': len(resolved['source_ids']),
                                      'roi_shape': resolved['roi_kind'], 'roi_nodes_ijk': resolved['roi_nodes_ijk'],
                                      'roi_radii_mm': resolved['roi_radii_mm'], 'slice_ijk': resolved['slice_ijk'],
-                                     'operation': config.get('edit', {}).get('operation', 'none'),
+                                     'preview_mode': config['preview'].get('mode', 'full'),
+                                     'operation': 'none' if selection_only else config.get('edit', {}).get('operation', 'none'),
                                      'recipe': recipe_plan,
                                      'output': output}), indent=2))
         return
     arrays, sources = prepare_crop(resolved, config)
     selection = selection_diagnostics(arrays, resolved)
+    if selection_only:
+        return run_roi_selection(config_path,config_bytes,config,resolved,arrays,sources,selection,code_files,code_hashes)
     edit_result = None
     recipe_steps = []
     recipe_figures = None

@@ -12,6 +12,7 @@ build/
 # ---- Virtual Environments ----
 .env/
 .venv/
+.venv-*/
 venv/
 env/
 .fakect_env/
@@ -54,6 +55,8 @@ htmlcov/
 .coverage
 .cache/
 pytest_cache/
+.pytest_cache/
+test-results/
 
 # Integration runs and cluster logs
 logs/

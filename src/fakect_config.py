@@ -36,6 +36,7 @@ _EROSION_GUARD_FIELDS = {"min_volume_ratio", "preserve_connectivity", "backoff_f
 _OPTIONAL_EDIT_FIELDS = {"assign_surrounding_tissue"} | _EROSION_GUARD_FIELDS
 _OPTIONAL_SELECTION_FIELDS = {"anatomy", "anatomical_labels", "anatomy_file", "include_branches",
                               "connectivity", "protect_other_arteries"}
+_OPTIONAL_PREVIEW_FIELDS = {"mode", "content"}
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*\Z")
 _CASE_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\Z")
 _TISSUE_NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
@@ -160,6 +161,8 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
         expected = base_fields | ({"shape"} if section == "roi" and version != "fakect.preview/1" else set())
         actual = set(parser[section])
         optional = ({"source_ids"} | _OPTIONAL_SELECTION_FIELDS) if section == "selection" else set()
+        if section == "preview":
+            optional |= _OPTIONAL_PREVIEW_FIELDS
         if section == "edit":
             optional |= _OPTIONAL_EDIT_FIELDS
         if actual - expected - optional or expected - actual - optional:
@@ -225,6 +228,12 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
     if half_width < largest_radius:
         raise ValueError("roi.crop_half_width_mm must be >= the largest roi.radius_mm to contain the ROI")
     slice_value = read("preview", "slice_ijk")
+    preview_mode = parser["preview"].get("mode", "full").strip()
+    if preview_mode not in {"full", "roi-selection"}:
+        raise ValueError("preview.mode must be full or roi-selection")
+    preview_content = parser["preview"].get("content", "attenuation").strip()
+    if preview_content not in {"attenuation", "labels"}:
+        raise ValueError("preview.content must be attenuation or labels")
     result = {
         "study": {"schema_version": version,
                   "name": _name(read("study", "name"), "study.name", _IDENTIFIER)},
@@ -239,6 +248,7 @@ def parse_preview_sections(parser, root=REPOSITORY_ROOT):
                 "radius_mm": radius, "crop_half_width_mm": half_width,
                 "coordinate_reviewed": reviewed == "true"},
         "preview": {"slice_ijk": None if slice_value == "roi" else _indices(slice_value, "preview.slice_ijk"),
+                    "mode": preview_mode, "content": preview_content,
                     "overlay_opacity": _float(read("preview", "overlay_opacity"),
                                                "preview.overlay_opacity", opacity=True),
                     "volume_opacity": _float(read("preview", "volume_opacity"),

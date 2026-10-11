@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FakeCT · Testing and contribution guide</title>
+<style>
+:root{color-scheme:light;--ink:#18283b;--muted:#536478;--accent:#08698b;--edge:#d6e3eb}
+*{box-sizing:border-box}body{margin:0;background:#f4f7fa;color:var(--ink);font:17px/1.65 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:36px 24px 64px}a{color:var(--accent)}header{border-bottom:3px solid var(--accent);padding-bottom:20px;margin-bottom:24px}h1{font-size:36px;line-height:1.2}h2{font-size:25px;margin-top:36px}h3{font-size:20px}p{margin:12px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#102337;color:#ecf7ff;padding:18px;border-radius:8px;font:14px/1.6 ui-monospace,monospace}code{font-family:ui-monospace,monospace}table{border-collapse:collapse;width:100%;background:white}th,td{padding:12px;text-align:left;border:1px solid var(--edge);vertical-align:top}th{background:#e8f3f8}.callout{padding:16px 20px;border-left:5px solid #087996;background:white}.muted{color:var(--muted)}nav{display:flex;gap:18px;flex-wrap:wrap}li{margin:8px 0}@media(max-width:650px){main{padding:24px 16px}h1{font-size:29px}table{font-size:14px}}
+</style>
+</head>
+<body><main>
+<header><p class="muted">FakeCT student framework · Developer guide</p><h1>Protect the pipeline while changing it</h1>
+<nav><a href="index.html">Student walkthrough</a><a href="#setup">Install</a><a href="#coverage">Regression contracts</a><a href="#tensorflow">TensorFlow</a><a href="#contribute">Before a pull request</a></nav></header>
+<p>The default tests use small generated arrays, miniature binary volumes, temporary folders and miniature RAW tube surfaces. They exercise production geometry and dataset code without downloading XCAT, allocating a GPU or accessing existing study outputs.</p>
+<div class="callout"><strong>Three distinct kinds of evidence:</strong> CPU contracts protect reproducibility and data handling; TensorFlow smoke tests check that a small model really learns, saves and reloads; held-out scientific experiments measure model performance. Passing one is not evidence for the other two.</div>
+
+<h2 id="setup">1. A separate core development environment</h2>
+<p>Use Python 3.10–3.12; CI runs Linux on both 3.10 and 3.12. Execute these commands from the repository root. A fresh virtual environment keeps installed model backends from automatically enabling their optional tests.</p>
+<pre>python3 -m venv .venv-core
+source .venv-core/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements-dev.txt
+python -m pip check
+MPLBACKEND=Agg python -m pytest</pre>
+<p>On Windows activate with <code>.venv-core\Scripts\activate</code>; in PowerShell set <code>$env:MPLBACKEND = "Agg"</code> before running pytest. These are local commands; automated CI currently verifies Linux. The application itself needs only <a href="../../requirements-core.txt">requirements-core.txt</a>. The development profile adds pytest and nibabel to test NIfTI orientation and native-volume comparisons.</p>
+<p><a href="../../pytest.ini">pytest.ini</a> makes source, script and fixture imports explicit. The existing tests are also standard-library <code>unittest</code> tests:</p>
+<pre>PYTHONPATH=src:scripts MPLBACKEND=Agg python -m unittest discover -s tests</pre>
+<p>Dependency ranges are compatibility bounds, not a locked environment. CI publishes the resolved <code>pip freeze</code> alongside JUnit results. Save a freeze file when reproducing a scientific result. The existing <code>requirements.txt</code> remains a legacy all-in-one desktop/training profile; it is not the student CPU test environment.</p>
+<p>Pytest lists skip reasons at the end of every run. Optional model backends, browser checks and a few historical real-study checks with unavailable registry/lock artifacts can skip in a fresh clone. The generated phantom and CPU contract tests do not require those historical outputs. Do not report skipped checks as executed validation.</p>
+
+<h2 id="coverage">2. Contracts the suite protects</h2>
+<table><thead><tr><th>Boundary</th><th>Examples of checks</th><th>Representative tests</th></tr></thead><tbody>
+<tr><td>INI and geometry</td><td>Reject unknown sections, misspelled fields, nonfinite values and mismatched control-point/radius lists; preserve i,j,k versus k,j,i ordering and anisotropic millimetres.</td><td><code>test_preview_config.py</code>, <code>test_roi_preview.py</code>, <code>test_tube_range.py</code>, <code>test_centerline_frame.py</code></td></tr>
+<tr><td>Label identity and selection</td><td>Preserve signed source IDs; keep anatomy/tissue identity distinct; geometry can separate adjacent vessels sharing an ID; atlas and surface contracts cannot silently assume registration.</td><td><code>test_tissues.py</code>, <code>test_anatomy_selection.py</code>, <code>test_anatomy_surfaces.py</code>, <code>test_pretrained_targets.py</code></td></tr>
+<tr><td>Physical edits</td><td>Respect protected tissues, physical distances and original selection ancestry; allow configured growth beyond selection; assign released/borrowed voxel labels and attenuation consistently; never mutate source arrays.</td><td><code>test_morphology.py</code>, <code>test_reassignment.py</code>, <code>test_growth_morphology.py</code>, <code>test_recipe.py</code></td></tr>
+<tr><td>Directional and erosion policies</td><td>Verify centerline frames, inner/outer sectors, longitudinal ranges, connectivity and active-region volume floors; safeguards remain explicitly configured.</td><td><code>test_directional_morphology.py</code>, <code>test_erosion_guard.py</code>, <code>test_recipe_ranges.py</code></td></tr>
+<tr><td>Stage separation</td><td>Metadata-only validation reads no voxel payload and writes no outputs; native preflight executes edits; paired preparation produces matching image/mask grids without fitting a model.</td><td><code>test_recipe_study_workflow.py</code>, <code>test_cohort_preparation.py</code>, <code>test_training_data.py</code></td></tr>
+<tr><td>Frozen datasets and provenance</td><td>Detect changed metadata and payloads, prevent silent overwrites, verify artifact inventories and registry receipts, and reject path traversal.</td><td><code>test_cohort_registry.py</code>, <code>test_cohort_preparation.py</code>, <code>test_model_experiment.py</code></td></tr>
+<tr><td>Training and evaluation isolation</td><td>Keep anatomy families and duplicate geometry together, prevent test data influencing training or thresholds, and distinguish pending results from a zero score.</td><td><code>test_evaluation_design.py</code>, <code>test_model_evaluation.py</code>, <code>test_pretrained_comparison_report.py</code></td></tr>
+<tr><td>Review artifacts</td><td>Check portable HTML, coordinate metadata, artifact hashes and identical comparison grids. New ROI control-point views have analytic resampling and report tests.</td><td><code>test_roi_report_workflow.py</code>, <code>test_surface_overlay.py</code>, <code>test_preview_report.py</code>, student ROI tests</td></tr>
+</tbody></table>
+<p>Run the smallest relevant group while developing, then the complete suite before submitting:</p>
+<pre>python -m pytest tests/test_morphology.py tests/test_recipe.py tests/test_growth_morphology.py
+python -m pytest tests/test_cohort_registry.py tests/test_cohort_preparation.py tests/test_model_experiment.py
+python -m pytest --junitxml=test-results/local.xml</pre>
+
+<h2 id="tensorflow">3. Real TensorFlow CPU smoke tests</h2>
+<p>The core job deliberately has no TensorFlow or PyTorch. Backend-specific tests report skips when those dependencies are absent. A separate CI job installs TensorFlow 2.17.1 and Keras 3.10.0, requires a real CPU runtime, and runs the complete suite with TensorFlow enabled. The focused command below is useful while developing training code.</p>
+<pre>python3 -m venv .venv-tf
+source .venv-tf/bin/activate
+python -m pip install -r requirements-dev.txt -r requirements-tensorflow.txt
+CUDA_VISIBLE_DEVICES=-1 FAKECT_TEST_TENSORFLOW=1 MPLBACKEND=Agg \
+  TF_NUM_INTRAOP_THREADS=1 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=1 \
+  python -m pytest tests/test_tensorflow_steps.py tests/test_segmentation.py \
+    tests/test_fixed_refit_smoke.py tests/test_context_learning.py \
+    tests/test_multiscale_network.py</pre>
+<p>The fixed-refit test deletes held-out test payloads before a real fit: any accidental access fails. It then reloads the saved model and checks finite predictions on a differently sized slice. TensorFlow step tests check that changing tensor values does not create new graph traces, invalid input does not update model weights, and real gradients remain finite.</p>
+<p>Most existing TensorFlow tests enable themselves when TensorFlow is installed; the context-learning smoke tests additionally require <code>FAKECT_TEST_TENSORFLOW=1</code>. Run <code>FAKECT_TEST_TENSORFLOW=1 CUDA_VISIBLE_DEVICES=-1 python -m pytest</code> to repeat full CI discovery. PyTorch tests still skip when their separate environment is absent. A skipped test is not a passed training experiment.</p>
+<p>Wahab GPU use remains a separate, environment-specific integration check. Keep the cluster's supplied CUDA/container stack and validate that environment; do not replace it merely to run CPU tests. Refer to <a href="https://www.tensorflow.org/install/pip">TensorFlow installation guidance</a> and the <a href="https://github.com/tensorflow/tensorflow/releases/tag/v2.17.0">2.17 release notes</a> for platform support.</p>
+
+<h2>4. Test the ROI report in a real offline browser</h2>
+<p>The optional browser job uses Playwright and Chromium to exercise the actual HTML controls. It is separate from the core environment. Browser tests require <code>FAKECT_TEST_BROWSER=1</code> and report skips without that explicit opt-in.</p>
+<pre>python -m pip install -r requirements-browser.txt
+python -m playwright install chromium
+FAKECT_TEST_BROWSER=1 MPLBACKEND=Agg python -m pytest tests/browser</pre>
+<p>The CI browser environment installs Chromium system libraries as well. The browser must be able to open the report with local assets and no external network. Treat navigation, four-panel synchronization, visible coordinates and radius information as interface contracts; numerical tests independently check physical resampling.</p>
+
+<h2>5. Optional pretrained segmentation and real XCAT checks</h2>
+<p>PyTorch, TotalSegmentator and pretrained weights are optional research integrations, isolated in <a href="../../requirements-pretrained.txt">requirements-pretrained.txt</a>. They are not required for the teaching demo or the default CI. When using that environment, run <code>test_pretrained_learning.py</code> to exercise retained output heads, grouped loss, checkpoint strictness and tiled inference. Those tests construct miniature local networks; they do not fetch a vendor checkpoint. Production pretrained inference still requires separately provisioned weights.</p>
+<p>Real XCAT runs require authorized source <code>.bin</code>, <code>.raw</code> and parameter metadata with the correct dimensions, physical resolution and anatomical dictionary. The repository's MIT software license does not itself grant redistribution rights to those source assets or pretrained weights. Keep them and generated studies outside tracked source files. The generated teaching phantom is a mathematical test fixture, not a clinical CT or a licensed XCAT example.</p>
+<p>Once an instructor has provisioned a real case, repeat ROI review, parameter preflight, freezing and paired export as described in the student walkthrough. Record source hashes, atlas version, saved INI and software revision. Treat clinical performance validation as separate work.</p>
+
+<h2 id="contribute">6. Before submitting a student change</h2>
+<ol>
+<li>Create a feature branch and write a failing test for the changed scientific or data-handling contract. Prefer an analytic shape or tiny volume with a clear expected result.</li>
+<li>Run the relevant tests, then the full core suite. For training changes, also run the TensorFlow or pretrained backend tests in their own environment.</li>
+<li>For ROI/report changes, open the generated report, inspect the i,j,k and perpendicular views at the first, interior and last control points, and verify radius/coordinate text. Numerical and HTML checks do not replace a visual review.</li>
+<li>Check <code>git status</code>: source, INI examples and tests belong in Git; generated volumes, checkpoints and experiment folders do not.</li>
+<li>Describe what changed, the contract it protects, exact test results including skips, and any real-case review performed. CI evidence is downloadable from the workflow's artifacts.</li>
+</ol>
+<p class="muted">This page is self-contained and readable offline. External links are optional reference material.</p>
+<p class="muted">CI uses the published v7 examples from the official <a href="https://github.com/actions/checkout">checkout</a>, <a href="https://github.com/actions/setup-python">setup-python</a> and <a href="https://github.com/actions/upload-artifact">upload-artifact</a> repositories.</p>
+</main></body></html>

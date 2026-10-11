@@ -1,0 +1,4 @@
+# Complete CPU regression suite, including tiny NIfTI contracts.
+-r requirements-core.txt
+pytest>=8,<9
+nibabel>=5.2,<6

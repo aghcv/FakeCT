@@ -1,0 +1,9 @@
+# Optional training profile; keep separate from the geometry/core environment.
+# This is the tested project generation, not a request to replace a cluster CUDA image.
+-r requirements-core.txt
+tensorflow==2.17.1
+keras==3.10.0
+# Legacy fakenoise.py imports its viewer/data dependencies even for training.
+pandas>=2,<3
+pynrrd>=1,<2
+dash>=2.17,<4

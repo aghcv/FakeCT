@@ -278,14 +278,22 @@ class ContextLearningTests(unittest.TestCase):
         def volume(row):
             loaded.append(row['split'])
             return FakeVolume()
+        real_package_version = learning.package_version
+        def fixture_package_version(name):
+            # The fake TensorFlow/Keras runtime above has no installed Keras
+            # distribution in the core environment. Keep real CPU dependency
+            # metadata and supply only the explicitly mocked backend version.
+            return 'test' if name == 'keras' else real_package_version(name)
         with tempfile.TemporaryDirectory() as tmp, \
                 patch.object(learning, '_tensorflow', return_value=tf), \
+                patch.object(learning, 'package_version', side_effect=fixture_package_version), \
                 patch.object(learning, 'build_model', return_value=model), \
                 patch.object(learning, '_training_step', return_value=step), \
                 patch.object(learning, '_inference_model', side_effect=identity_inference), \
                 patch.object(learning, '_volume', side_effect=volume):
             directory = Path(tmp)/'model'
             metadata = learning.fit(config, lock, directory, diagnostic=True)
+            self.assertEqual(metadata['keras_version'], 'test')
             self.assertFalse(metadata['test_payloads_loaded'])
             self.assertEqual(metadata['epochs_completed'], 2)
             self.assertEqual(metadata['loaded_samples'], ['train:sample'])
