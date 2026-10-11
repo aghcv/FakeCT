@@ -24,7 +24,7 @@ FakeCT/
   docs/reference/            Detailed method guides
   references/atlas/          Versioned anatomical evidence and dictionaries
   requirements/              Core, development and optional backend profiles
-  data/                      Small public geometry fixtures; local inputs ignored
+  data/                      Legacy geometry examples; local inputs ignored
   outputs/                   Generated reports, pairs and models (ignored)
   scratch/                   Temporary student experiments (ignored)
   scripts/research/           Advanced studies, audits, figures and cluster jobs
@@ -115,6 +115,7 @@ their own dataset backup.
 
 ```bash
 python -m pip install -r requirements/dev.txt
+python -m pytest tests/integration
 python -m pytest
 ```
 
@@ -122,6 +123,12 @@ The suite protects input contracts, physical ROI geometry, serial edits,
 reassignment, safeguards, immutable releases and model split/data boundaries.
 Backend-specific checks use optional environments; see
 [testing.html](docs/student/testing.html) before interpreting skipped tests.
+
+The lightweight integration tests generate 64³ and 96³ CT-like crops with
+arteries, branches, neighboring vessels and resistant tissues. They exercise
+native voxel reads, physical ROI sections, serial edits and frozen paired-data
+publication. The generated voxel files stay in temporary folders; no full CT
+phantom or downloaded dataset is required.
 
 ## Case-study and advanced references
 

@@ -61,7 +61,7 @@ archive/                  Research history and legacy assets</code></pre>
       <tr><td><code>model_experiment.py</code></td><td>Plan, fit, test and summarize a separate experiment.</td></tr>
       <tr><td><code>train_study.py</code></td><td>Compatibility interface for earlier combined study inputs.</td></tr>
       </tbody></table></div>
-      <p>Use <code>prepare_cohort.py</code> and <code>model_experiment.py</code> for new work. Keep reusable INIs under <code>configs/</code>; initialize reports, pairs, registries and checkpoints under <code>outputs/</code>. The small public <code>data/</code> fixtures are tracked; local phantom inputs and large arrays are ignored. Use <code>scratch/</code> for temporary code, then move reviewed reusable changes into the appropriate source folder.</p>
+      <p>Use <code>prepare_cohort.py</code> and <code>model_experiment.py</code> for new work. Keep reusable INIs under <code>configs/</code>; initialize reports, pairs, registries and checkpoints under <code>outputs/</code>. The small legacy <code>data/</code> examples are tracked; local phantom inputs and large arrays are ignored. Use <code>scratch/</code> for temporary code, then move reviewed reusable changes into the appropriate source folder.</p>
       <p>Ignoring generated data prevents accidental Git commits; it is not a backup. Preserve released datasets separately. The <a href="../reference/index.html">method reference index</a> and <a href="../../archive/research/README.html">research archive</a> are optional reading. Follow the <a href="#protection">development checklist</a> when modifying shared modules.</p>
     </section>
     <section id="start">
