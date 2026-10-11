@@ -25,7 +25,7 @@ SCORE = 'coa_local_target_volume_loss_fraction'
 CODE_FILES = ('src/fakect_multiscale_experiment.py', 'src/fakect_multiscale_learning.py',
               'src/fakect_multiscale_volume.py', 'src/fakect_multiscale_network.py',
               'src/fakect_context_volume.py', 'src/fakect_evaluation_design.py',
-              'scripts/train_multiscale_coa.py', 'scripts/slurm/fakect_multiscale_gpu.sh')
+              'scripts/research/train_multiscale_coa.py', 'scripts/research/slurm/fakect_multiscale_gpu.sh')
 FIELDS = {
     'experiment': {'schema_version', 'output_directory'},
     'data': {'manifest', 'annotations', 'annotation_use', 'allow_provisional_anatomy'},

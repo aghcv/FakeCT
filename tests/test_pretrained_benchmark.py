@@ -4,7 +4,7 @@ import importlib.util
 from pathlib import Path
 import unittest
 
-path = Path(__file__).resolve().parents[1] / 'scripts/benchmark_pretrained_aorta.py'
+path = Path(__file__).resolve().parents[1] / 'scripts/research/benchmark_pretrained_aorta.py'
 spec = importlib.util.spec_from_file_location('pretrained_benchmark', path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)

@@ -35,8 +35,16 @@ output/
 temp/
 tmp/
 demos/outputs/
-data/*.vti
-!data/arm.vti
+# Keep only the small, public geometry fixtures in the input-data directory.
+# Student datasets belong in ignored storage; recipes/atlas CSVs remain tracked.
+/data/*
+!/data/arm.vti
+!/data/carotid.stl
+!/data/cube.stl
+!/data/sphere.stl
+*.vti
+!/data/arm.vti
+!/tests/activity_grid_000_001_005.vti
 *.nii
 *.nii.gz
 *.mhd
@@ -45,6 +53,18 @@ data/*.vti
 *.vtk
 *.vtp
 *.vtu
+*.npy
+
+# Local experiments and model checkpoints must not enter the source repository.
+/scratch/
+*.keras
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.ckpt
+*.ckpt.*
+*.safetensors
 
 # ---- OS ----
 .DS_Store
@@ -56,6 +76,9 @@ htmlcov/
 .cache/
 pytest_cache/
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
 test-results/
 
 # Integration runs and cluster logs

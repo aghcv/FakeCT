@@ -36,8 +36,8 @@ CODE_FILES = ('src/fakect_pretrained_study.py','src/fakect_pretrained_data.py','
  'src/fakect_pretrained_comparison_report.py','src/fakect_pretrained_report.py','src/fakect_pretrained_adapter.py',
  'src/fakect_pretrained_evidence.py','src/fakect_context_volume.py','src/fakect_multiscale_experiment.py',
  'src/fakect_anatomy_surfaces.py','src/fakect_anatomy_centerlines.py','src/fakect_two_stage_3d.py',
- 'src/fakect_surface_overlay.py','src/fakect_volume_preview.py','scripts/finetune_aorta.py',
- 'scripts/slurm/fakect_finetune_prepare.sh','scripts/slurm/fakect_finetune_gpu.sh','scripts/slurm/fakect_finetune_report.sh')
+ 'src/fakect_surface_overlay.py','src/fakect_volume_preview.py','scripts/research/finetune_aorta.py',
+ 'scripts/research/slurm/fakect_finetune_prepare.sh','scripts/research/slurm/fakect_finetune_gpu.sh','scripts/research/slurm/fakect_finetune_report.sh')
 
 
 def target_settings(c):

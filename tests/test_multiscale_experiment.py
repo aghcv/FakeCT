@@ -22,7 +22,7 @@ def row(case, variant, score, baseline=False, dilation=1, split='train'):
 class ExperimentTests(unittest.TestCase):
     def test_config_rejects_unknown_parameter_and_invalid_budget(self):
         import tempfile
-        p=Path(__file__).resolve().parents[1]/'configs/models/coa-multiscale-pilot.ini'
+        p=Path(__file__).resolve().parents[1]/'archive/research/configs/models/coa-multiscale-pilot.ini'
         c=e.load_config(p)
         self.assertEqual(c['input.detail']['shape_kji'], [216,160,160])
         for text in [p.read_text().replace('max_chunk_voxels = 4000000','max_chunk_voxels = 8000000'),

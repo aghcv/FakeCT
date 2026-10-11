@@ -442,7 +442,7 @@ def build_figures(experiment, output):
     """Create a new immutable export revision; existing destinations are refused."""
     target = Path(output).resolve()
     generator_root = Path(__file__).resolve().parent.parent
-    generators = [Path(__file__).resolve(), generator_root / "scripts/evaluation/build_coa_poster_figures.py"]
+    generators = [Path(__file__).resolve(), generator_root / "scripts/research/evaluation/build_coa_poster_figures.py"]
     generator_hashes = {str(p.relative_to(generator_root)): fingerprint(p) for p in generators}
     if fingerprint(__file__) != LOADED_MODULE_SHA256:
         raise ValueError("Loaded figure generator source changed before export")

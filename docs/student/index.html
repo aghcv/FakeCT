@@ -13,7 +13,7 @@
 <div class="shell">
   <nav aria-label="Guide contents">
     <strong>FakeCT</strong><p>Student framework · 2026-10-11</p>
-    <a href="#start">1 · Install and start</a><a href="#roi">2 · Find your ROI</a>
+    <a href="#layout">Repository map</a><a href="#start">1 · Install and start</a><a href="#roi">2 · Find your ROI</a>
     <a href="#edit">3 · Design edits</a><a href="#cohort">4 · Freeze and prepare</a>
     <a href="#model">5 · Train and evaluate</a><a href="#xcat">XCAT CoA case study</a>
     <a href="#ini">INI reference</a><a href="#data">Data and traceability</a>
@@ -33,6 +33,37 @@
       <div class="flow" aria-label="Workflow"><div><strong>Inspect ROI</strong>Coordinates and radius at every point</div><div><strong>Design edits</strong>Location, length, magnitude, direction</div><div><strong>Preflight</strong>Run every discrete recipe</div><div><strong>Freeze pairs</strong>Pin inputs, outcomes and evidence</div><div><strong>Train / test</strong>Use a separate model experiment</div></div>
       <p class="small">This offline HTML uses local files, with no CDN, web fonts or network scripts. Keep the documentation and complete generated report folders together when sharing them offline.</p>
     </section>
+    <section id="layout">
+      <h2>A repository students can navigate</h2>
+      <p>Start with this walkthrough. The root <code>scripts/</code> folder contains eight command entry points; common workflow code remains in <code>src/</code>. CoA is a case study, while earlier model experiments and development records have their own archive.</p>
+      <pre><code>configs/students/          Teaching templates
+configs/examples/          ROI and edit examples
+configs/case-studies/coa/  Reviewed phantom recipes and project.json
+configs/tissues/           Editable tissue policy
+scripts/                  Student commands
+src/                      Shared pipeline modules
+tests/                    Regression suite
+docs/student/             Walkthrough and test instructions
+docs/reference/           Detailed method guides
+references/atlas/         Versioned anatomy evidence
+requirements/             Install profiles
+outputs/                  Generated reports, data and models (ignored)
+scratch/                  Temporary experiments (ignored)
+scripts/research/         Advanced studies, audits and cluster jobs
+archive/                  Research history and legacy assets</code></pre>
+      <div class="table-scroll"><table><thead><tr><th>Command in scripts/</th><th>Use</th></tr></thead><tbody>
+      <tr><td><code>student_demo.py</code></td><td>Create public phantoms and editable cohort/model inputs.</td></tr>
+      <tr><td><code>prepare_cohort.py</code></td><td>Preview ROI, preflight, freeze and prepare image–mask pairs.</td></tr>
+      <tr><td><code>preview_roi.py</code></td><td>Review a standalone ROI/edit input.</td></tr>
+      <tr><td><code>prepare_tissues.py</code></td><td>Build a tissue catalog from atlas and source evidence.</td></tr>
+      <tr><td><code>resolve_anatomy.py</code></td><td>Optionally refine XCAT selection using anatomical labels.</td></tr>
+      <tr><td><code>cohort_registry.py</code></td><td>Register and verify immutable paired dataset revisions.</td></tr>
+      <tr><td><code>model_experiment.py</code></td><td>Plan, fit, test and summarize a separate experiment.</td></tr>
+      <tr><td><code>train_study.py</code></td><td>Compatibility interface for earlier combined study inputs.</td></tr>
+      </tbody></table></div>
+      <p>Use <code>prepare_cohort.py</code> and <code>model_experiment.py</code> for new work. Keep reusable INIs under <code>configs/</code>; initialize reports, pairs, registries and checkpoints under <code>outputs/</code>. The small public <code>data/</code> fixtures are tracked; local phantom inputs and large arrays are ignored. Use <code>scratch/</code> for temporary code, then move reviewed reusable changes into the appropriate source folder.</p>
+      <p>Ignoring generated data prevents accidental Git commits; it is not a backup. Preserve released datasets separately. The <a href="../reference/index.html">method reference index</a> and <a href="../../archive/research/README.html">research archive</a> are optional reading. Follow the <a href="#protection">development checklist</a> when modifying shared modules.</p>
+    </section>
     <section id="start">
       <h2>1 · Install and start</h2>
       <p>Open the student branch checkout, <code>student-framework.26.10.11</code>, in a terminal. Run from the repository root. Python 3.10 or 3.11 is a practical starting environment.</p>
@@ -44,7 +75,7 @@ cd FakeCT</code></pre>
 source .venv/bin/activate
 # Windows PowerShell: py -3 -m venv .venv; .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -r requirements-core.txt
+python -m pip install -r requirements/core.txt
 
 python scripts/student_demo.py --output outputs/student-demo</code></pre>
       <p>The initializer writes three source cases, editable per-case <code>cohort.ini</code> inputs, a project index and a separate <code>model.ini</code>. The walkthrough uses the same <code>cohort.ini</code> for ROI review and generation, so you do not need to copy coordinates between files. Each source is a 56 × 56 × 56 grid at 1 mm spacing. The small initial grid prepares nine recipe records per source, 27 total; repeated baseline-equivalent recipes remain visible in the audit.</p>
@@ -120,7 +151,7 @@ distance_mm = 0,1,2              # Zero disables this step in that variant.</cod
       <pre><code>python scripts/prepare_cohort.py \
   --config outputs/student-demo/cases/demo01/cohort.ini \
   --stage preview --preview-mode full</code></pre>
-      <details><summary>Advanced controls: stiffness, direction and safeguards</summary><p>Stiffness is a dimensionless editing weight from 0 to 1, not an elastic modulus. Bone and skin protection are editable. Curvature-relative <code>direction = inner</code> or <code>outer</code> needs a valid centerline frame; inspect straight/noisy portions. <code>angular_width_deg</code> defines the sector. Erosion safeguards such as <code>min_volume_ratio</code> and <code>preserve_connectivity</code> are optional per edit. Omitted safeguards remain disabled.</p><p>References: <a href="../EDIT_RECIPES.md">recipes</a>, <a href="../CURVATURE_EDITS.md">curvature</a>, <a href="../EROSION_SAFEGUARDS.md">safeguards</a>, <a href="../SELECTION_GROWTH.md">selection and growth</a>.</p></details>
+      <details><summary>Advanced controls: stiffness, direction and safeguards</summary><p>Stiffness is a dimensionless editing weight from 0 to 1, not an elastic modulus. Bone and skin protection are editable. Curvature-relative <code>direction = inner</code> or <code>outer</code> needs a valid centerline frame; inspect straight/noisy portions. <code>angular_width_deg</code> defines the sector. Erosion safeguards such as <code>min_volume_ratio</code> and <code>preserve_connectivity</code> are optional per edit. Omitted safeguards remain disabled.</p><p>References: <a href="../reference/EDIT_RECIPES.md">recipes</a>, <a href="../reference/CURVATURE_EDITS.md">curvature</a>, <a href="../reference/EROSION_SAFEGUARDS.md">safeguards</a>, <a href="../reference/SELECTION_GROWTH.md">selection and growth</a>.</p></details>
     </section>
     <section id="cohort">
       <h2>4 · Preflight, freeze and prepare pairs</h2>
@@ -152,7 +183,7 @@ python scripts/prepare_cohort.py \
 python scripts/cohort_registry.py verify \
   --registry outputs/student-demo/registry --name demo01-r1</code></pre>
       <p>Repeat for <code>demo02-r1</code> and <code>demo03-r1</code> using their source families. For generated fixtures, <code>--family-verified</code> records known source identity, not biological independence. For real data, review template/shared-source provenance before setting this flag.</p>
-      <pre><code>python -m pip install -r requirements-tensorflow.txt
+      <pre><code>python -m pip install -r requirements/tensorflow.txt
 python scripts/model_experiment.py \
   --config outputs/student-demo/model.ini --validate-only
 python scripts/model_experiment.py \
@@ -173,7 +204,7 @@ python scripts/model_experiment.py \
     <section id="xcat">
       <h2>XCAT CoA: the research case study</h2>
       <p>The case study modifies ascending enlargement, arch narrowing and isthmus/descending coarctation-like narrowing. It demonstrates shared-path editing, longitudinal taper, optional curvature-relative asymmetry, tissue resistance and local safeguards.</p>
-      <div class="table-scroll"><table><thead><tr><th>Reference</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="../../configs/cohorts/coa/radius115/260602.ini">Case 260602 recipe</a></td><td>Reviewed anatomy-filtered input with enlargement and two narrowing steps. Historical local paths/locks are not portable defaults.</td></tr><tr><td><a href="../../configs/cohorts/coa/project-radius115.json">Twelve-case project index</a></td><td>Source definitions; not proof that every downstream model evaluated all twelve cases.</td></tr><tr><td><a href="../../configs/models/coa.ini">Basic TensorFlow model input</a></td><td>Separate dataset selection and resampling. Review historical receipt names and family provenance.</td></tr><tr><td><a href="../../configs/models/coa-cross-validation.ini">Grouped evaluation input</a></td><td>Whole-family holdout and rotating evaluation, decoupled from generation.</td></tr><tr><td><a href="../../configs/models/aorta-pretrained-finetune-branches-v3.ini">Branch-inclusive pretrained adaptation</a></td><td>The later TotalSegmentator case study uses a PyTorch backend and broader matched anatomical targets; it is separate from the student TensorFlow baseline.</td></tr></tbody></table></div>
+      <div class="table-scroll"><table><thead><tr><th>Reference</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="../../configs/case-studies/coa/phantoms/260602.ini">Case 260602 recipe</a></td><td>Reviewed anatomy-filtered input with enlargement and two narrowing steps. Historical local paths/locks are not portable defaults.</td></tr><tr><td><a href="../../configs/case-studies/coa/project.json">Twelve-case project index</a></td><td>Source definitions; not proof that every downstream model evaluated all twelve cases.</td></tr><tr><td><a href="../../archive/research/configs/models/coa.ini">Basic TensorFlow model input</a></td><td>Separate dataset selection and resampling. Review historical receipt names and family provenance.</td></tr><tr><td><a href="../../archive/research/configs/models/coa-cross-validation.ini">Grouped evaluation input</a></td><td>Whole-family holdout and rotating evaluation, decoupled from generation.</td></tr><tr><td><a href="../../archive/research/configs/models/aorta-pretrained-finetune-branches-v3.ini">Branch-inclusive pretrained adaptation</a></td><td>The later TotalSegmentator case study uses a PyTorch backend and broader matched anatomical targets; it is separate from the student TensorFlow baseline.</td></tr></tbody></table></div>
       <ol>
         <li><strong>Confirm source channels.</strong> Match instantaneous ACT and ATN case/frame volumes. ACT contains signed anatomical IDs; ATN contains attenuation. Audit <code>.par</code>/log dimensions and spacing. Averaged ACT blends IDs and cannot be categorical anatomy.</li>
         <li><strong>Obtain a reviewed catalog.</strong> Keep original IDs/names, atlas hierarchy and coarse categories together. Attenuation thresholds alone cannot distinguish all arteries and veins.</li>
@@ -183,7 +214,7 @@ python scripts/model_experiment.py \
         <li><strong>Preflight → freeze → prepare.</strong> Accept achieved anatomy on every source case before publishing pairs.</li>
       </ol>
       <pre><code># Replace /path/to/xcat and choose an available case.
-python scripts/evaluation/audit_xcat.py \
+python scripts/research/evaluation/audit_xcat.py \
   --base /path/to/xcat --cases 260602 \
   --output-prefix outputs/my-coa/source-audit --no-plots
 python scripts/prepare_tissues.py catalog \
@@ -197,7 +228,7 @@ python scripts/prepare_cohort.py --config configs/my-coa.ini \
   --stage preview --preview-mode roi-selection</code></pre>
       <p>The audit checks geometry/file sizes and sampled values, not exhaustive orientation or labels. RAW ordinals are not ACT voxel IDs. Join names/atlas/dictionary evidence explicitly; do not infer anatomy by attenuation, removing signs or triangle order.</p>
       <p>The local selected-lineage target and a complete thoracic aorta plus branches are different annotation policies. Reference and compared models must use the same anatomical target definition; a shared bounding box alone does not remove label differences.</p>
-      <p class="small">Historical references: <a href="../MULTIPHANTOM_COHORTS.md">multi-phantom preparation</a>, <a href="../TISSUE_MAPPING.md">catalog</a>, <a href="../integration/2026-09-28/optional-anatomy-selection.md">optional anatomy selection</a>, <a href="../THORACIC_AORTA_PROJECT.md">project history</a>. This guide defines the student entry point; older documents retain earlier milestone descriptions.</p>
+      <p class="small">Historical references: <a href="../reference/MULTIPHANTOM_COHORTS.md">multi-phantom preparation</a>, <a href="../reference/TISSUE_MAPPING.md">catalog</a>, <a href="../../archive/research/docs/integration/2026-09-28/optional-anatomy-selection.md">optional anatomy selection</a>, <a href="../../archive/research/docs/THORACIC_AORTA_PROJECT.md">project history</a>. This guide defines the student entry point; older documents retain earlier milestone descriptions.</p>
     </section>
     <section id="ini">
       <h2>INI reference: fields students edit</h2>
@@ -250,7 +281,7 @@ removed = before_mask &amp; ~after_mask</code></pre>
         <li><strong>Protect backend compatibility:</strong> execute TensorFlow smoke checks when loaders, losses, networks or checkpoints change; distinguish actual execution from skips.</li>
         <li><strong>Protect usability:</strong> open reports offline, verify documented commands and keep private data/cluster access optional.</li>
       </ol>
-      <pre><code>python -m pip install -r requirements-dev.txt
+      <pre><code>python -m pip install -r requirements/dev.txt
 python -m pytest</code></pre>
       <p>Use a feature branch, add a regression test for changed behavior and run the relevant checks. The mathematical demo is an end-to-end software check; full-resolution licensed XCAT and GPU runs are additional integration checks.</p>
     </section>

@@ -12,7 +12,7 @@ import fakect_change_learning as learning
 
 class ConfigTests(unittest.TestCase):
     def load(self, old, new):
-        text = (exp.ROOT/'configs/models/aorta-focused-change.ini').read_text().replace(old,new)
+        text = (exp.ROOT/'archive/research/configs/models/aorta-focused-change.ini').read_text().replace(old,new)
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'input.ini'
             path.write_text(text)
@@ -25,7 +25,7 @@ class ConfigTests(unittest.TestCase):
                 self.load(old,new)
 
     def test_checkpoint_policy_is_fixed_and_inputs_simple(self):
-        c=exp.load_config(exp.ROOT/'configs/models/aorta-focused-change.ini')
+        c=exp.load_config(exp.ROOT/'archive/research/configs/models/aorta-focused-change.ini')
         self.assertEqual(c['training']['epochs'],64)
         self.assertEqual(c['training']['patch_shape_kji'],[96]*3)
         self.assertEqual(len(c['evaluation']['families']),5)

@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location('run_cohort_batch', ROOT / 'scripts/evaluation/run_cohort_batch.py')
+SPEC = importlib.util.spec_from_file_location('run_cohort_batch', ROOT / 'scripts/research/evaluation/run_cohort_batch.py')
 batch = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(batch)
 

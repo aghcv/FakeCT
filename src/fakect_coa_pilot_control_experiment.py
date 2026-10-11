@@ -19,7 +19,7 @@ SCHEMA = 'fakect.coa-focused-pilot-control/1'
 FIELDS = deepcopy(parent.FIELDS)
 CODE_FILES = parent.CODE_FILES + (
     'src/fakect_coa_pilot_control_experiment.py', 'src/fakect_coa_pilot_control_learning.py',
-    'scripts/train_coa_pilot_control.py', 'scripts/slurm/fakect_coa_pilot_control_gpu.sh',
+    'scripts/research/train_coa_pilot_control.py', 'scripts/research/slurm/fakect_coa_pilot_control_gpu.sh',
 )
 REFERENCE_FILES = {
     'results': 'pilot/results.json', 'history': 'pilot/classifier-history.json',

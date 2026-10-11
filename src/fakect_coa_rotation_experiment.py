@@ -16,9 +16,9 @@ load_config = design.load_config
 CODE_FILES = tuple(dict.fromkeys(pilot.CODE_FILES + (
     'src/fakect_coa_rotation_design.py', 'src/fakect_coa_rotation_experiment.py',
     'src/fakect_coa_rotation_learning.py', 'src/fakect_coa_rotation_locator.py',
-    'src/fakect_coa_rotation_report.py', 'scripts/train_coa_rotations.py',
+    'src/fakect_coa_rotation_report.py', 'scripts/research/train_coa_rotations.py',
     'src/fakect_coa_poster_figures.py',
-    'scripts/slurm/fakect_coa_rotations_gpu.sh',
+    'scripts/research/slurm/fakect_coa_rotations_gpu.sh',
 )))
 
 

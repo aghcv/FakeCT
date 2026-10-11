@@ -105,7 +105,7 @@ class AnatomyCliConfigurationTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location('fakect_resolve_anatomy_cli_test', ROOT / 'scripts/resolve_anatomy.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        path = ROOT / 'configs/cohorts/coa/260602-anatomy.ini'
+        path = ROOT / 'archive/research/configs/cohorts/coa/260602-anatomy.ini'
         with patch.object(module, 'create_anatomy_selection', side_effect=AssertionError('configuration only')):
             config = module.load_config(path)
         self.assertEqual(config['study']['schema_version'], 'fakect.recipe-cohort/1')

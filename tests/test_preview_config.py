@@ -42,7 +42,7 @@ class PreviewConfigurationTests(unittest.TestCase):
         self.assertEqual(result["study"]["schema_version"], "fakect.preview/1")
         self.assertEqual(result["input"]["case_id"], "260602")
         self.assertEqual(result["input"]["frame"], 1)
-        self.assertEqual(result["input"]["audit"], self.root / "docs/integration/2026-09-16/xcat-results.json")
+        self.assertEqual(result["input"]["audit"], self.root / "archive/research/docs/integration/2026-09-16/xcat-results.json")
         self.assertEqual(result["input"]["root"], Path("/home/aghorban/slurm/xcat"))
         self.assertEqual(result["selection"]["source_ids"], (1185,))
         self.assertEqual(result["roi"]["center_ijk"], (404, 363, 1584))

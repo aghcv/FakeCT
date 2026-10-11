@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'scripts/evaluation'))
+sys.path.insert(0, str(ROOT / 'scripts/research/evaluation'))
 import visualize_cohort_trials as review
 
 

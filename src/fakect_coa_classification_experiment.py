@@ -15,9 +15,9 @@ CODE_FILES = tuple(dict.fromkeys(budget.CODE_FILES + (
     'src/fakect_coa_classification_experiment.py',
     'src/fakect_coa_classification_learning.py',
     'src/fakect_coa_classification_report.py',
-    'scripts/train_coa_classification.py',
-    'scripts/slurm/fakect_coa_classification_gpu.sh',
-    'scripts/slurm/fakect_coa_classification_report.sh',
+    'scripts/research/train_coa_classification.py',
+    'scripts/research/slurm/fakect_coa_classification_gpu.sh',
+    'scripts/research/slurm/fakect_coa_classification_report.sh',
 )))
 FIELDS = {'experiment': {'schema_version', 'output_directory'},
           'reference': {'experiment_directory', 'comparison_directory'},

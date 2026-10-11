@@ -23,7 +23,7 @@ TRAINING_FIELDS = {'locator_learning_rate', 'minimum_target_coverage',
 CODE_FILES = base.CODE_FILES + (
     'src/fakect_multiscale_experiment_v2.py', 'src/fakect_multiscale_learning_v2.py',
     'src/fakect_multiscale_network_v2.py', 'src/fakect_tensorflow_steps.py',
-    'scripts/train_multiscale_coa_v2.py', 'scripts/slurm/fakect_multiscale_v2_gpu.sh')
+    'scripts/research/train_multiscale_coa_v2.py', 'scripts/research/slurm/fakect_multiscale_v2_gpu.sh')
 
 
 def load_config(path):

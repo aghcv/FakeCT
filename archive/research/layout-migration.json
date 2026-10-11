@@ -1,0 +1,1917 @@
+{
+  "schema_version": "fakect.student-layout-migration/1",
+  "date": "2026-10-11",
+  "source_commit": "bdc838719d4f4963f190e195be209198c08ed7dc",
+  "policy": "No generated datasets moved or deleted. Historical signed JSON/atlas evidence retained byte-for-byte. Operational source paths updated separately.",
+  "moves": [
+    {
+      "from": "configs/analysis/aorta-ct-clusters.ini",
+      "to": "archive/research/configs/analysis/aorta-ct-clusters.ini",
+      "original_sha256": "f97c85071af34bd1a85f555f6b118b82dd08fde2268e0705171ac4e4732e0ed7",
+      "new_sha256": "f97c85071af34bd1a85f555f6b118b82dd08fde2268e0705171ac4e4732e0ed7"
+    },
+    {
+      "from": "configs/analysis/aorta-pretrained-benchmark.ini",
+      "to": "archive/research/configs/analysis/aorta-pretrained-benchmark.ini",
+      "original_sha256": "7db0f6119b96c386af89c9b6e06d1ed58b349725ba17272b66f935dca330aa45",
+      "new_sha256": "7db0f6119b96c386af89c9b6e06d1ed58b349725ba17272b66f935dca330aa45"
+    },
+    {
+      "from": "configs/analysis/aorta-pretrained-focus-diagnostic.ini",
+      "to": "archive/research/configs/analysis/aorta-pretrained-focus-diagnostic.ini",
+      "original_sha256": "c7b509be023d49cc347bfcee13ada1afb08edcb5a05a2781940966b483a2ea9e",
+      "new_sha256": "c7b509be023d49cc347bfcee13ada1afb08edcb5a05a2781940966b483a2ea9e"
+    },
+    {
+      "from": "configs/anatomy/260602-mask-pairs.ini",
+      "to": "archive/research/configs/anatomy/260602-mask-pairs.ini",
+      "original_sha256": "cc908247147b3df07703f0979380a9fc4210872cdcfbf3aaf26d76ea1bfe63be",
+      "new_sha256": "c9172b92cade8a5d41e68a991df1a57d88f8076a4707bdea0d96a8e12eca88cc"
+    },
+    {
+      "from": "configs/anatomy/thoracic-aorta-260602.ini",
+      "to": "archive/research/configs/anatomy/thoracic-aorta-260602.ini",
+      "original_sha256": "e36e35a81a05c88c85b211dfb39e549c23e139d95e46a9cadb1e8ac13f84b316",
+      "new_sha256": "ba3a2604ebbee93e974984d3f6477767587f2ea559790959a3b739317a28624d"
+    },
+    {
+      "from": "configs/cohorts/aorta-diversity-repair.ini",
+      "to": "archive/research/configs/cohorts/aorta-diversity-repair.ini",
+      "original_sha256": "a7c6e1cdc82b954b33d6797edfa8ceeb79d341ede11b70e4fb77025d1cada5e5",
+      "new_sha256": "6d6931cee61af180cbe3e576f9c8fbcdafae4fa0ffc1b90e1489edd55c6ffedf"
+    },
+    {
+      "from": "configs/cohorts/aorta-diversity.ini",
+      "to": "archive/research/configs/cohorts/aorta-diversity.ini",
+      "original_sha256": "36e059d511eee5fb7069eee1962fd0386daf5ec8aab0a7d509f9f40b0e717caa",
+      "new_sha256": "846520602d77bb37118981fbc3732ea4de3fc62f652e5ed5e10cb4c2cb8ddf30"
+    },
+    {
+      "from": "configs/cohorts/coa/260602-anatomy.ini",
+      "to": "archive/research/configs/cohorts/coa/260602-anatomy.ini",
+      "original_sha256": "a40ab0d80d6ec181e78fed613408865ce70f266c48bbcc17d75a44aad056a433",
+      "new_sha256": "924e4a3755292d077617aea3fc4b1ea6e246ea4552caff745379865d17ce06ec"
+    },
+    {
+      "from": "configs/cohorts/coa/260602.ini",
+      "to": "archive/research/configs/cohorts/coa/260602.ini",
+      "original_sha256": "6b40c9cb976b3e6284491db867be7c96ce49aaa6da2aabdd5c83414adaf8a69e",
+      "new_sha256": "ceb971dc7be4a4d449b56dfad00c601f992ebd1244ef2bfd04c22795faae1a43"
+    },
+    {
+      "from": "configs/cohorts/coa/260611.ini",
+      "to": "archive/research/configs/cohorts/coa/260611.ini",
+      "original_sha256": "c6302fe07bbb89d1e042ba76cfba59b7373206a6ea3569d085968c772fdd2e1c",
+      "new_sha256": "959a49a081452ba86be89fb3586ef52c06bb45a572209f0ef6093368633277a3"
+    },
+    {
+      "from": "configs/cohorts/coa/260612.ini",
+      "to": "archive/research/configs/cohorts/coa/260612.ini",
+      "original_sha256": "b24665ffd1f1a3f2ceb7db727ea8b0173d0ec0a1d73f0cef477a2f307b1d03cb",
+      "new_sha256": "f46d4363b8b8d40a55164eb3917aa62b08eb292a00025ce8ae0d7c556ed5f1cb"
+    },
+    {
+      "from": "configs/cohorts/coa/260613.ini",
+      "to": "archive/research/configs/cohorts/coa/260613.ini",
+      "original_sha256": "cb2a05eb4f2201ac6c01debe8f902a52549528caa62eb603d911c53ca2e741f9",
+      "new_sha256": "9e64db9f7c984803e063c215ffbf50847e3837f0f1ffa8573da430e11af6cc1b"
+    },
+    {
+      "from": "configs/cohorts/coa/260614.ini",
+      "to": "archive/research/configs/cohorts/coa/260614.ini",
+      "original_sha256": "18936af71e54e948d6141a4a2d5cf9548ee13c4b382ea2a87da74763387f9e02",
+      "new_sha256": "2c6a605742cd74ea9c2c13419b52cdf644e7506a0a123094acca06503e0a5bf2"
+    },
+    {
+      "from": "configs/cohorts/coa/260615.ini",
+      "to": "archive/research/configs/cohorts/coa/260615.ini",
+      "original_sha256": "e0bc9c8ed8a886ce3d013d1bed20fcef03d93792fe241ccba8097ef362c9a068",
+      "new_sha256": "32be923ab188bcb66e8bade00361c9f6c76bb8d9ef759d3092ac6ca1b4a7dd7c"
+    },
+    {
+      "from": "configs/cohorts/coa/260616.ini",
+      "to": "archive/research/configs/cohorts/coa/260616.ini",
+      "original_sha256": "e1ad22548eafe2d380d31d971fa413400731758d4f98fe1661aacaf8e7ffa4dd",
+      "new_sha256": "c30d8b86f12571a6bbd7054b77864fd7219712cd0ad74497eb421258274b1dda"
+    },
+    {
+      "from": "configs/cohorts/coa/260617.ini",
+      "to": "archive/research/configs/cohorts/coa/260617.ini",
+      "original_sha256": "80a74540d060d8cd0464e496f6a89574687e6f546b575f4a99b4b629e9afa6fc",
+      "new_sha256": "0ee8f9cc7becc3d8234439677b83d34982a984a3033dfb1060ad325c7e8cb3da"
+    },
+    {
+      "from": "configs/cohorts/coa/260618.ini",
+      "to": "archive/research/configs/cohorts/coa/260618.ini",
+      "original_sha256": "8e46550154c4662aaa0f79cbfad2bbb9beba31c76b76d2bf3e0fbb7885ad70e5",
+      "new_sha256": "275991715b2f4bf5b94d2d1d586c379319762da48614794f897f1916b6dfdfe2"
+    },
+    {
+      "from": "configs/cohorts/coa/260619.ini",
+      "to": "archive/research/configs/cohorts/coa/260619.ini",
+      "original_sha256": "29c272d7840eb6b4014b55bace5c8e3c06410ce3f243bbcae9ed1dff1bf583e9",
+      "new_sha256": "c49de45f45642450f631c47fd1cc789c38c7eeaf173c07d6ecfc2458a8d6654f"
+    },
+    {
+      "from": "configs/cohorts/coa/260620.ini",
+      "to": "archive/research/configs/cohorts/coa/260620.ini",
+      "original_sha256": "f8c071b338240515ab56a6562d2149cf0044cc86bc91c5e1e69a03285945a944",
+      "new_sha256": "0361ec15bdb7b3f6bd169bf25b77e7e11254fee05cb3149b199fc2e810654017"
+    },
+    {
+      "from": "configs/cohorts/coa/260621.ini",
+      "to": "archive/research/configs/cohorts/coa/260621.ini",
+      "original_sha256": "3713635da3aa860f045c45414c4d55b98c691b40b80e5b92358ca5fdbe5b858b",
+      "new_sha256": "28b08e6adf05681ac3d0408f91ddb653dc244c31dbe34ba230246ca368c69773"
+    },
+    {
+      "from": "configs/cohorts/coa/context-aorta.ini",
+      "to": "archive/research/configs/cohorts/coa/context-aorta.ini",
+      "original_sha256": "44c7f8f30867bc40d5f0a3cbc19a9e2cd44f56311a202816bb88e20f8c08c0ad",
+      "new_sha256": "8336fb6caff1d43c066a5bcd452bc0018d8406c27b07bd15b39f27db4fa417b0"
+    },
+    {
+      "from": "configs/cohorts/coa/project-radius115.json",
+      "to": "configs/case-studies/coa/project.json",
+      "original_sha256": "125dde41b295e59d7d10d4bae439e196e60a513ed12b60375089f2bdb0fe6493",
+      "new_sha256": "7c228d26034c0e84f257fb4efcfe0a23beb6f95c9cddccbdf654c5bc13475b8f"
+    },
+    {
+      "from": "configs/cohorts/coa/project.json",
+      "to": "archive/research/configs/cohorts/coa/project.json",
+      "original_sha256": "b6eb40b1c3877f58a2f8d96b3810b832aaa121c35c3351e3d1a23d2c9426552d",
+      "new_sha256": "5bae17fb36744762a465d8358a3d8a1698e667e1f8ea0a9dd10ee912802e990f"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260602.ini",
+      "to": "configs/case-studies/coa/phantoms/260602.ini",
+      "original_sha256": "baf2578e1e92171a4334365d510a29082536e3028f4ffe2b5a30ef789d716aac",
+      "new_sha256": "5b0f4eb94d5c1e72fce0b4dd157613dfe0b464a4421a25bc6e9477f492a89035"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260611.ini",
+      "to": "configs/case-studies/coa/phantoms/260611.ini",
+      "original_sha256": "23c65d75cf807c0d620648b1e27a22eeebd7e2b001582857f31be7ba277a0b80",
+      "new_sha256": "fb9bd085f8c7e61315af7229642173713d1fa14b32f88345b11370b043587f0f"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260612.ini",
+      "to": "configs/case-studies/coa/phantoms/260612.ini",
+      "original_sha256": "557e27edf94edf8bc31e4620919816970e0def7e92359f0d1c0ea839b3394f4b",
+      "new_sha256": "cfe731bdca0eaa92d3690e9d8aba704d026d2566ba0e6236e1a83014fd19f453"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260613.ini",
+      "to": "configs/case-studies/coa/phantoms/260613.ini",
+      "original_sha256": "50bd676c657f479bb66ef4c2845c557921a50dafaedd7ab1ae980a3de0659538",
+      "new_sha256": "6c07537296ee0d1da2fe146ae9419ef0d0683506185db4be9a2d72b063668462"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260614.ini",
+      "to": "configs/case-studies/coa/phantoms/260614.ini",
+      "original_sha256": "ae1c030295e600315560d89f40c06bd9f462ac32af603aa0590a39cec90a533d",
+      "new_sha256": "18d4adc6588d5304eb927009a419e2d7a969c9aba744494b53072514f059f70c"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260615.ini",
+      "to": "configs/case-studies/coa/phantoms/260615.ini",
+      "original_sha256": "f51754e49a785cdd9be38330cb624777a8786de500c33763de3c3c9e5dcd38ed",
+      "new_sha256": "82ea281ef9ac64bef187685756a87d798ddf8119559dad7172fa0198f69056ff"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260616.ini",
+      "to": "configs/case-studies/coa/phantoms/260616.ini",
+      "original_sha256": "b73bf909dc32e1b4eb2accefbbafaf678cda3852f6c55eb6cc1466df2d0bcc26",
+      "new_sha256": "857b564b60800259ca6bc908f9d9f503f9955cdf5f524a87bb483cdbb3e77879"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260617.ini",
+      "to": "configs/case-studies/coa/phantoms/260617.ini",
+      "original_sha256": "0235945703376b25637537e4e62cc942134fb9e4a6a876c9002ad2b655de8961",
+      "new_sha256": "4ac4afa42719afd5df730868047a254c90e6c2148e992d53593a9437f4c4d060"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260618.ini",
+      "to": "configs/case-studies/coa/phantoms/260618.ini",
+      "original_sha256": "1e449459863975633319e57e9275ac9192a383d0d6f1349fd0832d6b509e9746",
+      "new_sha256": "c93366aa5cba2f91d2868d36ef410734816b4eb56cd0aea4c6f35895d45f126f"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260619.ini",
+      "to": "configs/case-studies/coa/phantoms/260619.ini",
+      "original_sha256": "7a5c967b580300ac1a88d36d5a0c9146d44765ebc16eddce67089af04439ce4f",
+      "new_sha256": "d1d498ac7d22b726ee5b5f4c5afedf8756d72b12cb3d9dc451c4f0e28c375f0e"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260620.ini",
+      "to": "configs/case-studies/coa/phantoms/260620.ini",
+      "original_sha256": "39ab1f105e83cdc12646d4417b8063c83684ed79b277bc1f5393cf62575811f2",
+      "new_sha256": "9faa4ff03f4ef9facbf13ce50dca5a6a9fe32a4f75ef6e1c3b00bf99fa67fc01"
+    },
+    {
+      "from": "configs/cohorts/coa/radius115/260621.ini",
+      "to": "configs/case-studies/coa/phantoms/260621.ini",
+      "original_sha256": "2a39795cb9d0fbcdb6a820cb2fa1138adbfda37ebf6d22ca40099e978f0413ed",
+      "new_sha256": "112fe6784d36714df3cbec1cb1fdb80c680c70466987e879d1de71bcf48d8729"
+    },
+    {
+      "from": "configs/models/aorta-change-sampling-pilot.ini",
+      "to": "archive/research/configs/models/aorta-change-sampling-pilot.ini",
+      "original_sha256": "686c9da30775df1006ab28bc67e2f0a7af3b23c624a451a4f6bf983cef6131ee",
+      "new_sha256": "686c9da30775df1006ab28bc67e2f0a7af3b23c624a451a4f6bf983cef6131ee"
+    },
+    {
+      "from": "configs/models/aorta-diverse-change-r2.ini",
+      "to": "archive/research/configs/models/aorta-diverse-change-r2.ini",
+      "original_sha256": "75f6d8737d3df6108ae2132a137862747d12831daf5f4edcf33c413744ec0e90",
+      "new_sha256": "75f6d8737d3df6108ae2132a137862747d12831daf5f4edcf33c413744ec0e90"
+    },
+    {
+      "from": "configs/models/aorta-diverse-change.ini",
+      "to": "archive/research/configs/models/aorta-diverse-change.ini",
+      "original_sha256": "cc15d8baa3f10dc745ed31ebb9f8bdb3628dc450b4388501e04c1be03b8a7bba",
+      "new_sha256": "cc15d8baa3f10dc745ed31ebb9f8bdb3628dc450b4388501e04c1be03b8a7bba"
+    },
+    {
+      "from": "configs/models/aorta-focused-change.ini",
+      "to": "archive/research/configs/models/aorta-focused-change.ini",
+      "original_sha256": "10a643a198c480e102e70f16745dd57b41ee694d868f046cc78a846858668d79",
+      "new_sha256": "9c2fe6cb0c68f49bc2f547dcac7f945cf5f5990ffd5b79b79cb6d970edf392ff"
+    },
+    {
+      "from": "configs/models/aorta-pretrained-finetune-branches-v2.ini",
+      "to": "archive/research/configs/models/aorta-pretrained-finetune-branches-v2.ini",
+      "original_sha256": "17c9218859066a649ed8a451f826c5d7150709523119d1954816efaade0dd083",
+      "new_sha256": "17c9218859066a649ed8a451f826c5d7150709523119d1954816efaade0dd083"
+    },
+    {
+      "from": "configs/models/aorta-pretrained-finetune-branches-v3.ini",
+      "to": "archive/research/configs/models/aorta-pretrained-finetune-branches-v3.ini",
+      "original_sha256": "bd077ebf401e0f42a0bd8d45ba09879dfdfd4655288de642380af643eb532609",
+      "new_sha256": "bd077ebf401e0f42a0bd8d45ba09879dfdfd4655288de642380af643eb532609"
+    },
+    {
+      "from": "configs/models/aorta-pretrained-finetune-branches.ini",
+      "to": "archive/research/configs/models/aorta-pretrained-finetune-branches.ini",
+      "original_sha256": "14005ade9b55e7e76c01fffa8253f8507b096effb90890507ca332d8c6cf3732",
+      "new_sha256": "14005ade9b55e7e76c01fffa8253f8507b096effb90890507ca332d8c6cf3732"
+    },
+    {
+      "from": "configs/models/aorta-pretrained-finetune.ini",
+      "to": "archive/research/configs/models/aorta-pretrained-finetune.ini",
+      "original_sha256": "8fa472f7cd65a09a976e9a056607aa338193945627e2349690c64ed2927c1a01",
+      "new_sha256": "8fa472f7cd65a09a976e9a056607aa338193945627e2349690c64ed2927c1a01"
+    },
+    {
+      "from": "configs/models/coa-classification-only200.ini",
+      "to": "archive/research/configs/models/coa-classification-only200.ini",
+      "original_sha256": "9658fbf09d4656466e67219d3d89fe62bcf0e554d695768be3fc750e832608e3",
+      "new_sha256": "f3785701ab62099ba8bb485c6d56cc93542c10bacc293d5130de1c9f1fae779a"
+    },
+    {
+      "from": "configs/models/coa-classifier-pilot.ini",
+      "to": "archive/research/configs/models/coa-classifier-pilot.ini",
+      "original_sha256": "ad9668862be936c090fd209d4233689fc796328ffd4f61bfc58c9380816d8e1f",
+      "new_sha256": "19b85534c0d511d88e420b4c93a6553a727619ea894b33544fc9abb9b5817ff8"
+    },
+    {
+      "from": "configs/models/coa-context-comparison.ini",
+      "to": "archive/research/configs/models/coa-context-comparison.ini",
+      "original_sha256": "ccd6736489afaf0bdd7607cd07580a5d18de4d6172ca303931927c158a873d7d",
+      "new_sha256": "2562330d05a394ff4dc7696d18d31c35e45c553b86f3fea66f74323c422f6f94"
+    },
+    {
+      "from": "configs/models/coa-context-diagnostic.ini",
+      "to": "archive/research/configs/models/coa-context-diagnostic.ini",
+      "original_sha256": "70a1549d3111caf78f2770eb071fa913f85a30f583d1c66383f2cb86e82111c6",
+      "new_sha256": "c52b12a05921d048158f438c2826f650e2d80f238f2c6a7ad1efba6b1dae5b60"
+    },
+    {
+      "from": "configs/models/coa-context-grid-diagnostic.ini",
+      "to": "archive/research/configs/models/coa-context-grid-diagnostic.ini",
+      "original_sha256": "65e1c52209c2345b94cf5bd609dfba26ca9821bea6ddaed27c2037262663f7ce",
+      "new_sha256": "7f54abf4066835b2b54a2c0def9a4fc7664ffbaae751e49f2eca7461a8ced102"
+    },
+    {
+      "from": "configs/models/coa-context-segmentation.ini",
+      "to": "archive/research/configs/models/coa-context-segmentation.ini",
+      "original_sha256": "dd20cf31e3987b9e5f9f0bb26e3c00bcd674491f4e602c2119cfd68ed9d8e3ea",
+      "new_sha256": "f2d0ebb1634405e63f12b4af954f80adc1868fb7ad5aa524473b2b08e93219de"
+    },
+    {
+      "from": "configs/models/coa-cross-validation.ini",
+      "to": "archive/research/configs/models/coa-cross-validation.ini",
+      "original_sha256": "c8a98ca974226611c81d5755c304e0fb8f22f37de291362acad4ccb0a421e0f4",
+      "new_sha256": "5e9b2e556884c2a000c0bb61d2359f5ebbeb660ba7d4fec7c6dda763544ae325"
+    },
+    {
+      "from": "configs/models/coa-focused-classifier.ini",
+      "to": "archive/research/configs/models/coa-focused-classifier.ini",
+      "original_sha256": "fa41992e07e209ac1824e257c20193f84525fb337754c192d93be92ecc514159",
+      "new_sha256": "0fdabf669f9b2a7bdd1370314b79be23c5e864072cb5a74eaea43740b6572b77"
+    },
+    {
+      "from": "configs/models/coa-focused-paired-v2.ini",
+      "to": "archive/research/configs/models/coa-focused-paired-v2.ini",
+      "original_sha256": "7faa79318e3bf630f98d98dca7af42e4dc194fc80bf5943ce3ab2b7b0f6b504f",
+      "new_sha256": "2abff88f385c6f638fe93889bbd666eaf8038d458c3b19bf6b385857de4625a9"
+    },
+    {
+      "from": "configs/models/coa-focused-paired.ini",
+      "to": "archive/research/configs/models/coa-focused-paired.ini",
+      "original_sha256": "5ee1d60a56747792260405db5f22aac5c90540f28d0ced122eb2bd11aa302be3",
+      "new_sha256": "027b98f8b2b29663b14d12987189c7442eba8af405fe73cb918f8e86326232e6"
+    },
+    {
+      "from": "configs/models/coa-focused-pilot-lr-control.ini",
+      "to": "archive/research/configs/models/coa-focused-pilot-lr-control.ini",
+      "original_sha256": "054c0b19fb5d323f39f12b29095dc652cfdfce6b67514117a6e42dff05ce38e6",
+      "new_sha256": "e1f679d68be38715ff64949aa897138a80d6c2e8e2997563b88c05e72243a399"
+    },
+    {
+      "from": "configs/models/coa-focused-pilot.ini",
+      "to": "archive/research/configs/models/coa-focused-pilot.ini",
+      "original_sha256": "fb42c7cf2ebf3bd8d8f8d24295aebfbe6afb044bd078bac9fbc017b3011b4e76",
+      "new_sha256": "a88a5ed029caf5ee5b23fa62da80df2878ce08b0dbc2dc5a855ea3df6eb25266"
+    },
+    {
+      "from": "configs/models/coa-mask-model.ini",
+      "to": "archive/research/configs/models/coa-mask-model.ini",
+      "original_sha256": "dad5689bc99d2fa44c6149a704debfefd243363da53a33b1cb327f2f3e147126",
+      "new_sha256": "ea1afce5d9c2d88d1b4bc09cb292a3edeab527795dbab2f55d89fe2b2abdd7b0"
+    },
+    {
+      "from": "configs/models/coa-multiscale-pilot-v2.ini",
+      "to": "archive/research/configs/models/coa-multiscale-pilot-v2.ini",
+      "original_sha256": "8e301ec4b8b0e00333451e90a6b30c3e39a7eb22c125425274c38b3324eabe20",
+      "new_sha256": "468b723eafc1cd1e1d02078097e10df408588ec1a598e6577d4d2b7774ae7bdf"
+    },
+    {
+      "from": "configs/models/coa-multiscale-pilot-v3.ini",
+      "to": "archive/research/configs/models/coa-multiscale-pilot-v3.ini",
+      "original_sha256": "e38ddabe8dafd166d986aeccb83b26138c246bad95213bb243ab7d3545152f17",
+      "new_sha256": "fe39ad6f8843eb4bf4c27ca5b151722f8cae85d9c093bca8bd34b0d81738e834"
+    },
+    {
+      "from": "configs/models/coa-multiscale-pilot.ini",
+      "to": "archive/research/configs/models/coa-multiscale-pilot.ini",
+      "original_sha256": "73db53a0d194af874cac42c94f711977f33d51bc32834d8341df585160408609",
+      "new_sha256": "43c1a205310667b695d6bdc3d4ab627cdc9c95fcca0e4fff290061d78ba24f00"
+    },
+    {
+      "from": "configs/models/coa-rotating-budget200.ini",
+      "to": "archive/research/configs/models/coa-rotating-budget200.ini",
+      "original_sha256": "2e34ae37e2defd38ffdbea0f2f2c4f16cfd19b2bc04d9162614303c397f83545",
+      "new_sha256": "def33c71b0f3363c4e9c09d42ddd2024b535f44593c523654ed5630ac010aae0"
+    },
+    {
+      "from": "configs/models/coa-rotating-evaluation-v2.ini",
+      "to": "archive/research/configs/models/coa-rotating-evaluation-v2.ini",
+      "original_sha256": "2da27e37241121976a9aec32999818d92bae96cdae342834f7b099ad2b9ded80",
+      "new_sha256": "31a84abde143401561e8110fa6a25d4b6274f6956c0928823c218f11fbb3edef"
+    },
+    {
+      "from": "configs/models/coa-rotating-evaluation.ini",
+      "to": "archive/research/configs/models/coa-rotating-evaluation.ini",
+      "original_sha256": "dcc914a21f6cbef3b715bbe82f768acbf6ecd4283f6354d8c4384d9d414d4259",
+      "new_sha256": "c8df28fe498ffbcc24b3045fb397454fe50f6de750c51301977254f9d6736002"
+    },
+    {
+      "from": "configs/models/coa-two-stage.ini",
+      "to": "archive/research/configs/models/coa-two-stage.ini",
+      "original_sha256": "00e5f00cab08daf465a7bceec71c31c45407f5fe1e84f4dcb6a28006da9aec6e",
+      "new_sha256": "70f1d88aa350f2dade568585f452659c537036d09d74fdaec316c8f00e30912b"
+    },
+    {
+      "from": "configs/models/coa.ini",
+      "to": "archive/research/configs/models/coa.ini",
+      "original_sha256": "bf3922b146f71e4e1aea272ff0b84e55ee1c4faff3e145466fa7d36e98ed9010",
+      "new_sha256": "4dbeedfcea76e444e6005370ac562a08fbcf11e5447dd1b55db5685e3ab4b333"
+    },
+    {
+      "from": "configs/studies/coa-label-review.ini",
+      "to": "archive/research/configs/studies/coa-label-review.ini",
+      "original_sha256": "b6441482c7879b068be80b939f07cc9c5e2208cb9e5c3952dde1c5855d8f0522",
+      "new_sha256": "f56d2bbf15d0e032d738e45308da56063f52541c092cdc41a66664b09a4d89d7"
+    },
+    {
+      "from": "configs/studies/thoracic-aorta-cohort.ini",
+      "to": "archive/research/configs/studies/thoracic-aorta-cohort.ini",
+      "original_sha256": "ee879c7df42192c9da2a04e4a3695452be8e94ae63bca7ae4880981237764794",
+      "new_sha256": "9e7d763b38b21bfde59a97a7c36a0c8ce86b3570df8fadddc98798d39966eae7"
+    },
+    {
+      "from": "configs/studies/thoracic-aorta-curvature.ini",
+      "to": "archive/research/configs/studies/thoracic-aorta-curvature.ini",
+      "original_sha256": "46b32ea1d06c184b88f354eab77bfb8b36240639187f1cd5e2557621d6b3f59c",
+      "new_sha256": "a2c82dca7bb6313ef9ca2386db8834f7bbaed01ad601736b78e6f0a4c1b5e95b"
+    },
+    {
+      "from": "configs/studies/thoracic-aorta-explore.ini",
+      "to": "archive/research/configs/studies/thoracic-aorta-explore.ini",
+      "original_sha256": "aedba569c271c1ab6d14af22fc2eca6b312221b89144fcc74a75c7f97722f698",
+      "new_sha256": "4cc1095de0febc657dacb1a02c29732e1499e21e5a40e6bbaf651f722e65a2ac"
+    },
+    {
+      "from": "configs/studies/thoracic-aorta-recipe.ini",
+      "to": "archive/research/configs/studies/thoracic-aorta-recipe.ini",
+      "original_sha256": "d3188f464e5bf9578431053afe5ec29409711a97fe460262a9ee442687b52868",
+      "new_sha256": "786e56ac7ea98e68d42b42f81c6bcac109c149977a649d4dabac4b8f4425cb8c"
+    },
+    {
+      "from": "configs/studies/thoracic-aorta.ini",
+      "to": "archive/research/configs/studies/thoracic-aorta.ini",
+      "original_sha256": "1d63f99ccae526cbb4ac9dc8ad0beff89cce6167a330966c01740c8bfce7f289",
+      "new_sha256": "7d4fadb27b3fd8776d29961da59528534e1ad1d9171fc958263d06fce4c67658"
+    },
+    {
+      "from": "debug_vti.py",
+      "to": "archive/legacy/debug_vti.py",
+      "original_sha256": "31a6372e22bb91aef43d2003a047ea326481af32f02df9093c9dde156c16189f",
+      "new_sha256": "0ecac19f3ae0379a0d313b9dd1b4158ca753091144591bc9135f84cf71da2f7e"
+    },
+    {
+      "from": "docs/CENTERLINE_PROFILES.md",
+      "to": "docs/reference/CENTERLINE_PROFILES.md",
+      "original_sha256": "d8e6dd0cbffba71cda3006cd9a2b0392d7f30e19f6e112f4b8c639393ab8a47a",
+      "new_sha256": "d864ac6ac14ae78048ff6e7199924ab480ae6b59aca3e76d05e62651fa4aad48"
+    },
+    {
+      "from": "docs/COA_POSTER_AND_POPULATION_STUDY.md",
+      "to": "archive/research/docs/COA_POSTER_AND_POPULATION_STUDY.md",
+      "original_sha256": "f5f8a91197f48e0f33b1521d2d67393639a846b92ced27d14fecae9f00c66f71",
+      "new_sha256": "835ce84361d12f73f0100267616b52d6a5dcd01d48aaadd904d707dcc3a5a805"
+    },
+    {
+      "from": "docs/COA_ROTATING_BUDGET_CONTROL.md",
+      "to": "archive/research/docs/COA_ROTATING_BUDGET_CONTROL.md",
+      "original_sha256": "1906aadd1db3144fd23f8406e1410bd6b2117537ccf29e94722038d9c9d1e39e",
+      "new_sha256": "bb782941d8319d7505da6e74bab4ad72283c49c4702368b2dec7155489f63a42"
+    },
+    {
+      "from": "docs/COA_ROTATING_EVALUATION.md",
+      "to": "archive/research/docs/COA_ROTATING_EVALUATION.md",
+      "original_sha256": "e385c5269bf005993b93d295da45665cc5cf9b554693a8f240482aa0d7d27194",
+      "new_sha256": "2c9073b4b6549df1c3581d4f20a057ef94ad73e69b61a5cbccb5dfb12e4ddf14"
+    },
+    {
+      "from": "docs/CONTEXT_AORTA_COMPARISON.md",
+      "to": "archive/research/docs/CONTEXT_AORTA_COMPARISON.md",
+      "original_sha256": "2d8c48f4d90dd640d130bd794bafed42301229bdf365f45c8ab0aeab19a130c2",
+      "new_sha256": "761f5e57f8d11657cd531ecaa583f8b71b5f0eefcf67a4edec85112a962080eb"
+    },
+    {
+      "from": "docs/CONTEXT_AORTA_SEGMENTATION.md",
+      "to": "archive/research/docs/CONTEXT_AORTA_SEGMENTATION.md",
+      "original_sha256": "6e8483340f235513ed3506d3c9066f1e728205258cd0a2ee8dfeffee1d95ab0b",
+      "new_sha256": "e28b1dd79b0975b3e8710ef18c2dc2a657d723b00bb04bf5b724dedc1195e77b"
+    },
+    {
+      "from": "docs/CURVATURE_EDITS.md",
+      "to": "docs/reference/CURVATURE_EDITS.md",
+      "original_sha256": "9bfac5a85058229b9c9e91d57c3c0ea97cad47a2edba5bb063dd53b65e296d1e",
+      "new_sha256": "6fb92ab6f93bf3194c51cbf3fde1b7d44f4f3c2a712515dd65d56ec91a9246b6"
+    },
+    {
+      "from": "docs/DIAGNOSTIC_EROSION.md",
+      "to": "docs/reference/DIAGNOSTIC_EROSION.md",
+      "original_sha256": "db592f84c6ac16e4eb76a2ee30819be59ed8aa8fbd345c2d058c6b7460dbf899",
+      "new_sha256": "53f825f6c928a3cdce7e9c3eb3ea834c3d70291262766c81ed1b65fc0cc43b1f"
+    },
+    {
+      "from": "docs/EDIT_RECIPES.md",
+      "to": "docs/reference/EDIT_RECIPES.md",
+      "original_sha256": "901f28448a7f1f5765751aaef8db8d348dc95171c11b51512a37455f28e0b93b",
+      "new_sha256": "1385ba0f2766c87d34ffa52d687f5b8f7cb1ae9fbbf68732ff2c7036ea78e0aa"
+    },
+    {
+      "from": "docs/EROSION_SAFEGUARDS.md",
+      "to": "docs/reference/EROSION_SAFEGUARDS.md",
+      "original_sha256": "6844bb885a00d92f0f287e9593594b3563607750b290c94488b19ad07bbc6ae7",
+      "new_sha256": "9ece5598ec8e0d513df37f534b1bbae3dd5e769880b8eeded68cf31ec8a961de"
+    },
+    {
+      "from": "docs/MODEL_EVALUATION.md",
+      "to": "docs/reference/MODEL_EVALUATION.md",
+      "original_sha256": "3e9635e2e626f74ea3d2d7a597db485d4b6ef37752d3cbda18e6b1e6545b4dd6",
+      "new_sha256": "8cbf7d90571624c1e40d7453e2a0d0c6e0806d47318468efa6a9601fe90760a5"
+    },
+    {
+      "from": "docs/MORPHOLOGY.md",
+      "to": "docs/reference/MORPHOLOGY.md",
+      "original_sha256": "fd3655fd469398dc0ab369e915f19757135926ff50ee2f62a1df5f75926f61f6",
+      "new_sha256": "ca17d0d3f1f5ecfe399daa2ee557da574cfc25e4dabce614fbf9a2ffd77a90eb"
+    },
+    {
+      "from": "docs/MULTIPHANTOM_COHORTS.md",
+      "to": "docs/reference/MULTIPHANTOM_COHORTS.md",
+      "original_sha256": "3b8044cf680955feeb0228b0a5a34bb1ca8ae35153f3f09e21a40443ef2b42a4",
+      "new_sha256": "5733c197f60d43e735c1cda9c72ab3e7571a2728aa6031695fe2f5489fc1e5a5"
+    },
+    {
+      "from": "docs/MULTISCALE_COA_PILOT.md",
+      "to": "archive/research/docs/MULTISCALE_COA_PILOT.md",
+      "original_sha256": "19d54f3fd1a315d68b6360396070fd5d6186f5f89fd1b5d77fefa680525db2a9",
+      "new_sha256": "7de3f0957989e59e2fd9fbf32885514b42a8dbff2d055659e07c2b6fefcde1c8"
+    },
+    {
+      "from": "docs/PHANTOM_MASK_WORKFLOW.md",
+      "to": "archive/research/docs/PHANTOM_MASK_WORKFLOW.md",
+      "original_sha256": "e95be5cedad78c64d2eab40902ce34791aee436f06340760a755385b47e0e81b",
+      "new_sha256": "c45dbc677799dd041fb5b83e5b11b2204abf40dcff6e19ae0ff189f11844ccf3"
+    },
+    {
+      "from": "docs/RECIPE_COHORTS.md",
+      "to": "docs/reference/RECIPE_COHORTS.md",
+      "original_sha256": "f74ec86f86fa394c27bd3d59bb368191ff415dbb0c464c2890932fea58fc1a89",
+      "new_sha256": "07258de300ebc39af9305ad1e37f8b123e99a24558cdeb615290665b6bdca9f2"
+    },
+    {
+      "from": "docs/ROI_EXPLORATION.md",
+      "to": "docs/reference/ROI_EXPLORATION.md",
+      "original_sha256": "3737771043025e8332fd254f011fb00a853187e0997cd732605576a9a77b5cee",
+      "new_sha256": "f34d7556a83668e5a42712090fed4a01c3134b7bcf20555538de312be61e2625"
+    },
+    {
+      "from": "docs/ROI_PREVIEWS.md",
+      "to": "docs/reference/ROI_PREVIEWS.md",
+      "original_sha256": "ff14e0e4de131c8b41efc0298dad61c8c76ce28d5b8a316ab65232308c6ac7f5",
+      "new_sha256": "d0c02d19b88627f47a49db2750ddd0e7ef4222bbdf924b5e61c2ccc740a3c342"
+    },
+    {
+      "from": "docs/SELECTION_GROWTH.md",
+      "to": "docs/reference/SELECTION_GROWTH.md",
+      "original_sha256": "b1c7081abfe5a88d89246a4000edf8ff8abed0537b378c57e9b0d28cc14978b0",
+      "new_sha256": "6b78df49dce36a069a2fc7f1372d3b99465b93351ce45b97ac8899ec9c459c71"
+    },
+    {
+      "from": "docs/STORAGE_PREFLIGHT.md",
+      "to": "archive/research/docs/STORAGE_PREFLIGHT.md",
+      "original_sha256": "74983b7c600e1df5ca3ccb6359e32f217f6120187014cf3ff6f866702f5ae0f1",
+      "new_sha256": "88c0b738e04b058e8abe9c554f5827897b3bcff67890b9012d582c9c7fe90ac8"
+    },
+    {
+      "from": "docs/THORACIC_AORTA_PROJECT.md",
+      "to": "archive/research/docs/THORACIC_AORTA_PROJECT.md",
+      "original_sha256": "5e6bc73f2dadb11308849852ad545e96284733d0cecb7374949e05a29728896e",
+      "new_sha256": "0465f4b4114cd41ed26fed4f4f98e37866e553c6b51d6cb04a613eec1c1ed7f8"
+    },
+    {
+      "from": "docs/TISSUE_MAPPING.md",
+      "to": "docs/reference/TISSUE_MAPPING.md",
+      "original_sha256": "db37f1367edf8a6d10be5597123f9e09a064006cb5431064d34b9278fca737bc",
+      "new_sha256": "0f24d9132993337c550ab065f2855ab0ce2682ecd4f4d32e9d7ae086b2fe439c"
+    },
+    {
+      "from": "docs/TRAINING_STUDIES.md",
+      "to": "docs/reference/TRAINING_STUDIES.md",
+      "original_sha256": "0b38da7832da1c04b221f509b7e5adfb9117a6d6e731b25afc0e7368a76d610c",
+      "new_sha256": "60419e3d7aaa0b933858666798ff2565f4c6b303bce2f1a647d343281dd260f6"
+    },
+    {
+      "from": "docs/TWO_STAGE_TRAINING.md",
+      "to": "archive/research/docs/TWO_STAGE_TRAINING.md",
+      "original_sha256": "6620c148e9fb8a17797353ace74a199372290ab7485f2ce54960d8c81036adad",
+      "new_sha256": "baf2d7d6d693d92b74e08f562a11b483352f5fb862ea2dc185298378bc34b88c"
+    },
+    {
+      "from": "docs/VIRTUAL_POPULATION_PLATFORM_PLAN.md",
+      "to": "archive/research/docs/VIRTUAL_POPULATION_PLATFORM_PLAN.md",
+      "original_sha256": "f044b44afd05ae85ae42a60ccfdadcbd768067edd94b921a1141ea750bbe75f8",
+      "new_sha256": "bd1ec46010ecd6a9bf87fd8ecf82ab880c108b8ad52679d9ad3f716c5bd04fec"
+    },
+    {
+      "from": "docs/images/vti-import-interface.png",
+      "to": "archive/research/docs/images/vti-import-interface.png",
+      "original_sha256": "a2c2c2b510e46ef4652df9f427a917dbabfa31782cf5fbf030438ef4d6e47d2e",
+      "new_sha256": "a2c2c2b510e46ef4652df9f427a917dbabfa31782cf5fbf030438ef4d6e47d2e"
+    },
+    {
+      "from": "docs/integration/2026-09-16/DPI_ATLAS_CURRENCY.md",
+      "to": "archive/research/docs/integration/2026-09-16/DPI_ATLAS_CURRENCY.md",
+      "original_sha256": "9e1e9e1ebd85c1815d030756366a155631d00c237a02ed4b0b3c7323ad457f57",
+      "new_sha256": "5dc89f6c3faee13b50731d29627b812d09c0d247bbfceaa1325ac98c2962d831"
+    },
+    {
+      "from": "docs/integration/2026-09-16/DPI_ATLAS_REVIEW.md",
+      "to": "archive/research/docs/integration/2026-09-16/DPI_ATLAS_REVIEW.md",
+      "original_sha256": "f1502344e5e4d64b137e2aacaaef1a9e1bff46d93b7387c16b0bae580eee623b",
+      "new_sha256": "876876da4655321951cf8deca4790276bda0242a5ae729ffb2fb3a2fe5f4b9a6"
+    },
+    {
+      "from": "docs/integration/2026-09-16/INPUT_CONTRACT.md",
+      "to": "archive/research/docs/integration/2026-09-16/INPUT_CONTRACT.md",
+      "original_sha256": "0dfbbad84634ea9bde6d4003726599b7fe215dc35c2a4de052f056f9243ddb18",
+      "new_sha256": "4b3ce97796a4f57193fd80d5bc867ecacb9f110d13d38f0c8e747ee0e82efb30"
+    },
+    {
+      "from": "docs/integration/2026-09-16/NOTEBOOK_AUDIT.md",
+      "to": "archive/research/docs/integration/2026-09-16/NOTEBOOK_AUDIT.md",
+      "original_sha256": "fadc436e572a0b92534d45049fa2f8865c9d7bc7b9edc1df08cf8a60213b7a97",
+      "new_sha256": "082cc6da98fd1b87d2ddc4665efd97d5435aab7c780e9364129a5686c3d312d5"
+    },
+    {
+      "from": "docs/integration/2026-09-16/PLAN.md",
+      "to": "archive/research/docs/integration/2026-09-16/PLAN.md",
+      "original_sha256": "1f7f67ab8590b90d7094d3aa6496755ad98428727102a6c4483013102ae7f472",
+      "new_sha256": "c0e9988008d1ada4e5640bfae71a2079167870ca0ac03fbdbccc66c7b9957dee"
+    },
+    {
+      "from": "docs/integration/2026-09-16/RAW_CROSSWALK_REVIEW.md",
+      "to": "archive/research/docs/integration/2026-09-16/RAW_CROSSWALK_REVIEW.md",
+      "original_sha256": "ab77e7539721b37564f589f6378e6e61e0f554327702eb78f5f0ac46550e16e3",
+      "new_sha256": "ab77e7539721b37564f589f6378e6e61e0f554327702eb78f5f0ac46550e16e3"
+    },
+    {
+      "from": "docs/integration/2026-09-16/ROI_PREVIEW_EVALUATION.md",
+      "to": "archive/research/docs/integration/2026-09-16/ROI_PREVIEW_EVALUATION.md",
+      "original_sha256": "e6d0f7f223c0bd93b06fc777444aa0fff273e7e9eca13d6c4956ccdf45e2e545",
+      "new_sha256": "91814a6f81d6ebf87cf095a37e1c6b6e2b67e22cdb6a2a6f6d445f4a97c11564"
+    },
+    {
+      "from": "docs/integration/2026-09-16/SOURCES.json",
+      "to": "archive/research/docs/integration/2026-09-16/SOURCES.json",
+      "original_sha256": "3687dfdf8917984870013d922c9870c3fc73f9c2334797867fb968bb43f59c91",
+      "new_sha256": "3687dfdf8917984870013d922c9870c3fc73f9c2334797867fb968bb43f59c91"
+    },
+    {
+      "from": "docs/integration/2026-09-16/TISSUE_MAPPING_EVALUATION.md",
+      "to": "archive/research/docs/integration/2026-09-16/TISSUE_MAPPING_EVALUATION.md",
+      "original_sha256": "9bf88bd0089d8f495d70b5511892cfea1ed47db6d1aad86ca4f4f8d9c6d2c692",
+      "new_sha256": "27432903a59272e85bd61969facba8f146ec84629acba5f7d8b9d2fadabd265c"
+    },
+    {
+      "from": "docs/integration/2026-09-16/TRAINING_AUDIT.md",
+      "to": "archive/research/docs/integration/2026-09-16/TRAINING_AUDIT.md",
+      "original_sha256": "58659afa4bd0ce39a4d771eb3efa9e10484320f0a219ea526d9984fa923efa51",
+      "new_sha256": "c17f6da8ab2eb3ac04596a9e1000c1fd9da2b64433b338c6024985db998486b8"
+    },
+    {
+      "from": "docs/integration/2026-09-16/TUBE_REPORT_EVALUATION.md",
+      "to": "archive/research/docs/integration/2026-09-16/TUBE_REPORT_EVALUATION.md",
+      "original_sha256": "819ff63d0ba2175b8fe95e58f981306b7b24e38ea0a640c96da24ef7a0a00049",
+      "new_sha256": "1345ca11e3b34afd5e9d1b3d0e0f7e275dc18bd6497ca092c1725a617deecc37"
+    },
+    {
+      "from": "docs/integration/2026-09-16/VERIFICATION.md",
+      "to": "archive/research/docs/integration/2026-09-16/VERIFICATION.md",
+      "original_sha256": "8887f865e321b6e44cd7d501289fa4364f0b9366b8e247c700e00a81eb5843c3",
+      "new_sha256": "fee5f5bfbd836de76d698ad06e25647b65846def05c561a3f08c0cf61e8e1dc7"
+    },
+    {
+      "from": "docs/integration/2026-09-16/XCAT_AUDIT.md",
+      "to": "archive/research/docs/integration/2026-09-16/XCAT_AUDIT.md",
+      "original_sha256": "719b1f86cb4d63ccf218da0cbee4743e47c30416b9dde4c2cc1961a86a24c090",
+      "new_sha256": "719b1f86cb4d63ccf218da0cbee4743e47c30416b9dde4c2cc1961a86a24c090"
+    },
+    {
+      "from": "docs/integration/2026-09-16/dpi-atlas-review-counts.json",
+      "to": "archive/research/docs/integration/2026-09-16/dpi-atlas-review-counts.json",
+      "original_sha256": "7d9bfc2d9cb1cc1144eb4b9f5cd3d1efedf7764c95dc2dba1093efabcb651ee3",
+      "new_sha256": "7d9bfc2d9cb1cc1144eb4b9f5cd3d1efedf7764c95dc2dba1093efabcb651ee3"
+    },
+    {
+      "from": "docs/integration/2026-09-16/notebook-results.json",
+      "to": "archive/research/docs/integration/2026-09-16/notebook-results.json",
+      "original_sha256": "76bfc6ed4ad481d825299aa83f5f89f9b4b7d69522ad87c0a6f817864515810e",
+      "new_sha256": "76bfc6ed4ad481d825299aa83f5f89f9b4b7d69522ad87c0a6f817864515810e"
+    },
+    {
+      "from": "docs/integration/2026-09-16/roi-preview-results.json",
+      "to": "archive/research/docs/integration/2026-09-16/roi-preview-results.json",
+      "original_sha256": "378398f86955dc1c728ed583cc06b04f74cdba0ba83da35512439cce4cfc4cec",
+      "new_sha256": "378398f86955dc1c728ed583cc06b04f74cdba0ba83da35512439cce4cfc4cec"
+    },
+    {
+      "from": "docs/integration/2026-09-16/slurm-wrapper-results.json",
+      "to": "archive/research/docs/integration/2026-09-16/slurm-wrapper-results.json",
+      "original_sha256": "b428f5e2b8b2237228230c00aa117ccc2ad2f934a2d17f14efce60e19bb6c179",
+      "new_sha256": "b428f5e2b8b2237228230c00aa117ccc2ad2f934a2d17f14efce60e19bb6c179"
+    },
+    {
+      "from": "docs/integration/2026-09-16/tissue-attenuation-levels.png",
+      "to": "archive/research/docs/integration/2026-09-16/tissue-attenuation-levels.png",
+      "original_sha256": "3f13326c87fa51d3c8f089f46259b30469962d3ac4d29f7804e084eeffeeb821",
+      "new_sha256": "3f13326c87fa51d3c8f089f46259b30469962d3ac4d29f7804e084eeffeeb821"
+    },
+    {
+      "from": "docs/integration/2026-09-16/tissue-mapping-results.json",
+      "to": "archive/research/docs/integration/2026-09-16/tissue-mapping-results.json",
+      "original_sha256": "8e0ea4e85fab19bbb466aaf3e8846c02c7e7d990a41236c4b38740eee54064e9",
+      "new_sha256": "8e0ea4e85fab19bbb466aaf3e8846c02c7e7d990a41236c4b38740eee54064e9"
+    },
+    {
+      "from": "docs/integration/2026-09-16/training-results.json",
+      "to": "archive/research/docs/integration/2026-09-16/training-results.json",
+      "original_sha256": "e14d0c481e067a0c37116db34ca3460b87620b738223d9aa4a6656ac39061b8b",
+      "new_sha256": "e14d0c481e067a0c37116db34ca3460b87620b738223d9aa4a6656ac39061b8b"
+    },
+    {
+      "from": "docs/integration/2026-09-16/tube-report-results.json",
+      "to": "archive/research/docs/integration/2026-09-16/tube-report-results.json",
+      "original_sha256": "5f17ac2d96b02aeb808879942fd0e3a4fc126ab917c859c677e1604197bfbe19",
+      "new_sha256": "5f17ac2d96b02aeb808879942fd0e3a4fc126ab917c859c677e1604197bfbe19"
+    },
+    {
+      "from": "docs/integration/2026-09-16/xcat-preview.png",
+      "to": "archive/research/docs/integration/2026-09-16/xcat-preview.png",
+      "original_sha256": "ab9c5ad9cacf234910fd4bb79c02d5e31b4c4277564c7cbe95497e6a6f41a554",
+      "new_sha256": "ab9c5ad9cacf234910fd4bb79c02d5e31b4c4277564c7cbe95497e6a6f41a554"
+    },
+    {
+      "from": "docs/integration/2026-09-16/xcat-results.json",
+      "to": "archive/research/docs/integration/2026-09-16/xcat-results.json",
+      "original_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a",
+      "new_sha256": "287e64b44fae6a74e0e043d5512bb46f82c3572f73d7c6553243a5b71504e45a"
+    },
+    {
+      "from": "docs/integration/2026-09-16/xcat-roi-closeups.png",
+      "to": "archive/research/docs/integration/2026-09-16/xcat-roi-closeups.png",
+      "original_sha256": "ef31efeb1bfaa1389929ac6c3df630c3d839656dbb1135176eb63ee4064fafca",
+      "new_sha256": "ef31efeb1bfaa1389929ac6c3df630c3d839656dbb1135176eb63ee4064fafca"
+    },
+    {
+      "from": "docs/integration/2026-09-16/xcat-roi-surfaces.png",
+      "to": "archive/research/docs/integration/2026-09-16/xcat-roi-surfaces.png",
+      "original_sha256": "5a78999a283e5033442cc39cbadac023d32d2220fb7ebf513ccb84230e83e8a0",
+      "new_sha256": "5a78999a283e5033442cc39cbadac023d32d2220fb7ebf513ccb84230e83e8a0"
+    },
+    {
+      "from": "docs/integration/2026-09-16/xcat-roi-z-stack.png",
+      "to": "archive/research/docs/integration/2026-09-16/xcat-roi-z-stack.png",
+      "original_sha256": "093d7f3ab6ab9b5ab6c8dcfe76c55ee41ff08308738c8db3949813f03f5bd027",
+      "new_sha256": "093d7f3ab6ab9b5ab6c8dcfe76c55ee41ff08308738c8db3949813f03f5bd027"
+    },
+    {
+      "from": "docs/integration/2026-09-16/xcat-tissue-preview.json",
+      "to": "archive/research/docs/integration/2026-09-16/xcat-tissue-preview.json",
+      "original_sha256": "a3af4eb1ffbd52cd5f3d9975584579346404ce838d1215caf20910d80762609f",
+      "new_sha256": "a3af4eb1ffbd52cd5f3d9975584579346404ce838d1215caf20910d80762609f"
+    },
+    {
+      "from": "docs/integration/2026-09-16/xcat-tissue-preview.png",
+      "to": "archive/research/docs/integration/2026-09-16/xcat-tissue-preview.png",
+      "original_sha256": "64557b666bce13b5784cc1d43e24453c1651ef755a593a3a3b696e6bf6ca5fd0",
+      "new_sha256": "64557b666bce13b5784cc1d43e24453c1651ef755a593a3a3b696e6bf6ca5fd0"
+    },
+    {
+      "from": "docs/integration/2026-09-17/AORTA_STUDY_EVALUATION.md",
+      "to": "archive/research/docs/integration/2026-09-17/AORTA_STUDY_EVALUATION.md",
+      "original_sha256": "0cb7b0f2893dd7a62f9983d6e8eeec595d8fa8baee074b7c513e08474f0b5cff",
+      "new_sha256": "dbc0c7d278495e10c9b2896b27c75ec5a94fa0f12eb5cbb8d5929ded902d426b"
+    },
+    {
+      "from": "docs/integration/2026-09-17/CURVATURE_EDITS.md",
+      "to": "archive/research/docs/integration/2026-09-17/CURVATURE_EDITS.md",
+      "original_sha256": "fa3f9c0966301977dbc4d53a277313f36b386abe1de0b1ed6c04acac62430211",
+      "new_sha256": "08d58e766add0d446990d69eaef47ef0c0c934c053a4e56486545d217fca83a0"
+    },
+    {
+      "from": "docs/integration/2026-09-17/DIAGNOSTIC_EROSION.md",
+      "to": "archive/research/docs/integration/2026-09-17/DIAGNOSTIC_EROSION.md",
+      "original_sha256": "d53025ae5ebdd8101a61005a525841512ec0d7117a3fb349e3c00a4b0548b1ea",
+      "new_sha256": "27afc2815699448af311f98ffbd6cb28436ac6d335314e98931e32eca05ee9b3"
+    },
+    {
+      "from": "docs/integration/2026-09-17/GLOBAL_EXPLORATION.md",
+      "to": "archive/research/docs/integration/2026-09-17/GLOBAL_EXPLORATION.md",
+      "original_sha256": "9d9e6fae5c0b8ef7663747ada33a63663074526b7ca24ae2e2f0ddd22de8aae0",
+      "new_sha256": "4ec3615486387c25745ee18562e719515d8ef4818b8c70e313a9ff99fbfc5660"
+    },
+    {
+      "from": "docs/integration/2026-09-17/MORPHOLOGY_EVALUATION.md",
+      "to": "archive/research/docs/integration/2026-09-17/MORPHOLOGY_EVALUATION.md",
+      "original_sha256": "e897d645445a308fbfbc81fe6610fdcde1388682782886944f3c75cea867bf27",
+      "new_sha256": "e5e044c4f6f27bd10a6710b8d151ac374ad1c27fef078f692901e36c594d2287"
+    },
+    {
+      "from": "docs/integration/2026-09-17/PREVIEW_CONTEXT.md",
+      "to": "archive/research/docs/integration/2026-09-17/PREVIEW_CONTEXT.md",
+      "original_sha256": "d8e2dbf3f56d52b500efcf29c28dfe2b92d478d7434578cad3b7bf0c8e415982",
+      "new_sha256": "fd26c573bffd4be250d139f9a66c26c9659e671ac2cb8ac934d89d6dbb9385a3"
+    },
+    {
+      "from": "docs/integration/2026-09-17/RECIPE_EVALUATION.md",
+      "to": "archive/research/docs/integration/2026-09-17/RECIPE_EVALUATION.md",
+      "original_sha256": "cb68ec18d31abb9c60081fda5b55d43974fe7e3cf835e2d2471a7f707d22f1b2",
+      "new_sha256": "0ee9216b27e3eff881bf5ef964fca20fc85e3273d46d75b0f36e89bf36a7c81b"
+    },
+    {
+      "from": "docs/integration/2026-09-17/SELECTION_GROWTH.md",
+      "to": "archive/research/docs/integration/2026-09-17/SELECTION_GROWTH.md",
+      "original_sha256": "e10df53517a54022db6948986dd8d4a17ecab370bf02f03fda5d5d9db4ce5b5b",
+      "new_sha256": "ef9f8dd61cfdb55023ea1fd5e3374850a330cf9e4ae38788584a92f4b053910a"
+    },
+    {
+      "from": "docs/integration/2026-09-17/SURFACE_OVERLAY.md",
+      "to": "archive/research/docs/integration/2026-09-17/SURFACE_OVERLAY.md",
+      "original_sha256": "3a21752e86d0983592f87864cb4b5494c501b4ac9bf5f9986cc80018f58887db",
+      "new_sha256": "4f8236ba34906240a8656d42e61ae4b8d824217c2c35401f4aed8131d374e151"
+    },
+    {
+      "from": "docs/integration/2026-09-17/TUBE_RANGES.md",
+      "to": "archive/research/docs/integration/2026-09-17/TUBE_RANGES.md",
+      "original_sha256": "696b2a703c557e3983ab8d701ea2d4a03966a3b5bcea79a5878858c4ec9141e3",
+      "new_sha256": "67fbd43893ed66ad15b3854ed113be1ac2139a230329558ef40c34b4578a36ea"
+    },
+    {
+      "from": "docs/integration/2026-09-17/aorta-localization.json",
+      "to": "archive/research/docs/integration/2026-09-17/aorta-localization.json",
+      "original_sha256": "e2506b39f4859977d3d1e2e1bca940a67632850fcf02c0a7592f01f01546130d",
+      "new_sha256": "e2506b39f4859977d3d1e2e1bca940a67632850fcf02c0a7592f01f01546130d"
+    },
+    {
+      "from": "docs/integration/2026-09-17/aorta-recipe-results.json",
+      "to": "archive/research/docs/integration/2026-09-17/aorta-recipe-results.json",
+      "original_sha256": "367d13129973b2c72e0fe6e47e92d02157ee79dde127eae9670c788edb69d490",
+      "new_sha256": "367d13129973b2c72e0fe6e47e92d02157ee79dde127eae9670c788edb69d490"
+    },
+    {
+      "from": "docs/integration/2026-09-17/aorta-recipe-stiffness-results.json",
+      "to": "archive/research/docs/integration/2026-09-17/aorta-recipe-stiffness-results.json",
+      "original_sha256": "58fb01df05c7f3ce0c7c6f2db709c5e6fbe97f375df0c5b3b75fba9d9327c8e5",
+      "new_sha256": "58fb01df05c7f3ce0c7c6f2db709c5e6fbe97f375df0c5b3b75fba9d9327c8e5"
+    },
+    {
+      "from": "docs/integration/2026-09-17/aorta-study-preview.json",
+      "to": "archive/research/docs/integration/2026-09-17/aorta-study-preview.json",
+      "original_sha256": "ba7270e16c7c2d1ab3fd0d545e19a244bc340867c15a977b7e860c984bee17e5",
+      "new_sha256": "ba7270e16c7c2d1ab3fd0d545e19a244bc340867c15a977b7e860c984bee17e5"
+    },
+    {
+      "from": "docs/integration/2026-09-17/centerline-profile-evaluation.json",
+      "to": "archive/research/docs/integration/2026-09-17/centerline-profile-evaluation.json",
+      "original_sha256": "433e4c8921524e79660eb5d714cf58d3fad3d52af9afaf4c7442be6e45b8af63",
+      "new_sha256": "433e4c8921524e79660eb5d714cf58d3fad3d52af9afaf4c7442be6e45b8af63"
+    },
+    {
+      "from": "docs/integration/2026-09-17/curvature-v7-evaluation.json",
+      "to": "archive/research/docs/integration/2026-09-17/curvature-v7-evaluation.json",
+      "original_sha256": "60cb67ea89845f7376674d1e828e7a187232f89628acf59ed03f7499234a1784",
+      "new_sha256": "60cb67ea89845f7376674d1e828e7a187232f89628acf59ed03f7499234a1784"
+    },
+    {
+      "from": "docs/integration/2026-09-17/diagnostic-erosion-evaluation.json",
+      "to": "archive/research/docs/integration/2026-09-17/diagnostic-erosion-evaluation.json",
+      "original_sha256": "9b1730ea733e7e1b309185648b0f7aadb060bf880331c85fc7ef0fb8cd586de5",
+      "new_sha256": "9b1730ea733e7e1b309185648b0f7aadb060bf880331c85fc7ef0fb8cd586de5"
+    },
+    {
+      "from": "docs/integration/2026-09-17/global-exploration-results.json",
+      "to": "archive/research/docs/integration/2026-09-17/global-exploration-results.json",
+      "original_sha256": "efa30ff68876c66a7507d08fa6b0e6d404a95aab58305ddb78006cc373193d8f",
+      "new_sha256": "efa30ff68876c66a7507d08fa6b0e6d404a95aab58305ddb78006cc373193d8f"
+    },
+    {
+      "from": "docs/integration/2026-09-17/growth-v8-evaluation.json",
+      "to": "archive/research/docs/integration/2026-09-17/growth-v8-evaluation.json",
+      "original_sha256": "970c86244b65971e5c19e148af28dd66cafd96c27ed4aa1abcfa2b2d761774c8",
+      "new_sha256": "970c86244b65971e5c19e148af28dd66cafd96c27ed4aa1abcfa2b2d761774c8"
+    },
+    {
+      "from": "docs/integration/2026-09-17/morphology-results.json",
+      "to": "archive/research/docs/integration/2026-09-17/morphology-results.json",
+      "original_sha256": "1177d495d0c33cf89a18d125645f92fd724676cd799b2c6e513d8b9354e0e0d0",
+      "new_sha256": "1177d495d0c33cf89a18d125645f92fd724676cd799b2c6e513d8b9354e0e0d0"
+    },
+    {
+      "from": "docs/integration/2026-09-17/preview-context-results.json",
+      "to": "archive/research/docs/integration/2026-09-17/preview-context-results.json",
+      "original_sha256": "71734cb61d5c3909a1632b47bc8af85295b01e4ca3539e86376a70cd83373289",
+      "new_sha256": "71734cb61d5c3909a1632b47bc8af85295b01e4ca3539e86376a70cd83373289"
+    },
+    {
+      "from": "docs/integration/2026-09-17/surface-overlay-results.json",
+      "to": "archive/research/docs/integration/2026-09-17/surface-overlay-results.json",
+      "original_sha256": "266aeb8ae11d4727237f948e61cb8d10fac8c09799481d9e18293ca852b92ef8",
+      "new_sha256": "266aeb8ae11d4727237f948e61cb8d10fac8c09799481d9e18293ca852b92ef8"
+    },
+    {
+      "from": "docs/integration/2026-09-17/tube-range-results.json",
+      "to": "archive/research/docs/integration/2026-09-17/tube-range-results.json",
+      "original_sha256": "c698014c6699110c95474c357b4218ba17e3baa88c886dac3a01124f90632923",
+      "new_sha256": "c698014c6699110c95474c357b4218ba17e3baa88c886dac3a01124f90632923"
+    },
+    {
+      "from": "docs/integration/2026-09-18/EROSION_SAFEGUARDS.md",
+      "to": "archive/research/docs/integration/2026-09-18/EROSION_SAFEGUARDS.md",
+      "original_sha256": "3fee224182cabc26af894bb055110b1962c0e1c7e47dce2d73f6cb9efdc1fd10",
+      "new_sha256": "452805db57b70a4986bba7291ff7ceb7b141bb8ee0306bed989d0d8fc5a7a4db"
+    },
+    {
+      "from": "docs/integration/2026-09-18/MULTIPHANTOM_EVALUATION.md",
+      "to": "archive/research/docs/integration/2026-09-18/MULTIPHANTOM_EVALUATION.md",
+      "original_sha256": "89636c10a2fdea4b5947d302317de40e6fe292b60545ad41ff9edc27802a6b41",
+      "new_sha256": "c34644baab3ca9e767317befdacf1e71b1f3b7eefe0d4bdf12b5d1f2d74953a7"
+    },
+    {
+      "from": "docs/integration/2026-09-18/RECIPE_COHORTS.md",
+      "to": "archive/research/docs/integration/2026-09-18/RECIPE_COHORTS.md",
+      "original_sha256": "31840afd31431221e528ab55259a27266f8e3160cdb38a07489a4b84dab047fd",
+      "new_sha256": "6c1f9f691b160a160b5215427dcde696fb69319063715671c37e8ec079cc3b59"
+    },
+    {
+      "from": "docs/integration/2026-09-18/coa-draft-bounds.json",
+      "to": "archive/research/docs/integration/2026-09-18/coa-draft-bounds.json",
+      "original_sha256": "4ee256f0765452f8b5e3f0165140bc6988256c00a00979db48ca0dcebd45aa52",
+      "new_sha256": "4ee256f0765452f8b5e3f0165140bc6988256c00a00979db48ca0dcebd45aa52"
+    },
+    {
+      "from": "docs/integration/2026-09-18/cohort-artifact-audit.json",
+      "to": "archive/research/docs/integration/2026-09-18/cohort-artifact-audit.json",
+      "original_sha256": "e66936a056a3d647837434d6ecf56a00d14d66849fb0a71f8687177eb1e0808d",
+      "new_sha256": "e66936a056a3d647837434d6ecf56a00d14d66849fb0a71f8687177eb1e0808d"
+    },
+    {
+      "from": "docs/integration/2026-09-18/cohort-distance-response.pdf",
+      "to": "archive/research/docs/integration/2026-09-18/cohort-distance-response.pdf",
+      "original_sha256": "2247224fc03cf5e7e016a0c6cfed44921a603e75988603f1a8f995c56ffebabb",
+      "new_sha256": "2247224fc03cf5e7e016a0c6cfed44921a603e75988603f1a8f995c56ffebabb"
+    },
+    {
+      "from": "docs/integration/2026-09-18/cohort-distance-response.png",
+      "to": "archive/research/docs/integration/2026-09-18/cohort-distance-response.png",
+      "original_sha256": "27cc78c9dec7217f5d8e834a7850ac81974986c36f608990ffe1449b8edb9278",
+      "new_sha256": "27cc78c9dec7217f5d8e834a7850ac81974986c36f608990ffe1449b8edb9278"
+    },
+    {
+      "from": "docs/integration/2026-09-18/cohort-reassignment-pilot.json",
+      "to": "archive/research/docs/integration/2026-09-18/cohort-reassignment-pilot.json",
+      "original_sha256": "c2a4c530eaf133ea9980a8ce27263d41dc71ee60944f2818ad7193aac23e2565",
+      "new_sha256": "c2a4c530eaf133ea9980a8ce27263d41dc71ee60944f2818ad7193aac23e2565"
+    },
+    {
+      "from": "docs/integration/2026-09-18/erosion-safeguard-artifact-audit.json",
+      "to": "archive/research/docs/integration/2026-09-18/erosion-safeguard-artifact-audit.json",
+      "original_sha256": "81ed164b2452ad2b0d32202411bcb4306f69bb0f7f49ba3be4a9ddfb0136ea6c",
+      "new_sha256": "81ed164b2452ad2b0d32202411bcb4306f69bb0f7f49ba3be4a9ddfb0136ea6c"
+    },
+    {
+      "from": "docs/integration/2026-09-18/erosion-safeguard-evaluation.json",
+      "to": "archive/research/docs/integration/2026-09-18/erosion-safeguard-evaluation.json",
+      "original_sha256": "ad85fa8596e19135a1eaa702fc7f666fa089fcb5ee91fce05b20625cd68fe261",
+      "new_sha256": "ad85fa8596e19135a1eaa702fc7f666fa089fcb5ee91fce05b20625cd68fe261"
+    },
+    {
+      "from": "docs/integration/2026-09-18/model-readiness.json",
+      "to": "archive/research/docs/integration/2026-09-18/model-readiness.json",
+      "original_sha256": "a48f781707153ca6b938fe43889743ba0141fb34a887401ef2d258e2bd91c920",
+      "new_sha256": "a48f781707153ca6b938fe43889743ba0141fb34a887401ef2d258e2bd91c920"
+    },
+    {
+      "from": "docs/integration/2026-09-18/multiphantom-inventory.json",
+      "to": "archive/research/docs/integration/2026-09-18/multiphantom-inventory.json",
+      "original_sha256": "f2ffe6dcdd2261857094350cb9a4c37b0735a82574d653247e5fd8959dea5703",
+      "new_sha256": "f2ffe6dcdd2261857094350cb9a4c37b0735a82574d653247e5fd8959dea5703"
+    },
+    {
+      "from": "docs/integration/2026-09-28/260602-anatomy-evaluation.json",
+      "to": "archive/research/docs/integration/2026-09-28/260602-anatomy-evaluation.json",
+      "original_sha256": "e26fc72d79153edcecf0496d5b87f68cbc4224bbcf4a533409ec704b33ddc4ba",
+      "new_sha256": "e26fc72d79153edcecf0496d5b87f68cbc4224bbcf4a533409ec704b33ddc4ba"
+    },
+    {
+      "from": "docs/integration/2026-09-28/atlas-mask-model-transition.md",
+      "to": "archive/research/docs/integration/2026-09-28/atlas-mask-model-transition.md",
+      "original_sha256": "ba0da50e2bd72b27cfbf4cf0f63a509a59fc0a7998c61b1c3c219cc5031e09cf",
+      "new_sha256": "92cd9443418b0fdd62debea9b76a5790cb6c5a8426ee00a3d62ad6fe3794e4f9"
+    },
+    {
+      "from": "docs/integration/2026-09-28/coa-family-cross-validation-plan.md",
+      "to": "archive/research/docs/integration/2026-09-28/coa-family-cross-validation-plan.md",
+      "original_sha256": "75b0c9a49e660703b2a9925a876e435c2ba13226bfd37f39824b84049b7e0403",
+      "new_sha256": "7aa4a8d4800929796ee33fe83755851be1077dfa02da284bc26dec7333d92da9"
+    },
+    {
+      "from": "docs/integration/2026-09-28/coa-family-folds.draft.json",
+      "to": "archive/research/docs/integration/2026-09-28/coa-family-folds.draft.json",
+      "original_sha256": "bf99450dafdcbdd643b30f42decf1999eeededc22eb142668384f41a64904e5e",
+      "new_sha256": "bf99450dafdcbdd643b30f42decf1999eeededc22eb142668384f41a64904e5e"
+    },
+    {
+      "from": "docs/integration/2026-09-28/morphology-illustrations.md",
+      "to": "archive/research/docs/integration/2026-09-28/morphology-illustrations.md",
+      "original_sha256": "d3f3cbda962e713f6c9bd8f8e3d7aee9726ba4708eb72a5d8ee0f526fec7c0a3",
+      "new_sha256": "d6d5d089496bc6001382ea8904da970d5b835bbe1cc48de0bed8df8a82cf4ebb"
+    },
+    {
+      "from": "docs/integration/2026-09-28/optional-anatomy-selection.md",
+      "to": "archive/research/docs/integration/2026-09-28/optional-anatomy-selection.md",
+      "original_sha256": "5331a35ac260dea1c434105131a01bad8f8d26fc68ef30b9e0b06456078b398a",
+      "new_sha256": "0a73f3b4aa6f176243af6123de4bf56fa685ab29fd87b117a7ae489fedef4cf4"
+    },
+    {
+      "from": "docs/integration/2026-09-28/pathology-voxel-pilot.md",
+      "to": "archive/research/docs/integration/2026-09-28/pathology-voxel-pilot.md",
+      "original_sha256": "f15570c9df9dde35b5b422222ffb1cd339e30b775f8ce3fa5788ce88bc7e7760",
+      "new_sha256": "f15570c9df9dde35b5b422222ffb1cd339e30b775f8ce3fa5788ce88bc7e7760"
+    },
+    {
+      "from": "docs/integration/2026-09-28/radius115-cohort-review.md",
+      "to": "archive/research/docs/integration/2026-09-28/radius115-cohort-review.md",
+      "original_sha256": "1009e8e387f8abd67c8094dbc5123f8e6345587847b6e4dd4daf62aad6132f31",
+      "new_sha256": "7b11d9845200dc23ba3f08bc05a1f46b36c73e9a26fbf73c8c33666be53e40b8"
+    },
+    {
+      "from": "docs/integration/2026-09-28/radius115-direction-review.json",
+      "to": "archive/research/docs/integration/2026-09-28/radius115-direction-review.json",
+      "original_sha256": "8a4421af88f75826e70d8f4d5832bc8e257202b66aa367fc29fee18ea796acc5",
+      "new_sha256": "8a4421af88f75826e70d8f4d5832bc8e257202b66aa367fc29fee18ea796acc5"
+    },
+    {
+      "from": "docs/integration/2026-09-28/radius115-final-review.json",
+      "to": "archive/research/docs/integration/2026-09-28/radius115-final-review.json",
+      "original_sha256": "f6cf0db8f24ffb35dcf0f96e5510e116f77773073609fdf8880ac6c039ae679b",
+      "new_sha256": "f6cf0db8f24ffb35dcf0f96e5510e116f77773073609fdf8880ac6c039ae679b"
+    },
+    {
+      "from": "docs/integration/2026-09-28/radius115-input-changes.json",
+      "to": "archive/research/docs/integration/2026-09-28/radius115-input-changes.json",
+      "original_sha256": "4de27f09bcbbe1082542971a1322e6ea2c317a7d115853b3d69c759c017295a5",
+      "new_sha256": "4de27f09bcbbe1082542971a1322e6ea2c317a7d115853b3d69c759c017295a5"
+    },
+    {
+      "from": "docs/integration/2026-09-28/radius115-internal-fill-review-r2.json",
+      "to": "archive/research/docs/integration/2026-09-28/radius115-internal-fill-review-r2.json",
+      "original_sha256": "90858025c882576d0333e21c40c035b2ed47979610aad7083dab3dc475919c8d",
+      "new_sha256": "90858025c882576d0333e21c40c035b2ed47979610aad7083dab3dc475919c8d"
+    },
+    {
+      "from": "docs/integration/2026-09-28/radius115-internal-fill-review.json",
+      "to": "archive/research/docs/integration/2026-09-28/radius115-internal-fill-review.json",
+      "original_sha256": "65c1ca50f8055219aa0b4150819c66a455406d4d00fbc6a1daa8565fc90ad3f0",
+      "new_sha256": "65c1ca50f8055219aa0b4150819c66a455406d4d00fbc6a1daa8565fc90ad3f0"
+    },
+    {
+      "from": "docs/integration/2026-09-28/radius115-manual-adjustments.json",
+      "to": "archive/research/docs/integration/2026-09-28/radius115-manual-adjustments.json",
+      "original_sha256": "ea8db2f0f06520b506463396cdae9adefb0229f1ce2df224847070b4f2cc9c4d",
+      "new_sha256": "ea8db2f0f06520b506463396cdae9adefb0229f1ce2df224847070b4f2cc9c4d"
+    },
+    {
+      "from": "docs/integration/2026-09-28/radius115-roi-review-summary.json",
+      "to": "archive/research/docs/integration/2026-09-28/radius115-roi-review-summary.json",
+      "original_sha256": "48e6f31d39d831655efde9bf7f8647c6f2465f77ce3eb24dd96152b7edcf65cf",
+      "new_sha256": "48e6f31d39d831655efde9bf7f8647c6f2465f77ce3eb24dd96152b7edcf65cf"
+    },
+    {
+      "from": "docs/integration/2026-09-28/two-stage-training-run.md",
+      "to": "archive/research/docs/integration/2026-09-28/two-stage-training-run.md",
+      "original_sha256": "1e5d34ed11eb663a81c8284856ffc92cbb51eb09b716529fa99e14817459106d",
+      "new_sha256": "c5b05d4277204d1cf176e43406a9f3c865ba1680f3b0dfcc1fc27b15abc2c057"
+    },
+    {
+      "from": "docs/integration/2026-09-29/context-aorta-run.md",
+      "to": "archive/research/docs/integration/2026-09-29/context-aorta-run.md",
+      "original_sha256": "edc605115aff21e882931e399645fcd5e4d435c211bac1b86e4246867483fa1b",
+      "new_sha256": "7c63c29c79d4fbd858af3e4741f578b88f19d73ae07de8a944499020f58ae13e"
+    },
+    {
+      "from": "docs/integration/2026-09-29/context-comparison-run.md",
+      "to": "archive/research/docs/integration/2026-09-29/context-comparison-run.md",
+      "original_sha256": "2860c075f768bcb6c4a52125947a15b7b21415d52339165236c70545d24a9db2",
+      "new_sha256": "377e30d536835853fd278fd2d91aaef931139a0a45b09e32d9bf47bcda4128fa"
+    },
+    {
+      "from": "docs/integration/2026-09-29/context-target-engineering-review.md",
+      "to": "archive/research/docs/integration/2026-09-29/context-target-engineering-review.md",
+      "original_sha256": "07f7fa7041e073381a3830438544501785428c8efc1cf1893d12474d6ea0e4aa",
+      "new_sha256": "37860e109632c7c89057a5fb0115c3fdf94b7fe4250169a5a61aaf897b8c86c6"
+    },
+    {
+      "from": "docs/poster/bmes2026-poster-handoff.txt",
+      "to": "archive/research/docs/poster/bmes2026-poster-handoff.txt",
+      "original_sha256": "6e738f3eb08f2282531c7b05e3c270179390086b2ebb51471c7a54cb3d9fc973",
+      "new_sha256": "c11d8ead7d3ad9876196b985d84984b4751d694ca5f7091dabd1514b7e01fb4d"
+    },
+    {
+      "from": "docs/student/source-snapshot.json",
+      "to": "archive/research/source-snapshot.json",
+      "original_sha256": "9f01fea971a692da855f08a0791a7c962b9dd66443ffc83970647318fefc5626",
+      "new_sha256": "9f01fea971a692da855f08a0791a7c962b9dd66443ffc83970647318fefc5626"
+    },
+    {
+      "from": "environment.yml",
+      "to": "requirements/legacy-environment.yml",
+      "original_sha256": "85a361ae49a9f0ddca6f964622041d4f668fe0bfbcf7dbef6c891b463aeb7d7c",
+      "new_sha256": "85a361ae49a9f0ddca6f964622041d4f668fe0bfbcf7dbef6c891b463aeb7d7c"
+    },
+    {
+      "from": "images/train_preview_1_na.png",
+      "to": "archive/research/images/train_preview_1_na.png",
+      "original_sha256": "d2f75e00830e701a022b2d013d082678516e6eddfeee5ca8cde6cb222e91e6a6",
+      "new_sha256": "d2f75e00830e701a022b2d013d082678516e6eddfeee5ca8cde6cb222e91e6a6"
+    },
+    {
+      "from": "images/train_preview_4_1.png",
+      "to": "archive/research/images/train_preview_4_1.png",
+      "original_sha256": "e0a0662c33618dd9df900a7ee86343eec882ec6904a8cfb741e739f99695845a",
+      "new_sha256": "e0a0662c33618dd9df900a7ee86343eec882ec6904a8cfb741e739f99695845a"
+    },
+    {
+      "from": "images/train_preview_4_10.png",
+      "to": "archive/research/images/train_preview_4_10.png",
+      "original_sha256": "9d5bbee2fcf545564b0c090f4d980b7d6fb58ed0b703cf116caf7cce6f01f730",
+      "new_sha256": "9d5bbee2fcf545564b0c090f4d980b7d6fb58ed0b703cf116caf7cce6f01f730"
+    },
+    {
+      "from": "references/notebooks/README.md",
+      "to": "archive/research/notebooks/README.md",
+      "original_sha256": "4c2933e657b5fe2ef28b00db0d34ef2bd03a453b651b42acc46ee49aa4b91fab",
+      "new_sha256": "4c2933e657b5fe2ef28b00db0d34ef2bd03a453b651b42acc46ee49aa4b91fab"
+    },
+    {
+      "from": "references/notebooks/dilation_export.py.txt",
+      "to": "archive/research/notebooks/dilation_export.py.txt",
+      "original_sha256": "b9cfd2f67de85872ab4f5805baeaa3ce2dff3a6f4dc396bbc58ef9fa663bd680",
+      "new_sha256": "b9cfd2f67de85872ab4f5805baeaa3ce2dff3a6f4dc396bbc58ef9fa663bd680"
+    },
+    {
+      "from": "references/notebooks/erosion_export.py.txt",
+      "to": "archive/research/notebooks/erosion_export.py.txt",
+      "original_sha256": "ea87b52c538d8364ee4802fdb49d1c5e3781bf14ea3e91e2697134b4e10a43b4",
+      "new_sha256": "ea87b52c538d8364ee4802fdb49d1c5e3781bf14ea3e91e2697134b4e10a43b4"
+    },
+    {
+      "from": "requirements-browser.txt",
+      "to": "requirements/browser.txt",
+      "original_sha256": "3107153584a58f941c68ecad71bd259f932641887529817164a96558fa406555",
+      "new_sha256": "e649e97e807145938edcdf691b643b9a8671ef3dd0db01f9a6228af452365e8f"
+    },
+    {
+      "from": "requirements-core.txt",
+      "to": "requirements/core.txt",
+      "original_sha256": "8138f13aba68c29a33bb41d435fffa8bb318664eecdefa15258537024639fd58",
+      "new_sha256": "8138f13aba68c29a33bb41d435fffa8bb318664eecdefa15258537024639fd58"
+    },
+    {
+      "from": "requirements-dev.txt",
+      "to": "requirements/dev.txt",
+      "original_sha256": "7fc1bb944fbcb9a55c3e6e822fc41ecc9311e148bdf97697046ddd293796e7fc",
+      "new_sha256": "b228205c10ac65eb0fad25f34c09851122a55714986a8b6c1f225200b0fbd495"
+    },
+    {
+      "from": "requirements-pretrained.txt",
+      "to": "requirements/pretrained.txt",
+      "original_sha256": "b7e4c26dcc130bb795f5ebfaebf140487d8945418a6adcad8f0217fc74b94c18",
+      "new_sha256": "b7e4c26dcc130bb795f5ebfaebf140487d8945418a6adcad8f0217fc74b94c18"
+    },
+    {
+      "from": "requirements-tensorflow.txt",
+      "to": "requirements/tensorflow.txt",
+      "original_sha256": "b5ae15f61d14ca6095910bf71c23842a8c7f0d056293cc9332f1396e7aca20ac",
+      "new_sha256": "4be6fe2310c3abcf53316da8a998e0f2fb7b54e202d4be55fd57482161a81adf"
+    },
+    {
+      "from": "requirements.txt",
+      "to": "requirements/legacy.txt",
+      "original_sha256": "96f174d60e5e79aa74bbc803e1315082564d2d77c9e4173316e30db5cb8ae746",
+      "new_sha256": "96f174d60e5e79aa74bbc803e1315082564d2d77c9e4173316e30db5cb8ae746"
+    },
+    {
+      "from": "scripts/benchmark_pretrained_aorta.py",
+      "to": "scripts/research/benchmark_pretrained_aorta.py",
+      "original_sha256": "dec9452b93f597da4161496dc143e02738f40afa4feeabf9947af44f8e05e47b",
+      "new_sha256": "bb2be134a5485beba7e1d173e039df2b7ed027d4cafacec7c7e45852c5f4a0d0"
+    },
+    {
+      "from": "scripts/cluster_sibling_ct.py",
+      "to": "scripts/research/cluster_sibling_ct.py",
+      "original_sha256": "7c6a267a0ed5576c1a481304f6824d0f6d2727884fbc2c9140edaeff11a9c5a7",
+      "new_sha256": "7e92d47d5d59d200520cf7365ddcf6abe934e105094525c93b0dc105557cf28f"
+    },
+    {
+      "from": "scripts/cohort_status.py",
+      "to": "scripts/research/cohort_status.py",
+      "original_sha256": "ebf85c73a3df2a4efb8bf42e17d1e4c3c9c7688770a8bba5233e91e419174df6",
+      "new_sha256": "4aa5a47260e0d73be2466a21a660d7e32840663a4f68a70834854599184878f6"
+    },
+    {
+      "from": "scripts/compare_context_aorta.py",
+      "to": "scripts/research/compare_context_aorta.py",
+      "original_sha256": "f6653cfee826e9e1f4b597ff2fbe99160ca245a20a6edf0ebd6108af562ff475",
+      "new_sha256": "c6474e3e34712a232210871224d7737099b4ee40ded2b4dbfb1699f23ac6e925"
+    },
+    {
+      "from": "scripts/evaluation/aorta_two_arm_ct.py",
+      "to": "scripts/research/evaluation/aorta_two_arm_ct.py",
+      "original_sha256": "e1a584f4810f621fe748aa93cef8af68ac16f1d0f89fbcbf2e64c5ba52871971",
+      "new_sha256": "e1a584f4810f621fe748aa93cef8af68ac16f1d0f89fbcbf2e64c5ba52871971"
+    },
+    {
+      "from": "scripts/evaluation/audit_notebooks.py",
+      "to": "scripts/research/evaluation/audit_notebooks.py",
+      "original_sha256": "76ff67447ad5ddcde30cd80f4a9ce87bcdcd05b28b8bac334ed2cf6ccc139fc5",
+      "new_sha256": "0f8c31910957536fe534a9c45a8972b3bd9c8597d67a9cb553379e1df906439c"
+    },
+    {
+      "from": "scripts/evaluation/audit_pretrained_exports.py",
+      "to": "scripts/research/evaluation/audit_pretrained_exports.py",
+      "original_sha256": "31be37711c47bb49eefcbac9e11e3660c033b561a8be4ccf68f74c2dc90ec77d",
+      "new_sha256": "31be37711c47bb49eefcbac9e11e3660c033b561a8be4ccf68f74c2dc90ec77d"
+    },
+    {
+      "from": "scripts/evaluation/audit_training.py",
+      "to": "scripts/research/evaluation/audit_training.py",
+      "original_sha256": "6509ab8057b2a462886d3b3178e9da16ca9d8c7a35de6713b59b3f72d2762ab8",
+      "new_sha256": "87ca3165336323492bb5a0e578bb65a6b8a625ec7c2299d4a593ab69d547ea8e"
+    },
+    {
+      "from": "scripts/evaluation/audit_xcat.py",
+      "to": "scripts/research/evaluation/audit_xcat.py",
+      "original_sha256": "a156e782c2713a137f35bf621842129868564afdce95cd235bc016d5572953f3",
+      "new_sha256": "a156e782c2713a137f35bf621842129868564afdce95cd235bc016d5572953f3"
+    },
+    {
+      "from": "scripts/evaluation/benchmark_context_comparison.py",
+      "to": "scripts/research/evaluation/benchmark_context_comparison.py",
+      "original_sha256": "ba2fa95904b6d83492280094607cd6596d66a8f7967ccfbc8687c07b40e96ba1",
+      "new_sha256": "c6cc97617dff4e02d1d93725a39ceb30c25f4c7aa50df642a20deb2be9a89011"
+    },
+    {
+      "from": "scripts/evaluation/build_coa_poster_figures.py",
+      "to": "scripts/research/evaluation/build_coa_poster_figures.py",
+      "original_sha256": "4c66f5f4846c35d7854a43341edd0230f1fd81f8fd5dba4a932738357ef0d81f",
+      "new_sha256": "fa2bfeb28b9558164face4ac02055fcc7049142867023471cf55c40989f38000"
+    },
+    {
+      "from": "scripts/evaluation/check_slurm_wrapper.py",
+      "to": "scripts/research/evaluation/check_slurm_wrapper.py",
+      "original_sha256": "c32687200849f2879925413bd0847dd9705c3af9fe9db5b659256f62600ed416",
+      "new_sha256": "94dcdac60a8cd9da5ad15bfa9dee320e22cbcbe956ad2d6d7bf9b7514bee4d09"
+    },
+    {
+      "from": "scripts/evaluation/classify_coa_cohort.py",
+      "to": "scripts/research/evaluation/classify_coa_cohort.py",
+      "original_sha256": "2528f3dce8dbd5e7303648aaa2f4de5e313e8b5ea2f3a58790603dde866fd691",
+      "new_sha256": "29f359777b636b5863fe582cb99a23d18bd68e4f414ffbe91a1004f71b8c1674"
+    },
+    {
+      "from": "scripts/evaluation/coa_prepare_pairs_array.sh",
+      "to": "scripts/research/evaluation/coa_prepare_pairs_array.sh",
+      "original_sha256": "b33f733e484011cb6417e8bb1612762a9edebd1de27bfa09253e6498defeac49",
+      "new_sha256": "389465197539303f52d2653d83e93cb0e6c5944197a902e0e049e2314b4172c0"
+    },
+    {
+      "from": "scripts/evaluation/coa_radius115_array.sh",
+      "to": "scripts/research/evaluation/coa_radius115_array.sh",
+      "original_sha256": "4ecc898c3ad2adadca664bb28b2a2dec2dae5e37aba45453f429692f04e0f4dd",
+      "new_sha256": "3d9a0777fea0ea875a4a2dfd72f00c7680672cabf1d020ab62c1b4d18df21ce5"
+    },
+    {
+      "from": "scripts/evaluation/coa_two_stage_manifest.sh",
+      "to": "scripts/research/evaluation/coa_two_stage_manifest.sh",
+      "original_sha256": "dd51bab0f7141b6b7fbfe3a62f59051db94a3d8c0b6eddf0e8b8bd6d90f8cb23",
+      "new_sha256": "99d3ab41b47f678be65dedecfdb67e36f7d08245944fff8759c59a8e33ec673e"
+    },
+    {
+      "from": "scripts/evaluation/illustrate_all_phantom_split.py",
+      "to": "scripts/research/evaluation/illustrate_all_phantom_split.py",
+      "original_sha256": "d79d2b2f1bd131331dcb3e8d46c68d3262142eb1f1df443542610c68d13d4e95",
+      "new_sha256": "808d00ef8186e634959ba3e3680f7d6e22ea7727d82f93cc15da6283d40a1309"
+    },
+    {
+      "from": "scripts/evaluation/illustrate_bitwise_2d.py",
+      "to": "scripts/research/evaluation/illustrate_bitwise_2d.py",
+      "original_sha256": "471197cec2a0f2f64eb7174c476f31e4cebcf0f45686125343766e6804980425",
+      "new_sha256": "18a14900ffdb9f18595cfb9a56999e56ca2b66c471bd09524462c73f762a6a56"
+    },
+    {
+      "from": "scripts/evaluation/illustrate_bitwise_2d_neighbors.py",
+      "to": "scripts/research/evaluation/illustrate_bitwise_2d_neighbors.py",
+      "original_sha256": "3936abf8b0fb981818f8830e65e6180578f7ea4b187c54594eb34b8baac9f9d9",
+      "new_sha256": "3936abf8b0fb981818f8830e65e6180578f7ea4b187c54594eb34b8baac9f9d9"
+    },
+    {
+      "from": "scripts/evaluation/illustrate_bitwise_2d_simple.py",
+      "to": "scripts/research/evaluation/illustrate_bitwise_2d_simple.py",
+      "original_sha256": "2a530983eb15181ff42ffe03f731ffaa81ee4d46435e74e0370592fe7c3f5351",
+      "new_sha256": "2a530983eb15181ff42ffe03f731ffaa81ee4d46435e74e0370592fe7c3f5351"
+    },
+    {
+      "from": "scripts/evaluation/illustrate_finetuning_pipeline.py",
+      "to": "scripts/research/evaluation/illustrate_finetuning_pipeline.py",
+      "original_sha256": "18cc10467f466f730ef48c184c8cf74807d7aefdf7fb1f4a390caa6ea8d30f6e",
+      "new_sha256": "5b99891fce10abda4a55b1d5fdad9c6980252a1b8527e5c48d0dc7e2646e6bb4"
+    },
+    {
+      "from": "scripts/evaluation/illustrate_pretrained_unet.py",
+      "to": "scripts/research/evaluation/illustrate_pretrained_unet.py",
+      "original_sha256": "c93184113d57d4ff518ef60403fe68c96de8e69520258978427106307b2ffff5",
+      "new_sha256": "b6ea48cb3267a0cdf2be3d3329f2f1c35bd04a227a5f1f62a53ab5b7d0786dc7"
+    },
+    {
+      "from": "scripts/evaluation/illustrate_training_split.py",
+      "to": "scripts/research/evaluation/illustrate_training_split.py",
+      "original_sha256": "7f571e95cb33b68b14708bbf3fa0e5ea439b41c2aedadeac8f5a201bcd93bb87",
+      "new_sha256": "541531f8428dede522eebb629e5abb5f5084f80a485e00c5514cd7c3eda6d7d2"
+    },
+    {
+      "from": "scripts/evaluation/inventory_coa_phantoms.py",
+      "to": "scripts/research/evaluation/inventory_coa_phantoms.py",
+      "original_sha256": "3d5fb462b9d3a301ec0dcb80adb2868864faf809f1c5c1fe8a1689051ee28c48",
+      "new_sha256": "e036ff351dac42540d101375bb13404f4365bd916ec013a21131092a46bdb6a1"
+    },
+    {
+      "from": "scripts/evaluation/locate_aorta.py",
+      "to": "scripts/research/evaluation/locate_aorta.py",
+      "original_sha256": "4da50a0cdc7e6f02ebef0bcf6dc9588945a250db3a822eeeef0dc25a77d020f9",
+      "new_sha256": "5402fa8c86337b0bc98215063d6d7c8bb86e7f770356bc0b735d475c6d9ebf08"
+    },
+    {
+      "from": "scripts/evaluation/plot_cohort_response.py",
+      "to": "scripts/research/evaluation/plot_cohort_response.py",
+      "original_sha256": "0f6038896468b0491b978f2818387eb6e5f67771bc5e3c89ba30868621c6d3ec",
+      "new_sha256": "6ad71854d1b4ea127e239534bbc574274049c0d69b41309472e611aac5751bc4"
+    },
+    {
+      "from": "scripts/evaluation/preview_branch_coverage.py",
+      "to": "scripts/research/evaluation/preview_branch_coverage.py",
+      "original_sha256": "508f2d1eb80afe447776fb491f9c9024e5b7780dda078f37507ff0e481901713",
+      "new_sha256": "955612a6cd6292b250cca788bc63437547a79091abdc3f566fbadfb725bf29ac"
+    },
+    {
+      "from": "scripts/evaluation/preview_xcat_tissues.py",
+      "to": "scripts/research/evaluation/preview_xcat_tissues.py",
+      "original_sha256": "8aa12227da0a74f5f36c9aa768743ee38c949aac405d7b2c7a6c389c87fe13c0",
+      "new_sha256": "f5c36140e5a382f91032dbfc482c18bbe414eec27c9fb4653e21c411dfba1074"
+    },
+    {
+      "from": "scripts/evaluation/probe_context_checkpoint.py",
+      "to": "scripts/research/evaluation/probe_context_checkpoint.py",
+      "original_sha256": "a6c13045dc63cd0ecd1f03c9fe8005548527b92605b74b10912b056190ac2f48",
+      "new_sha256": "a6c13045dc63cd0ecd1f03c9fe8005548527b92605b74b10912b056190ac2f48"
+    },
+    {
+      "from": "scripts/evaluation/probe_context_comparison.py",
+      "to": "scripts/research/evaluation/probe_context_comparison.py",
+      "original_sha256": "ac058e9b2426b8fd13c27232166daaec25e11a9a7e5296efae6395e4afe5dddb",
+      "new_sha256": "ac058e9b2426b8fd13c27232166daaec25e11a9a7e5296efae6395e4afe5dddb"
+    },
+    {
+      "from": "scripts/evaluation/probe_context_comparison_gpu.sh",
+      "to": "scripts/research/evaluation/probe_context_comparison_gpu.sh",
+      "original_sha256": "4824af499a8a54f28b0985b15ae99f49bc4c010da5ca378a580f32444f621f8f",
+      "new_sha256": "a5146a115f9d13a80c2f53fc5d3399d113677c9d63913bb9ee0c7c361b51b9d0"
+    },
+    {
+      "from": "scripts/evaluation/probe_pretrained_focus.py",
+      "to": "scripts/research/evaluation/probe_pretrained_focus.py",
+      "original_sha256": "22f69fabbb6e8b1008025b55779681ef23c1dfefea5efac77e2030bf1dbd1b5b",
+      "new_sha256": "7458bc2f586525133fd6cc6bb57ff1e49d7a1bb165952fbf1f709d1f7ba17669"
+    },
+    {
+      "from": "scripts/evaluation/recover_change_sampling.py",
+      "to": "scripts/research/evaluation/recover_change_sampling.py",
+      "original_sha256": "149068db77b1845a5a607bb544686fc9ce43f86002b87213a61d4bafe230501e",
+      "new_sha256": "d6a93b3927d8ee0c6f95caade91d9979e8accbdd50aa18b4fbccfd137e784498"
+    },
+    {
+      "from": "scripts/evaluation/review_branch_annotations.py",
+      "to": "scripts/research/evaluation/review_branch_annotations.py",
+      "original_sha256": "7fd0177c0232d4c694a9e1141290ce633755afbbc65953a499c9d7a5a81e82fe",
+      "new_sha256": "1cc21df54f9a7a3972c6b9334b3a6c33fd22b70788b6846f229abfa467be6cd9"
+    },
+    {
+      "from": "scripts/evaluation/review_cohort_components.py",
+      "to": "scripts/research/evaluation/review_cohort_components.py",
+      "original_sha256": "08818a76b0c347611972bd71c62f9ead4dc3d74cc64a25c359de5efb8552d906",
+      "new_sha256": "8c4322b16b135647a1b147583bd69194b56a862a5290c736a4776007af60ea96"
+    },
+    {
+      "from": "scripts/evaluation/review_cohort_outcomes.py",
+      "to": "scripts/research/evaluation/review_cohort_outcomes.py",
+      "original_sha256": "fa8b91115e9b7abca080e5a51e8c84ec261e0582b3a14c169f0546e3f3be9aa4",
+      "new_sha256": "f816f22b77595b7f55d44ad81a05c32b1ac6452e370f56f2d096918f052af96e"
+    },
+    {
+      "from": "scripts/evaluation/review_cohort_rois.py",
+      "to": "scripts/research/evaluation/review_cohort_rois.py",
+      "original_sha256": "0eae66af41967c8c0437b516c8c2f7a5725f09dd46f6c93e753c152b524b0085",
+      "new_sha256": "fb592557964518ac711a1311c5e7dfc9dba5bfc5469d6dfdd274ca5da2f18f88"
+    },
+    {
+      "from": "scripts/evaluation/review_internal_fill.py",
+      "to": "scripts/research/evaluation/review_internal_fill.py",
+      "original_sha256": "d206965b2c5d285fcbd9c3106df3e332b5b9eebca0584f6f3caaac9b820e92df",
+      "new_sha256": "e2e005365acc789f3330d668599bab22ea68605b3fef198a62e49b26c97402ce"
+    },
+    {
+      "from": "scripts/evaluation/review_multiscale_v3.py",
+      "to": "scripts/research/evaluation/review_multiscale_v3.py",
+      "original_sha256": "4588f5aa9b417f523416186e3881de1179689f5c78175c5b1be4a9666564ace1",
+      "new_sha256": "3d89d074e48e9212f672578f32c733fb4f009551803bc06153d3d64e27252ab6"
+    },
+    {
+      "from": "scripts/evaluation/run_cohort_batch.py",
+      "to": "scripts/research/evaluation/run_cohort_batch.py",
+      "original_sha256": "9c99013e38ef67bb26802473043d59288f59b57faebcd3c1549291830eade439",
+      "new_sha256": "90111fa9040b206cf61d350cedbc704e1460cb7405b96ba4584c0c8ef358a67e"
+    },
+    {
+      "from": "scripts/evaluation/trial_cohort_recipe.py",
+      "to": "scripts/research/evaluation/trial_cohort_recipe.py",
+      "original_sha256": "66da25161356ae74ac304b7ee89e37768e386a2821414b67a18230e9106d4650",
+      "new_sha256": "629bb968dd4a18521007bbb23d85f96ab33126d31ea29bf6546f4e86334c9cee"
+    },
+    {
+      "from": "scripts/evaluation/visualize_cohort_trials.py",
+      "to": "scripts/research/evaluation/visualize_cohort_trials.py",
+      "original_sha256": "ac735ebe7a53ab2e6caf325f625f4cceee2174603fe94f3d590640c80a4f3002",
+      "new_sha256": "f6366651358e2ab15fc04eb829694d821b41642b2f53f747d78e352aaeb2fabe"
+    },
+    {
+      "from": "scripts/evaluation/write_cohort_release_report.py",
+      "to": "scripts/research/evaluation/write_cohort_release_report.py",
+      "original_sha256": "7f88f7e3cbc9a41d5f44de363f28ceb1bf45d9cbe1126bed03ee011787d7a3f6",
+      "new_sha256": "d3b4bc0eb99fc5126ffa7c373c37b9d0eda0f29067c098aa192fc35def6db855"
+    },
+    {
+      "from": "scripts/finetune_aorta.py",
+      "to": "scripts/research/finetune_aorta.py",
+      "original_sha256": "54cf9f76358a54a9478abe4288f02a0e8c2a6cb7ad414fa023c9fb887cec6ab0",
+      "new_sha256": "1ceb9f85597a1e031180955d4b74d2cb9b46a0d46544bcd4e8b14aca25ad6a0e"
+    },
+    {
+      "from": "scripts/package_aorta_two_model_review.py",
+      "to": "scripts/research/package_aorta_two_model_review.py",
+      "original_sha256": "03d17e541049ca51d51ea57366b845ac33e47eb4da5cc13c6e17982e5e9b63f4",
+      "new_sha256": "d0fe18bc19c789404e09da9fd0075382eb9a667c79578439acd6dd1d7b61ced2"
+    },
+    {
+      "from": "scripts/prepare_context_cohort.py",
+      "to": "scripts/research/prepare_context_cohort.py",
+      "original_sha256": "531f65a0e6daa112c6f22e1b9c49bc94649755439bb4e91e6fc2e084cd73ffa5",
+      "new_sha256": "24f0740df1cb1c556b4ab92855eee84ab7c9194a791b3876429d40433d3c65c1"
+    },
+    {
+      "from": "scripts/prepare_sibling_population.py",
+      "to": "scripts/research/prepare_sibling_population.py",
+      "original_sha256": "1c250d405e48f0f46919f150cd390444a792e7c76d9955aa9921c334fe6822c0",
+      "new_sha256": "c3d32bfe05706a83e9ca80ee75d5b65aa9ebebcac4e2c312e924edc0a146b64c"
+    },
+    {
+      "from": "scripts/presentation/build_bmes2026_outline.py",
+      "to": "scripts/research/presentation/build_bmes2026_outline.py",
+      "original_sha256": "bd48c8cd42d5dc82d3cd904ef4cea824a9fdf0c3dfc9a0809ec8ddea7c96d816",
+      "new_sha256": "60878d41b6724044f2c15d00c8c5fcfe9e0bbc8c93f3c880f5c76064f68aca67"
+    },
+    {
+      "from": "scripts/preview_mask_pairs.py",
+      "to": "scripts/research/preview_mask_pairs.py",
+      "original_sha256": "7268463f60eadc211f2dd73cbe02e21b61e2380d62ccb7d5f51b52bc0fbf49ca",
+      "new_sha256": "ebf389bf571d8479d8ebd6be887adb3868313270b63f9009df1b56fef3c7b5d8"
+    },
+    {
+      "from": "scripts/publish_aorta_two_model_review.py",
+      "to": "scripts/research/publish_aorta_two_model_review.py",
+      "original_sha256": "88ad4b2c86eba2bab24fc9834f5e765503b5d5e3fb72dd2f7c63c0cdb1a51fe6",
+      "new_sha256": "f4c50bbb06f2e95e6579337852834bbde9abe42a8287e514a38d0223de5f40e9"
+    },
+    {
+      "from": "scripts/repair_sibling_population.py",
+      "to": "scripts/research/repair_sibling_population.py",
+      "original_sha256": "967ac4a478835e06025f9a339aa986e687bf57a803950ba5e64b18edd2b588a9",
+      "new_sha256": "9a13786fb5ecf05359cf1aa99416ecc8b7e9b5e78e978b39b2991d69406d1126"
+    },
+    {
+      "from": "scripts/report_context_cohort.py",
+      "to": "scripts/research/report_context_cohort.py",
+      "original_sha256": "2c8892959ed43fac2431f313d28dc09392100220958800824df174405aefed68",
+      "new_sha256": "de80e4dd16379486787d3eed1b25410c5f5485a00bc19ab5ac7911feb81c813f"
+    },
+    {
+      "from": "scripts/report_context_comparison.py",
+      "to": "scripts/research/report_context_comparison.py",
+      "original_sha256": "12972b07255e278a86825fc3a18de480e7a851da6ad69f4860afe005e3d902c4",
+      "new_sha256": "7a468ee4aef73214d87a551ce5fa1de7db9ceb58ba22aae0510f1240004655e0"
+    },
+    {
+      "from": "scripts/report_context_diagnostic.py",
+      "to": "scripts/research/report_context_diagnostic.py",
+      "original_sha256": "85f66fb359cd0c58beff6d0725a220735c4d35d795439af5187a6413c367b2cc",
+      "new_sha256": "8d87329e7ee23ec785143ebc8c258be6df395d828e85dad7f0bbe549c64d0731"
+    },
+    {
+      "from": "scripts/review_phantom_masks.py",
+      "to": "scripts/research/review_phantom_masks.py",
+      "original_sha256": "fe6ceb3bf7e10071f596108006ed9627811e6919a6e27094bfa362c5e869a2c4",
+      "new_sha256": "a8091a6a46e4a3eb7e8405d8252be6eef4cf92fe97fec5b692044d6c5384ea1f"
+    },
+    {
+      "from": "scripts/select_phantom_anatomy.py",
+      "to": "scripts/research/select_phantom_anatomy.py",
+      "original_sha256": "acfec2f2953ed7ea81a24bd708fbfc05164d5f7c752e0588a9cc244b98395c21",
+      "new_sha256": "8c7867b2a9fce8c527273e526a8fba3f0e6251155d55e6e28541d2caf5e5d1d3"
+    },
+    {
+      "from": "scripts/slurm/README.md",
+      "to": "scripts/research/slurm/README.md",
+      "original_sha256": "89d8de95dfe7c940123da3854ac054ce495cd36a7b689f26121f31d0f2ed17f6",
+      "new_sha256": "47fce7ceb320d83f3557b8a8256d980d6e43b555a61d0e8f6542f01dd2482f38"
+    },
+    {
+      "from": "scripts/slurm/fakect_branch_presentation.sh",
+      "to": "scripts/research/slurm/fakect_branch_presentation.sh",
+      "original_sha256": "c70e6604e9923d0159dc75b261d59871ce555d83a3ed9964dae49a359cd51072",
+      "new_sha256": "a5c8a424fdf76069cd3027b1bfec25561d1c9af88bc4df2a78992a2de35c412d"
+    },
+    {
+      "from": "scripts/slurm/fakect_change_gpu.sh",
+      "to": "scripts/research/slurm/fakect_change_gpu.sh",
+      "original_sha256": "8b6ccdffe8a7716ed7d731259297011c2f7c29d9b8961756f026f1db0add3091",
+      "new_sha256": "daecace476d94a2116924c359b974a529fe038ee8625392b6ada7b531fa6adde"
+    },
+    {
+      "from": "scripts/slurm/fakect_change_population_gpu.sh",
+      "to": "scripts/research/slurm/fakect_change_population_gpu.sh",
+      "original_sha256": "2be4dfb56436a8fd149088921eb6b848e14b31b9562945382f2550bc74b298a9",
+      "new_sha256": "c169db699c883aee008b583556f1b4bd7c5c9118b914b0850ae95628ae55dab5"
+    },
+    {
+      "from": "scripts/slurm/fakect_change_population_report.sh",
+      "to": "scripts/research/slurm/fakect_change_population_report.sh",
+      "original_sha256": "63e6806691a23e5666ecd18576f7031cd82f025db789277cdc72688f262f475f",
+      "new_sha256": "1c3727f9654dd17b123aef6e08212147eb9bbdc4df17fe15257b064f6e6f0a89"
+    },
+    {
+      "from": "scripts/slurm/fakect_change_report.sh",
+      "to": "scripts/research/slurm/fakect_change_report.sh",
+      "original_sha256": "ee2bfbc13b6c71edfb31408a7123f3a063d933e4b4f19da2767ead372592bdfd",
+      "new_sha256": "d20aebfe555ad2654e2309a789d2d737888dd08bf8d643e9dceefbade4e4693d"
+    },
+    {
+      "from": "scripts/slurm/fakect_change_sampling_gpu.sh",
+      "to": "scripts/research/slurm/fakect_change_sampling_gpu.sh",
+      "original_sha256": "acc6cffe5547f7bc6a77ae1f615aec9887c0b3f6c22eca57a231e5ccb93237f8",
+      "new_sha256": "4dd79e404e7f0f65fb2ed40076986b3dfef339f665db911bd5fa861da641c4b4"
+    },
+    {
+      "from": "scripts/slurm/fakect_change_sampling_report.sh",
+      "to": "scripts/research/slurm/fakect_change_sampling_report.sh",
+      "original_sha256": "078596dc9804b1a2806a2a4c95cce1e5d66bfc3b55bf2aaf4e14d0fcd012e8fc",
+      "new_sha256": "dd340075af1808290089f08b8197bc72b3646cfa96e4431a1413a08888d3d36a"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_budget_gpu.sh",
+      "to": "scripts/research/slurm/fakect_coa_budget_gpu.sh",
+      "original_sha256": "7373cf4e9fe42b8ddf55a0d9df9092f8edcad772716f6f81b09a3131bc29ce98",
+      "new_sha256": "64a1470fba639113e75174597b3fd3924a8ff01f5fda1151ddd025182236c27d"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_classification_gpu.sh",
+      "to": "scripts/research/slurm/fakect_coa_classification_gpu.sh",
+      "original_sha256": "80f376a1fb02548f32ef0cec871ccd1dddbec6d6281d793d82453b6f9899d46f",
+      "new_sha256": "1dd0f814901ca660d91f17748008a43c4659bbeb4cb121abd81e5c4debd2a3db"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_classification_report.sh",
+      "to": "scripts/research/slurm/fakect_coa_classification_report.sh",
+      "original_sha256": "9acdc39074d105b5db47d593d2858b28cc9db8d4f6ab16c7150c9f28b415a658",
+      "new_sha256": "cb8847372625bac8348bc8d2a2bd5597985f9309676ad4d1d263ee2fabd98165"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_classifier_gpu.sh",
+      "to": "scripts/research/slurm/fakect_coa_classifier_gpu.sh",
+      "original_sha256": "624f60676adb1819a4e21670c1c2e76f5cf4046b942b35fb97a2d4c9c8cf71b5",
+      "new_sha256": "2f71090e3ece6446f2100837ec61d1785533ae121fd3e47d9b612e48cabf3f0a"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_focused_gpu.sh",
+      "to": "scripts/research/slurm/fakect_coa_focused_gpu.sh",
+      "original_sha256": "826447d277de5343907983bfc8df3405c5c2f09f737c1bdb105fd38a44775215",
+      "new_sha256": "591b3e41033ae071505b7d38a0861d3c859d213ea44e737e0469a1a444eb254f"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_paired_gpu.sh",
+      "to": "scripts/research/slurm/fakect_coa_paired_gpu.sh",
+      "original_sha256": "eb878e7dd7ecc7fbd88377c804a07d8df72972ae7baa7171e3e647212c99a09c",
+      "new_sha256": "d4a50a1b580bb26e1abc2abeca7ff1f8ab964b3fa9a7e33e4f7a8729c84d11ad"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_paired_v2_gpu.sh",
+      "to": "scripts/research/slurm/fakect_coa_paired_v2_gpu.sh",
+      "original_sha256": "183dca1ccfab7654940c6a60ba9a31aaa73f37a293d6d3339232776b03537df2",
+      "new_sha256": "981eb5e56d221ca41751b5f06f7493c985f943c0a59368a9167281b36880a8a1"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_pilot_control_gpu.sh",
+      "to": "scripts/research/slurm/fakect_coa_pilot_control_gpu.sh",
+      "original_sha256": "3467e8012c6c6ca89c0ad91a7ee96bbd34b90b16d2807e618635d02e00907146",
+      "new_sha256": "630484bcffc433c3ebba3213cf4dce3a1561e07c682f3d6c68a47c8e7c052c83"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_pilot_gpu.sh",
+      "to": "scripts/research/slurm/fakect_coa_pilot_gpu.sh",
+      "original_sha256": "0faf15ce23d59db3693178ffed45604407bcbfb72179c293eb90f90de8f85999",
+      "new_sha256": "7143ac7315c4e662c297a67589a5af2bb0ed21cc16920f9c508ff074c96dae6e"
+    },
+    {
+      "from": "scripts/slurm/fakect_coa_rotations_gpu.sh",
+      "to": "scripts/research/slurm/fakect_coa_rotations_gpu.sh",
+      "original_sha256": "8a4bd54bcd8e78e890092abecd66ea4dc5134a54551aafd42c4907ae738c4c0f",
+      "new_sha256": "38063949ddfea49acc4dfffa41a45a714f870a250a28eee867dae12e594e4674"
+    },
+    {
+      "from": "scripts/slurm/fakect_context_comparison_gpu.sh",
+      "to": "scripts/research/slurm/fakect_context_comparison_gpu.sh",
+      "original_sha256": "a46d726f791160c1511f19dccd985bb7cf158f738ffa38125e8c82f832e3e8da",
+      "new_sha256": "80e97bf387b1d411c9c5e5bd3463509d1b269a844342809d3f056720b8e26f3a"
+    },
+    {
+      "from": "scripts/slurm/fakect_context_gpu.sh",
+      "to": "scripts/research/slurm/fakect_context_gpu.sh",
+      "original_sha256": "3aa54847dcd45bc88771a43b349d7dd178fdc2a754179423999ff764779416b1",
+      "new_sha256": "ac8d5405c94b9779f0bd2483b23cd4b150ae0706243f60eae3027faf9b2a115e"
+    },
+    {
+      "from": "scripts/slurm/fakect_ct_clusters_cpu.sh",
+      "to": "scripts/research/slurm/fakect_ct_clusters_cpu.sh",
+      "original_sha256": "129ac4609ee54d01bd1b21dff628c285556670e40ad8d2bdcc18431a33d55b9b",
+      "new_sha256": "66c83de7d4dc88aec7e0ac494c23b378aefdb2a9eb56fdb7c61aa83c45d33f01"
+    },
+    {
+      "from": "scripts/slurm/fakect_ct_clusters_report.sh",
+      "to": "scripts/research/slurm/fakect_ct_clusters_report.sh",
+      "original_sha256": "1ba56f4e6a45d3e3d674cbeef2f96be2538cfa5cfda4883d23138a7a16202d3e",
+      "new_sha256": "0e8525e02660b9b050b90537c422e0798508ca2648e5b2eb763e193805079f1e"
+    },
+    {
+      "from": "scripts/slurm/fakect_finetune_gpu.sh",
+      "to": "scripts/research/slurm/fakect_finetune_gpu.sh",
+      "original_sha256": "f3645d69f6f7b0c342b3caa5f8a5ff9c5cadc4442e22316728c9835013352afe",
+      "new_sha256": "a73c0d252c3d8afe01ad1b70fdf999eba9c5559607f35578f7ccfd07d13a14b8"
+    },
+    {
+      "from": "scripts/slurm/fakect_finetune_prepare.sh",
+      "to": "scripts/research/slurm/fakect_finetune_prepare.sh",
+      "original_sha256": "6d1c04e7e4da4bbfd69f4ba6642229d16bece1ecac30186eab8deb8db065fbaa",
+      "new_sha256": "cd410dd378d979adb2996d134499e8881ee509362ce31968cc8c1a8ff61390f9"
+    },
+    {
+      "from": "scripts/slurm/fakect_finetune_presentation.sh",
+      "to": "scripts/research/slurm/fakect_finetune_presentation.sh",
+      "original_sha256": "c95c0a999d727245c6af0f2ab8d040e7b021f9ad763c8fa4454ae007a4664dd3",
+      "new_sha256": "afcb23862ddf827d88956de3f0d72677f0033109470543a93533020d6497ebb9"
+    },
+    {
+      "from": "scripts/slurm/fakect_finetune_report.sh",
+      "to": "scripts/research/slurm/fakect_finetune_report.sh",
+      "original_sha256": "fdbd6bbe2a7fcbb55f56564ed504e720b9a51eb3142bf770abfb2de3e580857f",
+      "new_sha256": "b92271d4cbdae8c01ff540adee280209da2b5e686ae61e1691a90d5b78d2cfd7"
+    },
+    {
+      "from": "scripts/slurm/fakect_multiscale_gpu.sh",
+      "to": "scripts/research/slurm/fakect_multiscale_gpu.sh",
+      "original_sha256": "c0aabdacd088ee1f4290e3c46c84168e663a833353d67fbc90ca9245058cc5f1",
+      "new_sha256": "f47d5d89192a4e2db9073d8a1f04221af9103f19f865b1f403f393e0a5f7d398"
+    },
+    {
+      "from": "scripts/slurm/fakect_multiscale_review_gpu.sh",
+      "to": "scripts/research/slurm/fakect_multiscale_review_gpu.sh",
+      "original_sha256": "472c0caaf2e7b1867a56e96ee2a6d78fc026f08d0d45bcb044596e5aea9658bb",
+      "new_sha256": "83d244ed36a02cfd53cc0ff3603a53268dbfb25e54bca5998094d450e6615731"
+    },
+    {
+      "from": "scripts/slurm/fakect_multiscale_v2_gpu.sh",
+      "to": "scripts/research/slurm/fakect_multiscale_v2_gpu.sh",
+      "original_sha256": "dff2a954d28be10c7de30f84d730eceead6f7afd58e230a439f54d75139d6cda",
+      "new_sha256": "30a7014f9e1f45e26cf7b64ee681611edc2dc31f1d65c99d3f6ca238a957903c"
+    },
+    {
+      "from": "scripts/slurm/fakect_multiscale_v3_gpu.sh",
+      "to": "scripts/research/slurm/fakect_multiscale_v3_gpu.sh",
+      "original_sha256": "aaaef5ad45e26c7c548b95c3eb5a6eda34cd15a3aff5c4b62d5d6aff6f8f9426",
+      "new_sha256": "53b95b24e16dfe104d86ef3c3a0bf1badcbc4ce0dd03430196046f96169ff590"
+    },
+    {
+      "from": "scripts/slurm/fakect_pretrained_focus_gpu.sh",
+      "to": "scripts/research/slurm/fakect_pretrained_focus_gpu.sh",
+      "original_sha256": "8823d3fb70fd7dfae7035c1898dfcf984950feb0cbdf0cb9111fa98169449817",
+      "new_sha256": "e52887d9f6c97870505f21269aaca2b89519b9eae7e7339b664acf7d7c81278f"
+    },
+    {
+      "from": "scripts/slurm/fakect_pretrained_gpu.sh",
+      "to": "scripts/research/slurm/fakect_pretrained_gpu.sh",
+      "original_sha256": "b2adbc40a41153357775e8460b0b630dad8cafb3eb4be045d8b8e370ea6bc4e1",
+      "new_sha256": "3e403aea56f62035e2259d418187739146b011837f364b474156f12643da36ad"
+    },
+    {
+      "from": "scripts/slurm/fakect_pretrained_prepare.sh",
+      "to": "scripts/research/slurm/fakect_pretrained_prepare.sh",
+      "original_sha256": "5ea8e7c88496cfb5b632fa3c851e04af439ac0f1f195fc9eaa43fb2499b3c902",
+      "new_sha256": "fbd219e1f50d690eeb6bd5d80f461711dcc0d2d2e7759f88bff64ce6a970256e"
+    },
+    {
+      "from": "scripts/slurm/fakect_pretrained_report.sh",
+      "to": "scripts/research/slurm/fakect_pretrained_report.sh",
+      "original_sha256": "d56e1bfa27af51ce5f0e8e1eb6536d8a6b75a9e907b17d42abc3a0cd72f755ae",
+      "new_sha256": "d1d1e0b1f02258bcf0d45acbf090dc72d3b13e24fb801e633f5962462cbbc601"
+    },
+    {
+      "from": "scripts/slurm/fakect_segmentation_gpu.sh",
+      "to": "scripts/research/slurm/fakect_segmentation_gpu.sh",
+      "original_sha256": "34cfdd476e9ed27d3e865f2b995ee9c123c98a041603ca318b221236aad6c2ad",
+      "new_sha256": "b2c54a99c1fe9a8e8437e042b9f06e8122519e0c9e90c63b74edccf6b03427bd"
+    },
+    {
+      "from": "scripts/slurm/fakect_sibling_population_collect.sh",
+      "to": "scripts/research/slurm/fakect_sibling_population_collect.sh",
+      "original_sha256": "dc8dba7ec28348d1b39adea96a2f16c0f26abb5d0dcc3aad695878b8bbedd3b1",
+      "new_sha256": "cc9c6e6b2ce27457faf5e6c9508860ecae0dfbd5e719c4adbf29c5448756dd8f"
+    },
+    {
+      "from": "scripts/slurm/fakect_sibling_population_cpu.sh",
+      "to": "scripts/research/slurm/fakect_sibling_population_cpu.sh",
+      "original_sha256": "9ccab4238d2194495f29343d7efb0f483805599ce80d11fa606011f642316ff7",
+      "new_sha256": "5ce61d2b57b3075ccd50a3f50829790c1f032bfec71e040d5b0dd64b4b06af7e"
+    },
+    {
+      "from": "scripts/slurm/fakect_sibling_repair_collect.sh",
+      "to": "scripts/research/slurm/fakect_sibling_repair_collect.sh",
+      "original_sha256": "32f31dacd4f0ab63e9e58eab745663fe8f3bf0baf3a072937e84543514e20538",
+      "new_sha256": "3fdeb53b3381c1228c0476661c1124b382255b453fe8e09dbcce2f67af560f65"
+    },
+    {
+      "from": "scripts/slurm/fakect_sibling_repair_cpu.sh",
+      "to": "scripts/research/slurm/fakect_sibling_repair_cpu.sh",
+      "original_sha256": "02dcc089a0eac24aaaf8acb68e00a0a2cade05cb1c26da84ecd35ccbaa13dad1",
+      "new_sha256": "d5800beae9d4f6f9ba1bff01b50ce05122b9edbc72d5c173b82afd7fd86b8393"
+    },
+    {
+      "from": "scripts/slurm/fakect_two_stage_gpu.sh",
+      "to": "scripts/research/slurm/fakect_two_stage_gpu.sh",
+      "original_sha256": "f6c7ab1ba0cef8b488671ad8fe929decdd46c4a35f6f66625f81ad93118b26a1",
+      "new_sha256": "3204dd3befd34096d2562ec584b2f9d55e2d48066c67ed5831bdb5027a18d5f5"
+    },
+    {
+      "from": "scripts/slurm/fakenoise_train_gpu.sh",
+      "to": "scripts/research/slurm/fakenoise_train_gpu.sh",
+      "original_sha256": "75f2f00e0e80409a5304a28349b0571b9e81a002979a3a0e6cc99519aeea3960",
+      "new_sha256": "be2865970640389991164339cd2a1fe28eee9fc19e18a5fbe0af25369c76b4c3"
+    },
+    {
+      "from": "scripts/slurm/reference/fakenoise_pair.sh",
+      "to": "scripts/research/slurm/reference/fakenoise_pair.sh",
+      "original_sha256": "4ba4659fca13bd07f35513ef733a4e0b80d5a47ddc1f1a4e15aa2a2efd4ed407",
+      "new_sha256": "4ba4659fca13bd07f35513ef733a4e0b80d5a47ddc1f1a4e15aa2a2efd4ed407"
+    },
+    {
+      "from": "scripts/slurm/reference/fakenoise_train_cpu.sh",
+      "to": "scripts/research/slurm/reference/fakenoise_train_cpu.sh",
+      "original_sha256": "94aeec866ca3d35b42b9fe9cbb65be42bdcd381441811effb146c337e9af4038",
+      "new_sha256": "b5c34172773065b6bf4681c8db7c152431c5e1134d9c854af54e47a3386780f7"
+    },
+    {
+      "from": "scripts/slurm/reference/fakenoise_train_cpu_heavy.sh",
+      "to": "scripts/research/slurm/reference/fakenoise_train_cpu_heavy.sh",
+      "original_sha256": "a478e5128ca04b3698179a5a28d3b99e341427f5f01378e911dd0ef076afee4e",
+      "new_sha256": "a478e5128ca04b3698179a5a28d3b99e341427f5f01378e911dd0ef076afee4e"
+    },
+    {
+      "from": "scripts/slurm/reference/fakenoise_train_gpu.sh",
+      "to": "scripts/research/slurm/reference/fakenoise_train_gpu.sh",
+      "original_sha256": "267784f11f595e617ec9ee59e08cd62950b954f638504fe85923cc31df736823",
+      "new_sha256": "ca845a9ba8cfb4eb1b8f91a788d00825fcdd1243d82b3135287aa89c054106d4"
+    },
+    {
+      "from": "scripts/slurm/reference/fakenoise_train_gpu_heavy.sh",
+      "to": "scripts/research/slurm/reference/fakenoise_train_gpu_heavy.sh",
+      "original_sha256": "e5edc91e9d85ce84ac9e8dfce68ce6f72f715717a550e275c9b5f381f13a08c6",
+      "new_sha256": "1fb5e9aaa80e1e29dac8fdad66a7da4b64c0b6c710262b0178348bcd0cd68ff3"
+    },
+    {
+      "from": "scripts/style_pretrained_review.py",
+      "to": "scripts/research/style_pretrained_review.py",
+      "original_sha256": "f4b083624c8b63f3d84ecf0ab0871202c4d0dbfb814ff1d4e0f313f5866c1adc",
+      "new_sha256": "bca1b89cccdb49210c9c87232bf1ee4958bb6f94bfdb599d77fdb1f0d150156d"
+    },
+    {
+      "from": "scripts/train_change_population.py",
+      "to": "scripts/research/train_change_population.py",
+      "original_sha256": "07d04a85d3974d8164f46e2501dd15b1550811dc9b8fd7f001c68e6e8b2a2c9b",
+      "new_sha256": "4d32586f99eda135ebd6526ef22b190373e7ad61a53921e617797392b519dcc1"
+    },
+    {
+      "from": "scripts/train_change_sampling.py",
+      "to": "scripts/research/train_change_sampling.py",
+      "original_sha256": "ff13e42cbcf9587939e6a77195c8dd8355c59a5cff5fbe78e1bdad04e323de97",
+      "new_sha256": "4d45b383097bffc7444d041794d065b5062b86eab24af841919dcd321c0a6c8c"
+    },
+    {
+      "from": "scripts/train_coa_budget.py",
+      "to": "scripts/research/train_coa_budget.py",
+      "original_sha256": "e23e5438247f119498fd55040983a4c85817bcf3e297c9a75c8275fbb34b604a",
+      "new_sha256": "8ff399289fe9f777f0d95af6a26841024a7fd79838ee22f69e6738f00740001d"
+    },
+    {
+      "from": "scripts/train_coa_classification.py",
+      "to": "scripts/research/train_coa_classification.py",
+      "original_sha256": "163378174c4ee285fffb6e6d27186fa669e1caa53fb64b61b4f71d3504def60d",
+      "new_sha256": "ce0932b8346bb0ad64ee99f52dc9359080da2e37213567b69e1577d913586599"
+    },
+    {
+      "from": "scripts/train_coa_classifier.py",
+      "to": "scripts/research/train_coa_classifier.py",
+      "original_sha256": "764752996ce277b792458a504b3386e81e35f21687bb9489f9ed6bc0472f10aa",
+      "new_sha256": "0e2e74fba45a7cb737a347d243ea6562b53f44f41e99dc7bac5e1e869cae090e"
+    },
+    {
+      "from": "scripts/train_coa_focused.py",
+      "to": "scripts/research/train_coa_focused.py",
+      "original_sha256": "525384381d3a3dceaf324a55b116d6d2d8621c7d61721eb84810a142a104d9e7",
+      "new_sha256": "f7015181e3584590a8bbb6e49ed934c32cefb518dda1e6e4e6ccd3d0ec422318"
+    },
+    {
+      "from": "scripts/train_coa_paired.py",
+      "to": "scripts/research/train_coa_paired.py",
+      "original_sha256": "fe22707eb02a0d3b9ab4d5b34e7f786da3e6edc2372b2aaf395bf684a57f033c",
+      "new_sha256": "bcc075ab61eb824aa61bcc761f42f250a1afb1c964ecac7c35319f3d92414df2"
+    },
+    {
+      "from": "scripts/train_coa_paired_v2.py",
+      "to": "scripts/research/train_coa_paired_v2.py",
+      "original_sha256": "71bdaa452411d672671c45329697fcb55402cd0844ee067bd301452f4b699524",
+      "new_sha256": "1beba78175a7987334e22d512835e3617f2d3c8d126ce7f553b6e05a5f92fb7b"
+    },
+    {
+      "from": "scripts/train_coa_pilot.py",
+      "to": "scripts/research/train_coa_pilot.py",
+      "original_sha256": "06498f4ce3a21a759592aab6d05a1ac26aec06ff0cfad1eb730c51776e024b7e",
+      "new_sha256": "8db14523658170011be003cd26a077f7b33210d8908820707573aa301f642a77"
+    },
+    {
+      "from": "scripts/train_coa_pilot_control.py",
+      "to": "scripts/research/train_coa_pilot_control.py",
+      "original_sha256": "37b698a97310f2ef090861ecdf536a001f036b06fc7893d0feab9dd459aa91e9",
+      "new_sha256": "d36c163d646f5a98323887245ecef3d70ef8cf6a41916d2d198911d23c87c0f1"
+    },
+    {
+      "from": "scripts/train_coa_rotations.py",
+      "to": "scripts/research/train_coa_rotations.py",
+      "original_sha256": "9cb6a4f94e8f5fdfb5a844db816f6855dc64f10670b400ea79de09cef5473372",
+      "new_sha256": "a1cfa484d79ebd00790e99ee47feb3745f7b2b359da12b8b7c9afa77b81170e6"
+    },
+    {
+      "from": "scripts/train_context_aorta.py",
+      "to": "scripts/research/train_context_aorta.py",
+      "original_sha256": "3077658ff4cb6eafffd537ae180f79d1a1595618a26996530564473f334cc96e",
+      "new_sha256": "4354b03c3b65c9466c9855bf19cd1f4e7cbeb2de4557252562a36597fb732467"
+    },
+    {
+      "from": "scripts/train_focused_change.py",
+      "to": "scripts/research/train_focused_change.py",
+      "original_sha256": "69f6fb23be6fe39790e786c4f4e99cfb1c07dde5843d1a26dafce15c297e388d",
+      "new_sha256": "37dc133c7b1d1a1a51c7762f2391ddf1eea7a8fb499ebf3aff6f9c1c78bbc52c"
+    },
+    {
+      "from": "scripts/train_mask_model.py",
+      "to": "scripts/research/train_mask_model.py",
+      "original_sha256": "02e370ac0b7ea6dd668572586923202696d8d308c89ec03c989dc223ca912043",
+      "new_sha256": "aedce8e3a26f8efd9971bbe3144f415ecff1d39c9163e9097fb7373bdf4599e0"
+    },
+    {
+      "from": "scripts/train_multiscale_coa.py",
+      "to": "scripts/research/train_multiscale_coa.py",
+      "original_sha256": "b5db729c0b2fa3afa96d42890a780a547d49f3e53d860a7e687af6a5f682fdf9",
+      "new_sha256": "bfdfb5ab86bd5f847542a2554732fdf5c657b479149abf796d4d7e755e4f6fd6"
+    },
+    {
+      "from": "scripts/train_multiscale_coa_v2.py",
+      "to": "scripts/research/train_multiscale_coa_v2.py",
+      "original_sha256": "65434d222a8d3ae308d76ed240820ca83357d2934c4d20e6009fa0c19d0f479b",
+      "new_sha256": "0165735e1fbb62f1b816f4be32ac39b8ccc2b75d9167e90de835e6fd84ebd925"
+    },
+    {
+      "from": "scripts/train_multiscale_coa_v3.py",
+      "to": "scripts/research/train_multiscale_coa_v3.py",
+      "original_sha256": "e6694d8d0875575b154d1322bfd4e3d64eda44b917a914ae01b42cd74a59aa22",
+      "new_sha256": "74719070330f5f9e219705e7da181f83ec7fb4b3524cd6e43658776c9bcb9cd5"
+    },
+    {
+      "from": "scripts/train_two_stage.py",
+      "to": "scripts/research/train_two_stage.py",
+      "original_sha256": "0639f2bfa2b3f823f3a4ef5192988fa5250d21d2eb5049cef47d2e9d0d662a19",
+      "new_sha256": "d0b95f6633ba5b750f3683c269b39f28e603b3e45c39d6e9fa9f926c8b4a2133"
+    },
+    {
+      "from": "scripts/xcat_job.sh",
+      "to": "scripts/research/xcat_job.sh",
+      "original_sha256": "b559b1feb421681af26ab2e462e8c1ea319f10bd7bd854287a2973d6ffda70df",
+      "new_sha256": "d9adda1737c6e530732748ad5d3acca9ecbf072d1fe311c88393b8e3b5e64c5e"
+    },
+    {
+      "from": "scripts/xcat_pool.sh",
+      "to": "scripts/research/xcat_pool.sh",
+      "original_sha256": "567aec5c95ac87d299668621fb5764eaa6614949b15458812df3129e79da615e",
+      "new_sha256": "0673e65c2ab5068adfec91b8852065612433e0b49adb600297f2cd534ae52623"
+    },
+    {
+      "from": "scripts/xcat_raw_to_obj.py",
+      "to": "scripts/research/xcat_raw_to_obj.py",
+      "original_sha256": "da982c36bed66247fff5daa5be1ae359d04291133af430b25f819ce8bb6d3053",
+      "new_sha256": "da982c36bed66247fff5daa5be1ae359d04291133af430b25f819ce8bb6d3053"
+    }
+  ],
+  "path_updates": "Operational script roots, configuration references, dependency includes and documentation links updated. Immutable historical JSON and original notebook exports preserved."
+}

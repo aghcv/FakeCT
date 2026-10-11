@@ -35,7 +35,7 @@ def config(directory):
 
 class V3GeometryAndPartitionTests(unittest.TestCase):
     def test_physical_margin_rounding_and_effective_budget(self):
-        source = ROOT / 'configs/models/coa-multiscale-pilot-v3.ini'
+        source = ROOT / 'archive/research/configs/models/coa-multiscale-pilot-v3.ini'
         c = exp.load_config(source)
         self.assertEqual(c['input.detail']['base_shape_kji'], [216, 160, 160])
         self.assertEqual(c['input.detail']['shape_kji'], [216, 192, 192])
@@ -50,7 +50,7 @@ class V3GeometryAndPartitionTests(unittest.TestCase):
                 exp.load_config(modified)
 
     def test_larger_detail_retains_each_predicted_physical_center(self):
-        c = exp.load_config(ROOT / 'configs/models/coa-multiscale-pilot-v3.ini')
+        c = exp.load_config(ROOT / 'archive/research/configs/models/coa-multiscale-pilot-v3.ini')
         old = deepcopy(c)
         old['input.detail']['shape_kji'] = c['input.detail']['base_shape_kji']
         # Deliberately anisotropic overview and off-grid prediction detect axis

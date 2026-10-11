@@ -51,7 +51,7 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(config["reassignment"]["stiffness"]["tissues"]["bone"], 1.)
         self.assertEqual(config["reassignment"]["stiffness"]["tissues"]["skin"], .95)
         self.assertEqual(config["reassignment"]["stiffness"]["labels"], {2897: .05})
-        self.assertEqual(config["input"]["audit"], self.root / "docs/integration/2026-09-16/xcat-results.json")
+        self.assertEqual(config["input"]["audit"], self.root / "archive/research/docs/integration/2026-09-16/xcat-results.json")
         self.assertTrue(config["roi"]["coordinate_reviewed"])
         self.assertFalse(config["rois"]["ascending"]["coordinate_reviewed"])
         self.assertEqual(config["rois"]["ascending"]["center_ijk"][0], (387., 360., 1352.))
@@ -678,7 +678,7 @@ class RecipeConfigurationTests(unittest.TestCase):
             self.load(parser)
 
     def test_each_starter_parameter_references_an_existing_numbered_note(self):
-        starter = (ROOT / "configs/studies/thoracic-aorta-recipe.ini").read_text()
+        starter = (ROOT / "archive/research/configs/studies/thoracic-aorta-recipe.ini").read_text()
         notes = set(re.findall(r"^# NOTE ([0-9]+) --", starter, re.MULTILINE))
         assignments = [line for line in starter.splitlines()
                        if line and not line.startswith(("#", "["))]

@@ -25,7 +25,7 @@ FIELDS = {
 }
 CODE_FILES = parent.CODE_FILES + (
     'src/fakect_coa_pilot_experiment.py', 'src/fakect_coa_pilot_learning.py',
-    'scripts/train_coa_pilot.py', 'scripts/slurm/fakect_coa_pilot_gpu.sh',
+    'scripts/research/train_coa_pilot.py', 'scripts/research/slurm/fakect_coa_pilot_gpu.sh',
 )
 REFERENCE_FILES = {
     'results': 'diagnostic/results.json', 'history': 'diagnostic/classifier-history.json',

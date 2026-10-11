@@ -12,8 +12,8 @@ ROOT = base.ROOT
 SCHEMA = 'fakect.coa-budget-control/1'
 CODE_FILES = tuple(dict.fromkeys(rotation.CODE_FILES + (
     'src/fakect_coa_budget_experiment.py', 'src/fakect_coa_budget_learning.py',
-    'src/fakect_coa_budget_report.py', 'scripts/train_coa_budget.py',
-    'scripts/slurm/fakect_coa_budget_gpu.sh',
+    'src/fakect_coa_budget_report.py', 'scripts/research/train_coa_budget.py',
+    'scripts/research/slurm/fakect_coa_budget_gpu.sh',
 )))
 FIELDS = {'experiment': {'schema_version', 'output_directory'},
           'reference': {'experiment_directory'},

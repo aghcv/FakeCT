@@ -158,7 +158,7 @@ class RotationDesignTests(unittest.TestCase):
         self.assertEqual(len(expected['stages']), 90)
 
     def test_config_is_clean_typed_and_rejects_unknown_fields(self):
-        path = ROOT/'configs/models/coa-rotating-evaluation.ini'
+        path = ROOT/'archive/research/configs/models/coa-rotating-evaluation.ini'
         c = design.load_config(path)
         self.assertEqual(c['evaluation']['seeds'], [42])
         self.assertEqual(c['training']['locator_epochs'], 120)
@@ -174,7 +174,7 @@ class RotationDesignTests(unittest.TestCase):
                          'Production frozen cohort metadata is not installed')
     def test_production_metadata_freeze_and_known_reference_isolation(self):
         import fakect_coa_rotation_experiment as experiment
-        path = ROOT/'configs/models/coa-rotating-evaluation.ini'
+        path = ROOT/'archive/research/configs/models/coa-rotating-evaluation.ini'
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)/'frozen-rotation'
             input_path = Path(tmp)/'rotation.ini'

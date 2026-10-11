@@ -26,7 +26,7 @@ ROBUSTNESS_FIELDS = {'translation_fraction', 'maximum_relative_error'}
 CODE_FILES = previous.CODE_FILES + (
     'src/fakect_multiscale_experiment_v3.py', 'src/fakect_multiscale_learning_v3.py',
     'src/fakect_multiscale_network_v3.py', 'src/fakect_multiscale_augmentation.py',
-    'scripts/train_multiscale_coa_v3.py', 'scripts/slurm/fakect_multiscale_v3_gpu.sh')
+    'scripts/research/train_multiscale_coa_v3.py', 'scripts/research/slurm/fakect_multiscale_v3_gpu.sh')
 
 
 def load_config(path):

@@ -29,7 +29,7 @@ FIELDS = {
 }
 CODE_FILES = paired_parent.CODE_FILES + (
     'src/fakect_coa_paired_experiment_v2.py', 'src/fakect_coa_paired_learning_v2.py',
-    'scripts/train_coa_paired_v2.py', 'scripts/slurm/fakect_coa_paired_v2_gpu.sh',
+    'scripts/research/train_coa_paired_v2.py', 'scripts/research/slurm/fakect_coa_paired_v2_gpu.sh',
 )
 
 

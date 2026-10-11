@@ -21,7 +21,7 @@ class ExperimentTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.path = self.root/'model.ini'
-        text = (ROOT/'configs/models/coa-context-diagnostic.ini').read_text()
+        text = (ROOT/'archive/research/configs/models/coa-context-diagnostic.ini').read_text()
         text = text.replace('260613:baseline', '')
         self.path.write_text(text)
         self.config = load_config(self.path, repo_root=self.root)

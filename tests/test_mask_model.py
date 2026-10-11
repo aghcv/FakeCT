@@ -19,7 +19,7 @@ class MaskModelTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        self.raw = (ROOT/'configs/models/coa-mask-model.ini').read_bytes()
+        self.raw = (ROOT/'archive/research/configs/models/coa-mask-model.ini').read_bytes()
         self.ini = self.root/'model.ini'
         self.ini.write_bytes(self.raw)
         self.config = load_config(self.ini, repo_root=self.root)

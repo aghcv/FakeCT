@@ -22,8 +22,8 @@ FIELDS = {'experiment':{'schema_version','output_directory'},
           'training':{'epochs','learning_rate','seed','host_memory_limit_mb','gpu_memory_limit_mb','require_gpu'}}
 CODE_FILES = parent.CODE_FILES + (
     'src/fakect_coa_classifier_experiment.py','src/fakect_coa_classifier_learning.py',
-    'src/fakect_coa_classifier_report.py','scripts/train_coa_classifier.py',
-    'scripts/slurm/fakect_coa_classifier_gpu.sh')
+    'src/fakect_coa_classifier_report.py','scripts/research/train_coa_classifier.py',
+    'scripts/research/slurm/fakect_coa_classifier_gpu.sh')
 REVIEW_FILES = ('review-provenance','results','proposal-audit','locator-robustness','experiment-lock')
 
 

@@ -15,8 +15,8 @@ SCHEMA = 'fakect.context-comparison/1'
 CODE_FILES = tuple('src/'+name for name in dict.fromkeys(original.CODE_FILES + (
     'fakect_context_comparison.py', 'fakect_context_comparison_learning.py',
     'fakect_context_cached_evaluation.py'))) + (
-    'scripts/compare_context_aorta.py', 'scripts/report_context_comparison.py',
-    'scripts/slurm/fakect_context_comparison_gpu.sh')
+    'scripts/research/compare_context_aorta.py', 'scripts/research/report_context_comparison.py',
+    'scripts/research/slurm/fakect_context_comparison_gpu.sh')
 
 
 def load_config(path, *, repo_root=None):

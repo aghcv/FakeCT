@@ -24,7 +24,7 @@ def edited_rows(case):
 
 class ConfigurationTests(unittest.TestCase):
     def load(self, old='', new=''):
-        source = (exp.ROOT/'configs/models/aorta-change-sampling-pilot.ini').read_text()
+        source = (exp.ROOT/'archive/research/configs/models/aorta-change-sampling-pilot.ini').read_text()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'input.ini'
             path.write_text(source.replace(old, new) if old else source)
@@ -97,7 +97,7 @@ class SourceFixture:
         self.folder = Path(folder)
         self.parent = self.folder/'parent'
         self.parent.mkdir()
-        template = exp.load_config(exp.ROOT/'configs/models/aorta-change-sampling-pilot.ini')
+        template = exp.load_config(exp.ROOT/'archive/research/configs/models/aorta-change-sampling-pilot.ini')
         self.config = deepcopy(template)
         self.config['experiment']['output_directory'] = str(self.folder/'diagnostic')
         self.config['reference']['experiment_directory'] = str(self.parent)

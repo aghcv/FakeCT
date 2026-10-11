@@ -28,7 +28,7 @@ from fakect_multiscale_experiment import checked_json, sha256, write_json
 ROOT = population.ROOT
 SCHEMA = 'fakect.sibling-repair/1'
 CODE_FILES = tuple(dict.fromkeys(population.CODE_FILES + (
-    'src/fakect_sibling_repair.py','scripts/repair_sibling_population.py')))
+    'src/fakect_sibling_repair.py','scripts/research/repair_sibling_population.py')))
 _FIELDS = {'schema_version','parent_directory','output_directory','backoff_factor','max_backoff_steps'}
 
 

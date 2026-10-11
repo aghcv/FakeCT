@@ -31,7 +31,7 @@ def select(labels, **kwargs):
 
 class PhantomAnatomyTests(unittest.TestCase):
     def test_no_roi_needed_and_unknown_roi_rejected(self):
-        template = Path(__file__).resolve().parents[1] / 'configs/anatomy/thoracic-aorta-260602.ini'
+        template = Path(__file__).resolve().parents[1] / 'archive/research/configs/anatomy/thoracic-aorta-260602.ini'
         config = load_config(template)
         self.assertNotIn('roi', config)
         self.assertEqual(config['selection']['branch_reach_radii'], 3)

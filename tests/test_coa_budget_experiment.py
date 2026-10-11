@@ -425,8 +425,8 @@ class BudgetRuntimeInventoryTests(unittest.TestCase):
     def test_new_runtime_extends_every_frozen_rotation_source(self):
         self.assertTrue(set(exp.rotation.CODE_FILES).issubset(exp.CODE_FILES))
         self.assertTrue({'src/fakect_coa_budget_experiment.py', 'src/fakect_coa_budget_learning.py',
-                         'src/fakect_coa_budget_report.py', 'scripts/train_coa_budget.py',
-                         'scripts/slurm/fakect_coa_budget_gpu.sh'}.issubset(exp.CODE_FILES))
+                         'src/fakect_coa_budget_report.py', 'scripts/research/train_coa_budget.py',
+                         'scripts/research/slurm/fakect_coa_budget_gpu.sh'}.issubset(exp.CODE_FILES))
         self.assertEqual(len(exp.CODE_FILES), len(set(exp.CODE_FILES)))
 
 

@@ -242,13 +242,13 @@ class ControlContractTests(unittest.TestCase):
         self.assertIn('the 50-epoch budget match the completed', document)
 
     def test_slurm_uses_existing_control_cli_in_separate_smoke_then_fit_processes(self):
-        script = (ROOT/'scripts/slurm/fakect_coa_pilot_control_gpu.sh').read_text()
+        script = (ROOT/'scripts/research/slurm/fakect_coa_pilot_control_gpu.sh').read_text()
         commands = [line for line in script.splitlines() if line.startswith('crun ')]
         self.assertEqual(len(commands), 2)
         for command, stage in zip(commands, ('smoke', 'fit')):
             arguments = command.split()
             target = arguments[arguments.index('python')+1]
-            self.assertEqual(target, 'scripts/train_coa_pilot_control.py')
+            self.assertEqual(target, 'scripts/research/train_coa_pilot_control.py')
             self.assertTrue((ROOT/target).is_file())
             self.assertIn('--stage '+stage, command)
 

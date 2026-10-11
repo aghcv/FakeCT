@@ -51,13 +51,13 @@ class StudyTests(unittest.TestCase):
    with self.assertRaisesRegex(ValueError,'delta changed'):cache.volume('one:sibling')
 
  def test_unsupported_resolution_requires_new_protocol(self):
-  source=Path(study.ROOT/'configs/models/aorta-pretrained-finetune.ini').read_text()
+  source=Path(study.ROOT/'archive/research/configs/models/aorta-pretrained-finetune.ini').read_text()
   with tempfile.TemporaryDirectory() as temp:
    p=Path(temp)/'input.ini';p.write_text(source.replace('spacing_mm = 1.5','spacing_mm = 0.6'))
    with self.assertRaisesRegex(ValueError,'fixes 1.5'):study.load_config(p)
 
  def test_branch_policy_uses_named_foreground_and_frozen_reference(self):
-  c=study.load_config(study.ROOT/'configs/models/aorta-pretrained-finetune-branches.ini')
+  c=study.load_config(study.ROOT/'archive/research/configs/models/aorta-pretrained-finetune-branches.ini')
   self.assertEqual(c['target']['policy'],'thoracic_aorta_and_connected_branches')
   self.assertEqual(c['target']['branch_extent'],'common_box')
   self.assertIn('brachiocephalic_trunk',c['target']['foreground_labels'])
@@ -65,7 +65,7 @@ class StudyTests(unittest.TestCase):
   self.assertNotEqual(c['experiment']['output_directory'],str(Path(c['target']['reference_study']).parent))
 
  def test_legacy_core_policy_still_uses_only_aorta(self):
-  c=study.load_config(study.ROOT/'configs/models/aorta-pretrained-finetune.ini')
+  c=study.load_config(study.ROOT/'archive/research/configs/models/aorta-pretrained-finetune.ini')
   self.assertNotIn('target',c)
   self.assertEqual(study.target_settings(c)['foreground_labels'],['aorta'])
 

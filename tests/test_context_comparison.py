@@ -16,7 +16,7 @@ class ComparisonTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        self.text = (ROOT/'configs/models/coa-context-comparison.ini').read_text()
+        self.text = (ROOT/'archive/research/configs/models/coa-context-comparison.ini').read_text()
         self.path = self.root/'input.ini'
         self.path.write_text(self.text)
         self.config = comparison.load_config(self.path, repo_root=self.root)

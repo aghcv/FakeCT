@@ -19,9 +19,9 @@ ROOT = base.ROOT
 SCHEMA = 'fakect.focused-change-population/1'
 NEW_CODE = ('src/fakect_change_population_experiment.py',
             'src/fakect_change_population_learning.py',
-            'scripts/train_change_population.py',
-            'scripts/slurm/fakect_change_population_gpu.sh',
-            'scripts/slurm/fakect_change_population_report.sh')
+            'scripts/research/train_change_population.py',
+            'scripts/research/slurm/fakect_change_population_gpu.sh',
+            'scripts/research/slurm/fakect_change_population_report.sh')
 CODE_FILES = tuple(dict.fromkeys(reference.CODE_FILES + NEW_CODE))
 FIELDS = {
     'experiment': {'schema_version', 'output_directory'},

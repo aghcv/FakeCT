@@ -19,7 +19,7 @@ class ContextDataTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.template = self.root / 'anatomy-template.ini'
-        self.template.write_text((module.ROOT / 'configs/anatomy/thoracic-aorta-260602.ini').read_text())
+        self.template.write_text((module.ROOT / 'archive/research/configs/anatomy/thoracic-aorta-260602.ini').read_text())
         self.source_path = self.root / 'source-manifest.json'
         self.output = self.root / 'context-r1'
         self.rows, self.sources = [], {}

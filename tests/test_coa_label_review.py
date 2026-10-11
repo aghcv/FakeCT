@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts/evaluation/classify_coa_cohort.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts/research/evaluation/classify_coa_cohort.py"
 spec = importlib.util.spec_from_file_location("classify_coa_cohort", SCRIPT)
 coa = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(coa)

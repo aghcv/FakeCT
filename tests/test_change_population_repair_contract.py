@@ -21,7 +21,7 @@ from fakect_multiscale_experiment import write_json, sha256
 
 REFERENCE = ROOT/'outputs/experiments/aorta/focused-change-r1'
 NATIVE = ROOT/'outputs/cohorts/aorta/diversity-r1/cases'
-CONFIG = ROOT/'configs/models/aorta-diverse-change.ini'
+CONFIG = ROOT/'archive/research/configs/models/aorta-diverse-change.ini'
 
 
 @unittest.skipUnless((REFERENCE/'experiment-lock.json').exists()

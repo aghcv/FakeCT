@@ -20,17 +20,19 @@
 <pre>python3 -m venv .venv-core
 source .venv-core/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements/dev.txt
 python -m pip check
 MPLBACKEND=Agg python -m pytest</pre>
-<p>On Windows activate with <code>.venv-core\Scripts\activate</code>; in PowerShell set <code>$env:MPLBACKEND = "Agg"</code> before running pytest. These are local commands; automated CI currently verifies Linux. The application itself needs only <a href="../../requirements-core.txt">requirements-core.txt</a>. The development profile adds pytest and nibabel to test NIfTI orientation and native-volume comparisons.</p>
+<p>On Windows activate with <code>.venv-core\Scripts\activate</code>; in PowerShell set <code>$env:MPLBACKEND = "Agg"</code> before running pytest. These are local commands; automated CI currently verifies Linux. The application itself needs only <a href="../../requirements/core.txt">requirements/core.txt</a>. The development profile adds pytest and nibabel to test NIfTI orientation and native-volume comparisons.</p>
 <p><a href="../../pytest.ini">pytest.ini</a> makes source, script and fixture imports explicit. The existing tests are also standard-library <code>unittest</code> tests:</p>
-<pre>PYTHONPATH=src:scripts MPLBACKEND=Agg python -m unittest discover -s tests</pre>
-<p>Dependency ranges are compatibility bounds, not a locked environment. CI publishes the resolved <code>pip freeze</code> alongside JUnit results. Save a freeze file when reproducing a scientific result. The existing <code>requirements.txt</code> remains a legacy all-in-one desktop/training profile; it is not the student CPU test environment.</p>
+<pre>PYTHONPATH=src:scripts:scripts/research:scripts/research/evaluation MPLBACKEND=Agg \
+  python -m unittest discover -s tests</pre>
+<p>Dependency ranges are compatibility bounds, not a locked environment. CI publishes the resolved <code>pip freeze</code> alongside JUnit results. Save a freeze file when reproducing a scientific result. The existing <code>requirements/legacy.txt</code> remains a legacy all-in-one desktop/training profile; it is not the student CPU test environment.</p>
 <p>Pytest lists skip reasons at the end of every run. Optional model backends, browser checks and a few historical real-study checks with unavailable registry/lock artifacts can skip in a fresh clone. The generated phantom and CPU contract tests do not require those historical outputs. Do not report skipped checks as executed validation.</p>
 
 <h2 id="coverage">2. Contracts the suite protects</h2>
 <table><thead><tr><th>Boundary</th><th>Examples of checks</th><th>Representative tests</th></tr></thead><tbody>
+<tr><td>Student project layout</td><td>Keep eight entry scripts easy to find, preserve case-study and atlas paths, retain original historical JSON bytes, and prevent datasets/checkpoints entering tracked source folders.</td><td><code>test_project_layout.py</code>, <code>test_student_documentation.py</code></td></tr>
 <tr><td>INI and geometry</td><td>Reject unknown sections, misspelled fields, nonfinite values and mismatched control-point/radius lists; preserve i,j,k versus k,j,i ordering and anisotropic millimetres.</td><td><code>test_preview_config.py</code>, <code>test_roi_preview.py</code>, <code>test_tube_range.py</code>, <code>test_centerline_frame.py</code></td></tr>
 <tr><td>Label identity and selection</td><td>Preserve signed source IDs; keep anatomy/tissue identity distinct; geometry can separate adjacent vessels sharing an ID; atlas and surface contracts cannot silently assume registration.</td><td><code>test_tissues.py</code>, <code>test_anatomy_selection.py</code>, <code>test_anatomy_surfaces.py</code>, <code>test_pretrained_targets.py</code></td></tr>
 <tr><td>Physical edits</td><td>Respect protected tissues, physical distances and original selection ancestry; allow configured growth beyond selection; assign released/borrowed voxel labels and attenuation consistently; never mutate source arrays.</td><td><code>test_morphology.py</code>, <code>test_reassignment.py</code>, <code>test_growth_morphology.py</code>, <code>test_recipe.py</code></td></tr>
@@ -43,13 +45,16 @@ MPLBACKEND=Agg python -m pytest</pre>
 <p>Run the smallest relevant group while developing, then the complete suite before submitting:</p>
 <pre>python -m pytest tests/test_morphology.py tests/test_recipe.py tests/test_growth_morphology.py
 python -m pytest tests/test_cohort_registry.py tests/test_cohort_preparation.py tests/test_model_experiment.py
+python -m pytest tests/test_project_layout.py tests/test_student_documentation.py tests/test_student_demo.py
 python -m pytest --junitxml=test-results/local.xml</pre>
+<p>The teaching entry scripts remain directly under <code>scripts/</code>; optional research commands are grouped under <code>scripts/research/</code>. Reviewed CoA recipes live in <code>configs/case-studies/coa/</code>, reusable technical notes in <code>docs/reference/</code>, and historical experiment settings, reports and provenance in <code>archive/research/</code>. The layout-migration manifest records old and new paths without rewriting signed historical reports. Existing generated output folders retain their paths.</p>
+<p>Use <code>outputs/</code> for generated reports, cohorts and models and <code>scratch/</code> for disposable experiments. Both are ignored by Git. The <code>data/</code> folder tracks only four small public geometry fixtures; source phantoms and generated datasets stay in separately provisioned storage. Model checkpoint formats and tooling caches are ignored throughout the repository. Atlas CSVs, editable INIs, documentation images and PDFs remain version-controlled. Ignore rules do not remove files that are already tracked: inspect <code>git status</code> and the layout contract before submitting.</p>
 
 <h2 id="tensorflow">3. Real TensorFlow CPU smoke tests</h2>
 <p>The core job deliberately has no TensorFlow or PyTorch. Backend-specific tests report skips when those dependencies are absent. A separate CI job installs TensorFlow 2.17.1 and Keras 3.10.0, requires a real CPU runtime, and runs the complete suite with TensorFlow enabled. The focused command below is useful while developing training code.</p>
 <pre>python3 -m venv .venv-tf
 source .venv-tf/bin/activate
-python -m pip install -r requirements-dev.txt -r requirements-tensorflow.txt
+python -m pip install -r requirements/dev.txt -r requirements/tensorflow.txt
 CUDA_VISIBLE_DEVICES=-1 FAKECT_TEST_TENSORFLOW=1 MPLBACKEND=Agg \
   TF_NUM_INTRAOP_THREADS=1 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=1 \
   python -m pytest tests/test_tensorflow_steps.py tests/test_segmentation.py \
@@ -61,13 +66,13 @@ CUDA_VISIBLE_DEVICES=-1 FAKECT_TEST_TENSORFLOW=1 MPLBACKEND=Agg \
 
 <h2>4. Test the ROI report in a real offline browser</h2>
 <p>The optional browser job uses Playwright and Chromium to exercise the actual HTML controls. It is separate from the core environment. Browser tests require <code>FAKECT_TEST_BROWSER=1</code> and report skips without that explicit opt-in.</p>
-<pre>python -m pip install -r requirements-browser.txt
+<pre>python -m pip install -r requirements/browser.txt
 python -m playwright install chromium
 FAKECT_TEST_BROWSER=1 MPLBACKEND=Agg python -m pytest tests/browser</pre>
 <p>The CI browser environment installs Chromium system libraries as well. The browser must be able to open the report with local assets and no external network. Treat navigation, four-panel synchronization, visible coordinates and radius information as interface contracts; numerical tests independently check physical resampling.</p>
 
 <h2>5. Optional pretrained segmentation and real XCAT checks</h2>
-<p>PyTorch, TotalSegmentator and pretrained weights are optional research integrations, isolated in <a href="../../requirements-pretrained.txt">requirements-pretrained.txt</a>. They are not required for the teaching demo or the default CI. When using that environment, run <code>test_pretrained_learning.py</code> to exercise retained output heads, grouped loss, checkpoint strictness and tiled inference. Those tests construct miniature local networks; they do not fetch a vendor checkpoint. Production pretrained inference still requires separately provisioned weights.</p>
+<p>PyTorch, TotalSegmentator and pretrained weights are optional research integrations, isolated in <a href="../../requirements/pretrained.txt">requirements/pretrained.txt</a>. They are not required for the teaching demo or the default CI. When using that environment, run <code>test_pretrained_learning.py</code> to exercise retained output heads, grouped loss, checkpoint strictness and tiled inference. Those tests construct miniature local networks; they do not fetch a vendor checkpoint. Production pretrained inference still requires separately provisioned weights.</p>
 <p>Real XCAT runs require authorized source <code>.bin</code>, <code>.raw</code> and parameter metadata with the correct dimensions, physical resolution and anatomical dictionary. The repository's MIT software license does not itself grant redistribution rights to those source assets or pretrained weights. Keep them and generated studies outside tracked source files. The generated teaching phantom is a mathematical test fixture, not a clinical CT or a licensed XCAT example.</p>
 <p>Once an instructor has provisioned a real case, repeat ROI review, parameter preflight, freezing and paired export as described in the student walkthrough. Record source hashes, atlas version, saved INI and software revision. Treat clinical performance validation as separate work.</p>
 

@@ -27,7 +27,7 @@ class PopulationTests(unittest.TestCase):
         fixture.setUp()
         self.addCleanup(fixture.doCleanups)
         self.root = fixture.root
-        self.c = population.load_config(ROOT/'configs/cohorts/aorta-diversity.ini')
+        self.c = population.load_config(ROOT/'archive/research/configs/cohorts/aorta-diversity.ini')
         self.c['population'].update(output_directory=str(self.root/'population'),
             source_manifest=str(self.root/'context.json'),prepared_root=str(self.root/'prepared'),
             case_ids=['001'])

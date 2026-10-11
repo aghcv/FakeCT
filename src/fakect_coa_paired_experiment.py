@@ -28,8 +28,8 @@ FIELDS = {
 }
 CODE_FILES = focused_parent.CODE_FILES + (
     'src/fakect_coa_paired_experiment.py', 'src/fakect_coa_paired_steps.py',
-    'src/fakect_coa_paired_learning.py', 'scripts/train_coa_paired.py',
-    'scripts/slurm/fakect_coa_paired_gpu.sh',
+    'src/fakect_coa_paired_learning.py', 'scripts/research/train_coa_paired.py',
+    'scripts/research/slurm/fakect_coa_paired_gpu.sh',
 )
 
 

@@ -27,8 +27,8 @@ FIELDS = {
 }
 CODE_FILES = classifier.CODE_FILES + (
     'src/fakect_coa_focused_experiment.py', 'src/fakect_coa_focused_network.py',
-    'src/fakect_coa_focused_learning.py', 'scripts/train_coa_focused.py',
-    'scripts/slurm/fakect_coa_focused_gpu.sh',
+    'src/fakect_coa_focused_learning.py', 'scripts/research/train_coa_focused.py',
+    'scripts/research/slurm/fakect_coa_focused_gpu.sh',
 )
 
 

@@ -32,7 +32,7 @@ CASE_SCHEMA = 'fakect.sibling-case/1'
 RESERVED_CASES = ('260612', '260617')
 EDIT_NAMES = ('arch_outer_expand', 'arch_inner_narrow', 'coa_narrow')
 CODE_FILES = tuple(dict.fromkeys(('src/fakect_sibling_population.py',
-    'scripts/prepare_sibling_population.py', 'src/fakect_mask_pair_preview.py',
+    'scripts/research/prepare_sibling_population.py', 'src/fakect_mask_pair_preview.py',
     'src/fakect_context_volume.py', 'src/fakect_multiscale_experiment.py') +
     tuple('src/' + name for name in _MODULES)))
 _IDENTIFIER = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.-]*\Z')

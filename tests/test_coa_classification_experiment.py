@@ -394,9 +394,9 @@ class ClassificationInventoryTests(unittest.TestCase):
         self.assertTrue({'src/fakect_coa_classification_experiment.py',
                          'src/fakect_coa_classification_learning.py',
                          'src/fakect_coa_classification_report.py',
-                         'scripts/train_coa_classification.py',
-                         'scripts/slurm/fakect_coa_classification_gpu.sh',
-                         'scripts/slurm/fakect_coa_classification_report.sh'}.issubset(exp.CODE_FILES))
+                         'scripts/research/train_coa_classification.py',
+                         'scripts/research/slurm/fakect_coa_classification_gpu.sh',
+                         'scripts/research/slurm/fakect_coa_classification_report.sh'}.issubset(exp.CODE_FILES))
         self.assertEqual(len(exp.CODE_FILES), len(set(exp.CODE_FILES)))
 
 
