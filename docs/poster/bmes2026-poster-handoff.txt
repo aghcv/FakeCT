@@ -1,0 +1,122 @@
+TASK FOR A NEW THREAD: FakeCT BMES 2026 poster
+
+Create and iteratively refine a single-slide, editable PowerPoint research-poster OUTLINE: 48 inches wide x 36 inches high, landscape (4:3). Use three equal columns and exactly ONE large figure placeholder in each column. This is an outline, not a finished poster or an authorization to run new experiments. A draft PowerPoint and preview have been prepared; inspect them before revising. Use actual editable text and shapes, not a flattened poster image. Keep the text concise, visually clear and scientifically accurate. Preserve space for eventual figures and references.
+
+WORKSPACE AND DELIVERABLES
+Repository: /home/aghorban/repo/FakeCT
+ACTIVE development worktree: /home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16
+Branch: fakect.26.09.16. Always use this worktree, not the main checkout.
+Draft: outputs/poster/bmes2026/outline-r1/fakect-bmes2026-outline.pptx
+Preview: outputs/poster/bmes2026/outline-r1/fakect-bmes2026-outline.png
+Layout/generator: scripts/presentation/build_bmes2026_outline.py
+This handoff: docs/poster/bmes2026-poster-handoff.txt
+All relative paths below are relative to the active worktree.
+Use a fresh outputs/poster/bmes2026/outline-r2 (then r3, etc.) for revisions. Preserve frozen model/cohort files and existing poster artifacts. Large arrays/checkpoints remain under Git-ignored outputs/. The working tree contains unrelated changes; do not reset it, switch branches, commit other work, resubmit jobs, or alter frozen runtime sources. Read local AGENTS.md instructions if present. If this new thread runs somewhere else, first determine whether these paths are accessible; request only the necessary source files if not. Do not pretend to access unavailable files.
+
+RESEARCH STORY AND PROPOSED TITLE
+Suggested title: "FakeCT: Controlled Digital Sibling Populations for Coarctation-Focused AI Evaluation."
+Core need: controllable, traceable, consistently labeled data with deliberate coverage of rare anatomical configurations for AI development. Frame inconsistent labeling and uneven disease coverage as challenges in assembling clinical CT datasets, rather than asserting that all patient datasets are small or biased.
+Research hypothesis: anatomically diverse digital sibling populations may improve AI robustness on unseen anatomy and ultimately unseen clinical CT. This is the hypothesis, not an established outcome.
+The methodological contribution is FakeCT's anatomy editing and reproducible data organization. The case study is CoA-like aortic morphology. The AI contribution is an image-based, coarse-to-fine 3D classifier and a rigorous grouped evaluation framework.
+Authors, affiliations, funding, contact and any institutional logos remain clearly marked placeholders until supplied. Do not invent them.
+
+COLUMN 1: INTRODUCTION + METHODS
+Content order:
+1. Motivation and hypothesis in a short paragraph.
+2. XCAT source: 12 local baseline whole-body phantom IDs generated using XCAT, developed by W. Paul Segars and colleagues at Duke University Department of Radiology. Cite the primary XCAT paper; do not imply Duke endorses FakeCT or supplied clinical patient images.
+3. Sequential parameterized Boolean-mask morphology: dilation expands the selected target; erosion removes selected target voxels. Explain voxel borrowing/release and multi-label ownership, resistance and safeguards.
+4. Figure placeholder A: a minimal colored-pixel schematic of original, dilation, erosion and neighborhood-based reassignment, including one resistant neighbor. It may be a composite but must occupy one figure area. Prefer generic labels 1/2/3/4, no anatomical lettering inside pixels and no invented experimental values.
+5. Short caption explaining deterministic neighbor assignment, not majority voting.
+
+Methods facts to verify against current code:
+- Let M_before and M_after be Boolean target masks. Added = M_after AND NOT M_before; Removed = M_before AND NOT M_after. Do not apply OR/AND directly to integer tissue IDs or attenuation values.
+- Initial targets use tissue categories, optional atlas-defined anatomical filters and named tube ROIs. The selection ROI identifies the original target; permitted growth can extend beyond it into a bounded edit envelope.
+- Dilation proposes growth along physical, six-face-neighbor paths. Eligibility and dimensionless tissue resistance limit borrowing. Accepted voxels copy the original anatomical ID and attenuation proxy of the winning target seed.
+- Erosion releases target voxels; eligible neighboring tissue seeds propagate through the proposed release region. Physical path length plus configured resistance determines ownership. Equal-cost ties use signed original label ID and seed index. Copy the winning recipient's original ID and attenuation proxy. This is not a majority vote.
+- Unresolved releases are preserved and logged. Optional local-volume/connectivity safeguards can back off excessive erosion. Resistance factors are not experimentally measured biomechanical stiffness.
+- Accepted edits update the label-coded anatomical ACT volume and ATN attenuation proxy. Do not describe ACT as newly synthesized physiological radioactive activity, or ATN as reconstructed patient CT/Hounsfield units. Current dataset images are attenuation-copy proxies in cm^-1; original source volumes remain intact.
+
+Read: docs/EDIT_RECIPES.md; docs/CURVATURE_EDITS.md; docs/RECIPE_COHORTS.md; docs/TISSUE_MAPPING.md; docs/integration/2026-09-28/optional-anatomy-selection.md; src/fakect_morphology.py; src/fakect_reassignment.py.
+The historical docs/MORPHOLOGY.md can contain earlier ROI-boundary behavior; prefer the current recipe/curvature docs and implementation.
+Figure candidates:
+- outputs/illustrations/bitwise-2d-neighbors/bitwise-morphology-2d-neighbors.{svg,pdf,png}
+- outputs/illustrations/bitwise-2d-neighbors/evidence.json
+- outputs/illustrations/bitwise-2d-neighbors/{dilation-label-reassignment-table,erosion-label-reassignment-table,label-reassignment-tables}.{tex,pdf}
+- outputs/illustrations/bitwise-2d-simple/bitwise-morphology-2d-simple.{svg,pdf,png}
+- Generic 3D alternative: outputs/cohorts/coarctation-workflow-v2/panels/H-bitwise-neighborhood.{svg,pdf,png}
+Asset explanations: docs/integration/2026-09-28/morphology-illustrations.md. The toy images simplify ROI/resistance/safeguards; do not claim they display all native algorithm details.
+
+COLUMN 2: VIRTUAL POPULATION
+Content order:
+1. Clinical motivation: CoA is congenital aortic narrowing, commonly involving the isthmus/proximal descending aorta; narrowing and associated arch/ascending morphology motivate this controllable example.
+2. Population pipeline: baseline phantom -> anatomical selection and tube ROI -> serial ascending/arch dilation, arch erosion and CoA erosion -> review/QC -> frozen image/label pairs and provenance.
+3. Existing counts: 12 phantom IDs, 192 scenarios = 12 baselines + 180 edited variants. Six PROVISIONAL reference-anatomy families; do not imply 192 independent patients or 12 fully independent originating anatomies.
+4. Figure placeholder B: baseline-versus-sibling 3D aortic views or a parameter grid showing CoA-like narrowing plus companion enlargement/arch narrowing, with common orientation and scale. One composite figure area. Keep colors consistent with methods and show achieved geometry rather than nominal distance alone.
+5. Explain prescribed coverage of the sampled parameter grid, achieved-change audits, anatomy-aware isolation, and compact shared baseline plus edited overlays. Do not claim exhaustive/equal coverage of all clinical disease configurations.
+
+Executed grid: 16 scenarios/phantom, comprising one baseline and 15 combinations of three dilation levels and five CoA erosion levels; configured arch erosion accompanies edited scenarios. Distances are phantom-specific. The input names include arch_outer_expand, arch_inner_narrow and coa_narrow; a path named "arch" does not automatically certify an exclusively ascending anatomical extent. Check actual ROI locations before annotating a figure. Treat clinical realism and clinical representativeness as objectives needing validation. Original phantoms are assumed non-CoA references, not clinically certified normal subjects.
+Read:
+- configs/cohorts/coa/project-radius115.json
+- configs/cohorts/coa/radius115/<CASE-ID>.ini
+- docs/integration/2026-09-28/radius115-cohort-review.md and radius115-final-review.json
+- outputs/cohorts/coa/radius115/outcome-review-final.html and review/index.html
+- outputs/datasets/coa/context-aorta-r1/dataset-manifest.json (compact image/cohort registry)
+- outputs/datasets/coa/two-stage-radius115-r1/dataset-manifest.json (before/after/add/remove arrays)
+- configs/studies/coa-label-review.ini
+- outputs/labels/coa/provisional-volume-r1/labels.json
+Case IDs: 260602,260611,260612,260613,260614,260615,260616,260617,260618,260619,260620,260621.
+Raw local provenance: /home/aghorban/slurm/xcat/<CASE-ID>/; corresponding .par files supply resolutions and acquisition settings. Do not open or duplicate large raw volumes solely to make this outline.
+Atlas references: references/atlas/dpi/anatomy_atlas.csv and xcat_anatomy_hierarchy.yml; SOURCE.json and CURRENCY.json record provenance. Original DPI atlas: /home/aghorban/repo/dpi/config/atlas. Check the repository currency records before asserting a version is current.
+Figure candidates:
+- outputs/cohorts/coarctation-workflow-v3/panels/D-parameterized-virtual-cohort.{svg,pdf,png}
+- Same folder: A-whole-body-atlas, B-roi-and-boolean-selection, C-3d-morphology
+- outputs/cohorts/coarctation-workflow-v3/fakect-coarctation-manuscript.{svg,pdf,png}, caption.txt
+- outputs/cohorts/whole-body-atlas/fakect-whole-body-cohort.{svg,pdf,png}
+Panel D is an actual example grid for one infant phantom, not a panel of every independent anatomy. Read the source captions/QA, preserve any severe or resolution-limited flags, and choose the illustrative example deliberately.
+
+COLUMN 3: AI PERFORMANCE + VALIDATION
+Content order:
+1. Brief architecture and grouped evaluation design.
+2. Figure placeholder C: exact ROC curves, preferably a composite with thin family curves/mean ROC and a compact family-performance summary. Label development validation separately from outer held-out evaluation, and show scenario/phantom/family counts. AUC labels must come from measured predictions. No fabricated "promising" curves.
+3. State measured learning and current generalization limitations honestly.
+4. Next experiments: classification-only loss control; then population-size/diversity controls at matched optimizer-update budgets; clinical CT validation later.
+
+Current network: image-based coarse thoracic locator -> two high-resolution 216x192x192 blocks at 0.6 mm spacing -> shared focused 3D encoder -> CoA probability (earlier joint-loss models also had a severity-proxy head). This is a focused 3D classifier, not the earlier U-Net segmentation experiment. Attenuation and acquisition-validity are image channels; atlas/edit masks and annotations are supervision/QA, not inference shortcuts.
+The positive benchmark label is achieved LOCAL CoA target-volume loss >=20%, after earlier serial edits. It is an engineering proxy, not a clinically validated diagnosis, percent diameter stenosis, minimum lumen-area loss or severity grade. Probability 0.5 is a separate classifier decision threshold.
+Verified chronology as of 2026-10-05:
+- Small 100-/200-epoch diagnostic: four TRAINING images/two phantoms, training accuracy 75%/100%, no validation/test estimate.
+- Fixed 8 training /2 validation /2 reserved-test pilot: 50 epochs, selected epoch37; 32 train and8 adult validation images. Validation AUROC0.875; balanced accuracy62.5%; sensitivity25%, specificity100%. Edited-only validation AUROC0.750, ordinary accuracy50%. Reserved infant pair not tested. Do not call this an independently tested 8/2/2 result at200 epochs.
+- Lower-rate fixed-split control: 50 epochs, selected24; validation AUROC0.8125, BA62.5%.
+- Initial five leave-FAMILY-out folds: final refit budgets8-29 epochs, 60 edited held-out scenarios from10 development phantom IDs; pooled AUROC0.5144, mean family AUROC0.4889, BA50%.
+- Same-age/opposite-sex validation rotations:24 held-out scenarios,4 eligible phantom rotations/2 families; pooled AUROC0.6875, BA58.3%. Nearest-age/same-sex:12 scenarios,2 adult rotations/1 family; AUROC0.6389, BA50%. Different panels prevent a clean ranking. Other planned secondary rotations were excluded to prevent shared-reference leakage, not failed training jobs.
+- Completed five-family joint-loss control at200 epochs: 100% training accuracy in every fold; pooled held-out AUROC0.5311, mean family AUROC0.5556, BA50%. Same60-scenario panel, 48train/12held-out per fold. No robust transfer or population-expansion benefit established.
+- New classification-only control: configs/models/coa-classification-only200.ini, outputs/experiments/coa/classification-only200-r1. Same folds/crops/initial weights/200epochs, regression_weight0. Training array6916266 and report6916267 were launched. GPU smoke passed and29 newtests passed. At this handoff the control is RUNNING/PENDING: check current results before updating the poster. Its retained auxiliary head is untrained; never report severity performance for it.
+Infant cases260612/260617 remain reserved. The five family groups are provisional, repeated siblings are correlated, and these folds have informed development. Do not claim clinical validation, statistically independent 60-patient performance, or an untouched external test. Size/diversity benefit has not yet been tested.
+
+Read CURRENT sources first:
+- docs/COA_ROTATING_BUDGET_CONTROL.md (latest completed/control status)
+- outputs/experiments/coa/rotating-budget200-r1/review-r2/{report.html,analysis.json,predictions.csv,family-metrics.csv,provenance.json}
+- outputs/experiments/coa/classification-only200-r1/submission.json, report.html, latest review-rN/analysis.json and per-fold results.json
+- docs/COA_ROTATING_EVALUATION.md; docs/MULTISCALE_COA_PILOT.md
+- outputs/experiments/coa/focused-pilot-r1/pilot/results.json
+- outputs/experiments/coa/rotating-evaluation-r2/review-audit-2026-10-04/report.html
+- src/fakect_coa_focused_network.py and classification/rotation modules if architectural specifics are needed
+- docs/COA_POSTER_AND_POPULATION_STUDY.md for figure/study ideas, but its October3 status is STALE; later frozen results supersede "rotations not trained" statements.
+Figure candidates:
+- Completed joint200: outputs/experiments/coa/rotating-budget200-r1/review-r2/budget02-roc.{svg,pdf,png}; budget01-training; budget03-paired-families
+- Fixed pilot: outputs/poster/coa/pilot-r3/fig02-empirical-roc.{svg,pdf,png}; fig06-model-architecture; figure-data.json
+- New control: latest classification-only200-r1/review-rN/classification02-roc.* ONLY when analysis status/fold counts confirm results. Pending reports already contain baseline ROC assets, so file existence alone does not establish control completion.
+Use exact empirical AUROC and the corrected mean ROC exports. Family SD bands are descriptive, not independent-patient confidence intervals. Do not select checkpoints or thresholds using held-out curves.
+
+VERIFIED REFERENCES AND CLINICAL WORDING
+[1] Segars WP, Sturgeon G, Mendonca S, Grimes J, Tsui BMW. 4D XCAT phantom for multimodality imaging research. Medical Physics. 2010;37(9):4902-4915. DOI:10.1118/1.3480985. https://scholars.duke.edu/publication/1255117
+[2] Norris H, Zhang Y, Bond J, et al. A set of 4D pediatric XCAT reference phantoms for multimodality research. Medical Physics. 2014;41(3):033701. DOI:10.1118/1.4864238. https://pmc.ncbi.nlm.nih.gov/articles/PMC3987726/ (Confirm local model provenance before specifically attributing these cases to that paper.)
+[3] Segars WP, Bond J, Frush J, et al. Population of anatomically variable 4D XCAT adult phantoms for imaging research and optimization. Medical Physics. 2013;40(4):043701. DOI:10.1118/1.4794178. https://pmc.ncbi.nlm.nih.gov/articles/PMC3612121/ (General controlled-anatomy rationale, not proof of FakeCT AI benefit.)
+[4] CDC. Coarctation of the Aorta. Updated January8,2026. https://www.cdc.gov/heart-defects/about/coarctation-of-the-aorta.html
+CDC currently estimates approximately1 in1,724 US births (~2,060/year); use this source rather than the proposed1 in2,500, or omit the number. Explain congenital narrowing and potential serious consequences without giving patient-specific treatment advice. Do not invent additional epidemiology or assertions that all companion morphologies are typical of every CoA patient.
+BMES2026 official site: https://www.bmes.org/2026/annualmeeting (October21-24, Orlando). 48x36 is the user's requested layout; an official2026 poster-size rule was not verified. Recheck presenter instructions before final print production. This does not prevent preparing the requested outline now.
+
+DESIGN AND ACCEPTANCE CRITERIA
+Use a full-width title/author strip, three aligned column headings, one large clearly labeled figure placeholder per column, short draft copy/captions, and a compact reference footer. White/light background; readable sans-serif font; restrained blue/teal/orange accents; no fabricated logos, charts or data. Suggested title70-85pt, columnheadings38-44pt, body28-32pt, captions24-26pt, references18-22pt at the actual48x36 size. Keep substantial whitespace. Author/affiliation/contact and figure placeholders should remain easy to edit.
+Poster language should emphasize controllability, traceable labels and prescribed synthetic coverage; reserve robust clinical generalization for the hypothesis/future work. Keep technical paths, job IDs and operational details in notes/handoff, not on the poster face.
+Deliver editable .pptx, an outline preview, the exact draft text/figure plan and a short provenance record. Verify the native slide dimensions, exactlythree figure placeholders, editable shapes/text, text fit, no overflow and bibliography consistency. Create a new revision before changing the supplied draft. Do not start new training, unfreeze data or finalize/print/publish the poster without a separate request.

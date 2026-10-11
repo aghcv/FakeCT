@@ -5,6 +5,7 @@ artifacts and assigns complete anatomy families to splits. Fitting consumes the
 frozen lock; it does not consult XCAT sources, ROI files, or generator code.
 """
 import configparser
+import copy
 import hashlib
 import json
 import math
@@ -56,8 +57,10 @@ def load_model_experiment_config(path, *, repo_root=None):
             parser.read_file(stream)
     except configparser.Error as exc:
         raise ValueError(f'Invalid model experiment INI: {exc}') from exc
-    if parser.defaults() or set(parser.sections()) not in ({'experiment', 'split', 'model'}, {'experiment', 'split', 'model', 'preprocess'}):
-        raise ValueError('Model experiments require [experiment], [split], [model], and optional [preprocess]; no ROI or generation inputs')
+    required = {'experiment', 'split', 'model'}
+    if (parser.defaults() or not required <= set(parser.sections())
+            or set(parser.sections()) - required - {'preprocess', 'evaluation'}):
+        raise ValueError('Model experiments require [experiment], [split], [model], and optional [preprocess]/[evaluation]; no ROI or generation inputs')
     for section, fields in (('experiment', EXPERIMENT_FIELDS), ('split', SPLIT_FIELDS), ('model', MODEL_FIELDS)):
         found = set(parser[section])
         if found != fields:
@@ -98,10 +101,36 @@ def load_model_experiment_config(path, *, repo_root=None):
         if '\n' in parser['preprocess']['target_spacing_mm']:
             raise ValueError('[preprocess] target_spacing_mm must occupy one line')
         result['preprocess'] = {'target_spacing_mm': list(spacing(parser['preprocess']['target_spacing_mm'].split(',')))}
+    if 'evaluation' in parser:
+        from fakect_evaluation_design import parse_evaluation
+        result['evaluation'] = parse_evaluation(dict(parser['evaluation']))
+        project = result['evaluation'].get('planning_project')
+        if project:
+            location = Path(project).expanduser()
+            result['evaluation']['planning_project'] = str(
+                (location if location.is_absolute() else root/location).resolve())
     return result
 
 
 def _family_splits(families, settings):
+    if settings.get('mode') != 'anatomy_family':
+        raise ValueError('Model splits must use anatomy_family')
+    if 'assignment' in settings:
+        assignment = settings['assignment']
+        if (not isinstance(assignment, dict) or set(assignment) != set(families)
+                or any(not isinstance(family, str) or not family.strip() for family in assignment)
+                or any(value not in ('train', 'validation', 'test') for value in assignment.values())):
+            raise ValueError('Explicit family assignment must cover every verified family exactly once with train, validation, or test')
+        if type(settings.get('allow_empty_validation', False)) is not bool:
+            raise ValueError('allow_empty_validation must be a boolean')
+        required = {'train', 'test'}
+        if not settings.get('allow_empty_validation', False):
+            required.add('validation')
+        if not required <= set(assignment.values()):
+            raise ValueError('Explicit family assignment requires nonempty train, validation, and test, except fixed-epoch final refitting may omit validation')
+        return dict(sorted(assignment.items()))
+    if settings.get('allow_empty_validation', False):
+        raise ValueError('Empty validation requires an explicit family assignment')
     if len(families) < 3:
         raise ValueError('At least three verified independent anatomy families are required for train, validation, and test')
     ordered = sorted(families, key=lambda family: hashlib.sha256(
@@ -112,6 +141,29 @@ def _family_splits(families, settings):
         raise ValueError('Family fractions leave no training family')
     return {family: ('validation' if i < n_validation else 'test' if i < n_validation+n_test else 'train')
             for i, family in enumerate(ordered)}
+
+
+def _allow_empty_validation(config):
+    """Only a final refit with externally selected epochs may omit validation."""
+    split = config['split']
+    allow = split.get('allow_empty_validation', False)
+    if type(allow) is not bool:
+        raise ValueError('allow_empty_validation must be a boolean')
+    fixed = config.get('training_protocol') == 'fixed_epochs'
+    if allow != fixed or (allow and 'assignment' not in split):
+        raise ValueError('fixed_epochs requires explicit family assignment and allow_empty_validation=true together')
+    return allow
+
+
+def _nonempty_splits(counts, config):
+    allow = _allow_empty_validation(config)
+    return counts['train'] > 0 and counts['test'] > 0 and (allow or counts['validation'] > 0)
+
+
+def _dataset_selection(config):
+    settings = config['experiment']
+    return {'registry': str(Path(settings['registry']).expanduser().resolve()),
+            'datasets': sorted(settings['datasets'])}
 
 
 def _contract(manifest, target_spacing=None):
@@ -231,6 +283,7 @@ def plan_model_experiment(config, *, verify_payloads=True):
     if result['unverified_datasets']:
         result['errors'].append('Verify source anatomy provenance and register reviewed family identities before making independent-family splits')
     try:
+        _allow_empty_validation(config)
         result['family_assignment'] = _family_splits(families, config['split'])
     except ValueError as exc:
         result['errors'].append(str(exc))
@@ -238,7 +291,7 @@ def plan_model_experiment(config, *, verify_payloads=True):
         for sample in result['samples']:
             sample['split'] = result['family_assignment'][sample['anatomy_family']]
             result['split_counts'][sample['split']] += 1
-        if not all(result['split_counts'].values()):
+        if not _nonempty_splits(result['split_counts'], config):
             result['errors'].append('The experiment requires nonempty train, validation, and test splits')
         else:
             result['ready'] = True
@@ -246,6 +299,7 @@ def plan_model_experiment(config, *, verify_payloads=True):
     result['family_count'] = len(families)
     result['sample_count'] = len(result['samples'])
     result['verified_payloads'] = verify_payloads
+    result['dataset_selection'] = _dataset_selection(config)
     result['preprocessing'] = _preprocessing_contract(config)
     if result['preprocessing']:
         result['warnings'].append('Model-time resampling preserves the native archives but changes the model grid; linear images and nearest labels can lose small structures when downsampling.')
@@ -259,9 +313,69 @@ def _preprocessing_contract(config):
     return resampling_contract(config['preprocess']['target_spacing_mm'])
 
 
-def freeze_model_experiment(config, input_bytes):
+def reassign_model_plan(verified_base_plan, fold_config):
+    """Reuse one payload verification across folds, checking pinned metadata anew.
+
+    All original datasets and samples stay in the experiment; only complete
+    families change partition. Raw archives are not decoded a second time.
+    """
+    from fakect_cohort_registry import load_registry_entry
+    base = verified_base_plan
+    if not base.get('ready') or base.get('verified_payloads') is not True or base.get('errors'):
+        raise ValueError('Fold reuse requires a ready plan with verified_payloads=true')
+    if base.get('dataset_selection') != _dataset_selection(fold_config):
+        raise ValueError('Fold dataset selection or registry differs from verified base plan')
+    if base.get('preprocessing', {}) != _preprocessing_contract(fold_config):
+        raise ValueError('Fold preprocessing differs from verified base plan')
+    _allow_empty_validation(fold_config)
+    sources = {source['name']: source for source in base['datasets']}
+    if len(sources) != len(base['datasets']) or set(sources) != set(fold_config['experiment']['datasets']):
+        raise ValueError('Fold datasets disagree with verified base plan')
+    family_by_dataset = {}
+    for name, source in sources.items():
+        entry = load_registry_entry(fold_config['experiment']['registry'], name, verify=False)
+        if not source.get('family_verified'):
+            raise ValueError('Fold reuse requires reviewed independent anatomy families')
+        for key in ('manifest_sha256', 'dataset_fingerprint', 'anatomy_family', 'family_verified', 'case_id', 'frame'):
+            if entry[key] != source[key]:
+                raise ValueError(f'Registry dataset identity changed: {name} {key}')
+        if (_sha256(source['registry_entry_path']) != source['registry_entry_sha256']
+                or str(Path(entry['registry_entry_path']).resolve()) != source['registry_entry_path']
+                or str(Path(entry['manifest_path']).resolve()) != source['manifest_path']
+                or _sha256(source['manifest_path']) != source['manifest_sha256']):
+            raise ValueError(f'Registry receipt or prepared manifest changed: {name}')
+        family_by_dataset[name] = source['anatomy_family']
+    assignment = _family_splits(set(family_by_dataset.values()), fold_config['split'])
+    result = copy.deepcopy(base)
+    result['family_assignment'] = assignment
+    result['split_counts'] = {'train': 0, 'validation': 0, 'test': 0}
+    seen = set()
+    for sample in result['samples']:
+        name = sample['dataset_name']
+        identity = (name, sample['source_variant_id'])
+        if (name not in family_by_dataset or sample['anatomy_family'] != family_by_dataset[name]
+                or identity in seen):
+            raise ValueError('Verified base sample has duplicate identity or inconsistent anatomy family')
+        seen.add(identity)
+        sample['split'] = assignment[sample['anatomy_family']]
+        result['split_counts'][sample['split']] += 1
+    if len(seen) != base['sample_count'] or not _nonempty_splits(result['split_counts'], fold_config):
+        raise ValueError('Invalid sample or split counts in verified base plan')
+    result['case_count'] = len({source['case_id'] for source in sources.values()})
+    result['family_count'] = len(assignment)
+    result['family_split_counts'] = {split: sum(value == split for value in assignment.values())
+                                     for split in result['split_counts']}
+    result['case_split_counts'] = {
+        split: len({source['case_id'] for source in sources.values()
+                    if assignment[source['anatomy_family']] == split})
+        for split in result['split_counts']}
+    return result
+
+
+def freeze_model_experiment(config, input_bytes, *, prepared_plan=None):
     """Create an immutable manifest of dataset versions, family splits and model."""
-    plan = plan_model_experiment(config)
+    plan = (plan_model_experiment(config) if prepared_plan is None
+            else reassign_model_plan(prepared_plan, config))
     if not plan['ready']:
         raise ValueError('Experiment is not ready: ' + '; '.join(plan['errors']))
     output = Path(config['experiment']['output_directory'])
@@ -307,6 +421,7 @@ def inspect_experiment_lock(path):
     if plan.get('preprocessing', {}) != _preprocessing_contract(lock['config']):
         raise ValueError('Frozen resampling contract, implementation, or dependency version changed; create a new experiment')
     target_spacing = lock['config'].get('preprocess', {}).get('target_spacing_mm')
+    _allow_empty_validation(lock['config'])
     assignment = _family_splits({d['anatomy_family'] for d in plan['datasets']}, lock['config']['split'])
     if assignment != plan['family_assignment']:
         raise ValueError('Frozen anatomy-family assignment disagrees with experiment split settings')
@@ -366,7 +481,7 @@ def inspect_experiment_lock(path):
         samples.append({**frozen, '_path': Path(frozen['path'])})
     if seen != expected_samples or len(samples) != plan['sample_count']:
         raise ValueError('Frozen experiment omits prepared samples')
-    if counts != plan['split_counts'] or not all(counts.values()):
+    if counts != plan['split_counts'] or not _nonempty_splits(counts, lock['config']):
         raise ValueError('Invalid frozen split counts')
     contract = plan['input_contract']
     data = {'schema_version': LOCK_SCHEMA, 'split_mode': 'anatomy_family',
@@ -390,5 +505,9 @@ def fit_model_experiment(config, input_bytes):
     for sample in checked['samples']:
         if sample['split'] != 'test' and _sha256(sample['_path']) != sample['sha256']:
             raise ValueError(f'Prepared training/validation sample changed: {sample["variant_id"]}')
-    return train_segmentation({'model': config['model'],
-                               'train': {'model_directory': lock['model_directory']}}, path)
+    runner = train_segmentation
+    if config.get('training_protocol') == 'fixed_epochs':
+        from fakect_model_evaluation import train_fixed_segmentation
+        runner = train_fixed_segmentation
+    return runner({'model': config['model'],
+                   'train': {'model_directory': lock['model_directory']}}, path)

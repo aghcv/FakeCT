@@ -1,0 +1,1288 @@
+{
+  "source_branch": "fakect.26.09.16",
+  "source_head": "9529055b540ffa78876efa037d6a50c7949639c0",
+  "snapshot_date": "2026-10-11",
+  "scope": "Research source snapshot only; generated data, model outputs and environments excluded. Original worktree preserved.",
+  "files": [
+    {
+      "path": "configs/analysis/aorta-ct-clusters.ini",
+      "sha256": "f97c85071af34bd1a85f555f6b118b82dd08fde2268e0705171ac4e4732e0ed7"
+    },
+    {
+      "path": "configs/analysis/aorta-pretrained-benchmark.ini",
+      "sha256": "7db0f6119b96c386af89c9b6e06d1ed58b349725ba17272b66f935dca330aa45"
+    },
+    {
+      "path": "configs/analysis/aorta-pretrained-focus-diagnostic.ini",
+      "sha256": "c7b509be023d49cc347bfcee13ada1afb08edcb5a05a2781940966b483a2ea9e"
+    },
+    {
+      "path": "configs/anatomy/260602-mask-pairs.ini",
+      "sha256": "cc908247147b3df07703f0979380a9fc4210872cdcfbf3aaf26d76ea1bfe63be"
+    },
+    {
+      "path": "configs/anatomy/thoracic-aorta-260602.ini",
+      "sha256": "e36e35a81a05c88c85b211dfb39e549c23e139d95e46a9cadb1e8ac13f84b316"
+    },
+    {
+      "path": "configs/cohorts/aorta-diversity-repair.ini",
+      "sha256": "a7c6e1cdc82b954b33d6797edfa8ceeb79d341ede11b70e4fb77025d1cada5e5"
+    },
+    {
+      "path": "configs/cohorts/aorta-diversity.ini",
+      "sha256": "36e059d511eee5fb7069eee1962fd0386daf5ec8aab0a7d509f9f40b0e717caa"
+    },
+    {
+      "path": "configs/cohorts/coa/context-aorta.ini",
+      "sha256": "44c7f8f30867bc40d5f0a3cbc19a9e2cd44f56311a202816bb88e20f8c08c0ad"
+    },
+    {
+      "path": "configs/models/aorta-change-sampling-pilot.ini",
+      "sha256": "686c9da30775df1006ab28bc67e2f0a7af3b23c624a451a4f6bf983cef6131ee"
+    },
+    {
+      "path": "configs/models/aorta-diverse-change-r2.ini",
+      "sha256": "75f6d8737d3df6108ae2132a137862747d12831daf5f4edcf33c413744ec0e90"
+    },
+    {
+      "path": "configs/models/aorta-diverse-change.ini",
+      "sha256": "cc15d8baa3f10dc745ed31ebb9f8bdb3628dc450b4388501e04c1be03b8a7bba"
+    },
+    {
+      "path": "configs/models/aorta-focused-change.ini",
+      "sha256": "10a643a198c480e102e70f16745dd57b41ee694d868f046cc78a846858668d79"
+    },
+    {
+      "path": "configs/models/aorta-pretrained-finetune-branches-v2.ini",
+      "sha256": "17c9218859066a649ed8a451f826c5d7150709523119d1954816efaade0dd083"
+    },
+    {
+      "path": "configs/models/aorta-pretrained-finetune-branches-v3.ini",
+      "sha256": "bd077ebf401e0f42a0bd8d45ba09879dfdfd4655288de642380af643eb532609"
+    },
+    {
+      "path": "configs/models/aorta-pretrained-finetune-branches.ini",
+      "sha256": "14005ade9b55e7e76c01fffa8253f8507b096effb90890507ca332d8c6cf3732"
+    },
+    {
+      "path": "configs/models/aorta-pretrained-finetune.ini",
+      "sha256": "8fa472f7cd65a09a976e9a056607aa338193945627e2349690c64ed2927c1a01"
+    },
+    {
+      "path": "configs/models/coa-classification-only200.ini",
+      "sha256": "9658fbf09d4656466e67219d3d89fe62bcf0e554d695768be3fc750e832608e3"
+    },
+    {
+      "path": "configs/models/coa-classifier-pilot.ini",
+      "sha256": "ad9668862be936c090fd209d4233689fc796328ffd4f61bfc58c9380816d8e1f"
+    },
+    {
+      "path": "configs/models/coa-context-comparison.ini",
+      "sha256": "ccd6736489afaf0bdd7607cd07580a5d18de4d6172ca303931927c158a873d7d"
+    },
+    {
+      "path": "configs/models/coa-context-diagnostic.ini",
+      "sha256": "70a1549d3111caf78f2770eb071fa913f85a30f583d1c66383f2cb86e82111c6"
+    },
+    {
+      "path": "configs/models/coa-context-grid-diagnostic.ini",
+      "sha256": "65e1c52209c2345b94cf5bd609dfba26ca9821bea6ddaed27c2037262663f7ce"
+    },
+    {
+      "path": "configs/models/coa-context-segmentation.ini",
+      "sha256": "dd20cf31e3987b9e5f9f0bb26e3c00bcd674491f4e602c2119cfd68ed9d8e3ea"
+    },
+    {
+      "path": "configs/models/coa-cross-validation.ini",
+      "sha256": "c8a98ca974226611c81d5755c304e0fb8f22f37de291362acad4ccb0a421e0f4"
+    },
+    {
+      "path": "configs/models/coa-focused-classifier.ini",
+      "sha256": "fa41992e07e209ac1824e257c20193f84525fb337754c192d93be92ecc514159"
+    },
+    {
+      "path": "configs/models/coa-focused-paired-v2.ini",
+      "sha256": "7faa79318e3bf630f98d98dca7af42e4dc194fc80bf5943ce3ab2b7b0f6b504f"
+    },
+    {
+      "path": "configs/models/coa-focused-paired.ini",
+      "sha256": "5ee1d60a56747792260405db5f22aac5c90540f28d0ced122eb2bd11aa302be3"
+    },
+    {
+      "path": "configs/models/coa-focused-pilot-lr-control.ini",
+      "sha256": "054c0b19fb5d323f39f12b29095dc652cfdfce6b67514117a6e42dff05ce38e6"
+    },
+    {
+      "path": "configs/models/coa-focused-pilot.ini",
+      "sha256": "fb42c7cf2ebf3bd8d8f8d24295aebfbe6afb044bd078bac9fbc017b3011b4e76"
+    },
+    {
+      "path": "configs/models/coa-mask-model.ini",
+      "sha256": "dad5689bc99d2fa44c6149a704debfefd243363da53a33b1cb327f2f3e147126"
+    },
+    {
+      "path": "configs/models/coa-multiscale-pilot-v2.ini",
+      "sha256": "8e301ec4b8b0e00333451e90a6b30c3e39a7eb22c125425274c38b3324eabe20"
+    },
+    {
+      "path": "configs/models/coa-multiscale-pilot-v3.ini",
+      "sha256": "e38ddabe8dafd166d986aeccb83b26138c246bad95213bb243ab7d3545152f17"
+    },
+    {
+      "path": "configs/models/coa-multiscale-pilot.ini",
+      "sha256": "73db53a0d194af874cac42c94f711977f33d51bc32834d8341df585160408609"
+    },
+    {
+      "path": "configs/models/coa-rotating-budget200.ini",
+      "sha256": "2e34ae37e2defd38ffdbea0f2f2c4f16cfd19b2bc04d9162614303c397f83545"
+    },
+    {
+      "path": "configs/models/coa-rotating-evaluation-v2.ini",
+      "sha256": "2da27e37241121976a9aec32999818d92bae96cdae342834f7b099ad2b9ded80"
+    },
+    {
+      "path": "configs/models/coa-rotating-evaluation.ini",
+      "sha256": "dcc914a21f6cbef3b715bbe82f768acbf6ecd4283f6354d8c4384d9d414d4259"
+    },
+    {
+      "path": "configs/models/coa-two-stage.ini",
+      "sha256": "00e5f00cab08daf465a7bceec71c31c45407f5fe1e84f4dcb6a28006da9aec6e"
+    },
+    {
+      "path": "configs/studies/coa-label-review.ini",
+      "sha256": "b6441482c7879b068be80b939f07cc9c5e2208cb9e5c3952dde1c5855d8f0522"
+    },
+    {
+      "path": "docs/COA_POSTER_AND_POPULATION_STUDY.md",
+      "sha256": "f5f8a91197f48e0f33b1521d2d67393639a846b92ced27d14fecae9f00c66f71"
+    },
+    {
+      "path": "docs/COA_ROTATING_BUDGET_CONTROL.md",
+      "sha256": "1906aadd1db3144fd23f8406e1410bd6b2117537ccf29e94722038d9c9d1e39e"
+    },
+    {
+      "path": "docs/COA_ROTATING_EVALUATION.md",
+      "sha256": "e385c5269bf005993b93d295da45665cc5cf9b554693a8f240482aa0d7d27194"
+    },
+    {
+      "path": "docs/CONTEXT_AORTA_COMPARISON.md",
+      "sha256": "2d8c48f4d90dd640d130bd794bafed42301229bdf365f45c8ab0aeab19a130c2"
+    },
+    {
+      "path": "docs/CONTEXT_AORTA_SEGMENTATION.md",
+      "sha256": "6e8483340f235513ed3506d3c9066f1e728205258cd0a2ee8dfeffee1d95ab0b"
+    },
+    {
+      "path": "docs/MODEL_EVALUATION.md",
+      "sha256": "3e9635e2e626f74ea3d2d7a597db485d4b6ef37752d3cbda18e6b1e6545b4dd6"
+    },
+    {
+      "path": "docs/MULTISCALE_COA_PILOT.md",
+      "sha256": "19d54f3fd1a315d68b6360396070fd5d6186f5f89fd1b5d77fefa680525db2a9"
+    },
+    {
+      "path": "docs/PHANTOM_MASK_WORKFLOW.md",
+      "sha256": "e95be5cedad78c64d2eab40902ce34791aee436f06340760a755385b47e0e81b"
+    },
+    {
+      "path": "docs/STORAGE_PREFLIGHT.md",
+      "sha256": "74983b7c600e1df5ca3ccb6359e32f217f6120187014cf3ff6f866702f5ae0f1"
+    },
+    {
+      "path": "docs/THORACIC_AORTA_PROJECT.md",
+      "sha256": "5e6bc73f2dadb11308849852ad545e96284733d0cecb7374949e05a29728896e"
+    },
+    {
+      "path": "docs/TWO_STAGE_TRAINING.md",
+      "sha256": "6620c148e9fb8a17797353ace74a199372290ab7485f2ce54960d8c81036adad"
+    },
+    {
+      "path": "docs/VIRTUAL_POPULATION_PLATFORM_PLAN.md",
+      "sha256": "f044b44afd05ae85ae42a60ccfdadcbd768067edd94b921a1141ea750bbe75f8"
+    },
+    {
+      "path": "docs/integration/2026-09-28/atlas-mask-model-transition.md",
+      "sha256": "ba0da50e2bd72b27cfbf4cf0f63a509a59fc0a7998c61b1c3c219cc5031e09cf"
+    },
+    {
+      "path": "docs/integration/2026-09-28/coa-family-cross-validation-plan.md",
+      "sha256": "75b0c9a49e660703b2a9925a876e435c2ba13226bfd37f39824b84049b7e0403"
+    },
+    {
+      "path": "docs/integration/2026-09-28/coa-family-folds.draft.json",
+      "sha256": "bf99450dafdcbdd643b30f42decf1999eeededc22eb142668384f41a64904e5e"
+    },
+    {
+      "path": "docs/integration/2026-09-28/morphology-illustrations.md",
+      "sha256": "d3f3cbda962e713f6c9bd8f8e3d7aee9726ba4708eb72a5d8ee0f526fec7c0a3"
+    },
+    {
+      "path": "docs/integration/2026-09-28/pathology-voxel-pilot.md",
+      "sha256": "f15570c9df9dde35b5b422222ffb1cd339e30b775f8ce3fa5788ce88bc7e7760"
+    },
+    {
+      "path": "docs/integration/2026-09-28/radius115-cohort-review.md",
+      "sha256": "1009e8e387f8abd67c8094dbc5123f8e6345587847b6e4dd4daf62aad6132f31"
+    },
+    {
+      "path": "docs/integration/2026-09-28/two-stage-training-run.md",
+      "sha256": "1e5d34ed11eb663a81c8284856ffc92cbb51eb09b716529fa99e14817459106d"
+    },
+    {
+      "path": "docs/integration/2026-09-29/context-aorta-run.md",
+      "sha256": "edc605115aff21e882931e399645fcd5e4d435c211bac1b86e4246867483fa1b"
+    },
+    {
+      "path": "docs/integration/2026-09-29/context-comparison-run.md",
+      "sha256": "2860c075f768bcb6c4a52125947a15b7b21415d52339165236c70545d24a9db2"
+    },
+    {
+      "path": "docs/integration/2026-09-29/context-target-engineering-review.md",
+      "sha256": "07f7fa7041e073381a3830438544501785428c8efc1cf1893d12474d6ea0e4aa"
+    },
+    {
+      "path": "docs/poster/bmes2026-poster-handoff.txt",
+      "sha256": "6e738f3eb08f2282531c7b05e3c270179390086b2ebb51471c7a54cb3d9fc973"
+    },
+    {
+      "path": "requirements-pretrained.txt",
+      "sha256": "b7e4c26dcc130bb795f5ebfaebf140487d8945418a6adcad8f0217fc74b94c18"
+    },
+    {
+      "path": "scripts/benchmark_pretrained_aorta.py",
+      "sha256": "dec9452b93f597da4161496dc143e02738f40afa4feeabf9947af44f8e05e47b"
+    },
+    {
+      "path": "scripts/cluster_sibling_ct.py",
+      "sha256": "7c6a267a0ed5576c1a481304f6824d0f6d2727884fbc2c9140edaeff11a9c5a7"
+    },
+    {
+      "path": "scripts/compare_context_aorta.py",
+      "sha256": "f6653cfee826e9e1f4b597ff2fbe99160ca245a20a6edf0ebd6108af562ff475"
+    },
+    {
+      "path": "scripts/evaluation/aorta_two_arm_ct.py",
+      "sha256": "e1a584f4810f621fe748aa93cef8af68ac16f1d0f89fbcbf2e64c5ba52871971"
+    },
+    {
+      "path": "scripts/evaluation/audit_pretrained_exports.py",
+      "sha256": "31be37711c47bb49eefcbac9e11e3660c033b561a8be4ccf68f74c2dc90ec77d"
+    },
+    {
+      "path": "scripts/evaluation/benchmark_context_comparison.py",
+      "sha256": "ba2fa95904b6d83492280094607cd6596d66a8f7967ccfbc8687c07b40e96ba1"
+    },
+    {
+      "path": "scripts/evaluation/build_coa_poster_figures.py",
+      "sha256": "4c66f5f4846c35d7854a43341edd0230f1fd81f8fd5dba4a932738357ef0d81f"
+    },
+    {
+      "path": "scripts/evaluation/classify_coa_cohort.py",
+      "sha256": "2528f3dce8dbd5e7303648aaa2f4de5e313e8b5ea2f3a58790603dde866fd691"
+    },
+    {
+      "path": "scripts/evaluation/coa_prepare_pairs_array.sh",
+      "sha256": "b33f733e484011cb6417e8bb1612762a9edebd1de27bfa09253e6498defeac49"
+    },
+    {
+      "path": "scripts/evaluation/coa_two_stage_manifest.sh",
+      "sha256": "dd51bab0f7141b6b7fbfe3a62f59051db94a3d8c0b6eddf0e8b8bd6d90f8cb23"
+    },
+    {
+      "path": "scripts/evaluation/illustrate_all_phantom_split.py",
+      "sha256": "d79d2b2f1bd131331dcb3e8d46c68d3262142eb1f1df443542610c68d13d4e95"
+    },
+    {
+      "path": "scripts/evaluation/illustrate_bitwise_2d_neighbors.py",
+      "sha256": "3936abf8b0fb981818f8830e65e6180578f7ea4b187c54594eb34b8baac9f9d9"
+    },
+    {
+      "path": "scripts/evaluation/illustrate_finetuning_pipeline.py",
+      "sha256": "18cc10467f466f730ef48c184c8cf74807d7aefdf7fb1f4a390caa6ea8d30f6e"
+    },
+    {
+      "path": "scripts/evaluation/illustrate_pretrained_unet.py",
+      "sha256": "c93184113d57d4ff518ef60403fe68c96de8e69520258978427106307b2ffff5"
+    },
+    {
+      "path": "scripts/evaluation/illustrate_training_split.py",
+      "sha256": "7f571e95cb33b68b14708bbf3fa0e5ea439b41c2aedadeac8f5a201bcd93bb87"
+    },
+    {
+      "path": "scripts/evaluation/preview_branch_coverage.py",
+      "sha256": "508f2d1eb80afe447776fb491f9c9024e5b7780dda078f37507ff0e481901713"
+    },
+    {
+      "path": "scripts/evaluation/probe_context_checkpoint.py",
+      "sha256": "a6c13045dc63cd0ecd1f03c9fe8005548527b92605b74b10912b056190ac2f48"
+    },
+    {
+      "path": "scripts/evaluation/probe_context_comparison.py",
+      "sha256": "ac058e9b2426b8fd13c27232166daaec25e11a9a7e5296efae6395e4afe5dddb"
+    },
+    {
+      "path": "scripts/evaluation/probe_context_comparison_gpu.sh",
+      "sha256": "4824af499a8a54f28b0985b15ae99f49bc4c010da5ca378a580f32444f621f8f"
+    },
+    {
+      "path": "scripts/evaluation/probe_pretrained_focus.py",
+      "sha256": "22f69fabbb6e8b1008025b55779681ef23c1dfefea5efac77e2030bf1dbd1b5b"
+    },
+    {
+      "path": "scripts/evaluation/recover_change_sampling.py",
+      "sha256": "149068db77b1845a5a607bb544686fc9ce43f86002b87213a61d4bafe230501e"
+    },
+    {
+      "path": "scripts/evaluation/review_branch_annotations.py",
+      "sha256": "7fd0177c0232d4c694a9e1141290ce633755afbbc65953a499c9d7a5a81e82fe"
+    },
+    {
+      "path": "scripts/evaluation/review_multiscale_v3.py",
+      "sha256": "4588f5aa9b417f523416186e3881de1179689f5c78175c5b1be4a9666564ace1"
+    },
+    {
+      "path": "scripts/finetune_aorta.py",
+      "sha256": "54cf9f76358a54a9478abe4288f02a0e8c2a6cb7ad414fa023c9fb887cec6ab0"
+    },
+    {
+      "path": "scripts/model_experiment.py",
+      "sha256": "ceb8cd3bbfe1a597364bf3e056a3397559cd3202663153671767c3c51f621e8a"
+    },
+    {
+      "path": "scripts/package_aorta_two_model_review.py",
+      "sha256": "03d17e541049ca51d51ea57366b845ac33e47eb4da5cc13c6e17982e5e9b63f4"
+    },
+    {
+      "path": "scripts/prepare_context_cohort.py",
+      "sha256": "531f65a0e6daa112c6f22e1b9c49bc94649755439bb4e91e6fc2e084cd73ffa5"
+    },
+    {
+      "path": "scripts/prepare_sibling_population.py",
+      "sha256": "1c250d405e48f0f46919f150cd390444a792e7c76d9955aa9921c334fe6822c0"
+    },
+    {
+      "path": "scripts/presentation/build_bmes2026_outline.py",
+      "sha256": "bd48c8cd42d5dc82d3cd904ef4cea824a9fdf0c3dfc9a0809ec8ddea7c96d816"
+    },
+    {
+      "path": "scripts/preview_mask_pairs.py",
+      "sha256": "7268463f60eadc211f2dd73cbe02e21b61e2380d62ccb7d5f51b52bc0fbf49ca"
+    },
+    {
+      "path": "scripts/publish_aorta_two_model_review.py",
+      "sha256": "88ad4b2c86eba2bab24fc9834f5e765503b5d5e3fb72dd2f7c63c0cdb1a51fe6"
+    },
+    {
+      "path": "scripts/repair_sibling_population.py",
+      "sha256": "967ac4a478835e06025f9a339aa986e687bf57a803950ba5e64b18edd2b588a9"
+    },
+    {
+      "path": "scripts/report_context_cohort.py",
+      "sha256": "2c8892959ed43fac2431f313d28dc09392100220958800824df174405aefed68"
+    },
+    {
+      "path": "scripts/report_context_comparison.py",
+      "sha256": "12972b07255e278a86825fc3a18de480e7a851da6ad69f4860afe005e3d902c4"
+    },
+    {
+      "path": "scripts/report_context_diagnostic.py",
+      "sha256": "85f66fb359cd0c58beff6d0725a220735c4d35d795439af5187a6413c367b2cc"
+    },
+    {
+      "path": "scripts/review_phantom_masks.py",
+      "sha256": "fe6ceb3bf7e10071f596108006ed9627811e6919a6e27094bfa362c5e869a2c4"
+    },
+    {
+      "path": "scripts/select_phantom_anatomy.py",
+      "sha256": "acfec2f2953ed7ea81a24bd708fbfc05164d5f7c752e0588a9cc244b98395c21"
+    },
+    {
+      "path": "scripts/slurm/fakect_branch_presentation.sh",
+      "sha256": "c70e6604e9923d0159dc75b261d59871ce555d83a3ed9964dae49a359cd51072"
+    },
+    {
+      "path": "scripts/slurm/fakect_change_gpu.sh",
+      "sha256": "8b6ccdffe8a7716ed7d731259297011c2f7c29d9b8961756f026f1db0add3091"
+    },
+    {
+      "path": "scripts/slurm/fakect_change_population_gpu.sh",
+      "sha256": "2be4dfb56436a8fd149088921eb6b848e14b31b9562945382f2550bc74b298a9"
+    },
+    {
+      "path": "scripts/slurm/fakect_change_population_report.sh",
+      "sha256": "63e6806691a23e5666ecd18576f7031cd82f025db789277cdc72688f262f475f"
+    },
+    {
+      "path": "scripts/slurm/fakect_change_report.sh",
+      "sha256": "ee2bfbc13b6c71edfb31408a7123f3a063d933e4b4f19da2767ead372592bdfd"
+    },
+    {
+      "path": "scripts/slurm/fakect_change_sampling_gpu.sh",
+      "sha256": "acc6cffe5547f7bc6a77ae1f615aec9887c0b3f6c22eca57a231e5ccb93237f8"
+    },
+    {
+      "path": "scripts/slurm/fakect_change_sampling_report.sh",
+      "sha256": "078596dc9804b1a2806a2a4c95cce1e5d66bfc3b55bf2aaf4e14d0fcd012e8fc"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_budget_gpu.sh",
+      "sha256": "7373cf4e9fe42b8ddf55a0d9df9092f8edcad772716f6f81b09a3131bc29ce98"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_classification_gpu.sh",
+      "sha256": "80f376a1fb02548f32ef0cec871ccd1dddbec6d6281d793d82453b6f9899d46f"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_classification_report.sh",
+      "sha256": "9acdc39074d105b5db47d593d2858b28cc9db8d4f6ab16c7150c9f28b415a658"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_classifier_gpu.sh",
+      "sha256": "624f60676adb1819a4e21670c1c2e76f5cf4046b942b35fb97a2d4c9c8cf71b5"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_focused_gpu.sh",
+      "sha256": "826447d277de5343907983bfc8df3405c5c2f09f737c1bdb105fd38a44775215"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_paired_gpu.sh",
+      "sha256": "eb878e7dd7ecc7fbd88377c804a07d8df72972ae7baa7171e3e647212c99a09c"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_paired_v2_gpu.sh",
+      "sha256": "183dca1ccfab7654940c6a60ba9a31aaa73f37a293d6d3339232776b03537df2"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_pilot_control_gpu.sh",
+      "sha256": "3467e8012c6c6ca89c0ad91a7ee96bbd34b90b16d2807e618635d02e00907146"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_pilot_gpu.sh",
+      "sha256": "0faf15ce23d59db3693178ffed45604407bcbfb72179c293eb90f90de8f85999"
+    },
+    {
+      "path": "scripts/slurm/fakect_coa_rotations_gpu.sh",
+      "sha256": "8a4bd54bcd8e78e890092abecd66ea4dc5134a54551aafd42c4907ae738c4c0f"
+    },
+    {
+      "path": "scripts/slurm/fakect_context_comparison_gpu.sh",
+      "sha256": "a46d726f791160c1511f19dccd985bb7cf158f738ffa38125e8c82f832e3e8da"
+    },
+    {
+      "path": "scripts/slurm/fakect_context_gpu.sh",
+      "sha256": "3aa54847dcd45bc88771a43b349d7dd178fdc2a754179423999ff764779416b1"
+    },
+    {
+      "path": "scripts/slurm/fakect_ct_clusters_cpu.sh",
+      "sha256": "129ac4609ee54d01bd1b21dff628c285556670e40ad8d2bdcc18431a33d55b9b"
+    },
+    {
+      "path": "scripts/slurm/fakect_ct_clusters_report.sh",
+      "sha256": "1ba56f4e6a45d3e3d674cbeef2f96be2538cfa5cfda4883d23138a7a16202d3e"
+    },
+    {
+      "path": "scripts/slurm/fakect_finetune_gpu.sh",
+      "sha256": "f3645d69f6f7b0c342b3caa5f8a5ff9c5cadc4442e22316728c9835013352afe"
+    },
+    {
+      "path": "scripts/slurm/fakect_finetune_prepare.sh",
+      "sha256": "6d1c04e7e4da4bbfd69f4ba6642229d16bece1ecac30186eab8deb8db065fbaa"
+    },
+    {
+      "path": "scripts/slurm/fakect_finetune_presentation.sh",
+      "sha256": "c95c0a999d727245c6af0f2ab8d040e7b021f9ad763c8fa4454ae007a4664dd3"
+    },
+    {
+      "path": "scripts/slurm/fakect_finetune_report.sh",
+      "sha256": "fdbd6bbe2a7fcbb55f56564ed504e720b9a51eb3142bf770abfb2de3e580857f"
+    },
+    {
+      "path": "scripts/slurm/fakect_multiscale_gpu.sh",
+      "sha256": "c0aabdacd088ee1f4290e3c46c84168e663a833353d67fbc90ca9245058cc5f1"
+    },
+    {
+      "path": "scripts/slurm/fakect_multiscale_review_gpu.sh",
+      "sha256": "472c0caaf2e7b1867a56e96ee2a6d78fc026f08d0d45bcb044596e5aea9658bb"
+    },
+    {
+      "path": "scripts/slurm/fakect_multiscale_v2_gpu.sh",
+      "sha256": "dff2a954d28be10c7de30f84d730eceead6f7afd58e230a439f54d75139d6cda"
+    },
+    {
+      "path": "scripts/slurm/fakect_multiscale_v3_gpu.sh",
+      "sha256": "aaaef5ad45e26c7c548b95c3eb5a6eda34cd15a3aff5c4b62d5d6aff6f8f9426"
+    },
+    {
+      "path": "scripts/slurm/fakect_pretrained_focus_gpu.sh",
+      "sha256": "8823d3fb70fd7dfae7035c1898dfcf984950feb0cbdf0cb9111fa98169449817"
+    },
+    {
+      "path": "scripts/slurm/fakect_pretrained_gpu.sh",
+      "sha256": "b2adbc40a41153357775e8460b0b630dad8cafb3eb4be045d8b8e370ea6bc4e1"
+    },
+    {
+      "path": "scripts/slurm/fakect_pretrained_prepare.sh",
+      "sha256": "5ea8e7c88496cfb5b632fa3c851e04af439ac0f1f195fc9eaa43fb2499b3c902"
+    },
+    {
+      "path": "scripts/slurm/fakect_pretrained_report.sh",
+      "sha256": "d56e1bfa27af51ce5f0e8e1eb6536d8a6b75a9e907b17d42abc3a0cd72f755ae"
+    },
+    {
+      "path": "scripts/slurm/fakect_sibling_population_collect.sh",
+      "sha256": "dc8dba7ec28348d1b39adea96a2f16c0f26abb5d0dcc3aad695878b8bbedd3b1"
+    },
+    {
+      "path": "scripts/slurm/fakect_sibling_population_cpu.sh",
+      "sha256": "9ccab4238d2194495f29343d7efb0f483805599ce80d11fa606011f642316ff7"
+    },
+    {
+      "path": "scripts/slurm/fakect_sibling_repair_collect.sh",
+      "sha256": "32f31dacd4f0ab63e9e58eab745663fe8f3bf0baf3a072937e84543514e20538"
+    },
+    {
+      "path": "scripts/slurm/fakect_sibling_repair_cpu.sh",
+      "sha256": "02dcc089a0eac24aaaf8acb68e00a0a2cade05cb1c26da84ecd35ccbaa13dad1"
+    },
+    {
+      "path": "scripts/slurm/fakect_two_stage_gpu.sh",
+      "sha256": "f6c7ab1ba0cef8b488671ad8fe929decdd46c4a35f6f66625f81ad93118b26a1"
+    },
+    {
+      "path": "scripts/style_pretrained_review.py",
+      "sha256": "f4b083624c8b63f3d84ecf0ab0871202c4d0dbfb814ff1d4e0f313f5866c1adc"
+    },
+    {
+      "path": "scripts/train_change_population.py",
+      "sha256": "07d04a85d3974d8164f46e2501dd15b1550811dc9b8fd7f001c68e6e8b2a2c9b"
+    },
+    {
+      "path": "scripts/train_change_sampling.py",
+      "sha256": "ff13e42cbcf9587939e6a77195c8dd8355c59a5cff5fbe78e1bdad04e323de97"
+    },
+    {
+      "path": "scripts/train_coa_budget.py",
+      "sha256": "e23e5438247f119498fd55040983a4c85817bcf3e297c9a75c8275fbb34b604a"
+    },
+    {
+      "path": "scripts/train_coa_classification.py",
+      "sha256": "163378174c4ee285fffb6e6d27186fa669e1caa53fb64b61b4f71d3504def60d"
+    },
+    {
+      "path": "scripts/train_coa_classifier.py",
+      "sha256": "764752996ce277b792458a504b3386e81e35f21687bb9489f9ed6bc0472f10aa"
+    },
+    {
+      "path": "scripts/train_coa_focused.py",
+      "sha256": "525384381d3a3dceaf324a55b116d6d2d8621c7d61721eb84810a142a104d9e7"
+    },
+    {
+      "path": "scripts/train_coa_paired.py",
+      "sha256": "fe22707eb02a0d3b9ab4d5b34e7f786da3e6edc2372b2aaf395bf684a57f033c"
+    },
+    {
+      "path": "scripts/train_coa_paired_v2.py",
+      "sha256": "71bdaa452411d672671c45329697fcb55402cd0844ee067bd301452f4b699524"
+    },
+    {
+      "path": "scripts/train_coa_pilot.py",
+      "sha256": "06498f4ce3a21a759592aab6d05a1ac26aec06ff0cfad1eb730c51776e024b7e"
+    },
+    {
+      "path": "scripts/train_coa_pilot_control.py",
+      "sha256": "37b698a97310f2ef090861ecdf536a001f036b06fc7893d0feab9dd459aa91e9"
+    },
+    {
+      "path": "scripts/train_coa_rotations.py",
+      "sha256": "9cb6a4f94e8f5fdfb5a844db816f6855dc64f10670b400ea79de09cef5473372"
+    },
+    {
+      "path": "scripts/train_context_aorta.py",
+      "sha256": "3077658ff4cb6eafffd537ae180f79d1a1595618a26996530564473f334cc96e"
+    },
+    {
+      "path": "scripts/train_focused_change.py",
+      "sha256": "69f6fb23be6fe39790e786c4f4e99cfb1c07dde5843d1a26dafce15c297e388d"
+    },
+    {
+      "path": "scripts/train_mask_model.py",
+      "sha256": "02e370ac0b7ea6dd668572586923202696d8d308c89ec03c989dc223ca912043"
+    },
+    {
+      "path": "scripts/train_multiscale_coa.py",
+      "sha256": "b5db729c0b2fa3afa96d42890a780a547d49f3e53d860a7e687af6a5f682fdf9"
+    },
+    {
+      "path": "scripts/train_multiscale_coa_v2.py",
+      "sha256": "65434d222a8d3ae308d76ed240820ca83357d2934c4d20e6009fa0c19d0f479b"
+    },
+    {
+      "path": "scripts/train_multiscale_coa_v3.py",
+      "sha256": "e6694d8d0875575b154d1322bfd4e3d64eda44b917a914ae01b42cd74a59aa22"
+    },
+    {
+      "path": "scripts/train_two_stage.py",
+      "sha256": "0639f2bfa2b3f823f3a4ef5192988fa5250d21d2eb5049cef47d2e9d0d662a19"
+    },
+    {
+      "path": "src/fakect_change_data.py",
+      "sha256": "5961164dd046637ab1da645a87d16caf62188ea067b04b3af8dd40a36db936c8"
+    },
+    {
+      "path": "src/fakect_change_experiment.py",
+      "sha256": "a1ad9c6880ccb26eb77f17773c55b78c0731f6f3bd5f8ad48f7374ce9ab72f4f"
+    },
+    {
+      "path": "src/fakect_change_learning.py",
+      "sha256": "77cd16d66540ae1f6658a3aefdca3bf8e5731b951bb442f166601c9b3791c9f3"
+    },
+    {
+      "path": "src/fakect_change_network.py",
+      "sha256": "3da4d7a0e1c941058d5259c30afdf7869fc69e34837fa85d9a4b7a8ff4c9b467"
+    },
+    {
+      "path": "src/fakect_change_population_experiment.py",
+      "sha256": "49e22ec5be4071f36c84866f8eefcc195880bdc9cdb808de25bd8c1e9abbbead"
+    },
+    {
+      "path": "src/fakect_change_population_learning.py",
+      "sha256": "88dff4fefc704b5075f06e79962292e0de246f17e079b9739446a264d1a947a5"
+    },
+    {
+      "path": "src/fakect_change_report.py",
+      "sha256": "9be608cb5c683573d009bdec04a7bb55d18afb3c385fa7a47e0ffd57773ff698"
+    },
+    {
+      "path": "src/fakect_change_sampling.py",
+      "sha256": "7c4fb674e347f0abaf8ca7f15bee9005c266deb1c033aff1b34b29ff56bff399"
+    },
+    {
+      "path": "src/fakect_change_sampling_experiment.py",
+      "sha256": "61e092fda1c29429c4eea61e37913d6c0f8e78ded8034606d9a445cf2a448409"
+    },
+    {
+      "path": "src/fakect_change_sampling_learning.py",
+      "sha256": "7870c6f06a786050b989521efdf325b1ba5fe0a4f82bf2a0b2c4c36c98920f12"
+    },
+    {
+      "path": "src/fakect_change_sampling_report.py",
+      "sha256": "bd88ac33456a996bdbe11bbe74391a43f882b4339659e6f2b412cb7c2ee19769"
+    },
+    {
+      "path": "src/fakect_coa_budget_experiment.py",
+      "sha256": "6946bb4fb9befc9d9f3f0c42a088b6b23c39f440a43aa53aea8db25f91f234c7"
+    },
+    {
+      "path": "src/fakect_coa_budget_learning.py",
+      "sha256": "8a806746067c93e2257b4550260e084ce89f8fd879bd1624bb06bfb00b5cb957"
+    },
+    {
+      "path": "src/fakect_coa_budget_report.py",
+      "sha256": "eaca5f9ef4f9611e6fe02cf6fd93537bd4776eaec5711e8f4ceeb8baf3c0c75c"
+    },
+    {
+      "path": "src/fakect_coa_classification_experiment.py",
+      "sha256": "3c44a3a344880f095ff61207401fc0c446f417bc8142adb6e4c9e95c279bc503"
+    },
+    {
+      "path": "src/fakect_coa_classification_learning.py",
+      "sha256": "a1054471e12e966424a53992e6105578e4038cfe04e576dfc1d30970e91c9305"
+    },
+    {
+      "path": "src/fakect_coa_classification_report.py",
+      "sha256": "9d476daad1d0c71fa2cff4120e096cbf1e10b4715080141bba4d9dab343026f1"
+    },
+    {
+      "path": "src/fakect_coa_classifier_experiment.py",
+      "sha256": "02bd339854a6eac3f98ef96543953a9bebc51fc925b6d2c532a77bc596576f72"
+    },
+    {
+      "path": "src/fakect_coa_classifier_learning.py",
+      "sha256": "857e18f59345745167e15af47c15b9be6842c730916fd3ab5524a9d83de5b858"
+    },
+    {
+      "path": "src/fakect_coa_classifier_report.py",
+      "sha256": "0c1569f81b2b60ae008dfe40488ec079d16017f9aba12d1d942478d41f8fee95"
+    },
+    {
+      "path": "src/fakect_coa_focused_experiment.py",
+      "sha256": "11163b3569aeec6a01ebb68a894283755fd566df24278d271901b5d4b7802f21"
+    },
+    {
+      "path": "src/fakect_coa_focused_learning.py",
+      "sha256": "ecdfeb75c3fd7c9addcabc50934fefdaa9533caba502e21e33d5728db3d7f959"
+    },
+    {
+      "path": "src/fakect_coa_focused_network.py",
+      "sha256": "af94bfcdea3f693d5a9e0334b7e012abc52e8d71b6995464aa31de5ca48264e7"
+    },
+    {
+      "path": "src/fakect_coa_paired_experiment.py",
+      "sha256": "f28638f222dc3c8879a2678b87f0ee4de6648ab395eb707b7544d9b33265bf85"
+    },
+    {
+      "path": "src/fakect_coa_paired_experiment_v2.py",
+      "sha256": "900e768a8ab1f7356a320a3e490ce3a79122212e849938ed5c830f082f993309"
+    },
+    {
+      "path": "src/fakect_coa_paired_learning.py",
+      "sha256": "b17a71d9b75c5327adeeece190f14a6cafb069dc4063ed9fc5927b34dc03a309"
+    },
+    {
+      "path": "src/fakect_coa_paired_learning_v2.py",
+      "sha256": "764f1a360ad3ed1c230f0c7f1c8d35dab42fe9069e270a45f350a77916905a65"
+    },
+    {
+      "path": "src/fakect_coa_paired_steps.py",
+      "sha256": "95a8ecbb734bf57ca45e142b5260d7ab64eb7e45e6c3eb41b1763ac715768127"
+    },
+    {
+      "path": "src/fakect_coa_pilot_control_experiment.py",
+      "sha256": "fbf88cd91081e102206704271923b642c661a1347b9b2b6c6796db6d92169998"
+    },
+    {
+      "path": "src/fakect_coa_pilot_control_learning.py",
+      "sha256": "0553d609aed9326ad290399c5587cad2eca575131535ee4f2d8351f8fc44b6df"
+    },
+    {
+      "path": "src/fakect_coa_pilot_experiment.py",
+      "sha256": "8e437700a6eb4c2578b2b58d89e2b3760bc2495121f6a82e945a6518c47d970e"
+    },
+    {
+      "path": "src/fakect_coa_pilot_learning.py",
+      "sha256": "549c529fb829a8d51b24116a1286ec96478546286f00a74bf71b3561ea7b6f3a"
+    },
+    {
+      "path": "src/fakect_coa_poster_figures.py",
+      "sha256": "24cbd82636432b42b73a28ba4198c3e9d202902751c9ba6f9ac8244421b078fa"
+    },
+    {
+      "path": "src/fakect_coa_rotation_design.py",
+      "sha256": "46b9e0b122a356d95e98856b9689f7342d8d85b5bc6f1d07557867a914294cb2"
+    },
+    {
+      "path": "src/fakect_coa_rotation_experiment.py",
+      "sha256": "de8aac3d95d404ec011fb753a117f6fbba1c09adef5c42345a8f684b3a0d7bea"
+    },
+    {
+      "path": "src/fakect_coa_rotation_learning.py",
+      "sha256": "81fc6c375f46ece27457a47d170066c8214602a920bd82b0aefd46528b8aa056"
+    },
+    {
+      "path": "src/fakect_coa_rotation_locator.py",
+      "sha256": "1dc68be9d9319c50ebacbe3589460c5f74b2fb305e35aa35141763dcc6122e29"
+    },
+    {
+      "path": "src/fakect_coa_rotation_report.py",
+      "sha256": "9b07bbdd5bdd6bcfe90273ce5fb2e08082df68f76936bbca165d6cda0c5dcee6"
+    },
+    {
+      "path": "src/fakect_context_cached_evaluation.py",
+      "sha256": "0619f074cf431a731d6f106daeb0fc4b8d8bb72d5276a9dc4916240a6340c927"
+    },
+    {
+      "path": "src/fakect_context_comparison.py",
+      "sha256": "38ce05c2ba698d2dca073d1ca732eee0a76ab29a9704f6830108497544f0cf44"
+    },
+    {
+      "path": "src/fakect_context_comparison_learning.py",
+      "sha256": "5b13176154e2c8b3bbdb9e865349779fa1152ea21bbc54e378e279681c991046"
+    },
+    {
+      "path": "src/fakect_context_data.py",
+      "sha256": "41710eadd6a9115e6a57db24d595cc6c244ef4e60fa55277ab162e8c4a60300f"
+    },
+    {
+      "path": "src/fakect_context_experiment.py",
+      "sha256": "0147078e253808ba732eec7c88130b276337eb02577107f3d134598331a2d08e"
+    },
+    {
+      "path": "src/fakect_context_grid.py",
+      "sha256": "c11713ef8dd5844bc304e4264f57777ded56d07c6b4368d60522f1bc4f00771b"
+    },
+    {
+      "path": "src/fakect_context_learning.py",
+      "sha256": "7034292a8736fe301eb10b94dee3c80965a71056fb04824e04a715ce7dcf9d08"
+    },
+    {
+      "path": "src/fakect_context_report.py",
+      "sha256": "32d1ba372a50e0c2a3f817737d021c41e82091814c808a159b5ec618cc5e7bff"
+    },
+    {
+      "path": "src/fakect_context_volume.py",
+      "sha256": "78dd96e4bb453eebe467fd162f6d0e193a0ccbeaa2deb76f14db2e29a4a8faf9"
+    },
+    {
+      "path": "src/fakect_ct_delta_clustering.py",
+      "sha256": "38732b6eeedf0fff18a19b51cdac26cecaba8cb7dfc816109f0659efdaddd28e"
+    },
+    {
+      "path": "src/fakect_ct_delta_features.py",
+      "sha256": "c06e1ae11cef0d58ec6961a2ca8865138b3cf7557c9064a08e8062bc283100a8"
+    },
+    {
+      "path": "src/fakect_ct_delta_report.py",
+      "sha256": "e03d0cc907a051c69c52d97f277c9be8a3446a21b79ed02aad690b585244877a"
+    },
+    {
+      "path": "src/fakect_evaluation_design.py",
+      "sha256": "5bb8cd0c471b68f157f358624966a108a830e95d843e5340382ff2180bed5e50"
+    },
+    {
+      "path": "src/fakect_evaluation_metrics.py",
+      "sha256": "5cffc66cbd52727e0cbfb699445011e122c1b268064dfc61d6d5ebf134e4b008"
+    },
+    {
+      "path": "src/fakect_mask_model.py",
+      "sha256": "9ab1f068175f0e14322e18264025cc1377be78c821b55415cced9cf1c4df4fc5"
+    },
+    {
+      "path": "src/fakect_mask_pair_preview.py",
+      "sha256": "c2189b4c5bc73817159d3ffba801bb9bd2bb3e98ed7261e7e0aea5a7402310d4"
+    },
+    {
+      "path": "src/fakect_model_evaluation.py",
+      "sha256": "d16302f0d664fb8b35b41c83c86b3493784e53eae855cc5c41904c44f4106707"
+    },
+    {
+      "path": "src/fakect_model_experiment.py",
+      "sha256": "77f717909a2c2592c8ae95bee18bf7dce25abda4b287f5d1204569aca84ea7ce"
+    },
+    {
+      "path": "src/fakect_multiscale_augmentation.py",
+      "sha256": "3ae47e6eb2cf671a426e2720f25a532c85f6154b195d76bb6f54fe47035d52ce"
+    },
+    {
+      "path": "src/fakect_multiscale_experiment.py",
+      "sha256": "dde37b2cdbda75164b58b2b5089dcabe700e134c936f69dc6dd7ac1d70642fa5"
+    },
+    {
+      "path": "src/fakect_multiscale_experiment_v2.py",
+      "sha256": "15a398918f486f0411638678bc6495499613e53d055afd2473e802497922b813"
+    },
+    {
+      "path": "src/fakect_multiscale_experiment_v3.py",
+      "sha256": "7da06416e3fdbdbdab1877dfc77172e165d2807268a00f3dc119bc558edfbeb4"
+    },
+    {
+      "path": "src/fakect_multiscale_learning.py",
+      "sha256": "556e32b44252b28e37d4684ea0cd4a2a8f7a4a2d348f4cec262e7f17caa18c39"
+    },
+    {
+      "path": "src/fakect_multiscale_learning_v2.py",
+      "sha256": "a4dfa51af96d9588be460f47c60f3967d93ff5efc36f391b9f760aeb02a0711e"
+    },
+    {
+      "path": "src/fakect_multiscale_learning_v3.py",
+      "sha256": "4787c63d434f7e55db51164700b1c39df13dced0b9b846ad4b763ffb40f7be4e"
+    },
+    {
+      "path": "src/fakect_multiscale_network.py",
+      "sha256": "498472beb467f1bdf40b37f60ffa97556a8c92fc6540ce9014c4e7a0ec06d4c5"
+    },
+    {
+      "path": "src/fakect_multiscale_network_v2.py",
+      "sha256": "e2a1f2fa4d1465e0ae8fe7942cbc7f928c65e8939ebc8d6dc217b23dd59609c0"
+    },
+    {
+      "path": "src/fakect_multiscale_network_v3.py",
+      "sha256": "b017bef2f2a650d4edb976716910e05f25df922083a897e0820f4579d487625a"
+    },
+    {
+      "path": "src/fakect_multiscale_preview.py",
+      "sha256": "e26f4b7ce95074287ae6e58ed44b600af39cb97a440c2d9f1adc06f35c6b593a"
+    },
+    {
+      "path": "src/fakect_multiscale_volume.py",
+      "sha256": "16d21301758e6929bfbec68108a6989593b876a81ca1c960d79f8da826963a19"
+    },
+    {
+      "path": "src/fakect_phantom_anatomy.py",
+      "sha256": "6dadf0868dad24838647138e0ffb3044ec8bbc710681f4edfc20b76a2d6d6660"
+    },
+    {
+      "path": "src/fakect_pretrained_adapter.py",
+      "sha256": "cc96ac5127717e29782bd0c7f6487669a2b9f1728b9510df7f691c3fc67140ec"
+    },
+    {
+      "path": "src/fakect_pretrained_comparison_report.py",
+      "sha256": "ef787e0bc838656c65936af9703f036a57541a28c82d07eed0d75bd3965b7855"
+    },
+    {
+      "path": "src/fakect_pretrained_data.py",
+      "sha256": "5578d272ba78fdd7a634112080dbe9a86535cec84e1cba7a5403e3eb48a7d92f"
+    },
+    {
+      "path": "src/fakect_pretrained_evidence.py",
+      "sha256": "c341ebffdf5503b5f861bffaf710e1b29d6561dae6f002876984b4ef1274f609"
+    },
+    {
+      "path": "src/fakect_pretrained_learning.py",
+      "sha256": "2911a5314eec0b3746491103af7f79c3da3f72e97ef15e23a507a7165b3e0d02"
+    },
+    {
+      "path": "src/fakect_pretrained_report.py",
+      "sha256": "fc9f2c00dbb6e624c511b9b88608d01ef8919ea3bd92e323c17fe1e81d8a9aca"
+    },
+    {
+      "path": "src/fakect_pretrained_study.py",
+      "sha256": "347cf0638beda77b265e34a28856cc98af054fc224692f02e4e67e96c24820fe"
+    },
+    {
+      "path": "src/fakect_pretrained_targets.py",
+      "sha256": "7d1c71c2882c47029d2d1c1136739e1f74496082b09229c8af89e6b85f71dfe8"
+    },
+    {
+      "path": "src/fakect_sibling_population.py",
+      "sha256": "7971813eb0b888c8e020b76a5f99142341de0e4bdcf24f6f6794018fb8970103"
+    },
+    {
+      "path": "src/fakect_sibling_repair.py",
+      "sha256": "8b902cb0656b59c51b6adfa1e6bfdf44ebc2b509bac359b10c47b025d89fbd80"
+    },
+    {
+      "path": "src/fakect_tensorflow_steps.py",
+      "sha256": "64d01a9d82288d59f1754de558afb9f94b9782ce1888d39e33a52f99e747b831"
+    },
+    {
+      "path": "src/fakect_two_stage_3d.py",
+      "sha256": "20dfe659c67578e7a788142b4b2d97c1d26692aa221e47be76e2d93bf9450a92"
+    },
+    {
+      "path": "src/fakect_two_stage_data.py",
+      "sha256": "f5ccb2c1f94ee1897ef8c5343ec3f11019c23ef9f31f8370bd1587464b5f9ebb"
+    },
+    {
+      "path": "src/fakect_two_stage_experiment.py",
+      "sha256": "d604047b1ac4098bd2f04c1d5fa52afdbd08f45e03ab578a346b919980037dde"
+    },
+    {
+      "path": "src/fakect_two_stage_learning.py",
+      "sha256": "670e836ffdf337118cd9877eb5cc55b2d8a256914d01b4745f01e5cf1d3d2d58"
+    },
+    {
+      "path": "src/fakect_two_stage_report.py",
+      "sha256": "f3e4f6e4b18df464d2a5a3a1e39234d6b80d74c1747bf40001bd080d4fc76aae"
+    },
+    {
+      "path": "tests/test_change_data.py",
+      "sha256": "d9a6c2e92f96759aaab879bff6e93535f2bee3cd157e7f7d43ff165d263dd240"
+    },
+    {
+      "path": "tests/test_change_experiment.py",
+      "sha256": "65ce0af44b972a0b0cbf518792fd0e6138c4524aecd0586012f31a850f37608b"
+    },
+    {
+      "path": "tests/test_change_network.py",
+      "sha256": "459edb30662b6880f628eb49c3a86850a12d80b8d455ab42e235b92c44bf6c12"
+    },
+    {
+      "path": "tests/test_change_population_learning.py",
+      "sha256": "14eeec2f007528d8408cd370d730f25887f3916d7241aa3c3d095a9c98403772"
+    },
+    {
+      "path": "tests/test_change_population_repair_contract.py",
+      "sha256": "bdef1e05fe3362848cd8bd6bfe5dc871d5159ecbb55a9aa13fe058d6c1eca90b"
+    },
+    {
+      "path": "tests/test_change_report.py",
+      "sha256": "da140dab43093d21053de11b0d40a4d55ac68499d696dd37bc9b813c68e7519c"
+    },
+    {
+      "path": "tests/test_change_sampling.py",
+      "sha256": "7a3a92bced34b68abb6e69409916406c57436eb49b5cb46006f4c60c85cec22c"
+    },
+    {
+      "path": "tests/test_change_sampling_experiment.py",
+      "sha256": "49676b86e33519552a7606023bfd1bf40472858c19df66b559aa1160aff6be95"
+    },
+    {
+      "path": "tests/test_change_sampling_learning.py",
+      "sha256": "fdc5b36a7f028161a9acd7e41ad7ad1b401b1d4189358d96ebc795e4c6623a2b"
+    },
+    {
+      "path": "tests/test_change_sampling_report.py",
+      "sha256": "5c28b8b818eb17000ed1205a2c93d295b1f667146254d2b803782465a3fc5aee"
+    },
+    {
+      "path": "tests/test_coa_budget_experiment.py",
+      "sha256": "bb3fade77ded7684ee20a671a7d414f1d1576ab91e09d7375ead051f0072c694"
+    },
+    {
+      "path": "tests/test_coa_budget_learning.py",
+      "sha256": "b50b28b11308d81357213b2ca6e024d9b9b36e98f9b7c5eaac7063d067c21e11"
+    },
+    {
+      "path": "tests/test_coa_budget_report.py",
+      "sha256": "08b813a4bbe8cca97ae6c44eb631538d56050c6b9aec8b97719fbd54bcd43778"
+    },
+    {
+      "path": "tests/test_coa_classification_experiment.py",
+      "sha256": "a5c276e881eed8940a449caf6c018c81c3b59b52c0d37fe9c5a18233e2b10c73"
+    },
+    {
+      "path": "tests/test_coa_classification_learning.py",
+      "sha256": "d0becddaee4a192f1bd0b8d5ed3baf2fffdfee4117fbb8c4675191d9df57422f"
+    },
+    {
+      "path": "tests/test_coa_classification_report.py",
+      "sha256": "ee5003627ff7b60cf445c348b226be3016824a92c2b89ca6bdee26fdc1edbe63"
+    },
+    {
+      "path": "tests/test_coa_classifier_continuation.py",
+      "sha256": "39bf60e934712a1314e6a16a287254979b4e3c858adf4b5482c757c18281f75d"
+    },
+    {
+      "path": "tests/test_coa_classifier_report.py",
+      "sha256": "e84826e862e9fa96fa970420e9fda453f8f701f7a954d83ded6f31a93418c78b"
+    },
+    {
+      "path": "tests/test_coa_focused_experiment.py",
+      "sha256": "9c3ae85e982001adb594ce86d552a77bca22beca2ab4df890703ab5cf2262816"
+    },
+    {
+      "path": "tests/test_coa_focused_network.py",
+      "sha256": "0b6e74024080554a75c00cfbb42cc50c2a2f904674850491b564316d431794ce"
+    },
+    {
+      "path": "tests/test_coa_label_review.py",
+      "sha256": "3b48678b5aa2e3540ed35281ac4beaffb4d6e9b65b1521b1313002889eb84703"
+    },
+    {
+      "path": "tests/test_coa_paired_learning.py",
+      "sha256": "46df2f7af203490e5a5acb27c5e45456b51be9228519d9385e90b0fc09f78a66"
+    },
+    {
+      "path": "tests/test_coa_paired_steps.py",
+      "sha256": "2b9bc579d9c31cec326b51ed95e0c71b2edfadf89a24598dd462cdf6e309f088"
+    },
+    {
+      "path": "tests/test_coa_paired_v2.py",
+      "sha256": "4be3a4c9c9f80d169b5c961ebbaf0c30f9e5eba0a61dc0ff4c95be04f1c3e2c4"
+    },
+    {
+      "path": "tests/test_coa_pilot.py",
+      "sha256": "39c0c026f0c118a00fb5a5c4f98ca2cab54b6add38ccca2dbc4aca6d66b2c705"
+    },
+    {
+      "path": "tests/test_coa_pilot_control.py",
+      "sha256": "bfdbb7ce6c514bc483f8dd188b5733384a0fd26b14813305f5fdfc79338fb7c3"
+    },
+    {
+      "path": "tests/test_coa_poster_figures.py",
+      "sha256": "ef5dcf4fd5cd0476456caca4db2fe7fb53059af15b1858b077202d705ffdda31"
+    },
+    {
+      "path": "tests/test_coa_rotation_classifier.py",
+      "sha256": "ccfaecd318346a38702d4eb824b881114ec106580a1be9cebaa33927eac85fe9"
+    },
+    {
+      "path": "tests/test_coa_rotation_design.py",
+      "sha256": "b9952dea3ccd2eeb03749df486a6e498c83f6892e990f0e876b1eb901d4f2042"
+    },
+    {
+      "path": "tests/test_coa_rotation_learning.py",
+      "sha256": "407ddc9d56ac5b5dfc50313bb1b5e8a353fa121a876882719630a62da9558f67"
+    },
+    {
+      "path": "tests/test_coa_rotation_locator.py",
+      "sha256": "c8b7c04af668402c0d99bab3cbe66c809938d34b6072a7788a52d53274d6290b"
+    },
+    {
+      "path": "tests/test_coa_rotation_report.py",
+      "sha256": "cd82674f56ccce3c7296e302f7f5b5a6bc6f432a5c239ec5eb22cac2d6f9a56b"
+    },
+    {
+      "path": "tests/test_context_cached_evaluation.py",
+      "sha256": "58a96ac2c00b5a6f72802666bb695b3d0a748cb6d01c922cd7f29e5160652480"
+    },
+    {
+      "path": "tests/test_context_comparison.py",
+      "sha256": "1b604da7f0a72cdb99d7e7bc3ae26c66e776c192c6ae6d4c2a4b7cd9d21b4858"
+    },
+    {
+      "path": "tests/test_context_comparison_learning.py",
+      "sha256": "59b0f36978dd11b8e224893b95020758cdea127a22bc1a156094431b74c0754b"
+    },
+    {
+      "path": "tests/test_context_comparison_report.py",
+      "sha256": "4b56ca4cf71a87cbac3f426ab8d278b7786e319abdc25123d188d1607da0aad3"
+    },
+    {
+      "path": "tests/test_context_data.py",
+      "sha256": "d3cdcf62ba2eacd2fd92b5ad8cd8bfe28bfdc319f22eff9bb9b8c59871738e75"
+    },
+    {
+      "path": "tests/test_context_experiment.py",
+      "sha256": "23f904c411adef633236cccf1475c1216461bf03f7d59c29c4278c9f4e7d683e"
+    },
+    {
+      "path": "tests/test_context_grid.py",
+      "sha256": "de9f9c41d5a21d8401e5b2359916e996792e00b82a06e1134d6880d1fb74d784"
+    },
+    {
+      "path": "tests/test_context_learning.py",
+      "sha256": "9e18ff76832f3bd1ad899c641a4b9f55ec72f9d9224d4c33c193ac8f3924f39c"
+    },
+    {
+      "path": "tests/test_context_report.py",
+      "sha256": "fdd1f7c27c2893dc4699b411309a0af80858f2a049c5c754ed72acc4ba29ceda"
+    },
+    {
+      "path": "tests/test_context_volume.py",
+      "sha256": "ea7efc1513dbba16b2af992fe2db64b3df87e3c259642cd8c32940e49248aec5"
+    },
+    {
+      "path": "tests/test_ct_delta_clustering.py",
+      "sha256": "a19a9e1e0d7e93cfaba2a8a7dd701961218362d17a2c526c8274a0cc16babd21"
+    },
+    {
+      "path": "tests/test_ct_delta_features.py",
+      "sha256": "0c53dcf7e4e1a5342ceeeff34f25ff9c3883a212ab9b49ab7a92e74fecd934ac"
+    },
+    {
+      "path": "tests/test_ct_delta_report.py",
+      "sha256": "ac0cf5260438973f746a255b7e2ed6058ac19d22f6443029b85f7b91dc514fe1"
+    },
+    {
+      "path": "tests/test_evaluation_design.py",
+      "sha256": "4231f2e95054dcbdf1223f3622c3587bbc45393fa8c2e1e2c71e87f985e59fc3"
+    },
+    {
+      "path": "tests/test_evaluation_metrics.py",
+      "sha256": "80a19dc8b7e02b684c3a316badb6aa64a3efb64bd6a91ae81b9b476b3efaea99"
+    },
+    {
+      "path": "tests/test_fixed_refit_smoke.py",
+      "sha256": "5dc88793a47c7fbd02c3fc5e1cc35c2c9b929cbae07a9b41c338c1434b5ebb10"
+    },
+    {
+      "path": "tests/test_mask_model.py",
+      "sha256": "583c1728cd1da600de733b21e1f704e31d30238a19682d175f348a618d9a35f7"
+    },
+    {
+      "path": "tests/test_mask_pair_preview.py",
+      "sha256": "44e6ddf27aed49d98e22796b3e8cc3804320a6a46338146082a4a9d51e0a4096"
+    },
+    {
+      "path": "tests/test_model_evaluation.py",
+      "sha256": "e05e2aa492d547fbb438af54e7db8054804d0e9be6218b822bfd824130c8dfe7"
+    },
+    {
+      "path": "tests/test_model_experiment.py",
+      "sha256": "626782e85d4c762298c198424ae805d2f16481f150c0efb8363187d375ba107f"
+    },
+    {
+      "path": "tests/test_multiscale_augmentation.py",
+      "sha256": "b46074bd75982fe09e6c4ee43d9cd64b616ad6d2825d105301f1be9b95e78b99"
+    },
+    {
+      "path": "tests/test_multiscale_experiment.py",
+      "sha256": "1a19a25e4d845fc155698531be4fa2aac8f93019468118bb58f602bc7a5ec20a"
+    },
+    {
+      "path": "tests/test_multiscale_experiment_review.py",
+      "sha256": "6f6ee5efbfa0e924c550acbc5df2bc4e44a4164807cde08d5e5dddbaf9d0aa63"
+    },
+    {
+      "path": "tests/test_multiscale_network.py",
+      "sha256": "62a1a196bccb718f1c203b30c25796b6eff7c6a750edff3a8e6073803e2b35c8"
+    },
+    {
+      "path": "tests/test_multiscale_network_v2.py",
+      "sha256": "b776c8af6bfe434b4f5b95231f48ef55654b67f630dd09462cf0c3d5cc2552b4"
+    },
+    {
+      "path": "tests/test_multiscale_network_v3.py",
+      "sha256": "c88ef740f69aeaea83a9436ef4e44183a50eb3b55fe06925849d7f4b9f978e13"
+    },
+    {
+      "path": "tests/test_multiscale_preview.py",
+      "sha256": "c2122eaca4506481cb199b32f00138ed4ab1cfdb74a9f14c412797976319c340"
+    },
+    {
+      "path": "tests/test_multiscale_v2_integration.py",
+      "sha256": "d69fe38ea6723b030a3802bf654cc0771173ff404ea7629756b29ed9285ef457"
+    },
+    {
+      "path": "tests/test_multiscale_v3_integration.py",
+      "sha256": "3e0b6f8a72b13c5de5072afdb6287713d3640dd4eaa2e870ad0976b8573189e5"
+    },
+    {
+      "path": "tests/test_multiscale_volume.py",
+      "sha256": "36b77a59249a0716f9b2260175d31674789bbf3c4b17fdc4d4ddd8f2f3174876"
+    },
+    {
+      "path": "tests/test_phantom_anatomy.py",
+      "sha256": "da48dfde3671e82816189bde638df800e0bfedab62e6d96ccc223d1b8abea183"
+    },
+    {
+      "path": "tests/test_pretrained_adapter.py",
+      "sha256": "c811801b68f0adc4945d47d9c35eaef045e4992e8c37a98d9afbedfef82ea656"
+    },
+    {
+      "path": "tests/test_pretrained_benchmark.py",
+      "sha256": "0ffee077a414e874737988e7a768b86b615df4a24c46a801bba5b431d9d3f498"
+    },
+    {
+      "path": "tests/test_pretrained_comparison_report.py",
+      "sha256": "00ec80b8c1c78d67bbcc08bd8b98bc7bb3f51d0bb8551e9a810ee94eb1e53d02"
+    },
+    {
+      "path": "tests/test_pretrained_data.py",
+      "sha256": "824998e270919e3be478bc938f0155612e684a85e0be8e2183be078d92c37673"
+    },
+    {
+      "path": "tests/test_pretrained_evidence.py",
+      "sha256": "8bf92a4737772d2d89b60b57c1626453e0e9fe89cb5d3f3babebf6875790e3ca"
+    },
+    {
+      "path": "tests/test_pretrained_learning.py",
+      "sha256": "bed10fdf831f284c26413d1f8b99129d177ba40cd06a955bcedb69ce231245d4"
+    },
+    {
+      "path": "tests/test_pretrained_report.py",
+      "sha256": "7e6a8ced00e61b1ba7dbf33747b947a8f29753a85620b25fbcd8722064b94fdb"
+    },
+    {
+      "path": "tests/test_pretrained_study.py",
+      "sha256": "e4313e20cc810ddc7024b79a779fef3d78a81994e75c0a9ae5b53361bbfe7336"
+    },
+    {
+      "path": "tests/test_pretrained_targets.py",
+      "sha256": "5d9e40c5276a930e1de64308f4f939e05c8726a064f0ccc1b153fe3443c14e30"
+    },
+    {
+      "path": "tests/test_sibling_population.py",
+      "sha256": "f440707119d63ffd56622358e6fabfe533c25be7ff5343d10573b6d643cdcfd4"
+    },
+    {
+      "path": "tests/test_sibling_repair.py",
+      "sha256": "e8b3f8a8dd70ddc899a2e271288ec7915fe18ccd68af31eedbac4588faf5f2ef"
+    },
+    {
+      "path": "tests/test_tensorflow_steps.py",
+      "sha256": "acd1fcf9dfd105414e67a48acbdc255f9cf8c169f339d3683829af0e75597312"
+    },
+    {
+      "path": "tests/test_two_stage_3d.py",
+      "sha256": "9d8d8b50dc82da9ba62eea482ee6620a523dc3cd186b413f32edd142d313a171"
+    },
+    {
+      "path": "tests/test_two_stage_data.py",
+      "sha256": "5e664da53d2306cab5db0a700f5cdcaf36b3f598ef25cab976a4a29fa074b8a7"
+    },
+    {
+      "path": "tests/test_two_stage_experiment.py",
+      "sha256": "c073345a039e6dc9fa4174718bdc43b119e847cd7d1c3fbe64b256fdae5d07f6"
+    },
+    {
+      "path": "tests/test_two_stage_learning.py",
+      "sha256": "3de4dede2b89500199d683c08cbce72d390f48f17006555a9c63186142c21f6c"
+    },
+    {
+      "path": "tests/test_two_stage_report.py",
+      "sha256": "7adfdf05cd7025ae538d3436d51ec26cccf43594854cc8af7adb71edd05dfa01"
+    }
+  ]
+}

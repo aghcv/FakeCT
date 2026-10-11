@@ -1,0 +1,1308 @@
+{
+  "ready": false,
+  "planning_only": true,
+  "outputs_written": false,
+  "families_verified": false,
+  "project_sha256": "125dde41b295e59d7d10d4bae439e196e60a513ed12b60375089f2bdb0fe6493",
+  "design": {
+    "schema_version": "fakect.evaluation-design/1",
+    "strategy": "nested_leave_one_out",
+    "seeds": [
+      42
+    ],
+    "threshold": 0.5,
+    "planning_project": "/home/aghorban/repo/FakeCT/.worktrees/fakect.26.09.16/configs/cohorts/coa/project-radius115.json",
+    "split_seed": 42,
+    "families": {
+      "xcat_reference_10yr": [
+        "260615",
+        "260620"
+      ],
+      "xcat_reference_15yr": [
+        "260616",
+        "260621"
+      ],
+      "xcat_reference_1yr": [
+        "260613",
+        "260618"
+      ],
+      "xcat_reference_5yr": [
+        "260614",
+        "260619"
+      ],
+      "xcat_reference_adult": [
+        "260602",
+        "260611"
+      ],
+      "xcat_reference_infant": [
+        "260612",
+        "260617"
+      ]
+    },
+    "folds": [
+      {
+        "id": "outer-001",
+        "test_families": [
+          "xcat_reference_10yr"
+        ],
+        "development_families": [
+          "xcat_reference_15yr",
+          "xcat_reference_1yr",
+          "xcat_reference_5yr",
+          "xcat_reference_adult",
+          "xcat_reference_infant"
+        ],
+        "validation_families": [],
+        "family_assignment": {
+          "xcat_reference_10yr": "test",
+          "xcat_reference_15yr": "train",
+          "xcat_reference_1yr": "train",
+          "xcat_reference_5yr": "train",
+          "xcat_reference_adult": "train",
+          "xcat_reference_infant": "train"
+        },
+        "case_counts": {
+          "train": 10,
+          "validation": 0,
+          "test": 2
+        },
+        "family_counts": {
+          "train": 5,
+          "validation": 0,
+          "test": 1
+        },
+        "inner_folds": [
+          {
+            "id": "inner-001",
+            "test_families": [
+              "xcat_reference_10yr"
+            ],
+            "development_families": [
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_15yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "test",
+              "xcat_reference_15yr": "validation",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-002",
+            "test_families": [
+              "xcat_reference_10yr"
+            ],
+            "development_families": [
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_1yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "test",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "validation",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-003",
+            "test_families": [
+              "xcat_reference_10yr"
+            ],
+            "development_families": [
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_5yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "test",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "validation",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-004",
+            "test_families": [
+              "xcat_reference_10yr"
+            ],
+            "development_families": [
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_adult"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "test",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "validation",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-005",
+            "test_families": [
+              "xcat_reference_10yr"
+            ],
+            "development_families": [
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_infant"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "test",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "validation"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          }
+        ]
+      },
+      {
+        "id": "outer-002",
+        "test_families": [
+          "xcat_reference_15yr"
+        ],
+        "development_families": [
+          "xcat_reference_10yr",
+          "xcat_reference_1yr",
+          "xcat_reference_5yr",
+          "xcat_reference_adult",
+          "xcat_reference_infant"
+        ],
+        "validation_families": [],
+        "family_assignment": {
+          "xcat_reference_10yr": "train",
+          "xcat_reference_15yr": "test",
+          "xcat_reference_1yr": "train",
+          "xcat_reference_5yr": "train",
+          "xcat_reference_adult": "train",
+          "xcat_reference_infant": "train"
+        },
+        "case_counts": {
+          "train": 10,
+          "validation": 0,
+          "test": 2
+        },
+        "family_counts": {
+          "train": 5,
+          "validation": 0,
+          "test": 1
+        },
+        "inner_folds": [
+          {
+            "id": "inner-001",
+            "test_families": [
+              "xcat_reference_15yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_10yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "validation",
+              "xcat_reference_15yr": "test",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-002",
+            "test_families": [
+              "xcat_reference_15yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_1yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "test",
+              "xcat_reference_1yr": "validation",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-003",
+            "test_families": [
+              "xcat_reference_15yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_5yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "test",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "validation",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-004",
+            "test_families": [
+              "xcat_reference_15yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_adult"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "test",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "validation",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-005",
+            "test_families": [
+              "xcat_reference_15yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_infant"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "test",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "validation"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          }
+        ]
+      },
+      {
+        "id": "outer-003",
+        "test_families": [
+          "xcat_reference_1yr"
+        ],
+        "development_families": [
+          "xcat_reference_10yr",
+          "xcat_reference_15yr",
+          "xcat_reference_5yr",
+          "xcat_reference_adult",
+          "xcat_reference_infant"
+        ],
+        "validation_families": [],
+        "family_assignment": {
+          "xcat_reference_10yr": "train",
+          "xcat_reference_15yr": "train",
+          "xcat_reference_1yr": "test",
+          "xcat_reference_5yr": "train",
+          "xcat_reference_adult": "train",
+          "xcat_reference_infant": "train"
+        },
+        "case_counts": {
+          "train": 10,
+          "validation": 0,
+          "test": 2
+        },
+        "family_counts": {
+          "train": 5,
+          "validation": 0,
+          "test": 1
+        },
+        "inner_folds": [
+          {
+            "id": "inner-001",
+            "test_families": [
+              "xcat_reference_1yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_10yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "validation",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "test",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-002",
+            "test_families": [
+              "xcat_reference_1yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_15yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "validation",
+              "xcat_reference_1yr": "test",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-003",
+            "test_families": [
+              "xcat_reference_1yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_5yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "test",
+              "xcat_reference_5yr": "validation",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-004",
+            "test_families": [
+              "xcat_reference_1yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_adult"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "test",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "validation",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-005",
+            "test_families": [
+              "xcat_reference_1yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_infant"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "test",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "validation"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          }
+        ]
+      },
+      {
+        "id": "outer-004",
+        "test_families": [
+          "xcat_reference_5yr"
+        ],
+        "development_families": [
+          "xcat_reference_10yr",
+          "xcat_reference_15yr",
+          "xcat_reference_1yr",
+          "xcat_reference_adult",
+          "xcat_reference_infant"
+        ],
+        "validation_families": [],
+        "family_assignment": {
+          "xcat_reference_10yr": "train",
+          "xcat_reference_15yr": "train",
+          "xcat_reference_1yr": "train",
+          "xcat_reference_5yr": "test",
+          "xcat_reference_adult": "train",
+          "xcat_reference_infant": "train"
+        },
+        "case_counts": {
+          "train": 10,
+          "validation": 0,
+          "test": 2
+        },
+        "family_counts": {
+          "train": 5,
+          "validation": 0,
+          "test": 1
+        },
+        "inner_folds": [
+          {
+            "id": "inner-001",
+            "test_families": [
+              "xcat_reference_5yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_10yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "validation",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "test",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-002",
+            "test_families": [
+              "xcat_reference_5yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_15yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "validation",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "test",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-003",
+            "test_families": [
+              "xcat_reference_5yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_1yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "validation",
+              "xcat_reference_5yr": "test",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-004",
+            "test_families": [
+              "xcat_reference_5yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_adult"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "test",
+              "xcat_reference_adult": "validation",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-005",
+            "test_families": [
+              "xcat_reference_5yr"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_adult",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_infant"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "test",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "validation"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          }
+        ]
+      },
+      {
+        "id": "outer-005",
+        "test_families": [
+          "xcat_reference_adult"
+        ],
+        "development_families": [
+          "xcat_reference_10yr",
+          "xcat_reference_15yr",
+          "xcat_reference_1yr",
+          "xcat_reference_5yr",
+          "xcat_reference_infant"
+        ],
+        "validation_families": [],
+        "family_assignment": {
+          "xcat_reference_10yr": "train",
+          "xcat_reference_15yr": "train",
+          "xcat_reference_1yr": "train",
+          "xcat_reference_5yr": "train",
+          "xcat_reference_adult": "test",
+          "xcat_reference_infant": "train"
+        },
+        "case_counts": {
+          "train": 10,
+          "validation": 0,
+          "test": 2
+        },
+        "family_counts": {
+          "train": 5,
+          "validation": 0,
+          "test": 1
+        },
+        "inner_folds": [
+          {
+            "id": "inner-001",
+            "test_families": [
+              "xcat_reference_adult"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_10yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "validation",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "test",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-002",
+            "test_families": [
+              "xcat_reference_adult"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_15yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "validation",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "test",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-003",
+            "test_families": [
+              "xcat_reference_adult"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_1yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "validation",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "test",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-004",
+            "test_families": [
+              "xcat_reference_adult"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_5yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "validation",
+              "xcat_reference_adult": "test",
+              "xcat_reference_infant": "train"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-005",
+            "test_families": [
+              "xcat_reference_adult"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_infant"
+            ],
+            "validation_families": [
+              "xcat_reference_infant"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "test",
+              "xcat_reference_infant": "validation"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          }
+        ]
+      },
+      {
+        "id": "outer-006",
+        "test_families": [
+          "xcat_reference_infant"
+        ],
+        "development_families": [
+          "xcat_reference_10yr",
+          "xcat_reference_15yr",
+          "xcat_reference_1yr",
+          "xcat_reference_5yr",
+          "xcat_reference_adult"
+        ],
+        "validation_families": [],
+        "family_assignment": {
+          "xcat_reference_10yr": "train",
+          "xcat_reference_15yr": "train",
+          "xcat_reference_1yr": "train",
+          "xcat_reference_5yr": "train",
+          "xcat_reference_adult": "train",
+          "xcat_reference_infant": "test"
+        },
+        "case_counts": {
+          "train": 10,
+          "validation": 0,
+          "test": 2
+        },
+        "family_counts": {
+          "train": 5,
+          "validation": 0,
+          "test": 1
+        },
+        "inner_folds": [
+          {
+            "id": "inner-001",
+            "test_families": [
+              "xcat_reference_infant"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult"
+            ],
+            "validation_families": [
+              "xcat_reference_10yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "validation",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "test"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-002",
+            "test_families": [
+              "xcat_reference_infant"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult"
+            ],
+            "validation_families": [
+              "xcat_reference_15yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "validation",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "test"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-003",
+            "test_families": [
+              "xcat_reference_infant"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult"
+            ],
+            "validation_families": [
+              "xcat_reference_1yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "validation",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "test"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-004",
+            "test_families": [
+              "xcat_reference_infant"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult"
+            ],
+            "validation_families": [
+              "xcat_reference_5yr"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "validation",
+              "xcat_reference_adult": "train",
+              "xcat_reference_infant": "test"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          },
+          {
+            "id": "inner-005",
+            "test_families": [
+              "xcat_reference_infant"
+            ],
+            "development_families": [
+              "xcat_reference_10yr",
+              "xcat_reference_15yr",
+              "xcat_reference_1yr",
+              "xcat_reference_5yr",
+              "xcat_reference_adult"
+            ],
+            "validation_families": [
+              "xcat_reference_adult"
+            ],
+            "family_assignment": {
+              "xcat_reference_10yr": "train",
+              "xcat_reference_15yr": "train",
+              "xcat_reference_1yr": "train",
+              "xcat_reference_5yr": "train",
+              "xcat_reference_adult": "validation",
+              "xcat_reference_infant": "test"
+            },
+            "case_counts": {
+              "train": 8,
+              "validation": 2,
+              "test": 2
+            },
+            "family_counts": {
+              "train": 4,
+              "validation": 1,
+              "test": 1
+            },
+            "inner_folds": []
+          }
+        ]
+      }
+    ],
+    "counts": {
+      "cases": 12,
+      "families": 6,
+      "outer_folds": 6,
+      "inner_folds": 30,
+      "training_seeds": 1
+    }
+  },
+  "fit_count": 36,
+  "message": "Provisional split preview only; dataset publication and family verification are still required."
+}

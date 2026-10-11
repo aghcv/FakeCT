@@ -1,16 +1,48 @@
 # FakeCT project outline: controlled anatomy to anatomy-specific AI
 
-**First study:** thoracic aorta segmentation across synthetic aortic arch
-hypoplasia, coarctation-like narrowing, and combined geometries.  
-**Date:** 2026-09-17. **Development branch:** `fakect.26.09.16`.  
-**Current status:** case 260602 has sixteen reviewed prepared samples registered
-for reuse. Twelve per-case INIs now separate ROI/range review, native preflight,
-freezing and generation from a model-only experiment. Start with the
-[multi-phantom cohort guide](MULTIPHANTOM_COHORTS.md). The eleven additional
-ROIs and their proposed edit ranges require review before preparation. No GPU
-training has been launched. The broader benchmark, `[test]` and `[generate]`
-methods below remain planned work; the original outline is retained as the
-research roadmap.
+**Current study:** CoA detection and morphological assessment using virtual populations.
+
+**Original outline:** 2026-09-17. **Status updated:** 2026-09-30.
+
+**Development branch:** `fakect.26.09.16`.
+
+The current implementation plan separates three directions: the reusable AI
+training platform, FakeCT generation and data organization, and the CoA
+research benchmark. See the [virtual population platform plan](VIRTUAL_POPULATION_PLATFORM_PLAN.md)
+for the current architecture, interfaces, milestones and review decisions.
+It takes precedence over the historical outline below.
+
+The existing cohort contains 192 scenarios from 12 phantom IDs and six
+provisional anatomy families. Native paired images/masks and the broader
+context targets are frozen; original sources and previous models remain
+preserved. The most recent matched segmentation comparison completed both
+jobs, but both selected models failed on all held-out test scenarios and on
+selected positive training patches. See the
+[completed evaluation report](../outputs/experiments/coa/context-comparison-r1/evaluation-review.html).
+A successful one-patch diagnostic was insufficient to establish readiness for
+multi-case training.
+
+The immediate CoA label review uses achieved target-volume loss within the
+CoA step's local support. A proposed 20% cutoff gives 132 benchmark-positive
+and 60 below-threshold/reference scenarios, including the 12 originals that
+the user defines as non-CoA. The 48 below-threshold edited scenarios are not
+unedited or clinically normal. This is a provisional engineering definition;
+true centerline-normal area and lesion-length measurements remain planned.
+
+The proposed AI platform combines a streamed low-resolution anatomical
+overview with image-selected high-resolution patches and configurable task
+heads. Its implementation is a new milestone; no trained multiresolution model
+is claimed. The existing source-plus-crop storage and registry support its
+starting data contract. New training is deferred until the label discussion
+and a stronger multi-case learning check.
+
+Earlier segmentation and shape-recovery experiments are documented in
+[the two-stage run record](integration/2026-09-28/two-stage-training-run.md),
+[the context workflow](CONTEXT_AORTA_SEGMENTATION.md), and
+[the frozen cohort review](integration/2026-09-28/radius115-cohort-review.md).
+The original outline below records the earlier segmentation-centered roadmap;
+its immediate priorities and combined preparation/training interface are
+superseded by the separate contracts in the current platform plan.
 
 ## 1. Objective and first research question
 
@@ -178,6 +210,15 @@ sensitivity to image-generation artifacts and avoid a segmentation benchmark tha
 merely learns a particular generator's boundary signatures.
 
 ## 7. Virtual population and leakage-resistant splits
+
+The condition-classification study now uses the
+[leave-one-family-out protocol](integration/2026-09-28/coa-family-cross-validation-plan.md):
+one outer test turn per verified anatomy family, inner grouped selection on the
+remaining families, and severity-response testing across every held-out
+family's predeclared sibling population. The
+[draft fold manifest](integration/2026-09-28/coa-family-folds.draft.json)
+enumerates six outer folds and thirty inner splits under the current
+provisional grouping; it is not a runnable configuration or a verified lock.
 
 Freeze base-anatomy lineage **before** creating variants, frames or patches.
 Every descendant of the same underlying anatomy belongs to one partition.

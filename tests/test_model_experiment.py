@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT/'src'))
 sys.path.insert(0, str(ROOT/'scripts'))
 from fakect_model_experiment import (fit_model_experiment, freeze_model_experiment,
                                      inspect_experiment_lock, load_model_experiment_config,
-                                     plan_model_experiment)
+                                     plan_model_experiment, reassign_model_plan)
 from fakect_segmentation import PatchDataset, model_settings
 
 
@@ -164,6 +164,118 @@ seed = 1729
             path.write_text(self.ini()+'\n[preprocess]\n'+text+'\n')
             with self.subTest(text=text), self.assertRaises(ValueError):
                 load_model_experiment_config(path, repo_root=self.root)
+
+    def test_optional_evaluation_ini_is_strict_and_resolves_planning_project(self):
+        path = self.root/'model.ini'
+        path.write_text(self.ini()+'''\n[evaluation]
+strategy = holdout
+case_counts = 1, 1, 1
+seeds = 42, 1729
+planning_project = configs/cohort.ini
+''')
+        parsed = load_model_experiment_config(path, repo_root=self.root)
+        self.assertEqual(parsed['evaluation'], {
+            'strategy': 'holdout', 'case_counts': [1, 1, 1], 'seeds': [42, 1729],
+            'threshold': .5, 'planning_project': str(self.root/'configs/cohort.ini')})
+        for text in ('strategy = holdout', 'strategy = unknown',
+                     'strategy = leave_one_out\ncase_counts = 1,1,1',
+                     'strategy = leave_one_out\nassignment = family-0:train'):
+            path.write_text(self.ini()+'\n[evaluation]\n'+text+'\n')
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                load_model_experiment_config(path, repo_root=self.root)
+
+    def explicit_config(self, *, final=False):
+        config = copy.deepcopy(self.config)
+        config['split'] = {'mode': 'anatomy_family', 'seed': 42, 'assignment': {
+            'family-0': 'train', 'family-1': 'train' if final else 'validation',
+            'family-2': 'test'}, 'allow_empty_validation': final}
+        if final:
+            config['training_protocol'] = 'fixed_epochs'
+        return config
+
+    def test_explicit_assignments_are_complete_deterministic_and_family_wide(self):
+        self.make_dataset('case-0-later', 'family-0', 4)
+        self.config['experiment']['datasets'].append('case-0-later')
+        config = self.explicit_config()
+        plan = plan_model_experiment(config)
+        self.assertTrue(plan['ready'], plan['errors'])
+        self.assertEqual(plan['split_counts'], {'train': 4, 'validation': 2, 'test': 2})
+        reversed_config = copy.deepcopy(config)
+        reversed_config['experiment']['datasets'].reverse()
+        self.assertEqual(plan['family_assignment'], plan_model_experiment(reversed_config)['family_assignment'])
+        for assignment in ({'family-0': 'train', 'family-1': 'validation'},
+                           {**config['split']['assignment'], 'family-9': 'test'},
+                           {**config['split']['assignment'], 'family-0': 'train,test'},
+                           {'family-0': 'train', 'family-1': 'train', 'family-2': 'test'}):
+            changed = copy.deepcopy(config)
+            changed['split']['assignment'] = assignment
+            with self.subTest(assignment=assignment):
+                self.assertFalse(plan_model_experiment(changed)['ready'])
+
+    def test_empty_validation_requires_explicit_fixed_epoch_refit(self):
+        config = self.explicit_config(final=True)
+        plan = plan_model_experiment(config)
+        self.assertTrue(plan['ready'], plan['errors'])
+        self.assertEqual(plan['split_counts'], {'train': 4, 'validation': 0, 'test': 2})
+        path = Path(freeze_model_experiment(config, self.raw)['lock_path'])
+        checked = inspect_experiment_lock(path)
+        self.assertEqual(checked['split_sizes'], plan['split_counts'])
+        for field in ('training_protocol', 'allow_empty_validation', 'assignment'):
+            changed = copy.deepcopy(config)
+            (changed if field == 'training_protocol' else changed['split']).pop(field)
+            with self.subTest(field=field):
+                self.assertFalse(plan_model_experiment(changed)['ready'])
+        tampered = json.loads(path.read_text())
+        tampered['config'].pop('training_protocol')
+        self.reseal_lock(path, tampered)
+        with self.assertRaisesRegex(ValueError, 'fixed_epochs'):
+            inspect_experiment_lock(path)
+
+    def test_prepared_plan_reassignment_reuses_payload_verification_without_mutation(self):
+        base = plan_model_experiment(self.config)
+        original = copy.deepcopy(base)
+        self.registry.reset_mock()
+        self.verifier.reset_mock()
+        config = self.explicit_config(final=True)
+        with patch('fakect_segmentation.np.load', side_effect=AssertionError('unexpected payload read')):
+            reassigned = reassign_model_plan(base, config)
+            frozen = freeze_model_experiment(config, self.raw, prepared_plan=base)
+        self.assertEqual(base, original)
+        self.assertEqual(reassigned['case_split_counts'], {'train': 2, 'validation': 0, 'test': 1})
+        self.assertEqual(reassigned['family_split_counts'], {'train': 2, 'validation': 0, 'test': 1})
+        self.assertEqual(reassigned['split_counts'], {'train': 4, 'validation': 0, 'test': 2})
+        self.assertEqual(inspect_experiment_lock(frozen['lock_path'])['split_sizes'], reassigned['split_counts'])
+        self.assertTrue(all(call.kwargs['verify'] is False for call in self.registry.call_args_list))
+
+    def test_prepared_plan_rejects_unverified_changed_dataset_or_registry(self):
+        base = plan_model_experiment(self.config)
+        for field, value in (('ready', False), ('verified_payloads', False)):
+            changed = copy.deepcopy(base)
+            changed[field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'ready plan'):
+                reassign_model_plan(changed, self.explicit_config())
+        for key, value in (('datasets', ['case-0', 'case-1']), ('registry', str(self.root/'other-registry'))):
+            config = self.explicit_config()
+            config['experiment'][key] = value
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'selection or registry'):
+                reassign_model_plan(base, config)
+        receipt = Path(self.entries['case-0']['registry_entry_path'])
+        receipt.write_text(receipt.read_text()+' ')
+        with self.assertRaisesRegex(ValueError, 'receipt or prepared manifest changed'):
+            reassign_model_plan(base, self.explicit_config())
+
+    def test_fixed_epoch_fit_dispatch_and_stale_parent_snapshot(self):
+        config = self.explicit_config(final=True)
+        path = Path(freeze_model_experiment(config, self.raw)['lock_path'])
+        with patch('fakect_model_evaluation.train_fixed_segmentation', return_value={'fitted': True}) as fit:
+            self.assertTrue(fit_model_experiment(config, self.raw)['fitted'])
+            self.assertEqual(fit.call_args.args[1], path)
+            with self.assertRaisesRegex(ValueError, 'differs from its frozen lock'):
+                fit_model_experiment(config, self.raw+b'# changed')
+            self.assertEqual(fit.call_count, 1)
+        (path.parent/'input.ini').write_bytes(self.raw+b'# changed')
+        with self.assertRaisesRegex(ValueError, 'Frozen experiment INI changed'):
+            inspect_experiment_lock(path)
 
     def enable_resampling(self):
         self.config['preprocess'] = {'target_spacing_mm': [1., 1., 1.]}

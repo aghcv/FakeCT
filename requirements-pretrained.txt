@@ -1,0 +1,5 @@
+# Isolated crun environment over Wahab pytorch-gpu/2.8.0 (Python 3.10).
+# Keep the container's CUDA-enabled PyTorch; do not replace the TensorFlow env.
+TotalSegmentator==2.18.0
+torch==2.8.0
+plotly==6.3.1
