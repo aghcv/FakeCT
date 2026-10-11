@@ -55,13 +55,13 @@ defines the contracts student changes must preserve.
 
 ## Quick start
 
-Use the `student-framework.26.10.11` checkout supplied for the course and run from
+Use the stable `main` branch and run from
 the repository root. Python 3.10 or 3.11 is a practical starting environment.
 
-After this branch is published by the instructor, clone it with:
+Clone the repository:
 
 ```bash
-git clone --branch student-framework.26.10.11 https://github.com/aghcv/FakeCT.git
+git clone https://github.com/aghcv/FakeCT.git
 cd FakeCT
 ```
 

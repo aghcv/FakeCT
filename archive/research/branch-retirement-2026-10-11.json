@@ -1,0 +1,87 @@
+{
+  "schema_version": "fakect.branch-retirement/1",
+  "date": "2026-10-11",
+  "stable_branch": "main",
+  "student_source_commit": "622d13ec17f9bb761e194af6abdcd6522f006eb3",
+  "policy": "Publish dated archive tags before retiring old branch references. Preserve main history with a merge whose file tree is the tested student framework. Existing research worktree data and uncommitted source files remain unchanged.",
+  "branches": [
+    {
+      "scope": "local",
+      "branch": "backup/main-before-sync-20260919",
+      "commit": "344662d559fa6ee4de8cb4510c291899fc1257af",
+      "archive_tag": "retired/2026-10-11/local/backup/main-before-sync-20260919"
+    },
+    {
+      "scope": "local",
+      "branch": "braden",
+      "commit": "8d0ff858bac15f07ed655a4928dc1e2df198f332",
+      "archive_tag": "retired/2026-10-11/local/braden"
+    },
+    {
+      "scope": "local",
+      "branch": "fakect.26.09.16",
+      "commit": "9529055b540ffa78876efa037d6a50c7949639c0",
+      "archive_tag": "retired/2026-10-11/local/fakect.26.09.16"
+    },
+    {
+      "scope": "local",
+      "branch": "main",
+      "commit": "9742fbe5079fde5bfa466116dd9dca955e5e3e88",
+      "archive_tag": "retired/2026-10-11/local/main"
+    },
+    {
+      "scope": "local",
+      "branch": "orgin",
+      "commit": "ca30a3ac340958645b363ed80d3ab6abb1e55336",
+      "archive_tag": "retired/2026-10-11/local/orgin"
+    },
+    {
+      "scope": "local",
+      "branch": "stenosis",
+      "commit": "d3b7a62923959abd7f6f983526367829ffcf0c65",
+      "archive_tag": "retired/2026-10-11/local/stenosis"
+    },
+    {
+      "scope": "local",
+      "branch": "student-framework.26.10.11",
+      "commit": "622d13ec17f9bb761e194af6abdcd6522f006eb3",
+      "archive_tag": "retired/2026-10-11/local/student-framework.26.10.11"
+    },
+    {
+      "scope": "remote",
+      "branch": "add-unit-tests",
+      "commit": "7d738c70f6020618cfa34bc86699443837ce7420",
+      "archive_tag": "retired/2026-10-11/remote/add-unit-tests"
+    },
+    {
+      "scope": "remote",
+      "branch": "avneet",
+      "commit": "02b47f1c931b10cd2708d6193e3f809f32695c83",
+      "archive_tag": "retired/2026-10-11/remote/avneet"
+    },
+    {
+      "scope": "remote",
+      "branch": "fakect.26.09.16",
+      "commit": "d3a254e96d0372794c5ee89fa5c939e4a6e3249f",
+      "archive_tag": "retired/2026-10-11/remote/fakect.26.09.16"
+    },
+    {
+      "scope": "remote",
+      "branch": "main",
+      "commit": "9742fbe5079fde5bfa466116dd9dca955e5e3e88",
+      "archive_tag": "retired/2026-10-11/remote/main"
+    },
+    {
+      "scope": "remote",
+      "branch": "phantom",
+      "commit": "c6a5c2c9c47ebcbee116c8ade18269eef4ac09ff",
+      "archive_tag": "retired/2026-10-11/remote/phantom"
+    },
+    {
+      "scope": "remote",
+      "branch": "sujay",
+      "commit": "c6a5c2c9c47ebcbee116c8ade18269eef4ac09ff",
+      "archive_tag": "retired/2026-10-11/remote/sujay"
+    }
+  ]
+}
