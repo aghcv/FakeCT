@@ -33,6 +33,27 @@ _DECIMAL = re.compile(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)
 
 
 def _fields(parser, section, expected):
+    """Validate exact study section fields and reject multiline values.
+
+    Parameters
+    ----------
+    parser : configparser.ConfigParser
+        Already-read, case-sensitive configuration sections.
+    section : str
+        Required section name.
+    expected : set of str
+        Exact permitted and required field names.
+
+    Returns
+    -------
+    None
+        Leaves parser values unchanged after successful validation.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if not parser.has_section(section):
         raise ValueError(f'Missing [{section}] section')
     actual = set(parser[section])
@@ -44,6 +65,27 @@ def _fields(parser, section, expected):
 
 
 def _decimal_value(text, label, *, integer=False):
+    """Parse a finite decimal literal without accepting unrepresentable scalar values.
+
+    Parameters
+    ----------
+    text : str
+        Decimal literal, stripped before validation.
+    label : str
+        Field name used in validation error messages.
+    integer : bool, optional
+        Require integer literal syntax before creating the Decimal.
+
+    Returns
+    -------
+    decimal.Decimal
+        Exact parsed decimal, checked for finite float representation and nonzero underflow.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     text = text.strip()
     if integer:
         _integer(text, label)
@@ -60,7 +102,28 @@ def _decimal_value(text, label, *, integer=False):
 
 
 def _axis_values(text, parameter, label):
-    """Expand decimal endpoints exactly, without accumulated binary float error."""
+    """Expand a list or exact inclusive decimal range into a validated sweep axis.
+
+    Parameters
+    ----------
+    text : str
+        Comma-separated literals or one start:stop:step range.
+    parameter : str
+        Sweep field: distance_mm, shape_k or iterations.
+    label : str
+        Field name used in validation error messages.
+
+    Returns
+    -------
+    tuple of float or int
+        Ordered unique sweep values, bounded by MAX_VARIANTS; iterations returns integers.
+        Range endpoints must be reached exactly.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if ':' in text:
         parts = tuple(part.strip() for part in text.split(':'))
         if len(parts) != 3 or ',' in text or any(not part for part in parts):
@@ -91,6 +154,28 @@ def _axis_values(text, parameter, label):
 
 
 def _checked_axis(values, parameter, label):
+    """Validate unique finite numeric sweep values against parameter-specific bounds.
+
+    Parameters
+    ----------
+    values : list or tuple
+        Nonempty sweep values, bounded by MAX_VARIANTS.
+    parameter : str
+        Sweep field: distance_mm, shape_k or iterations.
+    label : str
+        Field name used in validation error messages.
+
+    Returns
+    -------
+    tuple of float or int
+        Validated values in their original order; distances are millimetres and iterations
+        are integers.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if not isinstance(values, (tuple, list)) or not values or len(values) > MAX_VARIANTS:
         raise ValueError(f'{label} requires 1..{MAX_VARIANTS} numeric values')
     result = []
@@ -113,7 +198,26 @@ def _checked_axis(values, parameter, label):
 
 
 def parse_recipe_study_sections(parser, root=REPOSITORY_ROOT):
-    """Normalize a recipe study without mutating the caller's parser."""
+    """Normalize a finite recipe sweep and its provisional model/split settings.
+
+    Parameters
+    ----------
+    parser : configparser.ConfigParser
+        Already-read, case-sensitive configuration sections.
+    root : str or pathlib.Path
+        Repository root used to resolve paths inside configuration sections.
+
+    Returns
+    -------
+    dict
+        Typed recipe-study sections, complete base recipe and per-edit sweep axes; source
+        voxels are not read and parser values remain unchanged.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if parser.defaults():
         raise ValueError('[DEFAULT] settings are unsupported')
     if not parser.has_section('study') or parser['study'].get('schema_version') != SCHEMA:
@@ -176,6 +280,27 @@ def parse_recipe_study_sections(parser, root=REPOSITORY_ROOT):
 
 
 def load_recipe_study_config(path, *, repo_root=None):
+    """Load a study INI and require the named recipe-study schema.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        INI filename, resolved using the caller's working directory.
+    repo_root : str or pathlib.Path, optional
+        Root for paths inside the INI; defaults to the repository containing this module.
+
+    Returns
+    -------
+    dict
+        Validated, normalized recipe-study configuration.
+
+    Raises
+    ------
+    ValueError
+        If loading fails validation or the schema is not fakect.recipe-study/1.
+    OSError
+        If the configuration cannot be read.
+    """
     from fakect_study_config import load_study_config
     config = load_study_config(path, repo_root=repo_root)
     if config['study']['schema_version'] != SCHEMA:
@@ -184,11 +309,36 @@ def load_recipe_study_config(path, *, repo_root=None):
 
 
 def _disabled(edit):
+    """Create an independent no-op edit without active erosion-only settings.
+
+    Parameters
+    ----------
+    edit : dict
+        Normalized edit to disable.
+
+    Returns
+    -------
+    dict
+        Copied edit with operation=none, distance_mm=0 and diagnostic/guard fields removed.
+    """
     return {**{key: deepcopy(value) for key, value in edit.items() if key not in _DISABLED_EDIT_FIELDS},
             'operation': 'none', 'distance_mm': 0.}
 
 
 def _canonical(value):
+    """Convert scenario metadata to deterministic JSON-compatible containers.
+
+    Parameters
+    ----------
+    value : object
+        Nested dictionaries/sequences, Path values and JSON-compatible scalar data.
+
+    Returns
+    -------
+    object
+        New string-key dictionaries and lists; Paths become strings and scalars are
+        retained.
+    """
     if isinstance(value, dict):
         return {str(key): _canonical(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
@@ -199,11 +349,48 @@ def _canonical(value):
 
 
 def _json(value):
+    """Serialize canonical scenario metadata with deterministic key ordering.
+
+    Parameters
+    ----------
+    value : object
+        Scenario data accepted by _canonical and JSON encoding.
+
+    Returns
+    -------
+    str
+        Compact, sorted JSON text with nonfinite numbers rejected.
+
+    Raises
+    ------
+    ValueError
+        If nonfinite numbers are encountered.
+    TypeError
+        If unsupported scalar objects remain after canonicalization.
+    """
     return json.dumps(_canonical(value), sort_keys=True, separators=(',', ':'), allow_nan=False)
 
 
 def plan_recipe_variants(config):
-    """Return at most 1000 complete recipes, with provisional whole-variant splits."""
+    """Plan bounded deterministic complete recipes and provisional scenario splits.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    list of dict
+        Optional baseline and Cartesian sweep variants with identity hashes, complete edits,
+        parameters and provisional train/validation/test or unassigned status. Input
+        configuration remains unchanged.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     train = config['train']
     if train.get('target_scope') != 'selected_lineage' or config['recipe'].get('roi_role') != 'selection':
         raise ValueError('Recipe studies require train.target_scope=selected_lineage and recipe.roi_role=selection')
@@ -286,14 +473,48 @@ def plan_recipe_variants(config):
 
 
 def variant_recipe_config(config, variant):
-    """Create an independent complete recipe, retaining its selection lineage contract."""
+    """Create an independent complete recipe for one planned variant.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    variant : dict
+        Planned variant containing complete normalized edits.
+
+    Returns
+    -------
+    dict
+        Deep-copied configuration with the variant edits, retaining the parent
+        selection/lineage contract.
+    """
     result = deepcopy(config)
     result['edits'] = deepcopy(variant['edits'])
     return result
 
 
 def validate_recipe_study_plan(config, resolved):
-    """Check every variant's recipe passes and halo without opening voxel sources."""
+    """Check every planned recipe for geometry and training-pair eligibility.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+
+    Returns
+    -------
+    list of dict
+        Validated planned variant records. Native source voxel payloads are not opened.
+
+    Raises
+    ------
+    ValueError
+        If any recipe fails its pass/halo checks or uses diagnostic unassigned erosion in a
+        training pair; the failing variant and parameters are identified.
+    """
     from fakect_recipe import validate_recipe
     variants = plan_recipe_variants(config)
     for variant in variants:

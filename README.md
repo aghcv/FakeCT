@@ -1,44 +1,49 @@
-# FakeCT — student framework for synthetic anatomy and AI data
+# FakeCT — synthetic anatomy and AI development
 
 Review an ROI, apply controlled dilation/erosion, freeze paired images and labels,
-then use them in a separate model experiment. The student entry point uses small
-mathematical phantoms; XCAT CoA inputs are available as a research case study.
+then use them in a separate model experiment. Reusable geometry, morphology,
+dataset and learning modules support algorithm development. A public mathematical
+phantom demo and the XCAT CoA case study illustrate the same workflow.
 
-Open [the offline student guide](docs/student/index.html) in a browser for the
+Open [the offline workflow guide](docs/developer/index.html) in a browser for the
 stepwise workflow, INI reference, four-panel ROI interface and development
-checklist. Use [the testing guide](docs/student/testing.html) for the regression
-suite and optional TensorFlow checks.
+checklist. Use [the testing guide](docs/developer/testing.html) for the regression
+suite and optional TensorFlow checks. The [API reference](docs/developer/api.html)
+and [developer conventions](docs/developer/contributing.html) describe function
+contracts and extension boundaries.
 
-## Where students work
+## Repository structure
 
 ```text
 FakeCT/
-  configs/students/          Editable teaching templates
+  configs/templates/         Editable configuration templates
+  configs/development/       Maintained API and quality-check scope
   configs/examples/          Small ROI/edit input examples
   configs/case-studies/coa/   Reviewed CoA phantom recipes and project index
   configs/tissues/           Tissue resistance/grouping policy
-  scripts/                   Eight student command entry points
+  scripts/                   Eight workflow command entry points
+  scripts/dev/               Static checks and API documentation generation
   src/                       Shared geometry, editing, data and model modules
   tests/                     Regression contracts and optional backend checks
-  docs/student/              Offline walkthrough and testing guide
+  docs/developer/            Workflow, API, testing and contribution guides
   docs/reference/            Detailed method guides
   references/atlas/          Versioned anatomical evidence and dictionaries
   requirements/              Core, development and optional backend profiles
   data/                      Legacy geometry examples; local inputs ignored
   outputs/                   Generated reports, pairs and models (ignored)
-  scratch/                   Temporary student experiments (ignored)
-  scripts/research/           Advanced studies, audits, figures and cluster jobs
+  scratch/                   Temporary experiments (ignored)
+  scripts/research/          Advanced studies, audits, figures and cluster jobs
   archive/                   Research history and legacy scratch assets
 ```
 
 Keep new reusable inputs under `configs/`, results under `outputs/`, and
 temporary work under `scratch/`. Outputs and scratch files need separate backups;
 Git ignore rules do not protect them from deletion. Shared `src/` imports remain
-stable so students can extend the pipeline without chasing reorganized modules.
+stable so developers can extend the pipeline without chasing reorganized modules.
 
 | Command in `scripts/` | Purpose |
 | --- | --- |
-| `student_demo.py` | Initialize public phantoms, editable inputs and a model INI. |
+| `generate_demo.py` | Initialize public phantoms, editable inputs and a model INI. |
 | `prepare_cohort.py` | Review ROI, preflight recipes, freeze and export pairs. |
 | `preview_roi.py` | Review a standalone ROI/edit input. |
 | `prepare_tissues.py` | Build an atlas-derived tissue catalog. |
@@ -50,8 +55,8 @@ stable so students can extend the pipeline without chasing reorganized modules.
 Use `prepare_cohort.py` and `model_experiment.py` for new work. The
 [reference index](docs/reference/index.html) explains advanced methods; the
 [research archive](archive/research/README.html) preserves prior studies and
-provenance. The [development checklist](docs/student/index.html#protection)
-defines the contracts student changes must preserve.
+provenance. The [development checklist](docs/developer/index.html#protection)
+defines the contracts code changes must preserve.
 
 ## Quick start
 
@@ -71,8 +76,8 @@ source .venv/bin/activate
 # Windows PowerShell: py -3 -m venv .venv; .venv\Scripts\Activate.ps1
 python -m pip install -r requirements/core.txt
 
-python scripts/student_demo.py --output outputs/student-demo
-python scripts/prepare_cohort.py --config outputs/student-demo/cases/demo01/cohort.ini --stage preview --preview-mode roi-selection
+python scripts/generate_demo.py --output outputs/demo
+python scripts/prepare_cohort.py --config outputs/demo/cases/demo01/cohort.ini --stage preview --preview-mode roi-selection
 ```
 
 Open `report.html` in the INI's `[output] directory`. Every ordered tube point has
@@ -93,14 +98,14 @@ After accepting ROI placement, set `coordinate_reviewed = true`. Inspect all
 native preflight outcomes before setting `parameters_reviewed = true` and freezing.
 
 ```bash
-python scripts/prepare_cohort.py --config outputs/student-demo/cases/demo01/cohort.ini --validate-only
-python scripts/prepare_cohort.py --config outputs/student-demo/cases/demo01/cohort.ini --stage preflight
+python scripts/prepare_cohort.py --config outputs/demo/cases/demo01/cohort.ini --validate-only
+python scripts/prepare_cohort.py --config outputs/demo/cases/demo01/cohort.ini --stage preflight
 # Review preflight.html and set parameters_reviewed = true.
-python scripts/prepare_cohort.py --config outputs/student-demo/cases/demo01/cohort.ini --stage freeze
-python scripts/prepare_cohort.py --config outputs/student-demo/cases/demo01/cohort.ini --stage prepare
+python scripts/prepare_cohort.py --config outputs/demo/cases/demo01/cohort.ini --stage freeze
+python scripts/prepare_cohort.py --config outputs/demo/cases/demo01/cohort.ini --stage prepare
 ```
 
-Repeat for `demo02` and `demo03`, then follow the student guide to register their
+Repeat for `demo02` and `demo03`, then follow the workflow guide to register their
 checksum-pinned datasets and run `scripts/model_experiment.py` using `model.ini`.
 Install `requirements/tensorflow.txt` when fitting/prediction is needed. The core
 pipeline retains attenuation in `cm^-1`, signed anatomical labels, binary masks
@@ -115,14 +120,27 @@ their own dataset backup.
 
 ```bash
 python -m pip install -r requirements/dev.txt
+python scripts/dev/check_quality.py
 python -m pytest tests/integration
 python -m pytest
 ```
 
+The static quality check validates syntax, maintained function documentation and
+repository language without importing optional backends. Regenerate the offline
+API reference after changing signatures or docstrings:
+
+```bash
+python scripts/dev/build_api_docs.py
+```
+
+Use NumPy-style function headers for purpose, parameters, return values and
+relevant errors, including physical units, array order and side effects. The
+[developer conventions](docs/developer/contributing.html) explain these contracts.
+
 The suite protects input contracts, physical ROI geometry, serial edits,
 reassignment, safeguards, immutable releases and model split/data boundaries.
 Backend-specific checks use optional environments; see
-[testing.html](docs/student/testing.html) before interpreting skipped tests.
+[testing.html](docs/developer/testing.html) before interpreting skipped tests.
 
 The lightweight integration tests generate 64³ and 96³ CT-like crops with
 arteries, branches, neighboring vessels and resistant tissues. They exercise
@@ -143,6 +161,6 @@ phantom or downloaded dataset is required.
 - [Research studies and preserved provenance](archive/research/README.html)
 
 Historical research documents retain earlier milestones and local source paths.
-Use the student guide for the current entry point. FakeCT code is
+Use the workflow guide for the current entry point. FakeCT code is
 [MIT licensed](LICENSE); third-party phantom assets and pretrained weights retain
 their respective terms.

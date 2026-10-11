@@ -16,6 +16,20 @@ WELD_TOLERANCE_MM = 0.001
 
 
 def _topology(faces, count):
+    """Build undirected mesh topology from indexed triangles.
+
+    Parameters
+    ----------
+    faces : array_like of shape (n, 3)
+        Triangle vertex indices.
+    count : int
+        Number of vertices used to allocate adjacency sets.
+
+    Returns
+    -------
+    tuple of collections.Counter, list of set and set
+        Edge multiplicities, vertex adjacency sets and the set of used vertex IDs.
+    """
     edges = Counter()
     adjacency = [set() for _ in range(count)]
     used = set()
@@ -30,6 +44,20 @@ def _topology(faces, count):
 
 
 def _connected(vertices, adjacency):
+    """Check connectivity of an induced vertex subgraph.
+
+    Parameters
+    ----------
+    vertices : set of int
+        Vertex IDs whose induced subgraph is tested.
+    adjacency : list of set
+        Undirected neighbors indexed by vertex ID.
+
+    Returns
+    -------
+    bool
+        True when every requested vertex is reached; an empty vertex set returns False.
+    """
     if not vertices:
         return False
     seen, pending = set(), [min(vertices)]
@@ -42,12 +70,51 @@ def _connected(vertices, adjacency):
 
 
 def _cycle(vertices, adjacency):
+    """Check whether an induced vertex subgraph is a single simple cycle.
+
+    Parameters
+    ----------
+    vertices : set of int
+        Candidate circumferential ring vertices.
+    adjacency : list of set
+        Mesh vertex adjacency.
+
+    Returns
+    -------
+    bool
+        True for a connected set of at least three vertices with degree two inside the
+        set.
+    """
     return (len(vertices) >= 3 and all(len(adjacency[i] & vertices) == 2 for i in vertices)
             and _connected(vertices, adjacency))
 
 
 def extract_centerline(triangles):
-    """Return serializable structural evidence; peak input is MAX_TRIANGLES."""
+    """Recover bounded two-pole/ring centerline evidence from a triangle soup.
+
+    Parameters
+    ----------
+    triangles : array_like of shape (n, 3, 3)
+        Finite triangle vertex coordinates in raw x,y,z millimetres; at most
+        ``MAX_TRIANGLES`` are processed.
+
+    Returns
+    -------
+    dict
+        Serializable proof and centerline/radius coordinates in raw millimetres when
+        verified; otherwise unavailable status and reason.
+
+    Raises
+    ------
+    ValueError
+        Input is not finite triangle coordinates with the required shape.
+
+    Notes
+    -----
+    Topology failures return unavailable evidence rather than a guessed curve. Structural order does not imply proximal/distal anatomy.
+
+    Return serializable structural evidence; peak input is MAX_TRIANGLES.
+    """
     result = {'status': 'unavailable', 'method': 'closed_sphere_two_poles_verified_ring_cycles',
               'weld_tolerance_mm': WELD_TOLERANCE_MM,
               'direction_semantics': 'Deterministic structural order; not proximal/distal anatomy.'}
@@ -153,7 +220,24 @@ def extract_centerline(triangles):
 
 
 def centerline_envelope_overlap(centerline, coordinate_contract):
-    """Conservative union-of-segment bounding boxes, expanded by ring radius.
+    """Test conservative tube-envelope overlap using segment bounding boxes.
+
+    Parameters
+    ----------
+    centerline : dict
+        Verified ring centerline with raw-mm nodes and envelope radii.
+    coordinate_contract : dict
+        Validated raw-grid contract containing ROI-envelope bounds in millimetres.
+
+    Returns
+    -------
+    bool or None
+        Whether expanded segment boxes overlap the ROI envelope; None when the
+        centerline or coordinate contract is unavailable.
+
+    Notes
+    -----
+    Conservative union-of-segment bounding boxes, expanded by ring radius.
 
     Endpoint balls enclose ring vertices (plus welding error). Their segment
     boxes enclose every intervening triangle. This is still only broad phase.

@@ -7,6 +7,23 @@ import numpy as np
 
 
 def spacing(values):
+    """Validate positive physical voxel spacing for model-time conversion.
+
+    Parameters
+    ----------
+    values : list or tuple
+        Three numeric spacing values; Boolean values are invalid.
+
+    Returns
+    -------
+    tuple of float
+        Finite positive voxel distances in i,j,k order, in millimetres.
+
+    Raises
+    ------
+    ValueError
+        The spacing shape, type, finiteness or positivity is invalid.
+    """
     if not isinstance(values, (list, tuple)) or len(values) != 3:
         raise ValueError('target_spacing_mm must contain three positive i,j,k distances')
     if any(isinstance(value, (bool, np.bool_)) for value in values):
@@ -21,6 +38,28 @@ def spacing(values):
 
 
 def output_shape(shape, native_spacing, target_spacing):
+    """Compute a bounded output grid aligned at the lower voxel face.
+
+    Parameters
+    ----------
+    shape : list or tuple of int
+        Positive source volume dimensions in k,j,i order.
+    native_spacing : sequence of float
+        Positive source voxel spacing in i,j,k order, in millimetres.
+    target_spacing : sequence of float
+        Positive target voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    tuple of int
+        Resampled dimensions in k,j,i order, each at least one voxel.
+
+    Raises
+    ------
+    ValueError
+        Dimensions/spacing are invalid or the target exceeds the 16,777,216-voxel
+        budget.
+    """
     if (not isinstance(shape, (list, tuple)) or len(shape) != 3 or
             any(isinstance(n, (bool, np.bool_)) or not isinstance(n, (int, np.integer)) or n <= 0
                 for n in shape)):
@@ -39,7 +78,23 @@ def output_shape(shape, native_spacing, target_spacing):
 
 
 def resampling_contract(target_spacing):
-    """Pin the grid convention and its consumer without binding generator code."""
+    """Record the model-grid convention and its consumer implementation.
+
+    Parameters
+    ----------
+    target_spacing : sequence of float
+        Positive target voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    dict
+        Target spacing, shape/alignment/interpolation rules, implementation hashes and
+        dependency versions.
+
+    Notes
+    -----
+    Pin the grid convention and its consumer without binding generator code.
+    """
     source = Path(__file__).resolve()
     return {'schema_version': 'fakect.model-resampling/1',
             'target_spacing_mm': list(spacing(target_spacing)),
@@ -53,7 +108,35 @@ def resampling_contract(target_spacing):
 
 
 def resample_pair(image, mask, native_spacing, target_spacing):
-    """Lower voxel-face aligned grids; linear image, nearest label and boundary.
+    """Convert an immutable native image/mask pair to a physical model grid.
+
+    Parameters
+    ----------
+    image : numpy.ndarray of float32, shape (K, J, I)
+        Finite attenuation volume.
+    mask : numpy.ndarray of uint8, shape (K, J, I)
+        Matching binary target volume.
+    native_spacing : sequence of float
+        Positive source voxel spacing in i,j,k order, in millimetres.
+    target_spacing : sequence of float
+        Positive target voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        float32 linearly interpolated image and uint8 nearest-neighbor mask in k,j,i
+        order; identical grids return the input arrays.
+
+    Raises
+    ------
+    ValueError
+        Input dtypes/shapes/values, spacing or output budget is invalid.
+
+    Notes
+    -----
+    The native arrays are not modified. Lower voxel-face alignment and nearest boundary handling retain partially covered final cells.
+
+    Lower voxel-face aligned grids; linear image, nearest label and boundary.
 
     A final partially covered output cell uses the nearest source boundary.
     Distances are physical mm; no anatomy-derived normalization or statistics.

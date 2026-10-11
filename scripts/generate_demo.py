@@ -15,28 +15,76 @@ from fakect_roi import tube_mask
 
 
 def sha(path):
+    """Hash the complete contents of one fixture artifact.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Existing file whose bytes are read without modification.
+
+    Returns
+    -------
+    str
+        Hexadecimal SHA-256 digest.
+    """
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def write_json(path, data):
+    """Serialize finite JSON fixture metadata to a file.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Destination file; its parent must already exist.
+    data : JSON-compatible object
+        Metadata to serialize; nonfinite floats are rejected.
+
+    Returns
+    -------
+    None
+        Writes the requested files or prints CLI output; no return value.
+
+    Notes
+    -----
+    An existing destination is replaced; callers create fresh demo revisions.
+    """
     path.write_text(json.dumps(data, indent=2, allow_nan=False)+'\n')
 
 
 def initialize(output):
-    """Write new fixture files only; never overwrite an existing demo revision."""
+    """Create three mathematical volume fixtures and reusable cohort/model inputs.
+
+    Parameters
+    ----------
+    output : str or pathlib.Path
+        New output directory; existing revisions are refused.
+
+    Returns
+    -------
+    dict
+        Project metadata listing cases, INI paths, source units and template hash.
+
+    Notes
+    -----
+    Creates ACT/ATN arrays, audit metadata, a tissue catalog and editable INIs.
+    Arrays use k,j,i order and unit spacing in mm. Native ATN values encode
+    attenuation in cm^-1 multiplied by the i voxel width in cm.
+    An INCOMPLETE marker remains if initialization fails; sources are not XCAT data.
+    """
     output = Path(output).expanduser().resolve()
-    template = (ROOT/'configs/students/coa-template.ini').read_text()
+    template = (ROOT/'configs/templates/coa-template.ini').read_text()
     # INI paths are literal. '#' and line breaks cannot round-trip with the
     # strict comment-aware parser; fail before creating a partial directory.
     if any(c in str(output) for c in ('#', '\n', '\r', '\0')):
         raise ValueError('Demo directory cannot contain # or a line break')
     output.mkdir(parents=True, exist_ok=False)
-    (output/'INCOMPLETE').write_text('Student fixture initialization incomplete\n')
+    (output/'INCOMPLETE').write_text('Demo fixture initialization incomplete\n')
     shape = (56, 56, 56)
     spacing = (1., 1., 1.)
     source_root = output/'phantoms'
     source_root.mkdir()
-    catalog = {'policy_version': 'student-mathematical-demo/1', 'sources': {},
+    catalog = {'policy_version': 'synthetic-demo/1', 'sources': {},
                'categories': [{'id': code, 'name': name} for code, name in
                               ((0,'background'),(1,'soft_tissue'),(2,'bone'),(5,'artery'),(255,'unknown'))],
                'records': [{'original_id': label, 'original_name': name,
@@ -119,12 +167,12 @@ batch_size = 4
 learning_rate = 0.001
 seed = 42
 ''')
-    project = {'schema_version':'fakect.student-demo/1','purpose':'Mathematical software demonstration; not clinical or biological validation',
+    project = {'schema_version':'fakect.demo/1','purpose':'Mathematical software demonstration; not clinical or biological validation',
                'source_units':'ATN = attenuation cm^-1 times i pixel width in cm',
                'review_required':True,'cases':cases,'model_ini':str(output/'model.ini'),
-               'template_sha256':sha(ROOT/'configs/students/coa-template.ini')}
+               'template_sha256':sha(ROOT/'configs/templates/coa-template.ini')}
     write_json(output/'project.json',project)
-    write_json(output/'source-manifest.json',{'schema_version':'fakect.student-demo-source/1',
+    write_json(output/'source-manifest.json',{'schema_version':'fakect.demo-source/1',
                'artifacts_sha256':{str(p.relative_to(output)):sha(p) for p in sorted(output.rglob('*'))
                                    if p.is_file() and p.name!='INCOMPLETE'}})
     (output/'INCOMPLETE').unlink()
@@ -132,10 +180,24 @@ seed = 42
 
 
 def smoke_test(project):
-    """Exercise the real pipeline on the NEW fixture, without fitting an ML model.
+    """Exercise native preparation and registry validation on a fresh mathematical demo.
 
-    Review flags below assert this deterministic software fixture only. This
-    path is never offered for user-provisioned sources or a clinical study.
+    Parameters
+    ----------
+    project : dict
+        Metadata returned by initialize, pointing to its new fixture files.
+
+    Returns
+    -------
+    dict
+        Receipt with per-case counts, source-integrity checks and model readiness.
+
+    Notes
+    -----
+    Generates ROI reports, marks only deterministic fixture inputs reviewed,
+    runs native preflight, freezes recipes and exports/registers nine samples per
+    case. It validates the model plan without fitting an ML model.
+    Never use these automated review assertions for externally supplied anatomy.
     """
     from train_study import run
     from fakect_cohort_registry import register_dataset, load_registry_entry
@@ -172,7 +234,7 @@ def smoke_test(project):
                         'changed_siblings':sum(row['changed_voxels'] > 0 for row in manifest['samples'])})
     assert all(sha(output/p)==h for p,h in baseline_hashes.items()), 'Source arrays changed'
     model_validation = model_run(project['model_ini'],validate_only=True)
-    receipt = {'schema_version':'fakect.student-smoke/1','cases':results,
+    receipt = {'schema_version':'fakect.demo-smoke/1','cases':results,
                'source_arrays_unchanged':True,'model_fitted':False,
                'review_scope':'Deterministic mathematical software fixture only',
                'model_ready':model_validation.get('ready')}
@@ -181,6 +243,18 @@ def smoke_test(project):
 
 
 def main(argv=None):
+    """Initialize a demo revision and optionally run its pipeline smoke test.
+
+    Parameters
+    ----------
+    argv : sequence of str or None, optional
+        Arguments excluding the executable name; None uses sys.argv[1:].
+
+    Returns
+    -------
+    int
+        Zero on success; argparse raises SystemExit(2) for input/execution failures.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',required=True,type=Path,help='New directory; existing revisions are refused')
     parser.add_argument('--smoke-test',action='store_true',

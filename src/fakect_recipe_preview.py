@@ -10,7 +10,33 @@ _PLANES = ((2, 0, 1, 'Axial'), (1, 0, 2, 'Coronal'), (0, 1, 2, 'Sagittal'))
 
 
 def _focus(mask, target, low):
-    """Use an occupied native voxel nearest the region's target centroid."""
+    """Choose an occupied native voxel nearest a region-target centroid.
+
+    Parameters
+    ----------
+    mask : array_like of bool, shape (k, j, i)
+        Effective region used to select a representative voxel.
+    target : array_like of bool, shape (k, j, i)
+        Preferred target membership; mask occupancy is the fallback.
+    low : array_like, shape (3,)
+        Native i,j,k crop lower indices.
+
+    Returns
+    -------
+    tuple of three int
+        Chosen whole-source native i,j,k voxel coordinate.
+
+    Raises
+    ------
+    ValueError
+        If neither the region-target intersection nor the region contains any voxel.
+
+    Notes
+    -----
+    Computes a reference point without changing masks.
+
+    Use an occupied native voxel nearest the region's target centroid.
+    """
     points = np.argwhere(np.asarray(mask, dtype=bool) & np.asarray(target, dtype=bool))
     if not len(points):
         points = np.argwhere(mask)
@@ -22,6 +48,22 @@ def _focus(mask, target, low):
 
 
 def _nodes(definition):
+    """Normalize sphere or tube ROI fields into node and radius arrays.
+
+    Parameters
+    ----------
+    definition : dict
+        ROI center_ijk and radius_mm values in native i,j,k indices and millimetres.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        Nodes with shape (n, 3) and a one-dimensional physical-radius array.
+
+    Notes
+    -----
+    Normalizes representation only; this helper does not validate geometry or edit the input.
+    """
     nodes = np.asarray(definition['center_ijk'], dtype=float)
     if nodes.ndim == 1:
         nodes = nodes[None, :]
@@ -30,7 +72,31 @@ def _nodes(definition):
 
 
 def render_recipe_rois(arrays, resolved, config, masks, output):
-    """Render all effective named masks against the original full-crop target.
+    """Write native slice and surface overviews of effective named recipe regions.
+
+    Parameters
+    ----------
+    arrays : dict
+        Loaded native crop channels and Boolean masks, with volume arrays in k,j,i order. Attenuation_cm_inverse values use cm^-1.
+    resolved : dict
+        Resolved crop bounds and source geometry; indices use i,j,k order and spacing_ijk_mm uses millimetres.
+    config : dict
+        Validated workflow settings, including ROI geometry, selection, study and preview options.
+    masks : dict of numpy.ndarray of bool
+        Named effective native k,j,i masks, already intersected with the immutable main ROI.
+    output : str or pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+
+    Returns
+    -------
+    dict
+        Overview/closeup/surface PNG paths, region focus/geometry/counts and display/mask semantics.
+
+    Notes
+    -----
+    Creates output and writes or replaces recipe-rois.png, recipe-roi-closeups.png and recipe-roi-surfaces.png. Arrays are read only; no morphology is applied.
+
+    Render all effective named masks against the original full-crop target.
 
     ``masks`` maps names to native boolean masks already intersected with the
     immutable main ROI. No morphology is applied by this renderer.
@@ -193,7 +259,26 @@ def render_recipe_rois(arrays, resolved, config, masks, output):
 
 
 def render_recipe_step(event, output):
-    """Render one applied pass at a focus voxel within its effective named ROI."""
+    """Render one serial edit pass at a representative effective-region or change voxel.
+
+    Parameters
+    ----------
+    event : dict
+        Pass event containing before_arrays, result, resolved/config settings, step/ROI names, iteration and optional artifact directory.
+    output : str or pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+
+    Returns
+    -------
+    dict
+        Relative comparison/profile asset paths and native focus metadata, or a skipped record when no effective voxels exist.
+
+    Notes
+    -----
+    Creates a per-pass artifact directory beneath output and delegates figure writes to render_edit_comparison. The event and its source/result arrays are not modified.
+
+    Render one applied pass at a focus voxel within its effective named ROI.
+    """
     from fakect_edit_preview import render_edit_comparison
     arrays = event['before_arrays']
     edit = event['result']

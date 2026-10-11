@@ -23,7 +23,32 @@ PLANES = ((2, 0, 1, 'Axial'), (1, 0, 2, 'Coronal'), (0, 1, 2, 'Sagittal'))
 
 
 def sampling_axes(shape_kji, spacing_ijk_mm, max_voxels=MAX_GLOBAL_VOXELS):
-    """Approximately isotropic sampling, always retaining both source edges.
+    """Choose bounded approximately isotropic native indices for whole-volume navigation.
+
+    Parameters
+    ----------
+    shape_kji : array_like of int, shape (3,)
+        Positive whole-source volume dimensions in k,j,i order.
+    spacing_ijk_mm : array_like, shape (3,)
+        Positive finite voxel widths in i,j,k order, measured in millimetres.
+    max_voxels : int, optional
+        Maximum product of axis sample counts; must retain both edges of every nontrivial axis.
+
+    Returns
+    -------
+    tuple of list and tuple
+        Three increasing i,j,k native-index vectors and nominal i,j,k integer strides.
+
+    Raises
+    ------
+    ValueError
+        If dimensions, spacing or the edge-preserving sample budget are invalid.
+
+    Notes
+    -----
+    The last sampling interval can differ from the nominal stride; no source volume is read.
+
+    Approximately isotropic sampling, always retaining both source edges.
 
     Returned axes are in i,j,k order, contain exact native voxel indices, and
     need not have a uniform last interval. They are the authoritative mapping.
@@ -49,13 +74,55 @@ def sampling_axes(shape_kji, spacing_ijk_mm, max_voxels=MAX_GLOBAL_VOXELS):
 
 
 def _stat(path):
+    """Capture source-file identity and size for change detection.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Source file to stat.
+
+    Returns
+    -------
+    dict
+        File byte size, modification/change timestamps, device number and inode.
+
+    Notes
+    -----
+    Reads filesystem metadata only; ordinary filesystem errors propagate.
+    """
     value = Path(path).stat()
     return {'bytes': value.st_size, 'mtime_ns': value.st_mtime_ns,
             'ctime_ns': value.st_ctime_ns, 'device': value.st_dev, 'inode': value.st_ino}
 
 
 def read_sampled(path, shape_kji, axes_ijk):
-    """Read selected whole axial planes, copying only the bounded sample grid."""
+    """Copy selected native samples while reading one whole axial plane at a time.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Read-only little-endian float32 binary source volume.
+    shape_kji : tuple of three int
+        Declared whole-source dimensions in k,j,i order.
+    axes_ijk : sequence of three integer arrays
+        Increasing distinct in-range i,j,k native indices to sample.
+
+    Returns
+    -------
+    tuple of numpy.ndarray and dict
+        Little-endian float32 sample grid in k,j,i order and source-stat/sample-hash provenance.
+
+    Raises
+    ------
+    ValueError
+        If file size, axes, read bounds, sample budget, finite values or source stability fail.
+
+    Notes
+    -----
+    Reads bounded complete axial planes without modifying the source. Integrity covers sampled bytes and unchanged source stat, not a hash of the full volume.
+
+    Read selected whole axial planes, copying only the bounded sample grid.
+    """
     path = Path(path)
     before = _stat(path)
     plane_size = int(shape_kji[1]) * int(shape_kji[2])
@@ -94,7 +161,24 @@ def read_sampled(path, shape_kji, axes_ijk):
 
 
 def roi_definitions(config):
-    """Serializable original geometries; named regions remain clipped to main."""
+    """Serialize main and named ROI geometries for navigation overlays.
+
+    Parameters
+    ----------
+    config : dict
+        Validated workflow settings, including ROI geometry, selection, study and preview options.
+
+    Returns
+    -------
+    list of dict
+        ROI names, sphere/tube shapes, ordered native i,j,k nodes, radii in millimetres, colors and main-clipping policy.
+
+    Notes
+    -----
+    Copies geometry into serializable values; no voxels are read or edited.
+
+    Serializable original geometries; named regions remain clipped to main.
+    """
     rows = []
     for index, (name, definition) in enumerate([('main', config['roi']), *config.get('rois', {}).items()]):
         nodes = np.asarray(definition['center_ijk'], dtype=float)
@@ -109,7 +193,28 @@ def roi_definitions(config):
 
 
 def sampled_roi_mask(axes_ijk, spacing_ijk_mm, roi):
-    """Evaluate sphere/tube geometry exactly at supplied native sample centers."""
+    """Evaluate sphere or variable-radius tube membership at native sample centers.
+
+    Parameters
+    ----------
+    axes_ijk : sequence of three arrays
+        Native i,j,k sample coordinates.
+    spacing_ijk_mm : array_like, shape (3,)
+        Positive finite voxel widths in i,j,k order, measured in millimetres.
+    roi : dict
+        Serialized shape, nodes_ijk and radii_mm from roi_definitions.
+
+    Returns
+    -------
+    numpy.ndarray of bool
+        ROI membership with shape (len(k_axis), len(j_axis), len(i_axis)).
+
+    Notes
+    -----
+    Computes physical geometry using millimetre spacing without modifying inputs.
+
+    Evaluate sphere/tube geometry exactly at supplied native sample centers.
+    """
     ii, jj, kk = [np.asarray(a, dtype=float) for a in axes_ijk]
     spacing = np.asarray(spacing_ijk_mm, dtype=float)
     positions = [ii[None, None, :] * spacing[0], jj[None, :, None] * spacing[1],
@@ -136,7 +241,33 @@ def sampled_roi_mask(axes_ijk, spacing_ijk_mm, roi):
 
 
 def prepare_global(resolved, config, max_voxels=MAX_GLOBAL_VOXELS):
-    """Return bounded sampled source arrays and auditable coordinate metadata."""
+    """Prepare bounded source samples, display channels and auditable navigation metadata.
+
+    Parameters
+    ----------
+    resolved : dict
+        Resolved crop bounds and source geometry; indices use i,j,k order and spacing_ijk_mm uses millimetres.
+    config : dict
+        Validated workflow settings, including ROI geometry, selection, study and preview options.
+    max_voxels : int, optional
+        Requested sample-grid budget; the bounded reader also enforces MAX_GLOBAL_VOXELS.
+
+    Returns
+    -------
+    tuple of dict
+        Sampled activity, attenuation, tissue, candidates and uint8 display arrays, plus source hashes, coordinate axes and ROI metadata.
+
+    Raises
+    ------
+    ValueError
+        If sampled input contracts or source stability checks fail.
+
+    Notes
+    -----
+    Reads source ACT/ATN files without editing them. Native ATN is converted to cm^-1 using the original i-pixel width; sampled arrays retain k,j,i order.
+
+    Return bounded sampled source arrays and auditable coordinate metadata.
+    """
     axes, strides = sampling_axes(resolved['shape_kji'], resolved['spacing_ijk_mm'], max_voxels)
     arrays, sources = {}, {}
     initial = {key: _stat(path) for key, path in resolved['source_files'].items()}
@@ -188,6 +319,30 @@ def prepare_global(resolved, config, max_voxels=MAX_GLOBAL_VOXELS):
 
 
 def _plane_masks(axes, spacing, rois, fixed, level):
+    """Evaluate main and clipped named ROI masks on one sampled plane.
+
+    Parameters
+    ----------
+    axes : sequence of three arrays
+        Native i,j,k sample indices.
+    spacing : array_like, shape (3,)
+        Voxel widths in i,j,k order, in millimetres.
+    rois : list of dict
+        Serialized ROI geometries with the main ROI first.
+    fixed : int
+        Fixed physical axis: 0 for i, 1 for j or 2 for k.
+    level : int
+        Index along the corresponding sampled coordinate vector.
+
+    Returns
+    -------
+    list of numpy.ndarray of bool
+        Two-dimensional masks; every named mask is intersected with the main-plane mask.
+
+    Notes
+    -----
+    Produces slice geometry without reading or writing files.
+    """
     plane_axes = [np.asarray(a) for a in axes]
     plane_axes[fixed] = plane_axes[fixed][level:level+1]
     masks = [np.squeeze(sampled_roi_mask(plane_axes, spacing, roi), axis=2-fixed) for roi in rois]
@@ -195,6 +350,26 @@ def _plane_masks(axes, spacing, rois, fixed, level):
 
 
 def _render_static(arrays, metadata, output):
+    """Write three sampled whole-phantom slices with ROI and locator overlays.
+
+    Parameters
+    ----------
+    arrays : dict
+        Bounded whole-source sample channels in k,j,i order, including uint8 display and candidate masks.
+    metadata : dict
+        Sample axes, physical spacing, crosshair, ROI definitions and selection semantics.
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+
+    Returns
+    -------
+    None
+        Writes or replaces roi-global.png in output and closes its figure.
+
+    Notes
+    -----
+    Uses native index axes with physical aspect ratio; sampled target colors are locators rather than final segmentation. Source arrays are unchanged.
+    """
     os.environ.setdefault('MPLCONFIGDIR', '/tmp/fakect-matplotlib')
     import matplotlib
     matplotlib.use('Agg')
@@ -248,11 +423,53 @@ def _render_static(arrays, metadata, output):
 
 
 def _encoded(array):
+    """Encode a contiguous uint8 channel for embedding in browser data.
+
+    Parameters
+    ----------
+    array : array_like
+        Sampled channel converted to uint8 and contiguous storage before encoding.
+
+    Returns
+    -------
+    str
+        ASCII base64 representation of the channel bytes in C order.
+
+    Notes
+    -----
+    Copies/converts display data without modifying its input; no file writes.
+    """
     return base64.b64encode(np.ascontiguousarray(array, dtype=np.uint8).tobytes()).decode('ascii')
 
 
 def render_global_preview(resolved, config, output):
-    """Write a portable full-volume navigator and PNG; return report metadata."""
+    """Write an offline sampled whole-volume navigator and static overview.
+
+    Parameters
+    ----------
+    resolved : dict
+        Resolved crop bounds and source geometry; indices use i,j,k order and spacing_ijk_mm uses millimetres.
+    config : dict
+        Validated workflow settings, including ROI geometry, selection, study and preview options.
+    output : str or pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+
+    Returns
+    -------
+    dict
+        Global geometry, sampling, source provenance, display semantics and generated HTML/PNG relative paths.
+
+    Raises
+    ------
+    ValueError
+        If source sampling fails or the source changes during preparation/rendering.
+
+    Notes
+    -----
+    Reads source volumes through prepare_global, creates output and writes or replaces roi-global.html and roi-global.png. It does not change saved ROI inputs or source arrays.
+
+    Write a portable full-volume navigator and PNG; return report metadata.
+    """
     arrays, metadata = prepare_global(resolved, config)
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)

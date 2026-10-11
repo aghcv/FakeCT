@@ -32,6 +32,22 @@ SEMANTICS = (
 
 
 def _json_value(value):
+    """Convert NumPy containers and nonfinite floats into JSON-friendly values.
+
+    Parameters
+    ----------
+    value : object
+        Scalar, mapping, sequence or NumPy array to recursively normalize.
+
+    Returns
+    -------
+    object
+        Converted containers/scalars; nonfinite floats become None and other values are retained.
+
+    Notes
+    -----
+    Builds converted containers without mutating the input; unsupported arbitrary objects are not validated here.
+    """
     if isinstance(value, np.ndarray):
         return _json_value(value.tolist())
     if isinstance(value, np.generic):
@@ -46,10 +62,47 @@ def _json_value(value):
 
 
 def _sha256(path):
+    """Hash the recorded bytes of a centerline preview artifact.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Existing artifact to read.
+
+    Returns
+    -------
+    str
+        SHA256 hexadecimal digest of the complete file contents.
+
+    Notes
+    -----
+    Reads the file without changing it; filesystem errors propagate.
+    """
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _validate_frame(frame):
+    """Validate centerline sample geometry, directions, fractions and reliability.
+
+    Parameters
+    ----------
+    frame : dict
+        xyz_mm, tangent, normal and binormal arrays shaped (n, 3), plus n-element parent_fraction, curvature_per_mm and Boolean reliable arrays.
+
+    Returns
+    -------
+    dict
+        Validated NumPy arrays; positions use i,j,k millimetres, curvature uses inverse millimetres and fractions are in [0, 1].
+
+    Raises
+    ------
+    ValueError
+        If shapes, finite values, fraction order/range, curvature or reliable dtype are invalid.
+
+    Notes
+    -----
+    Requires 2-4096 finite samples. Returned arrays may share input storage; values are not modified.
+    """
     xyz = np.asarray(frame['xyz_mm'], dtype=float)
     if xyz.ndim != 2 or xyz.shape[1] != 3 or not 2 <= len(xyz) <= 4096 or not np.isfinite(xyz).all():
         raise ValueError('Frame preview requires 2–4096 finite three-dimensional samples')
@@ -77,6 +130,24 @@ def _validate_frame(frame):
 
 
 def _indices(mask, limit=MAX_ARROWS_PER_DIRECTION):
+    """Choose approximately evenly spaced occupied indices for sparse direction arrows.
+
+    Parameters
+    ----------
+    mask : array_like of bool, shape (n,)
+        Eligible frame samples.
+    limit : int, optional
+        Maximum sample count; defaults to MAX_ARROWS_PER_DIRECTION.
+
+    Returns
+    -------
+    numpy.ndarray of int
+        Increasing selected flat indices; empty when no sample is eligible.
+
+    Notes
+    -----
+    Reads the mask without modifying it.
+    """
     candidates = np.flatnonzero(mask)
     if not len(candidates):
         return candidates
@@ -84,7 +155,28 @@ def _indices(mask, limit=MAX_ARROWS_PER_DIRECTION):
 
 
 def _arrow_lines(points, vectors, length):
-    """Draw direction-preserving shafts and open arrowheads in physical mm."""
+    """Build disconnected shafts and arrowheads for physical direction vectors.
+
+    Parameters
+    ----------
+    points : array_like, shape (n, 3)
+        Arrow starting positions in i,j,k millimetres.
+    vectors : array_like, shape (n, 3)
+        Directions normalized internally; near-zero vectors are omitted.
+    length : float
+        Arrow display length in millimetres.
+
+    Returns
+    -------
+    numpy.ndarray of object, shape (m, 3)
+        i,j,k plotting coordinates with None rows separating shaft and arrowhead segments.
+
+    Notes
+    -----
+    Creates display references only; arrow length is not the edit displacement.
+
+    Draw direction-preserving shafts and open arrowheads in physical mm.
+    """
     segments = []
     for point, vector in zip(points, vectors):
         norm = np.linalg.norm(vector)
@@ -105,6 +197,31 @@ def _arrow_lines(points, vectors, length):
 
 
 def _target_context(arrays, resolved, config):
+    """Create a bounded surface mesh from the original candidate target.
+
+    Parameters
+    ----------
+    arrays : dict
+        Loaded native crop channels and Boolean masks, with volume arrays in k,j,i order. Attenuation_cm_inverse values use cm^-1.
+    resolved : dict
+        Resolved crop bounds and source geometry; indices use i,j,k order and spacing_ijk_mm uses millimetres.
+    config : dict
+        Validated workflow settings, including ROI geometry, selection, study and preview options.
+
+    Returns
+    -------
+    tuple
+        Vertices in i,j,k millimetres, triangle faces, actual occupancy stride and context warnings; unavailable contexts return empty meshes.
+
+    Raises
+    ------
+    ValueError
+        If target dtype/shape/size or physical crop geometry is invalid.
+
+    Notes
+    -----
+    Adjusts display pooling to bound cell/triangle counts. It does not alter the native target or source geometry.
+    """
     target = np.asarray(arrays['candidates'])
     if target.dtype != np.bool_ or target.ndim != 3 or target.size > MAX_SOURCE_VOXELS:
         raise ValueError(f'Frame target context requires a Boolean crop of at most {MAX_SOURCE_VOXELS:,} voxels')
@@ -135,6 +252,40 @@ def _target_context(arrays, resolved, config):
 
 
 def _static_views(data, original_mm, arrows, vertices, faces, bounds, parent, path, curve_path, threshold):
+    """Write centerline direction views and a curvature/reliability profile.
+
+    Parameters
+    ----------
+    data : dict
+        Validated frame arrays with physical coordinates, curvature and direction reliability.
+    original_mm : numpy.ndarray, shape (n, 3)
+        Original ordered ROI points in i,j,k millimetres.
+    arrows : list of dict
+        Direction labels, colors, sample indices and disconnected plotting lines.
+    vertices : numpy.ndarray, shape (n_vertices, 3)
+        Optional original-target mesh vertices in i,j,k millimetres.
+    faces : numpy.ndarray of int, shape (n_faces, 3)
+        Target mesh triangle indices.
+    bounds : array_like, shape (3, 2)
+        Physical i,j,k plot limits in millimetres.
+    parent : str
+        Parent ROI name shown in figure titles.
+    path : pathlib.Path
+        Destination for the direction PNG; existing files are replaced.
+    curve_path : pathlib.Path
+        Destination for the curvature PNG; existing files are replaced.
+    threshold : float or None
+        Optional trusted-curvature threshold in inverse millimetres.
+
+    Returns
+    -------
+    None
+        Writes the two PNGs and closes their Matplotlib figures.
+
+    Notes
+    -----
+    Displays only reliable Frenet directions. Source arrays and ROI control points remain unchanged.
+    """
     os.environ.setdefault('MPLCONFIGDIR', '/tmp/fakect-matplotlib')
     import matplotlib
     matplotlib.use('Agg')
@@ -197,7 +348,38 @@ def _static_views(data, original_mm, arrows, vertices, faces, bounds, parent, pa
 
 
 def render_centerline_frames(frames, arrays, resolved, config, output):
-    """Write one portable frame view and full frame JSON per parent ROI.
+    """Write auditable centerline direction previews for each parent tube ROI.
+
+    Parameters
+    ----------
+    frames : dict
+        Parent ROI names mapped to sampled frame arrays and fit/reliability metadata.
+    arrays : dict
+        Loaded native crop channels and Boolean masks, with volume arrays in k,j,i order. Attenuation_cm_inverse values use cm^-1.
+    resolved : dict
+        Resolved crop bounds and source geometry; indices use i,j,k order and spacing_ijk_mm uses millimetres.
+    config : dict
+        Validated workflow settings, including ROI geometry, selection, study and preview options.
+    output : str or pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+
+    Returns
+    -------
+    list of dict
+        Per-ROI HTML/PNG/frame-JSON paths, frame counts, warnings and artifact hashes; empty when no frames were supplied.
+
+    Raises
+    ------
+    ValueError
+        If frame arrays, parent tube geometry or target context are invalid.
+    FileExistsError
+        If any intended per-ROI preview artifact already exists.
+
+    Notes
+    -----
+    Creates centerline subdirectories and writes frame.html, frame.png, curvature.png and frame.json. Native indices times spacing define the physical display frame; no anatomical-origin transform or edit is performed.
+
+    Write one portable frame view and full frame JSON per parent ROI.
 
     Coordinates are native indices times spacing, without an anatomical origin
     transform. Arrows are display references and do not represent edit distance.

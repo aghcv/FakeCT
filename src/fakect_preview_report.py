@@ -26,10 +26,42 @@ _ASSETS = (
 
 
 def _escape(value):
+    """Escape a display value for an HTML text or attribute context.
+
+    Parameters
+    ----------
+    value : object
+        Value converted to text before escaping.
+
+    Returns
+    -------
+    str
+        HTML-safe text, including escaped quotation marks.
+
+    Notes
+    -----
+    Does not access files or alter the value.
+    """
     return html.escape(str(value), quote=True)
 
 
 def _number(value):
+    """Format an optional integer count for an HTML report.
+
+    Parameters
+    ----------
+    value : object or None
+        Count or fallback display value.
+
+    Returns
+    -------
+    str
+        Comma-grouped integer text, Not recorded for None, or escaped fallback text.
+
+    Notes
+    -----
+    Tolerates values that cannot be converted to integers without changing report data.
+    """
     if value is None:
         return 'Not recorded'
     try:
@@ -39,6 +71,22 @@ def _number(value):
 
 
 def _text_value(value):
+    """Format scalar or structured metadata as escaped report text.
+
+    Parameters
+    ----------
+    value : object or None
+        Scalar, list/tuple or mapping to display.
+
+    Returns
+    -------
+    str
+        Escaped text, recursively comma-separated sequence values, or sorted JSON for mappings.
+
+    Notes
+    -----
+    None is displayed as Not recorded; no files are written.
+    """
     if value is None:
         return 'Not recorded'
     if isinstance(value, (list, tuple)):
@@ -49,6 +97,26 @@ def _text_value(value):
 
 
 def _table(headers, rows, empty='No entries recorded.'):
+    """Build an accessible HTML table from already-rendered cells.
+
+    Parameters
+    ----------
+    headers : sequence of object
+        Column headings escaped by this helper.
+    rows : iterable of sequences of str
+        Rows of pre-rendered HTML cell strings; callers must escape raw values.
+    empty : str, optional
+        Message shown when there are no rows.
+
+    Returns
+    -------
+    str
+        HTML table with column headings and a scroll wrapper.
+
+    Notes
+    -----
+    Cell strings are intentionally inserted as HTML; no report/source data is modified.
+    """
     head = ''.join('<th scope="col">' + _escape(h) + '</th>' for h in headers)
     body = ''.join('<tr>' + ''.join('<td>' + cell + '</td>' for cell in row) + '</tr>' for row in rows)
     if not body:
@@ -57,6 +125,22 @@ def _table(headers, rows, empty='No entries recorded.'):
 
 
 def _measurement(value):
+    """Format an optional physical measurement for an HTML report.
+
+    Parameters
+    ----------
+    value : object or None
+        Numeric measurement; the caller supplies its units in the surrounding label.
+
+    Returns
+    -------
+    str
+        Six-significant-digit number, Not recorded for None, or escaped fallback text.
+
+    Notes
+    -----
+    Formatting does not infer or convert physical units.
+    """
     if value is None:
         return 'Not recorded'
     try:
@@ -66,6 +150,30 @@ def _measurement(value):
 
 
 def _embed_png(output, filename, heading, caption, embedded):
+    """Embed an existing PNG as a data URL and record its exact file hash.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    filename : str
+        Preview asset path relative to output.
+    heading : str
+        Human-readable heading for the embedded figure.
+    caption : str
+        Human-readable description escaped before insertion into HTML.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    str
+        Figure HTML, or an unavailable notice if the asset was not generated.
+
+    Notes
+    -----
+    Reads output/filename and updates embedded in place; it writes no files and changes no source volumes.
+    """
     path = output / filename
     if not path.is_file():
         return '<p class="subtle">' + _escape(heading) + ': preview not generated.</p>'
@@ -77,6 +185,33 @@ def _embed_png(output, filename, heading, caption, embedded):
 
 
 def _embed_volume(output, filename, title, embedded):
+    """Embed a standalone interactive document in a sandboxed report iframe.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    filename : str
+        Preview asset path relative to output.
+    title : str
+        Accessible iframe title.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    str
+        HTML iframe with escaped srcdoc, or an unavailable notice for a missing file.
+
+    Raises
+    ------
+    ValueError
+        If the embedded document references external or relative resources.
+
+    Notes
+    -----
+    Reads output/filename and updates embedded in place; no output files are written.
+    """
     path = output / filename
     if not path.is_file():
         return '<p class="subtle">' + _escape(title) + ' was not generated.</p>'
@@ -93,7 +228,38 @@ def _embed_volume(output, filename, title, embedded):
 
 def _embed_edit_profile(output, figures, filename, legacy_heading, legacy_caption,
                         arc_heading, arc_context, embedded):
-    """Describe the recorded profile coordinate, retaining legacy axial reports."""
+    """Embed a geometry profile using its recorded axial or centerline coordinate semantics.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    figures : dict
+        Recorded preview paths and profile coordinate/area metadata.
+    filename : str
+        Preview asset path relative to output.
+    legacy_heading : str
+        Heading for legacy native-k profiles.
+    legacy_caption : str
+        Caption for legacy profiles.
+    arc_heading : str
+        Heading for physical centerline arc-length profiles.
+    arc_context : str
+        Additional explanatory text for arc-length profile interpretation.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    str
+        Profile figure HTML with optional endpoint-volume accounting and axial diagnostic.
+
+    Notes
+    -----
+    Reads figure assets and updates embedded in place; all distances/areas follow recorded metadata, without recomputing geometry.
+
+    Describe the recorded profile coordinate, retaining legacy axial reports.
+    """
     heading, caption = legacy_heading, legacy_caption
     if figures.get('profile_coordinate') == 'centerline_arc_length_mm':
         heading = arc_heading
@@ -145,10 +311,43 @@ def _embed_edit_profile(output, figures, filename, legacy_heading, legacy_captio
 class _AssetReferences(HTMLParser):
     """Reject linked resources in the otherwise trusted generated 3D document."""
     def __init__(self):
+        """Initialize collection of resource references in an embedded HTML document.
+
+        Parameters
+        ----------
+        No additional parameters.
+
+        Returns
+        -------
+        None
+            Initializes parser state and an empty references list on this instance.
+
+        Notes
+        -----
+        No source files or report artifacts are read or written.
+        """
         super().__init__()
         self.references = []
 
     def handle_starttag(self, tag, attrs):
+        """Record HTML resource attributes that violate standalone-document assumptions.
+
+        Parameters
+        ----------
+        tag : str
+            Parsed start-tag name.
+        attrs : list of tuple
+            HTML attribute name/value pairs for the tag.
+
+        Returns
+        -------
+        None
+            Appends detected resource references to this parser instance.
+
+        Notes
+        -----
+        Data/blob/fragment resources are accepted; ordinary src/poster/data/href and srcset resources are recorded for caller rejection.
+        """
         attrs = dict(attrs)
         keys = ('src', 'poster', 'data') if tag != 'link' else ('href',)
         for key in keys:
@@ -252,6 +451,22 @@ _SCRIPT = '''
 
 
 def _control_points(report):
+    """Recover ordered sphere/tube control-point rows from current or legacy report geometry.
+
+    Parameters
+    ----------
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+
+    Returns
+    -------
+    tuple of str and list
+        ROI kind and rendered rows with one-based point number, native i,j,k indices and radius in millimetres.
+
+    Notes
+    -----
+    Missing values remain visible as unavailable; geometry is not recomputed or modified.
+    """
     geometry = report.get('geometry', {})
     roi = report.get('config', {}).get('roi', {})
     kind = geometry.get('roi_kind', roi.get('shape', roi.get('kind', roi.get('type', 'sphere'))))
@@ -275,7 +490,24 @@ def _control_points(report):
 
 
 def _main_tube_points(report):
-    """Show one-based path nodes with cumulative physical distance and percent."""
+    """Describe main-tube nodes by cumulative physical length and path percentage.
+
+    Parameters
+    ----------
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+
+    Returns
+    -------
+    str
+        HTML point-reference table, or an empty string when no tube points are recorded.
+
+    Notes
+    -----
+    Reads native i,j,k coordinates and spacing; unavailable/invalid geometric metadata yields unavailable measurements rather than invented distances.
+
+    Show one-based path nodes with cumulative physical distance and percent.
+    """
     kind, rows = _control_points(report)
     if kind != 'tube' or not rows:
         return ''
@@ -312,6 +544,22 @@ def _main_tube_points(report):
 
 
 def _range_description(metadata):
+    """Describe the recorded full, physical-percentage or one-based point range.
+
+    Parameters
+    ----------
+    metadata : dict
+        Range selector and its values.
+
+    Returns
+    -------
+    str
+        Escaped HTML range description with explicit percent or point-number semantics.
+
+    Notes
+    -----
+    Does not evaluate geometry or alter the selected edit interval.
+    """
     selector = metadata.get('selector', 'full')
     values = metadata.get('selector_values')
     if selector == 'path_percent':
@@ -324,6 +572,22 @@ def _range_description(metadata):
 
 
 def _selection(report):
+    """Recover selection accounting from current or legacy report fields.
+
+    Parameters
+    ----------
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+
+    Returns
+    -------
+    tuple
+        Selection metadata, candidate count, selected count, ROI count and six-neighbor component count; missing values remain None.
+
+    Notes
+    -----
+    Returns recorded diagnostics only and does not read voxels.
+    """
     selection = report.get('selection', report.get('selection_diagnostics', {}))
     candidate = selection.get('candidate_voxels', report.get('candidate_voxels', report.get('selected_voxels')))
     selected = selection.get('selected_voxels', report.get('selected_in_roi_voxels'))
@@ -333,6 +597,24 @@ def _selection(report):
 
 
 def _selected_rows(report, selection):
+    """Build original-ID selection rows while preserving legacy count scope.
+
+    Parameters
+    ----------
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+    selection : dict
+        Selected original IDs and per-ID counts inside the ROI, when available.
+
+    Returns
+    -------
+    tuple of list and str
+        Rendered signed-ID/name/count rows and a statement explaining their scope.
+
+    Notes
+    -----
+    Catalog names are read from the report snapshot; no anatomical identity or unavailable count is inferred.
+    """
     names = {str(k): v for k, v in report.get('source_names', {}).items()}
     volume_records = report.get('volume', {}).get('original_selected_labels', [])
     for entry in volume_records:
@@ -358,13 +640,55 @@ def _selected_rows(report, selection):
 
 
 def _anatomical_selection(report):
+    """Read the optional anatomy-selector audit captured in the report.
+
+    Parameters
+    ----------
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+
+    Returns
+    -------
+    dict or None
+        Recorded anatomical-selection dictionary, or None when absent or malformed.
+
+    Notes
+    -----
+    Returns the existing record without recomputing anatomy or modifying it.
+    """
     selection = report.get('selection', report.get('selection_diagnostics', {}))
     audit = selection.get('anatomical_selection', report.get('anatomical_selection'))
     return audit if isinstance(audit, dict) else None
 
 
 def _anatomy_section(output, report, embedded):
-    """Present the captured optional selector without recomputing anatomy."""
+    """Render captured anatomical label decisions and surface evidence with an optional download.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    str
+        Anatomical-filter HTML section, or an empty string when no audit exists.
+
+    Raises
+    ------
+    ValueError
+        If surface references or captured artifact hashes/content disagree with the report snapshot.
+
+    Notes
+    -----
+    Reads and verifies an optional anatomy-selection.json artifact, updates embedded in place and writes no files.
+
+    Present the captured optional selector without recomputing anatomy.
+    """
     audit = _anatomical_selection(report)
     if audit is None:
         return ''
@@ -459,7 +783,30 @@ def _anatomy_section(output, report, embedded):
 
 
 def _surface_overlay_section(output, edit, embedded, *, recipe=False):
-    """One registered scene comparing original and final full-crop anatomy."""
+    """Embed registered original/final surfaces and optional final-category controls.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    edit : dict
+        Edit or recipe record containing surface_overlay metadata.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+    recipe : bool, optional
+        Use final-recipe wording rather than a single-edit caption; defaults to False.
+
+    Returns
+    -------
+    str
+        Surface-overlay section HTML, or an empty string when no overlay asset exists.
+
+    Notes
+    -----
+    Reads existing HTML/PNG assets and updates embedded in place; no comparison geometry is changed.
+
+    One registered scene comparing original and final full-crop anatomy.
+    """
     if not (output/'edit-overlay.html').is_file() and not (output/'edit-overlay.png').is_file():
         return ''
     metadata = edit.get('surface_overlay', {})
@@ -491,6 +838,26 @@ def _surface_overlay_section(output, edit, embedded, *, recipe=False):
 
 
 def _centerline_frames_section(output, recipe, embedded):
+    """Embed direction-reference views and summarize frame reliability for a recipe.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    recipe : dict
+        Recipe record with per-parent centerline_frames artifact and fitting metadata.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    str
+        Centerline direction/reliability section HTML, or an empty string when absent.
+
+    Notes
+    -----
+    Reads captured frame view assets and updates embedded in place; the full frame JSON remains a separate artifact.
+    """
     frames = recipe.get('centerline_frames', [])
     if not frames:
         return ''
@@ -542,7 +909,32 @@ def _centerline_frames_section(output, recipe, embedded):
 
 
 def _release_assignment_section(output, summary, figures, embedded, *, scope='edit'):
-    """Distinguish diagnostic release markers from assigned surrounding tissue."""
+    """Explain diagnostic release markers separately from actual tissue reassignment.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    summary : dict
+        Recorded edit/pass accounting and optional release or erosion-safeguard diagnostics.
+    figures : dict
+        Recorded preview paths and profile coordinate/area metadata.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+    scope : str, optional
+        Counting/caption scope: edit, pass or recipe; defaults to edit.
+
+    Returns
+    -------
+    str
+        Diagnostic-release HTML section, or an empty string when it does not apply.
+
+    Notes
+    -----
+    Reads optional neighborhood figures and updates embedded in place; no labels or attenuation values are reassigned.
+
+    Distinguish diagnostic release markers from assigned surrounding tissue.
+    """
     release = summary.get('release_assignment', {})
     if not release or (release.get('mode') != 'diagnostic_label' and not release.get('current_released_voxels')):
         return ''
@@ -587,7 +979,24 @@ def _release_assignment_section(output, summary, figures, embedded, *, scope='ed
 
 
 def _erosion_safeguard_section(summary):
-    """Explain accepted erosion geometry and the fixed reference used by retries."""
+    """Describe recorded erosion retry decisions and their fixed local reference.
+
+    Parameters
+    ----------
+    summary : dict
+        Recorded edit/pass accounting and optional release or erosion-safeguard diagnostics.
+
+    Returns
+    -------
+    str
+        Safeguard settings/results/attempt HTML, or an empty string for an inactive safeguard.
+
+    Notes
+    -----
+    Formats native voxel/physical-volume diagnostics; it does not rerun retries or establish minimum lumen area.
+
+    Explain accepted erosion geometry and the fixed reference used by retries.
+    """
     guard = summary.get('erosion_safeguard', {})
     if not isinstance(guard, dict) or not guard.get('enabled'):
         return ''
@@ -668,7 +1077,28 @@ def _erosion_safeguard_section(summary):
 
 
 def _morphology_section(output, report, embedded):
-    """Render applied label changes without treating a scalar proxy as recovered CT."""
+    """Render single-edit accounting, profile assets and provisional scalar-image semantics.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    str
+        Complete morphology section assembled from report.edit and recorded configuration.
+
+    Notes
+    -----
+    Reads existing preview assets and updates embedded in place; source geometry and attenuation remain unchanged.
+
+    Render applied label changes without treating a scalar proxy as recovered CT.
+    """
     edit = report['edit']
     config = report.get('config', {})
     edit_config = config.get('edit', {})
@@ -751,7 +1181,28 @@ def _morphology_section(output, report, embedded):
 
 
 def _recipe_section(output, report, embedded):
-    """Account for ordered passes separately from original-to-final changes."""
+    """Render ordered pass history separately from net original-to-final changes.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    str
+        Recipe review HTML including step accounting, region previews, frame views and safeguards.
+
+    Notes
+    -----
+    Reads captured assets and updates embedded in place; no serial edits are executed here.
+
+    Account for ordered passes separately from original-to-final changes.
+    """
     recipe = report['recipe']
     config = report.get('config', {})
     selection_role = recipe.get('roi_role', config.get('recipe', {}).get('roi_role')) == 'selection'
@@ -1063,7 +1514,28 @@ def _recipe_section(output, report, embedded):
 
 
 def _recipe_training_section(output, report, embedded):
-    """Describe recipe cohorts without confusing the original selector with anatomy."""
+    """Describe a planned recipe cohort and its selected-lineage training target.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    str
+        Training-plan HTML with ordered edits, sweep values, draft variants and generation boundaries.
+
+    Notes
+    -----
+    Embeds the original target figure and updates embedded in place; does not prepare pairs or fit a model.
+
+    Describe recipe cohorts without confusing the original selector with anatomy.
+    """
     plan = report['training_plan']
     config = report.get('config', {})
     target = plan.get('target_preview', {})
@@ -1148,6 +1620,26 @@ def _recipe_training_section(output, report, embedded):
 
 
 def _training_section(output, report, embedded):
+    """Render current recipe or legacy study plans without executing preparation or training.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    str
+        Training-plan HTML, delegating selected-lineage recipe plans to their dedicated section.
+
+    Notes
+    -----
+    Reads the captured target PNG and updates embedded in place; provisional split/target scopes remain explicit.
+    """
     plan = report['training_plan']
     if plan.get('schema_version') == 'fakect.recipe-study-plan/1' or plan.get('target_scope') == 'selected_lineage':
         return _recipe_training_section(output, report, embedded)
@@ -1198,7 +1690,28 @@ def _training_section(output, report, embedded):
 
 
 def _global_section(output, report, embedded):
-    """Embed bounded whole-phantom sampling separately from native crop results."""
+    """Embed sampled whole-phantom navigation separately from native crop results.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+    embedded : dict
+        Mutable asset inventory populated with byte counts and SHA256 digests for files embedded in the report.
+
+    Returns
+    -------
+    tuple of str and bool
+        Global-view HTML and whether an interactive or static global asset exists.
+
+    Notes
+    -----
+    Reads existing locator assets and updates embedded in place; no source volumes are sampled again.
+
+    Embed bounded whole-phantom sampling separately from native crop results.
+    """
     metadata = report.get('global_view')
     metadata = metadata if isinstance(metadata, dict) else {}
     html_available = (output / 'roi-global.html').is_file()
@@ -1243,6 +1756,28 @@ def _global_section(output, report, embedded):
 
 
 def _tab_navigation(edit_enabled, recipe_enabled, training_enabled, global_available):
+    """Build report tabs with a default view matching available assets.
+
+    Parameters
+    ----------
+    edit_enabled : bool
+        Whether single-edit review content exists.
+    recipe_enabled : bool
+        Whether serial-recipe review content exists.
+    training_enabled : bool
+        Whether a planned training section exists.
+    global_available : bool
+        Whether a global locator asset is available and should be the default.
+
+    Returns
+    -------
+    str
+        Accessible report tab-navigation HTML.
+
+    Notes
+    -----
+    No filesystem access or report mutation occurs.
+    """
     items = [('global', 'Global view'), ('local', 'Local view')]
     if edit_enabled or recipe_enabled:
         items.append(('edits', 'Edits / recipe' if recipe_enabled else 'Edits'))
@@ -1259,12 +1794,57 @@ def _tab_navigation(edit_enabled, recipe_enabled, training_enabled, global_avail
 
 
 def _panel_start(name):
+    """Open a tab panel with matching report accessibility attributes.
+
+    Parameters
+    ----------
+    name : str
+        Internal trusted panel key shared with the corresponding tab.
+
+    Returns
+    -------
+    str
+        Opening report-panel div element.
+
+    Notes
+    -----
+    Used with fixed internal names; no files or report values are modified.
+    """
     return ('<div class="report-panel" id="panel-' + name + '" role="tabpanel" '
             'aria-labelledby="tab-' + name + '" tabindex="0">')
 
 
 def write_preview_report(output_dir, report, input_ini_text):
-    """Write ``report.html`` with all preview assets embedded, refusing overwrite.
+    """Write a self-contained ROI/edit review page with captured configuration and provenance.
+
+    Parameters
+    ----------
+    output_dir : str or pathlib.Path
+        Destination directory for generated preview assets.
+    report : dict
+        Captured configuration, geometry, selection diagnostics and optional editing/training metadata.
+    input_ini_text : str
+        Exact captured editable INI text displayed and offered for download.
+
+    Returns
+    -------
+    dict
+        Report path, byte count, SHA256 digest and inventory of embedded preview assets.
+
+    Raises
+    ------
+    FileExistsError
+        If report.html already exists.
+    TypeError
+        If report or input_ini_text has the wrong type.
+    ValueError
+        If an embedded document has linked resources or a captured anatomy artifact fails verification.
+
+    Notes
+    -----
+    Creates output_dir if needed and exclusively writes report.html. Reads existing asset files without reading source volumes or changing labels. Missing optional assets remain explicitly unavailable.
+
+    Write ``report.html`` with all preview assets embedded, refusing overwrite.
 
     ``report.selection`` may contain candidate/ROI/selected voxel counts,
     six-connected component sizes and selected original-ID counts. Geometry

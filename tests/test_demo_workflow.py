@@ -14,14 +14,14 @@ import numpy as np
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src'))
 sys.path.insert(0,str(ROOT/'scripts'))
-from student_demo import initialize
+from generate_demo import initialize
 from fakect_study_config import load_study_config
 from fakect_roi import prepare_crop, resolve_preview
 from fakect_recipe_study_config import plan_recipe_variants
 from train_study import run
 
 
-class StudentDemoTests(unittest.TestCase):
+class DemoWorkflowTests(unittest.TestCase):
     def setUp(self):
         temporary=tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

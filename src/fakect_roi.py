@@ -17,11 +17,52 @@ COLORS = {'background': '#000000', 'soft_tissue': '#bcaaa4', 'bone': '#fff0bc',
 
 
 def digest(path):
+    """Hash the complete contents of a file with SHA-256.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Readable file whose complete bytes are hashed.
+
+    Returns
+    -------
+    str
+        Lowercase hexadecimal SHA-256 digest.
+
+    Raises
+    ------
+    OSError
+        If the file cannot be read.
+    """
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def crop_bounds(center_ijk, half_width_mm, shape_kji, spacing_ijk_mm):
-    """Inclusive native voxel centers within a conservative physical crop box."""
+    """Compute a bounded physical crop around an integer native center.
+
+    Parameters
+    ----------
+    center_ijk : sequence of int
+        Nonnegative native i,j,k center inside the source.
+    half_width_mm : float
+        Positive physical half-width applied along each axis, in millimetres.
+    shape_kji : sequence of int
+        Native array dimensions in k,j,i order.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    low_ijk : tuple of int
+        Inclusive lower native crop bounds.
+    high_ijk : tuple of int
+        Exclusive upper native crop bounds, clipped to the source dimensions.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     center = np.asarray(center_ijk)
     shape = np.asarray(shape_kji)
     spacing = np.asarray(spacing_ijk_mm, dtype=float)
@@ -43,7 +84,31 @@ def crop_bounds(center_ijk, half_width_mm, shape_kji, spacing_ijk_mm):
 
 
 def sphere_mask(shape_kji, origin_ijk, center_ijk, spacing_ijk_mm, radius_mm):
-    """Physical sphere evaluated at native voxel centers, array order k,j,i."""
+    """Evaluate a physical sphere at native voxel centers.
+
+    Parameters
+    ----------
+    shape_kji : sequence of int
+        Native array dimensions in k,j,i order.
+    origin_ijk : sequence of int
+        Native i,j,k index of the crop origin.
+    center_ijk : sequence of float
+        Native i,j,k sphere center; fractional coordinates are permitted.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+    radius_mm : float
+        Positive physical sphere radius in millimetres.
+
+    Returns
+    -------
+    ndarray of bool
+        Sphere membership on the native k,j,i crop.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if not np.isfinite(radius_mm) or radius_mm <= 0:
         raise ValueError('Sphere radius must be positive and finite')
     k, j, i = np.ogrid[:shape_kji[0], :shape_kji[1], :shape_kji[2]]
@@ -53,7 +118,26 @@ def sphere_mask(shape_kji, origin_ijk, center_ijk, spacing_ijk_mm, radius_mm):
 
 
 def _tube_nodes(nodes_ijk, radii_mm=None):
-    """Validate ordered controls without sorting or guessing connectivity."""
+    """Validate ordered tube controls and optional per-control radii.
+
+    Parameters
+    ----------
+    nodes_ijk : array_like, shape (N, 3)
+        Ordered native i,j,k control coordinates; the supplied order defines the path.
+    radii_mm : array_like, shape (N,), optional
+        Positive physical radius in millimetres at each node; None validates controls only.
+
+    Returns
+    -------
+    ndarray or tuple of ndarray
+        Floating-point controls, or (controls, radii) when radii were supplied. Arrays may
+        share storage with inputs; no values are changed.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     nodes = np.asarray(nodes_ijk, dtype=float)
     if (nodes.ndim != 2 or nodes.shape[1:] != (3,) or len(nodes) < 2
             or not np.all(np.isfinite(nodes)) or np.any(nodes < 0)):
@@ -69,13 +153,61 @@ def _tube_nodes(nodes_ijk, radii_mm=None):
 
 
 def tube_crop_bounds(nodes_ijk, half_width_mm, shape_kji, spacing_ijk_mm):
-    """Bound every control and segment, expanded by a physical margin per axis."""
+    """Bound an ordered tube centerline with a physical margin on each axis.
+
+    Parameters
+    ----------
+    nodes_ijk : array_like, shape (N, 3)
+        Ordered native i,j,k control coordinates; the supplied order defines the path.
+    half_width_mm : float
+        Positive margin around the control envelope, in millimetres.
+    shape_kji : sequence of int
+        Native array dimensions in k,j,i order.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    low_ijk : tuple of int
+        Inclusive lower crop bounds.
+    high_ijk : tuple of int
+        Exclusive upper crop bounds clipped to the source.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     nodes = _tube_nodes(nodes_ijk)
     return _node_crop_bounds(nodes, half_width_mm, shape_kji, spacing_ijk_mm)
 
 
 def _node_crop_bounds(nodes, half_width_mm, shape_kji, spacing_ijk_mm):
-    """Internal envelope also supports one fractional sphere center."""
+    """Bound one or more fractional native centers with a physical margin.
+
+    Parameters
+    ----------
+    nodes : ndarray, shape (N, 3)
+        Validated nonnegative native i,j,k centers.
+    half_width_mm : float
+        Positive margin around the center envelope, in millimetres.
+    shape_kji : sequence of int
+        Native array dimensions in k,j,i order.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    low_ijk : tuple of int
+        Inclusive lower crop bounds.
+    high_ijk : tuple of int
+        Exclusive upper crop bounds clipped to the source.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     shape = np.asarray(shape_kji)
     spacing = np.asarray(spacing_ijk_mm, dtype=float)
     if shape.shape != (3,) or shape.dtype.kind not in 'iu' or np.any(shape <= 0):
@@ -93,13 +225,36 @@ def _node_crop_bounds(nodes, half_width_mm, shape_kji, spacing_ijk_mm):
 
 
 def tube_mask(shape_kji, origin_ijk, nodes_ijk, spacing_ijk_mm, radii_mm):
-    """Exact union of linearly varying-radius balls along ordered line segments.
+    """Evaluate the exact variable-radius tube union on a native crop.
 
     Coordinates are native i,j,k voxel centers; distances and radii are in mm.
     Minimizing squared distance minus squared radius gives a quadratic on each
     segment. Its minimum is at the clipped stationary point when convex, and
     otherwise at an endpoint. Thus round caps and even steep tapers are included
     without discretizing the centerline or adding spline smoothing.
+
+    Parameters
+    ----------
+    shape_kji : sequence of int
+        Native array dimensions in k,j,i order.
+    origin_ijk : sequence of int
+        Native i,j,k index of the crop origin.
+    nodes_ijk : array_like, shape (N, 3)
+        Ordered native i,j,k control coordinates; the supplied order defines the path.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+    radii_mm : array_like, shape (N,)
+        Positive radius in millimetres for each ordered control.
+
+    Returns
+    -------
+    ndarray of bool
+        Native k,j,i membership, including analytic taper surfaces and round end caps.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     nodes, radii = _tube_nodes(nodes_ijk, radii_mm)
     spacing = np.asarray(spacing_ijk_mm, dtype=float)
@@ -128,6 +283,28 @@ def tube_mask(shape_kji, origin_ijk, nodes_ijk, spacing_ijk_mm, radii_mm):
 
 
 def _resolve_roi(roi, shape, spacing):
+    """Validate a sphere or tube and resolve its crop and display focus.
+
+    Parameters
+    ----------
+    roi : dict
+        Normalized shape, native controls, radius/radii and crop_half_width_mm.
+    shape : sequence of int
+        Source volume dimensions in k,j,i order.
+    spacing : sequence of float
+        Positive native i,j,k voxel spacing, in millimetres.
+
+    Returns
+    -------
+    dict
+        ROI kind, native nodes/radii, rounded focus and inclusive/exclusive native crop
+        bounds.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     kind = roi.get('shape', 'sphere')
     if kind == 'sphere':
         center = np.asarray(roi['center_ijk'], dtype=float)
@@ -155,7 +332,29 @@ def _resolve_roi(roi, shape, spacing):
 
 
 def resolve_preview(config, *, apply_anatomy=True):
-    """Validate metadata/selection without reading voxel payloads."""
+    """Resolve audited source metadata, ROI geometry and optional anatomical selection.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    apply_anatomy : bool, optional
+        Apply the atlas/surface selection filter when configured.
+
+    Returns
+    -------
+    dict
+        Catalog, audit hashes, source files and label identities, crop geometry and optional
+        anatomical-selection evidence. Binary voxel payloads are not loaded.
+
+    Raises
+    ------
+    ValueError
+        If metadata integrity, source size, target identities, geometry or display budgets
+        are invalid.
+    OSError
+        If required source or metadata files cannot be read.
+    """
     input_config = config['input']
     audit_bytes = input_config['audit'].read_bytes()
     catalog_bytes = input_config['catalog'].read_bytes()
@@ -252,7 +451,35 @@ def resolve_preview(config, *, apply_anatomy=True):
 
 
 def read_crop(path, shape_kji, low_ijk, high_ijk):
-    """Read bounded whole axial planes, retaining only a crop; source is read-only."""
+    """Read a bounded crop from a read-only little-endian float32 volume.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Raw binary source stored in native C-order k,j,i layout.
+    shape_kji : sequence of int
+        Native array dimensions in k,j,i order.
+    low_ijk : sequence of int
+        Inclusive native lower crop bounds.
+    high_ijk : sequence of int
+        Exclusive native upper crop bounds.
+
+    Returns
+    -------
+    crop : ndarray
+        Newly allocated little-endian float32 crop in k,j,i order.
+    source : dict
+        Source stat, bytes read and crop content hash; the complete source volume is not
+        hashed.
+
+    Raises
+    ------
+    ValueError
+        If dimensions, crop limits, source size, read length or finite-value checks fail, or
+        the source changes during reading.
+    OSError
+        If the source cannot be read.
+    """
     path = Path(path)
     before = path.stat()
     if before.st_size != int(np.prod(shape_kji)) * 4:
@@ -284,6 +511,32 @@ def read_crop(path, shape_kji, low_ijk, high_ijk):
 
 
 def prepare_crop(resolved, config):
+    """Read source channels and derive native tissue, ROI and target masks.
+
+    Parameters
+    ----------
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    arrays : dict of ndarray
+        act/atn crops, tissue labels, Boolean candidates/ROI/selected masks and
+        attenuation_cm_inverse. All arrays use native k,j,i order.
+    sources : dict
+        Per-channel source-stat and crop-hash evidence.
+
+    Raises
+    ------
+    ValueError
+        If a source or anatomical-selection integrity check fails, or a source uses the
+        reserved released identity.
+    OSError
+        If a source cannot be read.
+    """
     if resolved.get('anatomical_selection') is not None:
         from fakect_anatomy import verify_selection_sources
         verify_selection_sources(resolved)
@@ -310,10 +563,24 @@ def prepare_crop(resolved, config):
 
 
 def selection_diagnostics(arrays, resolved=None):
-    """Describe spatial selection without equating organ IDs with vessels.
+    """Summarize target membership and six-face connectivity without selecting components.
 
     Six-neighbor connectivity is a diagnostic, not automatic component picking:
     one anatomical vessel may contain several IDs or disconnected voxel pieces.
+
+    Parameters
+    ----------
+    arrays : dict of ndarray
+        Matching native k,j,i label (act), attenuation (atn), tissue, candidates, selected
+        and ROI arrays. Inputs are not mutated.
+    resolved : dict, optional
+        Optional original label names and anatomical-selection evidence.
+
+    Returns
+    -------
+    dict
+        Voxel counts, connected-component sizes, selected label counts and review warnings.
+        Input masks are unchanged.
     """
     from scipy import ndimage
 

@@ -19,12 +19,44 @@ SCALAR_STATUS = ('Released voxels retain their input-state attenuation only as a
 
 
 def uses_diagnostic_release(config):
+    """Detect any edit requesting erosion without surrounding-tissue assignment.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    bool
+        True when the single edit or any named edit has assign_surrounding_tissue set to the
+        Python Boolean False.
+    """
     return any(edit.get('assign_surrounding_tissue', True) is False
                for edit in [config.get('edit', {}), *config.get('edits', {}).values()])
 
 
 def released_catalog(catalog):
-    """Copy and extend a catalog, rejecting collisions with source identities."""
+    """Copy the original catalog and add the reserved diagnostic released identity.
+
+    Parameters
+    ----------
+    catalog : dict
+        Original signed label identities and their applied tissue/atlas classifications.
+
+    Returns
+    -------
+    dict
+        Deep-copied catalog with the signed diagnostic label, coarse released category and
+        diagnostic extension metadata. A compatible existing extension is copied without
+        duplication.
+
+    Raises
+    ------
+    ValueError
+        If the catalog is invalid or reserved released identities collide with source
+        labels/categories.
+    """
     from fakect_tissues import _validated_catalog_mapping
     _validated_catalog_mapping(catalog)
     categories = [row for row in catalog['categories']
@@ -55,7 +87,31 @@ def released_catalog(catalog):
 
 
 def release_assignment_metadata(labels_before, release_mask, catalog, policy):
-    """Observe the six-neighbor shell; never reinterpret its anatomical labels."""
+    """Describe the input-state six-face shell surrounding released diagnostic voxels.
+
+    Parameters
+    ----------
+    labels_before : ndarray
+        Input-state signed original labels on the native k,j,i crop.
+    release_mask : array_like
+        Released membership converted to Boolean, matching the native label crop.
+    catalog : dict
+        Original signed label identities and their applied tissue/atlas classifications.
+    policy : dict
+        Normalized reassignment eligibility and optional dimensionless stiffness settings.
+
+    Returns
+    -------
+    dict
+        Released-label metadata, voxel counts, unchanged catalog observations of surrounding
+        labels and optional stiffness evidence. No recipient label or attenuation is
+        inferred.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     from fakect_reassignment import stiffness_coefficients
     labels, mask = np.asarray(labels_before), np.asarray(release_mask, dtype=bool)
     if labels.shape != mask.shape or mask.ndim != 3:

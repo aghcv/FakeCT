@@ -19,6 +19,18 @@ MAX_VOLUME_VOXELS = 16_777_216
 
 
 def _sha256(path):
+    """Hash a model or sample artifact in bounded read chunks.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    str
+        SHA256 hexadecimal digest of complete file bytes.
+    """
     digest = hashlib.sha256()
     with Path(path).open('rb') as handle:
         for block in iter(lambda: handle.read(1024 * 1024), b''):
@@ -27,13 +39,55 @@ def _sha256(path):
 
 
 def _integer(value, name, minimum=1):
+    """Validate a Python or NumPy integer with an inclusive lower bound.
+
+    Parameters
+    ----------
+    value : int or numpy.integer
+        Candidate integer; Boolean values are rejected.
+    name : str
+        Setting name used in errors.
+    minimum : int
+        Inclusive lower bound.
+
+    Returns
+    -------
+    int
+        Validated value converted to a Python integer.
+
+    Raises
+    ------
+    ValueError
+        The value is not an allowed integer or is below the minimum.
+    """
     if isinstance(value, bool) or not isinstance(value, (int, np.integer)) or int(value) < minimum:
         raise ValueError(f'{name} must be an integer >= {minimum}')
     return int(value)
 
 
 def validate_clip_bounds(clip_min, clip_max):
-    """Require an ordered clipping interval usable by float32 image arithmetic.
+    """Validate an ordered attenuation interval usable in float32 arithmetic.
+
+    Parameters
+    ----------
+    clip_min : float or str
+        Lower attenuation clipping bound in inverse centimetres.
+    clip_max : float or str
+        Upper attenuation clipping bound in inverse centimetres.
+
+    Returns
+    -------
+    tuple of float
+        Finite lower and upper Python values with a positive representable float32 span.
+
+    Raises
+    ------
+    ValueError
+        Bounds are invalid, nonfinite, unordered or collapse/overflow in float32.
+
+    Notes
+    -----
+    Require an ordered clipping interval usable by float32 image arithmetic.
 
     Preserve the user's finite Python values in metadata, but reject endpoints
     that round together and ranges that overflow or disappear in float32.
@@ -56,7 +110,28 @@ def validate_clip_bounds(clip_min, clip_max):
 
 
 def model_settings(config):
-    """Validate one normalization and model contract shared by training/inference."""
+    """Validate the shared unet2d training and inference contract.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    dict
+        Patch size in j,i order, fixed attenuation normalization and typed optimization
+        settings.
+
+    Raises
+    ------
+    ValueError
+        Architecture, axial axis, clipping, patch size or optimizer values are invalid.
+
+    Notes
+    -----
+    Validate one normalization and model contract shared by training/inference.
+    """
     source = config.get('model', {})
     if source.get('architecture', 'unet2d') != 'unet2d':
         raise ValueError('model.architecture must be unet2d')
@@ -82,7 +157,29 @@ def model_settings(config):
 
 
 def normalize_image(image, settings):
-    """Fixed 1/cm clipping, then [0,1] scaling; no sample-derived statistics."""
+    """Clip inverse-centimetre attenuation and scale it to the unit interval.
+
+    Parameters
+    ----------
+    image : array_like
+        Finite real attenuation values in inverse centimetres.
+    settings : dict
+        Fixed clip_min and clip_max settings; no sample statistics are used.
+
+    Returns
+    -------
+    numpy.ndarray
+        float32 normalized image with the input shape.
+
+    Raises
+    ------
+    ValueError
+        Image values or clipping bounds are invalid.
+
+    Notes
+    -----
+    Fixed 1/cm clipping, then [0,1] scaling; no sample-derived statistics.
+    """
     values = np.asarray(image)
     if values.dtype.kind not in 'iuf' or not np.all(np.isfinite(values)):
         raise ValueError('Images must contain finite real attenuation values')
@@ -93,7 +190,28 @@ def normalize_image(image, settings):
 
 
 def inspect_manifest(manifest_path):
-    """Validate split/provenance metadata without opening sample NPZ payloads."""
+    """Inspect model split and provenance metadata without opening sample payloads.
+
+    Parameters
+    ----------
+    manifest_path : str or pathlib.Path
+        Scenario-only dataset manifest or anatomy-family experiment lock.
+
+    Returns
+    -------
+    dict
+        Manifest path/hash, normalized samples, shape/split sizes and dataset or
+        experiment metadata.
+
+    Raises
+    ------
+    ValueError
+        Manifest schema, data units, paths, dimensions, hashes or split integrity fail.
+
+    Notes
+    -----
+    Validate split/provenance metadata without opening sample NPZ payloads.
+    """
     path = Path(manifest_path).resolve()
     data = json.loads(path.read_text())
     if data.get('schema_version') == 'fakect.model-experiment-lock/1':
@@ -173,6 +291,24 @@ class PatchDataset:
     using the paired valid mask. Background-only patches remain in the dataset.
     """
     def __init__(self, manifest_path, settings):
+        """Build an axial train/validation patch index without decoding image arrays.
+
+        Parameters
+        ----------
+        manifest_path : str or pathlib.Path
+            Prepared dataset manifest or frozen experiment-lock path.
+        settings : dict
+            Validated model settings with j,i patch size, batch size and seed.
+
+        Returns
+        -------
+        None
+            Initializes metadata, per-split patch records and an empty single-volume cache.
+
+        Notes
+        -----
+        Test samples remain indexed in manifest metadata but are excluded from accessible training patch records.
+        """
         self.manifest = inspect_manifest(manifest_path)
         self.settings = dict(settings)
         self.shape = self.manifest['shape_kji']
@@ -192,11 +328,42 @@ class PatchDataset:
                         self._patches[split].append((sample_index, k, j, i))
 
     def patches(self, split):
+        """Return all nonoverlapping patch records for one training-accessible split.
+
+        Parameters
+        ----------
+        split : str
+            Either train or validation; test access is rejected.
+
+        Returns
+        -------
+        tuple of tuple of int
+            Records (sample_index, k, j, i), including background and edge tiles.
+
+        Raises
+        ------
+        ValueError
+            The requested split is not train or validation.
+        """
         if split not in self._patches:
             raise ValueError('Only train and validation patches are available; test is held untouched')
         return tuple(self._patches[split])
 
     def ordered_patches(self, split, epoch=0):
+        """Order patches deterministically while keeping each decoded volume together.
+
+        Parameters
+        ----------
+        split : str
+            Accessible train or validation split.
+        epoch : int
+            Epoch number combined with the model seed for training shuffles.
+
+        Returns
+        -------
+        tuple of tuple of int
+            Seeded per-epoch train order, or unchanged validation order.
+        """
         patches = self.patches(split)
         if split != 'train':
             return patches
@@ -216,6 +383,27 @@ class PatchDataset:
         return tuple(result)
 
     def _load(self, sample_index):
+        """Verify and decode one non-test sample into the single-volume cache.
+
+        Parameters
+        ----------
+        sample_index : int
+            Index in the normalized manifest sample list.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            float32 image and uint8 mask; optionally resampled to the frozen model grid.
+
+        Raises
+        ------
+        ValueError
+            Test access, archive/hash, shape/value or resampling contract fails.
+
+        Notes
+        -----
+        Releases the prior cache, records the loaded variant ID and does not retain a full normalized image copy.
+        """
         sample = self.manifest['samples'][sample_index]
         if sample['split'] == 'test':
             raise ValueError('Test payloads are not available to the training runner')
@@ -249,6 +437,23 @@ class PatchDataset:
         return self._cache
 
     def batch(self, records):
+        """Assemble normalized patches, target masks and valid-pixel masks.
+
+        Parameters
+        ----------
+        records : sequence of tuple of int
+            Patch records (sample_index, k, j, i) in the desired batch order.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            float32 image, binary target and validity arrays, each shape (N, height, width,
+            1).
+
+        Notes
+        -----
+        Lower/right zero padding is excluded using the validity channel; decoding updates the single-volume cache.
+        """
         height, width = self.patch_size
         images = np.zeros((len(records), height, width, 1), dtype=np.float32)
         masks = np.zeros_like(images)
@@ -263,6 +468,21 @@ class PatchDataset:
         return images, masks, valid
 
     def batches(self, split, epoch=0):
+        """Yield bounded model batches for one split and epoch.
+
+        Parameters
+        ----------
+        split : str
+            Train or validation partition.
+        epoch : int
+            Epoch used for reproducible training order.
+
+        Returns
+        -------
+        iterator of tuple of numpy.ndarray
+            Image, target and valid-mask batches of shape (N, height, width, 1), with N at
+            most batch_size.
+        """
         records = self.ordered_patches(split, epoch)
         batch_size = self.settings['batch_size']
         for start in range(0, len(records), batch_size):
@@ -270,6 +490,23 @@ class PatchDataset:
 
 
 def _tensorflow():
+    """Import TensorFlow only when a model operation requires it.
+
+    Parameters
+    ----------
+    None
+        This function takes no explicit arguments.
+
+    Returns
+    -------
+    module
+        Imported TensorFlow module.
+
+    Raises
+    ------
+    RuntimeError
+        The optional TensorFlow dependency cannot be imported.
+    """
     try:
         import tensorflow as tf
     except ImportError as exc:
@@ -278,6 +515,23 @@ def _tensorflow():
 
 
 def _loss_function(tf):
+    """Construct the registered validity-masked BCE plus Dice loss.
+
+    Parameters
+    ----------
+    tf : module
+        Imported TensorFlow module; supplied to keep optional imports explicit.
+
+    Returns
+    -------
+    callable
+        Loss accepting target/validity channels and one predicted probability channel;
+        returns one loss per batch item.
+
+    Notes
+    -----
+    Registers ``FakeCT.valid_bce_dice`` for Keras serialization. Padding contributes neither BCE nor Dice terms.
+    """
     @tf.keras.utils.register_keras_serializable(package='FakeCT', name='valid_bce_dice')
     def valid_bce_dice(y_true, y_pred):
         # Source masks occupy channel zero; channel one excludes padding.
@@ -293,7 +547,28 @@ def _loss_function(tf):
 
 
 def build_unet(settings):
-    """Two pooling levels, 16/32/64 filters, one sigmoid target channel."""
+    """Build and compile the bounded two-level 2D segmentation U-Net.
+
+    Parameters
+    ----------
+    settings : dict
+        Validated j,i patch size and positive learning_rate.
+
+    Returns
+    -------
+    tensorflow.keras.Model
+        Single attenuation input and one sigmoid target channel, using 16/32/64 filters,
+        Adam and validity-masked BCE plus Dice.
+
+    Raises
+    ------
+    RuntimeError
+        TensorFlow is unavailable.
+
+    Notes
+    -----
+    Two pooling levels, 16/32/64 filters, one sigmoid target channel.
+    """
     tf = _tensorflow()
     layers = tf.keras.layers
     inputs = layers.Input(shape=tuple(settings['patch_size']) + (1,), name='attenuation')
@@ -313,6 +588,28 @@ def build_unet(settings):
 
 
 def _validation(model, dataset, tf):
+    """Evaluate validity-masked losses and voxel counts over validation patches.
+
+    Parameters
+    ----------
+    model : tensorflow.keras.Model
+        Segmentation model accepting normalized patch batches.
+    dataset : PatchDataset
+        Training-accessible dataset whose validation partition is nonempty.
+    tf : module
+        Imported TensorFlow module; supplied to keep optional imports explicit.
+
+    Returns
+    -------
+    dict
+        Mean loss, pooled Dice, TP/FP/FN, valid voxel/patch counts and the fixed 0.5
+        threshold.
+
+    Raises
+    ------
+    ValueError
+        Validation prediction shape or finite-probability requirements fail.
+    """
     loss_fn = _loss_function(tf)
     total_loss, examples, tp, fp, fn, valid_voxels = 0., 0, 0, 0, 0, 0
     for images, masks, valid in dataset.batches('validation'):
@@ -335,7 +632,35 @@ def _validation(model, dataset, tf):
 
 
 def train_segmentation(config, manifest_path):
-    """Fit train patches, select the best epoch using validation; never open test.
+    """Train on prepared patches and retain the lowest-validation-loss epoch.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    manifest_path : str or pathlib.Path
+        Prepared dataset manifest or frozen experiment-lock path.
+
+    Returns
+    -------
+    dict
+        Saved model metadata, history, normalization, selected epoch and source
+        provenance.
+
+    Raises
+    ------
+    ValueError
+        Model directory setting, payload/manifest, losses or settings are invalid.
+    FileExistsError
+        The model output directory is nonempty.
+    RuntimeError
+        TensorFlow is unavailable.
+
+    Notes
+    -----
+    Writes model.keras, per-epoch history and model-metadata.json. Test payloads are never loaded or used for model selection.
+
+    Fit train patches, select the best epoch using validation; never open test.
 
     The caller must explicitly choose the study's fit stage. This function does
     not submit jobs or prepare/alter the supplied synthetic dataset.
@@ -411,7 +736,34 @@ def train_segmentation(config, manifest_path):
 
 
 def predict_axial_slice(model, image_ji, settings, batch_size=None):
-    """Predict a whole native axial slice with the exact training tile contract."""
+    """Predict an axial slice using the exact normalization and tiling contract.
+
+    Parameters
+    ----------
+    model : object
+        Model exposing predict_on_batch with one sigmoid output channel.
+    image_ji : array_like of shape (J, I)
+        Nonempty axial attenuation slice in inverse centimetres.
+    settings : dict
+        Training normalization, j,i patch size and default batch size.
+    batch_size : int or None
+        Maximum inference patch count per batch; None uses settings.
+
+    Returns
+    -------
+    numpy.ndarray
+        float32 target probabilities with the source j,i shape; edge padding is cropped
+        away.
+
+    Raises
+    ------
+    ValueError
+        Input shape, batch size, clipping or model output probabilities are invalid.
+
+    Notes
+    -----
+    Predict a whole native axial slice with the exact training tile contract.
+    """
     image = np.asarray(image_ji)
     if image.ndim != 2 or 0 in image.shape:
         raise ValueError('Inference requires a nonempty axial j,i image')
@@ -435,7 +787,29 @@ def predict_axial_slice(model, image_ji, settings, batch_size=None):
 
 
 def load_segmentation(model_directory):
-    """Load frozen best-validation model and its normalization for inference."""
+    """Load a saved segmentation model and its frozen preprocessing metadata.
+
+    Parameters
+    ----------
+    model_directory : str or pathlib.Path
+        Directory containing ``model.keras`` and ``model-metadata.json``.
+
+    Returns
+    -------
+    tuple of tensorflow.keras.Model and dict
+        Loaded inference-only model and verified metadata.
+
+    Raises
+    ------
+    ValueError
+        Metadata schema, checksum or model input/output shapes disagree.
+    RuntimeError
+        TensorFlow is unavailable.
+
+    Notes
+    -----
+    Load frozen best-validation model and its normalization for inference.
+    """
     directory = Path(model_directory)
     metadata = json.loads((directory / 'model-metadata.json').read_text())
     if metadata.get('schema_version') != MODEL_SCHEMA or metadata.get('model_file') != 'model.keras':

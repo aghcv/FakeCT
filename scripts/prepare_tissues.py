@@ -22,10 +22,34 @@ from fakect_tissues import AtlasClassifier, build_catalog, coarse_labels, read_o
 
 
 def read_json(path):
+    """Read tissue or audit metadata from a JSON file.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Existing JSON metadata file.
+
+    Returns
+    -------
+    object
+        Decoded JSON value; parsing/filesystem exceptions propagate.
+    """
     return json.loads(Path(path).read_text())
 
 
 def digest(path):
+    """Stream a SHA-256 digest without loading the complete file into memory.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Existing file to read in one-MiB blocks.
+
+    Returns
+    -------
+    str
+        Hexadecimal SHA-256 digest; source bytes are unchanged.
+    """
     hasher = hashlib.sha256()
     with Path(path).open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
@@ -34,10 +58,44 @@ def digest(path):
 
 
 def write_json(path, value):
+    """Write indented finite JSON metadata with a terminal newline.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Destination file in an existing directory.
+    value : JSON-compatible object
+        Metadata to serialize; NaN and infinity are rejected.
+
+    Returns
+    -------
+    None
+        Writes the requested files or prints CLI output; no return value.
+
+    Notes
+    -----
+    Overwrites an existing file; command handlers restrict the output revision.
+    """
     Path(path).write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
 
 
 def new_output(path):
+    """Create or reuse an empty artifact directory while rejecting populated revisions.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Destination directory to create, including missing parents.
+
+    Returns
+    -------
+    pathlib.Path
+        Empty output directory ready for new artifacts.
+
+    Notes
+    -----
+    Raises ValueError for a populated directory; does not remove existing files.
+    """
     path = Path(path)
     if path.exists() and any(path.iterdir()):
         raise ValueError(f"Output directory is not empty: {path}; use a new versioned location")
@@ -46,6 +104,22 @@ def new_output(path):
 
 
 def merge_dictionaries(paths):
+    """Merge organ tables while retaining source provenance for each original ID.
+
+    Parameters
+    ----------
+    paths : sequence of path-like
+        Organ dictionary files interpreted by read_organ_table.
+
+    Returns
+    -------
+    tuple of dict and collections.defaultdict
+        ID-to-name mapping and ID-to-list-of-source-paths mapping.
+
+    Notes
+    -----
+    Conflicting names for the same original signed ID raise ValueError.
+    """
     names, sources = {}, defaultdict(list)
     for path in paths:
         for original_id, name in read_organ_table(path).items():
@@ -57,7 +131,26 @@ def merge_dictionaries(paths):
 
 
 def scan_surfaces(case_dir, frame):
-    """Stream six .raw groups without loading or interpreting triangle geometry."""
+    """Inventory named blocks in six RAW surface groups without loading triangle geometry.
+
+    Parameters
+    ----------
+    case_dir : str or pathlib.Path
+        Directory whose basename is the case ID used in RAW filenames.
+    frame : int
+        Frame number included in each case_frame_group.raw filename.
+
+    Returns
+    -------
+    dict
+        Surface-header inventory with file hashes, groups, local indices and names.
+
+    Notes
+    -----
+    Reads body, bones, heart, muscle, organs and vessels groups. Per-file surface
+    ordinals are local occurrences, never ACT IDs or DPI global block indices.
+    Missing group files raise FileNotFoundError.
+    """
     case_dir = Path(case_dir)
     files = []
     for group in ("body", "bones", "heart", "muscle", "organs", "vessels"):
@@ -89,6 +182,24 @@ def scan_surfaces(case_dir, frame):
 
 
 def catalog_command(args):
+    """Join atlas classifications, organ dictionaries and optional RAW surface inventories.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Catalog CLI options: atlas, hierarchy, policy, organ tables, optional surface source/frame and output directory.
+
+    Returns
+    -------
+    None
+        Writes the requested files or prints CLI output; no return value.
+
+    Notes
+    -----
+    Writes label/surface catalogs, membership CSV and a summary in an empty
+    revision; prints counts. Preserves original signed IDs and records ambiguous
+    name joins rather than inventing voxel ownership.
+    """
     paths = [args.organ_table, *args.supplemental_organ_table]
     names, dictionary_sources = merge_dictionaries(paths)
     classifier = AtlasClassifier(args.atlas, args.hierarchy, args.policy)
@@ -146,6 +257,22 @@ def catalog_command(args):
 
 
 def material_table(log_path):
+    """Parse the explicitly unit-labelled material coefficient table from an XCAT log.
+
+    Parameters
+    ----------
+    log_path : str or pathlib.Path
+        Text log containing consecutive 1/cm and 1/pixel table headings.
+
+    Returns
+    -------
+    list of dict
+        Material names and linear attenuation coefficients in cm^-1.
+
+    Notes
+    -----
+    Raises ValueError when the explicit 1/cm table boundaries are absent.
+    """
     text = Path(log_path).read_text()
     start = text.find("Linear Attenuation Coefficients (1/cm):")
     end = text.find("Linear Attenuation Coefficients (1/pixel):", start)
@@ -160,6 +287,24 @@ def material_table(log_path):
 
 
 def profile_command(args):
+    """Compare observed paired attenuation levels across atlas-derived tissue groups.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Profile options: catalog, paired audit, optional case list, output directory and no_plot flag.
+
+    Returns
+    -------
+    None
+        Writes the requested files or prints CLI output; no return value.
+
+    Notes
+    -----
+    Checks source-log hashes and writes JSON/CSV plus an optional scatter plot.
+    Statistics describe sampled level sets, not voxel-weighted distributions,
+    full-volume extrema, unique tissue identities or inferred HU calibration.
+    """
     catalog, audit = read_json(args.catalog), read_json(args.audit)
     unknown_category = next(c for c in catalog["categories"] if c["name"] == "unknown")
     if args.cases and set(args.cases) - {c["case_id"] for c in audit["cases"]}:
@@ -243,6 +388,24 @@ def profile_command(args):
 
 
 def reduce_command(args):
+    """Export a reversible coarse tissue view of a bounded original-label array.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Reduction options: catalog, labels NPY, geometry JSON, output NPZ, strict membership and voxel budget.
+
+    Returns
+    -------
+    None
+        Writes the requested files or prints CLI output; no return value.
+
+    Notes
+    -----
+    Validates 3D shape, zyx array order, positive i,j,k spacing in mm and optional
+    crop bounds. Writes a fresh compressed NPZ containing original signed IDs,
+    coarse labels and provenance. Never overwrites the source or destination.
+    """
     import numpy as np
     catalog = read_json(args.catalog)
     original = np.load(args.labels, mmap_mode="r", allow_pickle=False)
@@ -281,6 +444,23 @@ def reduce_command(args):
 
 
 def main():
+    """Dispatch tissue catalog construction, attenuation profiling or reversible reduction.
+
+    Parameters
+    ----------
+    None
+        Arguments are read from the process command line.
+
+    Returns
+    -------
+    None
+        Writes the requested files or prints CLI output; no return value.
+
+    Notes
+    -----
+    Prints command results; argparse exits with status 2 for handled validation
+    or missing-file errors.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("catalog", help="Join the DPI atlas to explicit organ dictionaries and raw surface names")

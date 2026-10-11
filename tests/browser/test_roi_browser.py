@@ -18,7 +18,7 @@ class RoiBrowserTests(unittest.TestCase):
         # mandatory browser lane into a misleading optional skip.
         self.assertIsNotNone(importlib.util.find_spec('playwright'))
         from playwright.sync_api import sync_playwright
-        from student_demo import initialize
+        from generate_demo import initialize
         from train_study import run
         with tempfile.TemporaryDirectory() as temporary:
             project = initialize(Path(temporary)/'demo')

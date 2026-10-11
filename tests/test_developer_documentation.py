@@ -20,9 +20,10 @@ class Links(HTMLParser):
         if tag=='link' and 'href' in attrs:self.resources.append(attrs['href'])
 
 
-class StudentDocumentationTests(unittest.TestCase):
+class DeveloperDocumentationTests(unittest.TestCase):
     def test_offline_guides_have_valid_local_links_and_anchors(self):
-        for relative in ('docs/student/index.html','docs/student/testing.html'):
+        for relative in ('docs/developer/index.html','docs/developer/testing.html',
+                         'docs/developer/contributing.html','docs/developer/api.html'):
             with self.subTest(guide=relative):
                 path=ROOT/relative;document=Links(path.read_text())
                 self.assertEqual(len(document.ids),len(set(document.ids)))
@@ -36,8 +37,8 @@ class StudentDocumentationTests(unittest.TestCase):
                     if url.fragment and target.suffix=='.html':
                         self.assertIn(url.fragment,Links(target.read_text()).ids,href)
 
-    def test_documented_student_clis_start_without_an_ml_backend(self):
-        commands=(('student_demo.py','--smoke-test'),('prepare_cohort.py','--preview-mode'),
+    def test_documented_workflow_clis_start_without_an_ml_backend(self):
+        commands=(('generate_demo.py','--smoke-test'),('prepare_cohort.py','--preview-mode'),
                   ('model_experiment.py','summarize'))
         for script,option in commands:
             with self.subTest(script=script):

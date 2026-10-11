@@ -1,4 +1,4 @@
-"""Protect student entry points, preserved evidence and generated-data boundaries."""
+"""Protect workflow entry points, preserved evidence and generated-data boundaries."""
 import hashlib
 import json
 from pathlib import Path
@@ -8,8 +8,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-STUDENT_SCRIPTS = {
-    'student_demo.py', 'prepare_cohort.py', 'train_study.py', 'preview_roi.py',
+WORKFLOW_SCRIPTS = {
+    'generate_demo.py', 'prepare_cohort.py', 'train_study.py', 'preview_roi.py',
     'model_experiment.py', 'prepare_tissues.py', 'resolve_anatomy.py',
     'cohort_registry.py',
 }
@@ -32,17 +32,17 @@ class ProjectLayoutTests(unittest.TestCase):
                                 text=True, capture_output=True, timeout=20)
         return result
 
-    def test_student_commands_and_guide_directories_are_unambiguous(self):
-        self.assertEqual({p.name for p in (ROOT / 'scripts').glob('*.py')}, STUDENT_SCRIPTS)
+    def test_workflow_commands_and_guide_directories_are_unambiguous(self):
+        self.assertEqual({p.name for p in (ROOT / 'scripts').glob('*.py')}, WORKFLOW_SCRIPTS)
         for directory, permitted in (
-            ('configs', {'case-studies', 'examples', 'students', 'tissues'}),
-            ('docs', {'student', 'reference'}),
+            ('configs', {'case-studies', 'development', 'examples', 'templates', 'tissues'}),
+            ('docs', {'developer', 'reference'}),
         ):
             folders = {p.name for p in (ROOT / directory).iterdir()
                        if p.is_dir() and not p.name.startswith('.') and p.name != '__pycache__'}
             self.assertEqual(folders, permitted, directory)
-        for relative in ('docs/student/index.html', 'docs/student/testing.html',
-                         'configs/students/coa-template.ini', 'requirements/core.txt',
+        for relative in ('docs/developer/index.html', 'docs/developer/testing.html',
+                         'configs/templates/coa-template.ini', 'requirements/core.txt',
                          'requirements/dev.txt', 'requirements/tensorflow.txt'):
             self.assertTrue((ROOT / relative).is_file(), relative)
 
@@ -79,22 +79,22 @@ class ProjectLayoutTests(unittest.TestCase):
                     actual = hashlib.sha256((ROOT / move['to']).read_bytes()).hexdigest()
                     self.assertEqual(actual, move['original_sha256'])
                     checked.append(move['from'])
-        self.assertIn('docs/student/source-snapshot.json', checked)
+        self.assertTrue(any(Path(path).name == 'source-snapshot.json' for path in checked))
         self.assertIn('docs/integration/2026-09-16/xcat-results.json', checked)
 
-    def test_git_ignores_generated_artifacts_but_keeps_teaching_sources(self):
+    def test_git_ignores_generated_artifacts_but_keeps_source_examples(self):
         ignored = (
-            'outputs/student-demo/cases/demo01/source_act_1.bin',
+            'outputs/demo/cases/demo01/source_act_1.bin',
             'scratch/experiment-notes.txt', 'data/private-phantom.csv',
-            'checkpoints/student.keras', 'checkpoints/student.weights.h5',
-            'checkpoints/student.pt', 'checkpoints/student.pth',
-            'checkpoints/student.ckpt.index', 'checkpoints/student.safetensors',
+            'checkpoints/model.keras', 'checkpoints/model.weights.h5',
+            'checkpoints/model.pt', 'checkpoints/model.pth',
+            'checkpoints/model.ckpt.index', 'checkpoints/model.safetensors',
             '.ruff_cache/result', '.mypy_cache/result', '.hypothesis/examples/result',
         )
         included = tuple(PUBLIC_VOLUMES) + (
-            'configs/students/coa-template.ini', 'configs/case-studies/coa/project.json',
+            'configs/templates/coa-template.ini', 'configs/case-studies/coa/project.json',
             'references/atlas/dpi/anatomy_atlas.csv',
-            'docs/student/assets/roi-four-panels.png',
+            'docs/developer/assets/roi-four-panels.png',
         )
         result = self.git('check-ignore', '--no-index', '--stdin',
                           input='\n'.join(ignored + included) + '\n')

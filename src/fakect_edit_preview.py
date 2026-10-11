@@ -11,7 +11,40 @@ RELEASED_COLOR = '#ff2ea6'
 
 
 def _render_released_neighborhood(arrays, edit, resolved, config, output, cmap, categories, palette, focus_mask):
-    """Show a small native tissue neighborhood around an actual released voxel."""
+    """Plot native tissue neighborhoods around a representative released voxel.
+
+    Parameters
+    ----------
+    arrays : dict
+        Loaded native crop channels and Boolean masks, with volume arrays in k,j,i order. Attenuation_cm_inverse values use cm^-1.
+    edit : dict
+        Applied result with edited_tissue_labels and release/change masks matching the input crop.
+    resolved : dict
+        Resolved crop bounds and source geometry; indices use i,j,k order and spacing_ijk_mm uses millimetres.
+    config : dict
+        Validated workflow settings, including ROI geometry, selection, study and preview options.
+    output : pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+    cmap : matplotlib.colors.Colormap
+        Category-ID color lookup for before/after tissue slices.
+    categories : list of dict
+        Category IDs and names available for the figure legend.
+    palette : dict
+        Tissue-name to color mapping.
+    focus_mask : numpy.ndarray of bool, shape (k, j, i)
+        Nonempty released-voxel mask used to choose a representative native focus.
+
+    Returns
+    -------
+    dict
+        Relative released-neighborhood.png path, native i,j,k focus and locating-mask voxel count.
+
+    Notes
+    -----
+    Writes or replaces released-neighborhood.png in output. Diagnostic labels retain placeholder attenuation; this view does not perform tissue reassignment. Source arrays are unchanged.
+
+    Show a small native tissue neighborhood around an actual released voxel.
+    """
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
     from matplotlib.lines import Line2D
@@ -69,7 +102,34 @@ def _render_released_neighborhood(arrays, edit, resolved, config, output, cmap, 
 
 
 def render_edit_comparison(arrays, edit, resolved, config, output_dir, *, before_is_source=True):
-    """Plot labels and applied/proposed changes without displaying a CT proxy as CT."""
+    """Plot native before/after labels, change masks and achieved geometry profiles.
+
+    Parameters
+    ----------
+    arrays : dict
+        Loaded native crop channels and Boolean masks, with volume arrays in k,j,i order. Attenuation_cm_inverse values use cm^-1.
+    edit : dict
+        Morphology result with before/after target masks, edited tissue labels, change masks, strength and summary.
+    resolved : dict
+        Resolved crop bounds and source geometry; indices use i,j,k order and spacing_ijk_mm uses millimetres.
+    config : dict
+        Validated workflow settings, including ROI geometry, selection, study and preview options.
+    output_dir : str or pathlib.Path
+        Destination directory for generated preview assets.
+    before_is_source : bool, optional
+        Whether the input represents the original source rather than an intermediate serial pass; defaults to True and controls captions.
+
+    Returns
+    -------
+    dict
+        Figure paths and native axial area values in mm^2, plus available centerline-profile and diagnostic-release metadata.
+
+    Notes
+    -----
+    Writes comparison/profile PNGs and optional profile data and release-neighborhood assets into an existing output directory. Figure files can be replaced. All source/result arrays are read only; no recovered CT is produced.
+
+    Plot labels and applied/proposed changes without displaying a CT proxy as CT.
+    """
     os.environ.setdefault('MPLCONFIGDIR', '/tmp/fakect-matplotlib')
     import matplotlib
     matplotlib.use('Agg')

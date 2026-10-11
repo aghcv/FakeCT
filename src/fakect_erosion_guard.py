@@ -21,7 +21,24 @@ REFERENCE_SEMANTICS = (
 
 
 def erosion_guard_spec(config):
-    """Validate programmatic inputs as well as settings parsed from an INI."""
+    """Validate and normalize per-edit erosion acceptance and retry settings.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    dict
+        Volume ratio floor, connectivity flag, backoff factor/count and enabled status.
+        Omitted checks are disabled.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     edit = config.get('edit', {})
     if _FIELDS.intersection(edit) and edit.get('operation', 'none') not in ('erosion', 'none'):
         raise ValueError('Erosion safeguard fields require operation=erosion')
@@ -47,7 +64,31 @@ def erosion_guard_spec(config):
 
 
 def create_erosion_guard(arrays, resolved, config):
-    """Capture an immutable measurement reference; return None when disabled."""
+    """Capture the fixed pre-step local target and affected connectivity reference.
+
+    Parameters
+    ----------
+    arrays : dict of ndarray
+        Matching native k,j,i label (act), attenuation (atn), tissue, candidates, selected
+        and ROI arrays. Inputs are not mutated.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    dict or None
+        Independent scope mask, original local count, voxel volume in mm3 and optional full-
+        target component reference; None when safeguards are disabled or the operation is
+        not erosion.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     options = erosion_guard_spec(config)
     if not options['enabled'] or config.get('edit', {}).get('operation') != 'erosion':
         return None
@@ -70,7 +111,26 @@ def create_erosion_guard(arrays, resolved, config):
 
 
 def evaluate_erosion_guard(reference, target_after):
-    """Evaluate survivors against fixed local volume and affected component IDs."""
+    """Check local retained volume and affected component survival against a fixed reference.
+
+    Parameters
+    ----------
+    reference : dict
+        Pre-step safeguard measurement captured by create_erosion_guard.
+    target_after : ndarray of bool
+        Full current target membership on the same native k,j,i crop.
+
+    Returns
+    -------
+    dict
+        Retained count/ratio, optional component details, rejection reasons and accepted
+        flag. No target voxels are changed.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     target = np.asarray(target_after)
     scope = reference['scope_mask']
     if target.dtype.kind != 'b' or target.shape != scope.shape:
@@ -113,7 +173,39 @@ def evaluate_erosion_guard(reference, target_after):
 
 
 def apply_guarded_erosion(arrays, resolved, config, reference=None):
-    """Retry from identical pass inputs and publish only the accepted result."""
+    """Retry erosion from identical pass inputs until safeguards accept a trial.
+
+    Parameters
+    ----------
+    arrays : dict of ndarray
+        Matching native k,j,i label (act), attenuation (atn), tissue, candidates, selected
+        and ROI arrays. Inputs are not mutated.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    reference : dict, optional
+        Fixed pre-step safeguard reference; None captures a new reference when enabled.
+
+    Returns
+    -------
+    dict
+        Edited original/tissue labels, before/after target masks,
+        proposal/accepted/blocked/unresolved masks, millimetre strength field, copied
+        attenuation proxy and audit summary. Optional stiffness, directional, lineage and
+        released-marker fields follow the configured mode. Source arrays are unchanged.
+        Guarded results additionally contain scope/retained masks and accepted-
+        distance/backoff evidence in summary. Failed trials never become retry inputs.
+
+    Raises
+    ------
+    ValueError
+        If guard settings or the input are invalid, settings changed relative to the
+        reference, or even the no-op state violates it.
+    RuntimeError
+        If morphology invariants fail.
+    """
     from fakect_morphology import _apply_morphology_once
     options = erosion_guard_spec(config)
     if not options['enabled'] or config.get('edit', {}).get('operation') != 'erosion':

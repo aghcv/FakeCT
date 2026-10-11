@@ -6,6 +6,28 @@ import numpy as np
 
 
 def render_training_target(arrays, resolved, config, output):
+    """Plot the original training-target definition against source attenuation and ROI.
+
+    Parameters
+    ----------
+    arrays : dict
+        Loaded native crop channels and Boolean masks, with volume arrays in k,j,i order. Attenuation_cm_inverse values use cm^-1.
+    resolved : dict
+        Resolved crop bounds and source geometry; indices use i,j,k order and spacing_ijk_mm uses millimetres.
+    config : dict
+        Validated workflow settings, including ROI geometry, selection, study and preview options.
+    output : str or pathlib.Path
+        Destination directory for preview assets; paths written by this renderer are relative to this directory.
+
+    Returns
+    -------
+    dict
+        Native target/ROI voxel counts, six-neighbor component count, source-only image units and explicit annotation scope.
+
+    Notes
+    -----
+    Writes or replaces training-target.png in an existing output directory. Arrays remain unchanged; recipe studies use selected ancestry while legacy studies use configured source IDs over the full crop. This is not a completed cohort or model result.
+    """
     os.environ.setdefault('MPLCONFIGDIR', '/tmp/fakect-matplotlib')
     import matplotlib
     matplotlib.use('Agg')

@@ -9,6 +9,27 @@ MAX_DIRECTION_VOXELS = MAX_NATIVE_EDIT_VOXELS
 
 
 def directional_spec(resolved, config):
+    """Validate whether an edit uses an all-around or curvature-relative sector.
+
+    Parameters
+    ----------
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    dict or None
+        Inner/outer direction and full angular width in degrees; None for all-around edits.
+        Curvature-relative editing requires at least four parent tube controls.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     edit = config.get('edit', {})
     direction = edit.get('direction', 'all')
     if direction not in ('all', 'inner', 'outer'):
@@ -27,13 +48,37 @@ def directional_spec(resolved, config):
 
 
 def direction_weight_field(shape_kji, resolved, config, roi_mask):
-    """Compute a raised-cosine angular factor, leaving source geometry fixed.
+    """Evaluate curvature-relative raised-cosine weights on a fixed native ROI.
 
     Original parent arc position selects the spline frame via its retained
     parent parameter. Reliable bracketing normals are interpolated, projected
     perpendicular to the interpolated tangent, and normalized. Intervals with
     opposing normals are unusable: true curvature direction is never sign-flipped
     to manufacture continuity through an inflection.
+
+    Parameters
+    ----------
+    shape_kji : sequence of int
+        Native array dimensions in k,j,i order.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    roi_mask : ndarray of bool
+        Bounded native k,j,i edit support with the requested shape.
+
+    Returns
+    -------
+    dict
+        Native direction_weight in [0, 1], direction_reliable_mask, direction_cosine and
+        frame/support audit summary. Unreliable, axis-undefined and out-of-sector voxels
+        have zero weight; source geometry is unchanged.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     from fakect_centerline_frame import build_centerline_frame
     from fakect_morphology import tube_position_mm
@@ -108,7 +153,27 @@ def direction_weight_field(shape_kji, resolved, config, roi_mask):
 
 
 def recipe_centerline_frames(config, resolved):
-    """Frames for the original parent paths, independent of selected intervals."""
+    """Build curvature/display frames for each referenced original parent tube.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+
+    Returns
+    -------
+    dict
+        Parent ROI names mapped to sampled frame dictionaries; empty when neither centerline
+        settings nor directional edits request frames.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     from fakect_centerline_frame import build_centerline_frame
     if 'centerline' not in config and not any(edit.get('direction', 'all') != 'all'
                                             for edit in config.get('edits', {}).values()):

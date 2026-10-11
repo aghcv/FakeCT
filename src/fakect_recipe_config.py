@@ -28,6 +28,18 @@ MAX_ITERATIONS = 20
 
 
 def _parser(sections):
+    """Build a strict case-sensitive parser from section dictionaries.
+
+    Parameters
+    ----------
+    sections : dict of dict
+        Section names and raw setting values suitable for ConfigParser.read_dict.
+
+    Returns
+    -------
+    configparser.ConfigParser
+        New parser with interpolation disabled and exact field capitalization.
+    """
     result = configparser.ConfigParser(interpolation=None, strict=True)
     result.optionxform = str
     result.read_dict(sections)
@@ -35,6 +47,29 @@ def _parser(sections):
 
 
 def _fields(parser, section, expected, optional=frozenset()):
+    """Validate required and optional recipe keys and reject multiline values.
+
+    Parameters
+    ----------
+    parser : configparser.ConfigParser
+        Already-read, case-sensitive configuration sections.
+    section : str
+        Existing section whose fields are checked.
+    expected : set of str
+        Required field names.
+    optional : set of str, optional
+        Additional permitted field names.
+
+    Returns
+    -------
+    None
+        Leaves the parser unchanged when validation succeeds.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     actual = set(parser[section])
     if actual - expected - optional or expected - actual:
         raise ValueError(f"[{section}] invalid settings: unknown={sorted(actual - expected - optional)}, "
@@ -44,7 +79,28 @@ def _fields(parser, section, expected, optional=frozenset()):
 
 
 def load_recipe_config(path, *, repo_root=None):
-    """Read a recipe INI, retaining repository-relative paths and exact ordering."""
+    """Read and normalize a named recipe INI with repository-relative paths.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        INI filename, resolved using the caller's working directory.
+    repo_root : str or pathlib.Path, optional
+        Root for paths inside the INI; defaults to the repository containing this module.
+
+    Returns
+    -------
+    dict
+        Validated common sections, named ROIs, ordered edits, optional centerline/stiffness
+        settings and Path objects.
+
+    Raises
+    ------
+    ValueError
+        If syntax, schema or field validation fails.
+    OSError
+        If the INI cannot be read.
+    """
     parser = configparser.ConfigParser(interpolation=None, inline_comment_prefixes=("#",),
                                        strict=True, empty_lines_in_values=False)
     parser.optionxform = str
@@ -57,6 +113,26 @@ def load_recipe_config(path, *, repo_root=None):
 
 
 def _stiffness(parser, mode):
+    """Parse tissue and signed original-label resistance settings for stiffness mode.
+
+    Parameters
+    ----------
+    parser : configparser.ConfigParser
+        Already-read, case-sensitive configuration sections.
+    mode : str
+        Normalized reassignment mode.
+
+    Returns
+    -------
+    dict or None
+        Default factor, tissue factors and signed-ID overrides in [0, 1]; None for modes
+        without stiffness sections.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     present = set(parser.sections()) & STIFFNESS_SECTIONS
     if mode != "stiffness":
         if present:
@@ -83,7 +159,28 @@ def _stiffness(parser, mode):
 
 
 def _edit_selector(values, section, roi):
-    """Validate optional tube intervals; physical path interpolation happens later."""
+    """Parse an optional one-based control or physical arc-percentage interval.
+
+    Parameters
+    ----------
+    values : mapping of str to str
+        Raw edit fields.
+    section : str
+        Edit section name used in validation errors.
+    roi : dict
+        Normalized parent ROI defining shape and ordered controls.
+
+    Returns
+    -------
+    dict
+        One validated point_range/path_percent tuple, or an empty mapping when omitted.
+        Interpolated geometry is resolved later.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     present = set(values) & EDIT_SELECTORS
     if len(present) > 1:
         raise ValueError(f"[{section}] point_range and path_percent are mutually exclusive")
@@ -109,6 +206,28 @@ def _edit_selector(values, section, roi):
 
 
 def _edit_direction(values, section, roi):
+    """Parse curvature-relative direction and its permitted angular sector.
+
+    Parameters
+    ----------
+    values : mapping of str to str
+        Raw edit fields.
+    section : str
+        Edit section name used in validation errors.
+    roi : dict
+        Normalized parent ROI; inner/outer requires a tube with at least four controls.
+
+    Returns
+    -------
+    dict
+        Optional direction and full angular_width_deg, capped at 180 degrees; omitted all-
+        direction defaults produce an empty mapping.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     direction = values.get("direction", "all").strip()
     if direction not in {"all", "inner", "outer"}:
         raise ValueError(f"{section}.direction must be all, inner, or outer")
@@ -127,6 +246,24 @@ def _edit_direction(values, section, roi):
 
 
 def _centerline_settings(parser):
+    """Normalize optional spline-frame sampling settings and their defaults.
+
+    Parameters
+    ----------
+    parser : configparser.ConfigParser
+        Already-read, case-sensitive configuration sections.
+
+    Returns
+    -------
+    dict
+        Smoothing residual scale and sampling step in millimetres, plus minimum curvature in
+        inverse millimetres.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     values = parser["centerline"] if parser.has_section("centerline") else {}
     if parser.has_section("centerline"):
         _fields(parser, "centerline", set(), set(CENTERLINE_DEFAULTS))
@@ -141,7 +278,7 @@ def _centerline_settings(parser):
 
 
 def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
-    """Normalize common sections, named ROI definitions and finite ordered steps.
+    """Normalize common sections, named ROI definitions and finite ordered edits.
 
     The main ROI defines the display crop and initial target selection, and may
     be referenced directly as ``roi=main``. It also bounds all edits by default;
@@ -149,6 +286,25 @@ def parse_recipe_sections(parser, root=REPOSITORY_ROOT):
     Optional named ROIs carry no independent crop settings. Tube edits may
     select a point or physical path interval.
     Sections may appear in any order: only ``recipe.steps`` specifies execution order.
+
+    Parameters
+    ----------
+    parser : configparser.ConfigParser
+        Already-read, case-sensitive configuration sections.
+    root : str or pathlib.Path
+        Repository root used to resolve paths inside configuration sections.
+
+    Returns
+    -------
+    dict
+        Typed recipe configuration with paths, numeric/Boolean fields, explicit edit order,
+        named geometry and optional centerline/stiffness settings. The input parser is
+        unchanged.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     if parser.defaults():
         raise ValueError("[DEFAULT] settings are unsupported")

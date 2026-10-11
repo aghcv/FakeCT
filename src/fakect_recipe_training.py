@@ -46,7 +46,31 @@ _MODULES = ('fakect_recipe_training.py', 'fakect_recipe_study_config.py', 'fakec
 
 
 def recipe_provenance(config, resolved):
-    """Bind all data-generating recipe settings, source state and runtime code."""
+    """Bind ordered recipe settings, source state and runtime dependencies.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    dict
+        Data-generating provenance with native geometry and selected-lineage target
+        semantics.
+
+    Raises
+    ------
+    ValueError
+        Catalog, audit or anatomical selection dependencies changed after resolution.
+
+    Notes
+    -----
+    Bind all data-generating recipe settings, source state and runtime code.
+    """
     sources = {}
     for channel, filename in sorted(resolved['source_files'].items()):
         path = Path(filename).resolve()
@@ -72,10 +96,45 @@ def recipe_provenance(config, resolved):
 
 
 def _fingerprint(config, resolved):
+    """Compute the identity of an ordered-recipe cohort.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    str
+        SHA256 of canonical recipe provenance.
+    """
     return hashlib.sha256(_canonical(recipe_provenance(config, resolved)).encode()).hexdigest()
 
 
 def _source(config, resolved):
+    """Load and protect the shared original crop used by every recipe variant.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    tuple of dict and dict
+        Native crop arrays and source metadata; array writeability is disabled.
+
+    Raises
+    ------
+    ValueError
+        The crop has diagnostic released labels or lacks the selected-lineage target.
+    """
     arrays, sources = prepare_crop(resolved, config)
     if np.any(arrays['act'] == RELEASED_LABEL_ID):
         raise ValueError('Diagnostic released voxels have unassigned attenuation and cannot form training pairs')
@@ -90,6 +149,35 @@ def _source(config, resolved):
 
 
 def _reserve(config, resolved, output, input_bytes, provenance, *, prepare):
+    """Reserve a new recipe output and write input/provenance snapshots.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    output : pathlib.Path
+        Fresh output directory to create exclusively.
+    input_bytes : bytes or None
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+    provenance : dict
+        Generation provenance bound before execution.
+    prepare : bool
+        Create a variants directory for paired export when true.
+
+    Returns
+    -------
+    None
+        Creates output directories, INCOMPLETE marker and preparation metadata.
+
+    Raises
+    ------
+    FileExistsError
+        The output directory already exists.
+    """
     output.mkdir(parents=True, exist_ok=False)
     (output/'INCOMPLETE').write_text('Recipe cohort evaluation is incomplete; do not train from these files.\n')
     if input_bytes is not None:
@@ -105,6 +193,32 @@ def _reserve(config, resolved, output, input_bytes, provenance, *, prepare):
 
 
 def _checked_result(arrays, resolved, result):
+    """Validate a native recipe result before conversion to training arrays.
+
+    Parameters
+    ----------
+    arrays : dict of numpy.ndarray
+        Immutable original crop, including ACT, per-pixel attenuation and selected
+        lineage.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    result : dict
+        Recipe outputs with labels, proxy scalars, lineage origins and change-region
+        masks.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        float32 image in inverse centimetres and uint8 binary lineage mask, both in crop
+        k,j,i order.
+
+    Raises
+    ------
+    ValueError
+        Geometry, unresolved attenuation, locality, change masks or target ancestry
+        fails.
+    """
     labels = np.asarray(result['edited_labels'])
     proxy = np.asarray(result['attenuation_proxy_per_pixel'])
     mask = np.asarray(result['target_mask_after'])
@@ -133,6 +247,19 @@ def _checked_result(arrays, resolved, result):
 
 
 def _step_outcomes(summary):
+    """Flatten requested and accepted per-pass recipe changes for audit.
+
+    Parameters
+    ----------
+    summary : dict
+        Recipe summary containing completed and planned step records.
+
+    Returns
+    -------
+    list of dict
+        Rows of edit identity, operation, status, physical distance and voxel count
+        diagnostics.
+    """
     rows = []
     for step in summary['steps']:
         guard = step.get('erosion_safeguard', {})
@@ -153,7 +280,28 @@ def _step_outcomes(summary):
 
 
 def _assign_geometry_splits(samples, config, baseline_hash):
-    """Assign whole realized geometry groups after every variant has run."""
+    """Assign complete realized target geometries to one cohort split.
+
+    Parameters
+    ----------
+    samples : list of dict
+        Variant outcomes with status and mask hashes.
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    baseline_hash : str
+        SHA256 of original target mask geometry.
+
+    Returns
+    -------
+    None
+        Mutates successful sample records with split and duplicate-of annotations.
+
+    Notes
+    -----
+    Equivalent masks stay together; baseline-equivalent masks remain in training. Generation-only cohorts receive unassigned splits.
+
+    Assign whole realized geometry groups after every variant has run.
+    """
     groups = {}
     for sample in samples:
         if sample['status'] == 'ok':
@@ -187,6 +335,21 @@ def _assign_geometry_splits(samples, config, baseline_hash):
 
 
 def _split_diagnostics(samples, config):
+    """Count realized geometries and determine dataset readiness.
+
+    Parameters
+    ----------
+    samples : list of dict
+        Variant records after realized-geometry split assignment.
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    dict
+        Sample/geometry split counts, duplicates, baseline/zero-change counts, split
+        errors and readiness flags.
+    """
     successful = [row for row in samples if row['status'] == 'ok']
     if config['train']['split_mode'] == 'unassigned':
         count = len({row['mask_sha256'] for row in successful})
@@ -217,7 +380,25 @@ def _split_diagnostics(samples, config):
 
 
 def _write_review(output, document):
-    """Write inspectable summaries, including native failures and every pass."""
+    """Write JSON, CSV and HTML summaries of native recipe execution.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Reserved output directory.
+    document : dict
+        Native outcomes with samples, split diagnostics and warnings.
+
+    Returns
+    -------
+    None
+        Publishes preflight.json, preflight.csv and preflight.html in the output
+        directory.
+
+    Notes
+    -----
+    Write inspectable summaries, including native failures and every pass.
+    """
     _write_json(output/'preflight.json', document)
     with (output/'preflight.csv').open('x', newline='', encoding='utf-8') as stream:
         fields = ['variant_id', 'status', 'planned_split', 'split', 'duplicate_of',
@@ -261,6 +442,39 @@ def _write_review(output, document):
 
 
 def _run(config, resolved, input_bytes, *, prepare):
+    """Execute all recipe variants and publish preflight or immutable paired outputs.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    input_bytes : bytes or None
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+    prepare : bool
+        Export native image/lineage pairs when true; false exports audit summaries only.
+
+    Returns
+    -------
+    dict
+        Preflight document/paths when prepare is false, otherwise dataset receipt and
+        sample metadata.
+
+    Raises
+    ------
+    FileExistsError
+        The selected output directory already exists.
+    ValueError
+        Inputs/source state fail, or preparation has failed variants or incompatible
+        splits.
+
+    Notes
+    -----
+    Uses one read-only original snapshot. Individual variant failures are recorded; failed preparation stays INCOMPLETE. Cohort preparation requires a matching reviewed freeze.
+    """
     if input_bytes is not None and not isinstance(input_bytes, bytes):
         raise ValueError('input_bytes must contain the exact captured input bytes')
     variants = validate_recipe_study_plan(config, resolved)
@@ -407,10 +621,67 @@ def _run(config, resolved, input_bytes, *, prepare):
 
 
 def preflight_recipe_dataset(config, resolved, *, input_bytes=None):
-    """Evaluate all native variants and write review artifacts, without pair NPZs."""
+    """Evaluate all native recipe variants without exporting pair NPZs.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    input_bytes : bytes or None
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Native outcome counts, samples and JSON/HTML review paths.
+
+    Raises
+    ------
+    FileExistsError
+        The preflight directory already exists.
+    ValueError
+        Recipe input, source snapshot or generating dependencies are invalid.
+
+    Notes
+    -----
+    Evaluate all native variants and write review artifacts, without pair NPZs.
+    """
     return _run(config, resolved, input_bytes, prepare=False)
 
 
 def prepare_recipe_dataset(config, resolved, *, input_bytes=None):
-    """Prepare independently edited image/lineage-mask pairs after native checks."""
+    """Publish independently edited image and selected-lineage mask pairs.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    input_bytes : bytes or None
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Dataset manifest path/hash, fingerprint, sample records and realized
+        geometry/split counts.
+
+    Raises
+    ------
+    FileExistsError
+        The dataset directory already exists.
+    ValueError
+        Freeze, native execution or prepared-data integrity/split checks fail.
+
+    Notes
+    -----
+    Prepare independently edited image/lineage-mask pairs after native checks.
+    """
     return _run(config, resolved, input_bytes, prepare=True)

@@ -23,12 +23,37 @@ AREA_SEMANTICS = (
 
 
 def build_arc_profile(edit, resolved, config, edit_region):
-    """Measure current voxel positions on one unchanged full parent reference.
+    """Bin target/edit mask volumes along the unchanged original parent tube.
 
     Intervals use at most 512 equal bins, approximately twice the largest native
     voxel spacing. Each interior voxel contributes exactly once. Endpoint-clamped
     volume is accounted separately because it has no resolved longitudinal span.
     Growth is assigned by its current spatial location, never its ancestor's.
+
+    Parameters
+    ----------
+    edit : dict
+        Morphology/recipe result with matching target/add/remove/blocked/unresolved masks
+        and optional strength field.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    edit_region : ndarray of bool
+        Native k,j,i footprint used to summarize maximum spatial edit strength per arc bin.
+
+    Returns
+    -------
+    dict or None
+        Original-polyline arc bins in millimetres, per-mask volumes in mm3, volume-per-
+        length in mm2, separate endpoint volumes and strength evidence; None for a non-tube
+        ROI. These profiles are not vessel-normal cross-sectional areas.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     if resolved.get('roi_kind') != 'tube':
         return None
@@ -115,7 +140,32 @@ def build_arc_profile(edit, resolved, config, edit_region):
 
 
 def render_arc_profile(metadata, config, names, colors, output):
-    """Draw a millimetre axis and matching percentage axis; export plotted data."""
+    """Export longitudinal edit-profile curves and their exact plotted data.
+
+    Parameters
+    ----------
+    metadata : dict
+        Tube arc profile from build_arc_profile.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    names : dict
+        Mask-key mapping to legend labels.
+    colors : dict
+        Mask-key mapping to Matplotlib colors.
+    output : str or pathlib.Path
+        Existing destination directory; edit-profile.png and edit-profile.csv are written.
+
+    Returns
+    -------
+    dict
+        Relative CSV filename under profile_data. Writes/replaces the profile PNG and CSV
+        and closes its figure.
+
+    Raises
+    ------
+    OSError
+        If output artifacts cannot be written.
+    """
     import matplotlib.pyplot as plt
 
     data = metadata['arc_profile']

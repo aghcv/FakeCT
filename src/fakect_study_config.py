@@ -18,7 +18,34 @@ STAGES = {'preview', 'plan', 'prepare', 'fit'}
 
 
 def load_study_config(path, *, repo_root=None):
-    """Load one human-authored study; no images, TensorFlow or outputs are touched."""
+    """Parse a staged study, recipe or cohort INI without opening image volumes.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+    repo_root : str or pathlib.Path or None
+        Base directory for relative configuration paths; defaults to the repository
+        root.
+
+    Returns
+    -------
+    dict
+        Strict typed configuration with path, ROI, morphology and applicable train/model
+        sections.
+
+    Raises
+    ------
+    ValueError
+        The INI schema, fields, numeric bounds or supported workflow settings are
+        invalid.
+
+    Notes
+    -----
+    Reads the input text only; TensorFlow and output allocation are not involved.
+
+    Load one human-authored study; no images, TensorFlow or outputs are touched.
+    """
     root = Path(repo_root or REPOSITORY_ROOT).expanduser().resolve()
     parser = configparser.ConfigParser(interpolation=None, inline_comment_prefixes=('#',),
                                        strict=True, empty_lines_in_values=False)
@@ -98,7 +125,30 @@ def load_study_config(path, *, repo_root=None):
 
 
 def parse_model_settings(model):
-    """Shared typed model contract for single-edit and recipe studies."""
+    """Validate model settings shared by recipe and single-edit studies.
+
+    Parameters
+    ----------
+    model : mapping of str to str
+        INI model fields, including architecture, patch size, clipping and optimizer
+        settings.
+
+    Returns
+    -------
+    dict
+        Typed unet2d configuration, j,i patch size, fixed clipping bounds and
+        optimization settings.
+
+    Raises
+    ------
+    ValueError
+        Architecture, slice axis, normalization, patch dimensions or numeric settings
+        are unsupported.
+
+    Notes
+    -----
+    Shared typed model contract for single-edit and recipe studies.
+    """
     if model['architecture'] != 'unet2d' or model['slice_axis'] != 'k':
         raise ValueError('The initial model supports architecture=unet2d and slice_axis=k')
     if model['normalization'] != 'fixed_clip':

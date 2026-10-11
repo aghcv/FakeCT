@@ -30,10 +30,34 @@ _NAME = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$')
 
 
 def _canonical(value):
+    """Serialize registry data deterministically without nonfinite JSON values.
+
+    Parameters
+    ----------
+    value : JSON-compatible object
+        Registry metadata to serialize.
+
+    Returns
+    -------
+    str
+        Sorted compact JSON.
+    """
     return json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False)
 
 
 def _hash(path):
+    """Hash an immutable registry artifact in bounded chunks.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    str
+        SHA256 hexadecimal digest of complete file contents.
+    """
     digest = hashlib.sha256()
     with Path(path).open('rb') as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b''):
@@ -42,10 +66,40 @@ def _hash(path):
 
 
 def _array_hash(value):
+    """Hash an array using contiguous native element bytes.
+
+    Parameters
+    ----------
+    value : array_like
+        Array data to fingerprint.
+
+    Returns
+    -------
+    str
+        SHA256 of contiguous C-order values; dtype/shape are separately validated by
+        callers.
+    """
     return hashlib.sha256(np.ascontiguousarray(value).tobytes()).hexdigest()
 
 
 def _pairs(items):
+    """Decode JSON object pairs while rejecting duplicate keys.
+
+    Parameters
+    ----------
+    items : iterable of tuple
+        Decoded JSON key/value pairs.
+
+    Returns
+    -------
+    dict
+        Object mapping retaining each unique decoded key.
+
+    Raises
+    ------
+    ValueError
+        An object repeats a JSON key.
+    """
     value = {}
     for key, item in items:
         if key in value:
@@ -55,24 +109,98 @@ def _pairs(items):
 
 
 def _json(text):
+    """Decode strict JSON with duplicate-key and nonfinite-number rejection.
+
+    Parameters
+    ----------
+    text : str or bytes
+        JSON artifact contents.
+
+    Returns
+    -------
+    object
+        Decoded JSON data.
+
+    Raises
+    ------
+    ValueError
+        JSON is malformed, repeats keys or uses nonfinite number constants.
+    """
     def invalid(value):
         raise ValueError(f'Nonfinite JSON number: {value}')
     return json.loads(text, object_pairs_hook=_pairs, parse_constant=invalid)
 
 
 def _digest(value, label):
+    """Validate a recorded lowercase SHA256 identifier.
+
+    Parameters
+    ----------
+    value : str
+        Expected 64-character hexadecimal digest.
+    label : str
+        Artifact label used in validation messages.
+
+    Returns
+    -------
+    str
+        The unchanged digest string.
+
+    Raises
+    ------
+    ValueError
+        The value is not a lowercase SHA256 digest.
+    """
     if not isinstance(value, str) or not _HEX.fullmatch(value):
         raise ValueError(f'Invalid SHA256 for {label}')
     return value
 
 
 def _name(value):
+    """Validate a portable registry revision name.
+
+    Parameters
+    ----------
+    value : str
+        1–128-character name containing letters, digits, dots, underscores or hyphens.
+
+    Returns
+    -------
+    str
+        Unchanged safe revision name.
+
+    Raises
+    ------
+    ValueError
+        The name is invalid or includes a parent-directory token.
+    """
     if not isinstance(value, str) or not _NAME.fullmatch(value) or '..' in value:
         raise ValueError('Registry name must use letters, digits, dots, underscores or hyphens, without ..')
     return value
 
 
 def _safe_file(root, relative, *, must_exist=True):
+    """Resolve a confined artifact path without following symlink components.
+
+    Parameters
+    ----------
+    root : pathlib.Path
+        Resolved artifact root.
+    relative : str
+        Nonempty POSIX-relative artifact path without empty or traversal components.
+    must_exist : bool
+        Require the destination to be an existing regular file.
+
+    Returns
+    -------
+    pathlib.Path
+        Safe child path below the registry/dataset root.
+
+    Raises
+    ------
+    ValueError
+        The path is unsafe, a component is a symlink, or a required file is missing.
+    """
     if not isinstance(relative, str) or not relative or '\\' in relative:
         raise ValueError(f'Unsafe artifact path: {relative!r}')
     parsed = PurePosixPath(relative)
@@ -90,6 +218,23 @@ def _safe_file(root, relative, *, must_exist=True):
 
 
 def _shape(geometry):
+    """Validate recorded native dataset shape and physical spacing.
+
+    Parameters
+    ----------
+    geometry : dict
+        Native geometry with array_order, crop_shape_kji and positive spacing_ijk_mm.
+
+    Returns
+    -------
+    tuple of int
+        Positive crop dimensions in k,j,i order.
+
+    Raises
+    ------
+    ValueError
+        Geometry, array order, shape or millimetre spacing is invalid.
+    """
     if not isinstance(geometry, dict) or geometry.get('array_order') != 'kji':
         raise ValueError('Dataset geometry must use native kji array order')
     shape = geometry.get('crop_shape_kji')
@@ -105,11 +250,49 @@ def _shape(geometry):
 
 
 def _binary(array, shape, name):
+    """Check a paired binary array against its recorded geometry.
+
+    Parameters
+    ----------
+    array : numpy.ndarray
+        Mask payload to validate.
+    shape : tuple of int
+        Expected k,j,i dimensions.
+    name : str
+        Mask label used in validation errors.
+
+    Returns
+    -------
+    None
+        Completes when shape, Boolean/unsigned dtype and zero/one values agree.
+
+    Raises
+    ------
+    ValueError
+        The mask shape, dtype or values are incompatible.
+    """
     if array.shape != shape or array.dtype.kind not in 'bu' or np.any((array != 0) & (array != 1)):
         raise ValueError(f'{name} must be a matching binary array')
 
 
 def _npz(path):
+    """Open a nonpickled NPZ archive while rejecting repeated members.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    numpy.lib.npyio.NpzFile
+        Open archive; the caller must close it or use it as a context manager.
+
+    Raises
+    ------
+    ValueError
+        The file is not an NPZ archive or contains duplicate member names.
+    """
     archive = np.load(path, allow_pickle=False)
     if not isinstance(archive, np.lib.npyio.NpzFile) or len(set(archive.files)) != len(archive.files):
         if hasattr(archive, 'close'):
@@ -119,6 +302,29 @@ def _npz(path):
 
 
 def _source_arrays(root, manifest, shape):
+    """Validate and load a prepared dataset source snapshot.
+
+    Parameters
+    ----------
+    root : pathlib.Path
+        Dataset directory containing source.npz.
+    manifest : dict
+        Verified dataset metadata, geometry and optional native crop hashes.
+    shape : tuple of int
+        Expected native crop dimensions.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        Original labels, per-pixel attenuation, Boolean selected target and Boolean ROI
+        arrays in k,j,i order.
+
+    Raises
+    ------
+    ValueError
+        Required arrays, original labels, scalar values, geometry or recorded hashes
+        disagree.
+    """
     with _npz(_safe_file(root, 'source.npz')) as data:
         required = {'original_labels', 'original_attenuation_per_pixel', 'target_mask', 'roi_mask', 'geometry_json'}
         if not required.issubset(data.files):
@@ -142,6 +348,34 @@ def _source_arrays(root, manifest, shape):
 
 
 def _sample_arrays(path, sample, manifest, shape, source):
+    """Validate sample arrays against the frozen native source and target semantics.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+    sample : dict
+        Manifest sample record with hashes, target count and embedded metadata
+        expectations.
+    manifest : dict
+        Dataset contract including target scope, source IDs and native geometry.
+    shape : tuple of int
+        Expected crop dimensions in k,j,i order.
+    source : tuple of numpy.ndarray
+        Original labels/attenuation and selected/ROI masks from ``_source_arrays``.
+
+    Returns
+    -------
+    None
+        Completes when image, mask, lineage, metadata and change-locality contracts
+        hold.
+
+    Raises
+    ------
+    ValueError
+        Payload validity, checksums, ancestry, metadata or unchanged-region attenuation
+        checks fail.
+    """
     labels_before, attenuation_before, selected, roi = source
     with _npz(path) as data:
         required = {'image', 'mask', 'edited_labels', 'changed_mask', 'metadata_json'}
@@ -193,7 +427,33 @@ def _sample_arrays(path, sample, manifest, shape, source):
 
 
 def verify_prepared_manifest(path, verify_payloads=True):
-    """Check frozen data without reading current source volumes or generator code.
+    """Verify frozen dataset integrity independently of current source/generator code.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Regular dataset-manifest.json file to verify.
+    verify_payloads : bool
+        Whether to read and validate NPZ payload bytes and array contracts, rather than
+        metadata only.
+
+    Returns
+    -------
+    dict
+        Validated manifest with normalized sample paths/shapes, manifest hash and
+        resolved manifest path.
+
+    Raises
+    ------
+    ValueError
+        Dataset schema, inventory, path safety, split integrity, metadata or requested
+        payload validation fails.
+
+    Notes
+    -----
+    Metadata-only verification still checks non-NPZ artifacts and existence; it never decodes source or sample NPZs.
+
+    Check frozen data without reading current source volumes or generator code.
 
     False checks manifest/metadata, inventory structure and file existence but
     never opens NPZ payloads (including test data). True verifies every artifact's
@@ -295,6 +555,30 @@ def verify_prepared_manifest(path, verify_payloads=True):
 
 
 def _registry_root(registry, create=False):
+    """Resolve and optionally initialize a registry directory layout.
+
+    Parameters
+    ----------
+    registry : str or pathlib.Path
+        Root directory containing immutable registry objects and entries.
+    create : bool
+        Create missing registry/layout directories.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved root with objects, entries and staging directories when creation is
+        requested.
+
+    Raises
+    ------
+    ValueError
+        An internal registry directory is a symlink.
+
+    Notes
+    -----
+    Creates directories only when ``create`` is true.
+    """
     root = Path(registry).expanduser().resolve()
     if create:
         root.mkdir(parents=True, exist_ok=True)
@@ -309,6 +593,27 @@ def _registry_root(registry, create=False):
 
 @contextmanager
 def _registry_lock(root):
+    """Hold an exclusive directory lock for registry publication.
+
+    Parameters
+    ----------
+    root : pathlib.Path
+        Registry root in which the lock directory is created.
+
+    Returns
+    -------
+    context manager
+        Yields None while registration owns the lock; removes the lock on context exit.
+
+    Raises
+    ------
+    ValueError
+        A registration lock already exists.
+
+    Notes
+    -----
+    Creates and removes ``.register.lock``; the context does not permit concurrent publishers.
+    """
     lock = root/'.register.lock'
     try:
         lock.mkdir()
@@ -321,7 +626,33 @@ def _registry_lock(root):
 
 
 def load_registry_entry(registry, name, verify=True):
-    """Read a pinned revision; verify=False never opens sample/source NPZs."""
+    """Load a pinned registry revision and verify its immutable object identity.
+
+    Parameters
+    ----------
+    registry : str or pathlib.Path
+        Root directory containing immutable registry objects and entries.
+    name : str
+        Published safe revision name.
+    verify : bool
+        Verify NPZ payloads as well as metadata when true.
+
+    Returns
+    -------
+    dict
+        Receipt augmented with manifest/entry paths and the verified prepared manifest.
+
+    Raises
+    ------
+    FileNotFoundError
+        The named revision has not been published.
+    ValueError
+        Receipt integrity, family policy, object paths or dataset validation fails.
+
+    Notes
+    -----
+    Read a pinned revision; verify=False never opens sample/source NPZs.
+    """
     root = _registry_root(registry)
     entry_path = _safe_file(root, f'entries/{_name(name)}.json', must_exist=False)
     if not entry_path.is_file():
@@ -346,6 +677,20 @@ def load_registry_entry(registry, name, verify=True):
 
 
 def list_registry_entries(registry, verify=False):
+    """List published dataset revisions in deterministic name order.
+
+    Parameters
+    ----------
+    registry : str or pathlib.Path
+        Root directory containing immutable registry objects and entries.
+    verify : bool
+        Perform full NPZ validation for every listed entry when true.
+
+    Returns
+    -------
+    list of dict
+        Loaded registry entries; an absent registry returns an empty list.
+    """
     root = _registry_root(registry)
     if not root.exists():
         return []
@@ -354,7 +699,37 @@ def list_registry_entries(registry, verify=False):
 
 
 def register_dataset(registry, manifest_path, name, anatomy_family, family_verified=False):
-    """Copy verified files once, then atomically publish an immutable receipt.
+    """Publish a verified prepared cohort as an immutable registry revision.
+
+    Parameters
+    ----------
+    registry : str or pathlib.Path
+        Root directory containing immutable registry objects and entries.
+    manifest_path : str or pathlib.Path
+        Prepared dataset manifest or frozen experiment-lock path.
+    name : str
+        New safe revision name, or an exactly matching published name.
+    anatomy_family : str
+        Explicit shared-source anatomy-family identity supplied by the caller.
+    family_verified : bool
+        Recorded provenance decision that the family identity has been reviewed.
+
+    Returns
+    -------
+    dict
+        Loaded registry receipt and ``already_registered`` flag.
+
+    Raises
+    ------
+    ValueError
+        Name/family policy, dataset integrity, existing revision contents or publication
+        safety fails.
+
+    Notes
+    -----
+    Copies and verifies files into a content-addressed object, then exclusively publishes a receipt. Existing names/objects are never overwritten.
+
+    Copy verified files once, then atomically publish an immutable receipt.
 
     The caller supplies family identity explicitly; case IDs alone do not prove
     independence. Repeated identical registration is safe. Different contents or

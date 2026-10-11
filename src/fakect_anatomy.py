@@ -24,14 +24,50 @@ PULMONARY = ('01_Cardiovascular/Heart/Pulmonary_Artery',
 
 
 def _canonical(value):
+    """Serialize a request deterministically for exact provenance comparison.
+
+    Parameters
+    ----------
+    value : JSON-compatible object
+        Request or audit object to serialize.
+
+    Returns
+    -------
+    str
+        Sorted compact JSON with nonfinite numbers rejected.
+    """
     return json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False)
 
 
 def _hash_bytes(value):
+    """Compute the SHA256 of a captured payload.
+
+    Parameters
+    ----------
+    value : bytes
+        Payload to fingerprint.
+
+    Returns
+    -------
+    str
+        Lowercase hexadecimal digest.
+    """
     return hashlib.sha256(value).hexdigest()
 
 
 def _hash_file(path):
+    """Compute the SHA256 of a source in bounded read chunks.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    str
+        Lowercase hexadecimal digest of complete file bytes.
+    """
     digest = hashlib.sha256()
     with Path(path).open('rb') as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b''):
@@ -40,14 +76,58 @@ def _hash_file(path):
 
 
 def _name(value):
+    """Normalize an anatomical selector name for case-insensitive matching.
+
+    Parameters
+    ----------
+    value : object
+        Value converted to text before name normalization.
+
+    Returns
+    -------
+    str
+        Lowercase stripped text with spaces and hyphens folded to underscores.
+    """
     return re.sub(r'[\s-]+', '_', str(value).strip().lower())
 
 
 def _within(path, parent):
+    """Test membership in a hierarchy path and its descendants.
+
+    Parameters
+    ----------
+    path : str
+        Anatomical hierarchy path to test.
+    parent : str
+        Hierarchy prefix eligible for membership.
+
+    Returns
+    -------
+    bool
+        True for an exact path or a slash-delimited descendant.
+    """
     return path == parent or path.startswith(parent + '/')
 
 
 def _settings(config):
+    """Validate optional anatomy filtering and connectivity settings.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    dict
+        Normalized selector names, branch/protection flags and 6- or 26-neighbor
+        connectivity.
+
+    Raises
+    ------
+    ValueError
+        Anatomy, tissue, name list or connectivity setting is unsupported.
+    """
     selection = config['selection']
     anatomy = _name(selection.get('anatomy', ''))
     if anatomy and anatomy != 'thoracic_aorta':
@@ -67,6 +147,26 @@ def _settings(config):
 
 
 def _manual_ids(records, requested):
+    """Resolve optional anatomical aliases against catalog records.
+
+    Parameters
+    ----------
+    records : iterable of dict
+        Catalog records with original name and classification aliases.
+    requested : iterable of str
+        Normalized names to match.
+
+    Returns
+    -------
+    set of int
+        All supplied record IDs when no names are requested, otherwise exact matching
+        original IDs.
+
+    Raises
+    ------
+    ValueError
+        One or more requested aliases are absent from the selected tissue.
+    """
     if not requested:
         return {r['original_id'] for r in records}
     found, ids = set(), set()
@@ -85,6 +185,24 @@ def _manual_ids(records, requested):
 
 
 def _role(row, settings):
+    """Determine atlas eligibility before aortic connectivity analysis.
+
+    Parameters
+    ----------
+    row : dict
+        Original-ID catalog record with hierarchy classification.
+    settings : dict
+        Validated anatomy settings, including branch inclusion.
+
+    Returns
+    -------
+    tuple of str and str
+        Role (anchor, branch or excluded) and its audit reason.
+
+    Notes
+    -----
+    Pulmonary paths and contradictory nonvascular names are excluded before graph connectivity.
+    """
     classification = row['classification']
     path = classification.get('hierarchy_path', '')
     original = _name(row['original_name'])
@@ -104,12 +222,40 @@ def _role(row, settings):
 
 
 def _stat(path):
+    """Capture a source file identity without reading its payload.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    dict
+        Resolved path, byte size and nanosecond modification time.
+    """
     path = Path(path).resolve()
     value = path.stat()
     return {'path': str(path), 'bytes': value.st_size, 'mtime_ns': value.st_mtime_ns}
 
 
 def _request(config, resolved):
+    """Bind anatomy selection settings to source geometry and code.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    dict
+        Serializable request with ROI coordinates, source metadata and dependency
+        hashes.
+    """
     root = Path(__file__).resolve().parents[1]
     modules = ('fakect_anatomy.py', 'fakect_anatomy_surfaces.py', 'fakect_anatomy_centerlines.py',
                'fakect_roi.py', 'fakect_tissues.py')
@@ -129,6 +275,23 @@ def _request(config, resolved):
 
 
 def _check_stats(records):
+    """Reject source metadata changes since an anatomy audit was recorded.
+
+    Parameters
+    ----------
+    records : iterable of dict
+        Previously captured source path/bytes/mtime records.
+
+    Returns
+    -------
+    None
+        Completes when every recorded path, size and mtime still agrees.
+
+    Raises
+    ------
+    ValueError
+        A recorded source metadata identity differs from its current file.
+    """
     for record in records:
         current = _stat(record['path'])
         if any(current[key] != record[key] for key in ('path', 'bytes', 'mtime_ns')):
@@ -136,13 +299,47 @@ def _check_stats(records):
 
 
 def _dependencies(audit):
+    """Iterate source dependencies pinned by an anatomical audit.
+
+    Parameters
+    ----------
+    audit : dict
+        Anatomical selection audit containing request and surface evidence.
+
+    Returns
+    -------
+    iterator of dict
+        Native source, RAW-file and coordinate-dependency metadata records.
+    """
     yield from audit.get('request', {}).get('source_files', {}).values()
     yield from audit.get('surface_evidence', {}).get('files', [])
     yield from audit.get('surface_evidence', {}).get('coordinate_dependencies', [])
 
 
 def verify_selection_sources(resolved):
-    """Read metadata and the small saved selector, never raw voxel payloads."""
+    """Verify saved selection bytes and dependency metadata without voxel I/O.
+
+    Parameters
+    ----------
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    None
+        Completes when optional anatomical evidence is unchanged; returns immediately
+        when absent.
+
+    Raises
+    ------
+    ValueError
+        Selection checksum or any recorded source metadata changed.
+
+    Notes
+    -----
+    Read metadata and the small saved selector, never raw voxel payloads.
+    """
     audit = resolved.get('anatomical_selection')
     if not audit:
         return
@@ -157,6 +354,26 @@ def verify_selection_sources(resolved):
 
 
 def verify_selection_crop(resolved, arrays):
+    """Verify a native crop against the source bytes bound by anatomical selection.
+
+    Parameters
+    ----------
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    arrays : dict of numpy.ndarray
+        Native crop arrays keyed by ``act`` and ``atn`` in k,j,i order.
+
+    Returns
+    -------
+    None
+        Completes when recorded ACT and attenuation hashes match the crop.
+
+    Raises
+    ------
+    ValueError
+        A recorded channel is unsupported or native crop bytes differ.
+    """
     audit = resolved.get('anatomical_selection') or {}
     expected = audit.get('source_crop_sha256', {})
     for channel, checksum in expected.items():
@@ -165,7 +382,34 @@ def verify_selection_crop(resolved, arrays):
 
 
 def resolve_selection_filter(config, resolved):
-    """Return stable ID candidates; native discovery is an explicit earlier step."""
+    """Resolve audited anatomical filters into stable source-ID candidates.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    dict
+        Selected source IDs, optional selection bytes/hash/path and protected
+        nonselected artery IDs.
+
+    Raises
+    ------
+    ValueError
+        Selection settings, saved artifact integrity, eligibility or request provenance
+        is invalid.
+
+    Notes
+    -----
+    Automatic anatomy discovery must already have produced ``selection.anatomy_file``; this function never discovers anatomy from volumes.
+
+    Return stable ID candidates; native discovery is an explicit earlier step.
+    """
     settings = _settings(config)
     if not settings['anatomy'] and not settings['anatomical_labels']:
         if config['selection'].get('anatomy_file'):
@@ -226,6 +470,18 @@ def resolve_selection_filter(config, resolved):
 
 
 def _surface_matches(surface_evidence):
+    """Index RAW evidence by exact original anatomical name.
+
+    Parameters
+    ----------
+    surface_evidence : dict
+        Surface inventory containing block records.
+
+    Returns
+    -------
+    collections.defaultdict of str to list
+        Lists of surface records for each original name.
+    """
     result = defaultdict(list)
     for row in surface_evidence['records']:
         result[row['original_name']].append(row)
@@ -234,7 +490,41 @@ def _surface_matches(surface_evidence):
 
 def select_anatomy_labels(labels, roi, catalog, source_ids, settings, surface_evidence,
                          attenuation_cm_inverse=None):
-    """Resolve whole original IDs from aortic-anchor connectivity in this crop.
+    """Resolve whole original IDs connected to aortic anchors in a native crop.
+
+    Parameters
+    ----------
+    labels : array_like of shape (K, J, I)
+        Finite integral original ACT IDs in the bounded crop.
+    roi : numpy.ndarray of bool, shape (K, J, I)
+        Matching selection envelope; anchors must overlap this mask.
+    catalog : dict
+        Original-ID tissue/hierarchy catalog.
+    source_ids : iterable of int
+        Explicit or tissue-derived original-ID candidate set.
+    settings : dict
+        Normalized anatomical names, branch flag and 6/26 connectivity.
+    surface_evidence : dict
+        RAW inventory used for exact-name evidence; local surface indices never become
+        IDs.
+    attenuation_cm_inverse : array_like of shape (K, J, I) or None
+        Optional attenuation in inverse centimetres for per-ID audit statistics.
+
+    Returns
+    -------
+    dict
+        Selection audit with admitted IDs, native counts, surface evidence and explicit
+        disconnected-ID warnings.
+
+    Raises
+    ------
+    ValueError
+        Array contracts fail, no supported aortic anchor intersects the ROI, or
+        filtering leaves no target.
+
+    Notes
+    -----
+    Resolve whole original IDs from aortic-anchor connectivity in this crop.
 
     Disconnected pieces sharing an admitted ID cannot be distinguished by an ID
     list; their counts are explicit in the audit, not silently described as a
@@ -335,7 +625,36 @@ def select_anatomy_labels(labels, roi, catalog, source_ids, settings, surface_ev
 
 
 def sample_surface_centerlines(surface_evidence, arrays, resolved):
-    """Corroborate RAW-name joins by sampling existing ACT; never voxelize meshes."""
+    """Corroborate RAW-name joins by sampling ACT cells along verified curves.
+
+    Parameters
+    ----------
+    surface_evidence : dict
+        Surface inventory to mutate; unsupported coordinate contracts skip sampling.
+    arrays : dict of numpy.ndarray
+        Native ``act`` and Boolean ``roi`` crop arrays in k,j,i order.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    None
+        Adds native sampling counts to eligible surface records in ``surface_evidence``
+        in place.
+
+    Raises
+    ------
+    ValueError
+        Declared spacing/origin or centerline is invalid, or bounded sampling limits are
+        exceeded.
+
+    Notes
+    -----
+    Meshes are not voxelized; sampling corroborates local correspondence rather than proving a unique surface-to-ID mapping.
+
+    Corroborate RAW-name joins by sampling existing ACT; never voxelize meshes.
+    """
     contract = surface_evidence.get('coordinate_contract', {})
     if contract.get('status') != 'bounded_contract_validated':
         return
@@ -399,6 +718,33 @@ def sample_surface_centerlines(surface_evidence, arrays, resolved):
 
 
 def create_anatomy_selection(config, input_bytes=None):
+    """Compute and exclusively publish a new audited anatomy selection revision.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    input_bytes : bytes or None
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Complete selector audit including source crop hashes, selected IDs and
+        dependency evidence.
+
+    Raises
+    ------
+    ValueError
+        Automatic anatomy settings, output path or native selection checks fail.
+    FileExistsError
+        The output parent directory already exists.
+
+    Notes
+    -----
+    Reads the native crop and RAW inventory, then writes JSON, its SHA256 and optional input snapshot. An incomplete marker remains if publication fails.
+    """
     from fakect_roi import resolve_preview, prepare_crop
     from fakect_anatomy_surfaces import inventory_surfaces
     settings = _settings(config)

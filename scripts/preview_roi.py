@@ -18,6 +18,22 @@ from fakect_roi import COLORS, digest, prepare_crop, resolve_preview, selection_
 
 
 def json_value(value):
+    """Convert nested path-containing metadata into JSON-compatible containers.
+
+    Parameters
+    ----------
+    value : object
+        Value containing Path objects, dictionaries, tuples or lists.
+
+    Returns
+    -------
+    object
+        Recursively converted value; other scalar objects pass through unchanged.
+
+    Notes
+    -----
+    Dictionary keys and NumPy scalars are not coerced.
+    """
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, dict):
@@ -28,7 +44,25 @@ def json_value(value):
 
 
 def capture_anatomy_selection(resolved, output):
-    """Keep the exact automatic selector snapshot, or capture manual names once."""
+    """Publish the exact verified anatomical selector used for the preview.
+
+    Parameters
+    ----------
+    resolved : dict
+        Resolved geometry with optional anatomical_selection and pinned selector bytes/hash.
+    output : str or pathlib.Path
+        Existing fresh report directory for anatomy-selection.json.
+
+    Returns
+    -------
+    dict or None
+        Relative selector path and SHA-256; None when no selection audit exists.
+
+    Notes
+    -----
+    Exclusive creation prevents overwriting. Raises ValueError if stored bytes,
+    expected hash or decoded content disagree.
+    """
     audit = resolved.get('anatomical_selection')
     if not isinstance(audit, dict):
         return None
@@ -45,6 +79,20 @@ def capture_anatomy_selection(resolved, output):
 
 
 def selection_title(config, resolved):
+    """Format a concise tissue and original-ID selection description for plots.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized preview configuration containing selection.tissue/source_ids.
+    resolved : dict
+        Resolved optional anatomical selection and accepted source IDs.
+
+    Returns
+    -------
+    str
+        Human-readable selection summary including ROI scope.
+    """
     ids = ','.join(map(str, config['selection']['source_ids']))
     selector = f'original IDs {ids if len(ids) < 55 else ids[:52] + "..."}' if ids else 'all source IDs in group'
     if isinstance(resolved.get('anatomical_selection'), dict):
@@ -55,6 +103,28 @@ def selection_title(config, resolved):
 
 
 def render_slices(arrays, resolved, config, output):
+    """Render native orthogonal attenuation/tissue panels and five axial ROI views.
+
+    Parameters
+    ----------
+    arrays : dict of numpy.ndarray
+        Prepared native crop arrays in k,j,i order, including attenuation and ROI/selection masks.
+    resolved : dict
+        Native crop origin/bounds, i,j,k spacing in mm, ROI controls and atlas catalog.
+    config : dict
+        Normalized preview settings used to label the selected tissue and anatomy.
+    output : str or pathlib.Path
+        Existing output directory for PNG slice artifacts.
+
+    Returns
+    -------
+    dict
+        Native plane indices, axial stack levels and the attenuation display window in cm^-1.
+
+    Notes
+    -----
+    Plotting is display-only; source labels, masks and attenuation are unchanged.
+    """
     os.environ.setdefault('MPLCONFIGDIR', '/tmp/fakect-matplotlib')
     import matplotlib
     matplotlib.use('Agg')
@@ -167,7 +237,40 @@ def render_slices(arrays, resolved, config, output):
 
 
 def run_roi_selection(config_path, config_bytes, config, resolved, arrays, sources, selection, code_files, code_hashes):
-    """Publish the deliberately small selection workbench without executing edits."""
+    """Publish a four-panel control-point workbench without applying geometry edits.
+
+    Parameters
+    ----------
+    config_path : str or pathlib.Path
+        Saved INI path referenced by the rerun command in the report.
+    config_bytes : bytes
+        Exact captured INI bytes published with the report.
+    config : dict
+        Normalized preview or cohort configuration in ROI-selection mode.
+    resolved : dict
+        Resolved source geometry and tube/sphere/box controls in native i,j,k coordinates.
+    arrays : dict of numpy.ndarray
+        Prepared source crop, tissue view and target masks in k,j,i order.
+    sources : dict
+        Source-file integrity and native crop-read metadata.
+    selection : dict
+        Selection diagnostics measured from the prepared crop.
+    code_files : sequence of pathlib.Path
+        Implementation files captured for reproducible code provenance.
+    code_hashes : dict
+        Repository-relative implementation filenames and SHA-256 hashes.
+
+    Returns
+    -------
+    dict
+        ROI-selection report metadata with physical geometry, panels and artifact paths.
+
+    Notes
+    -----
+    Creates source/config/code snapshots, control-point panels, manifest and
+    standalone report.html in the configured fresh output directory. It does not
+    execute an edit recipe or mark ROI coordinates reviewed.
+    """
     from fakect_roi_selection_preview import render_control_point_panels, write_roi_selection_report
 
     output = config['output']['directory']
@@ -236,6 +339,35 @@ def run_roi_selection(config_path, config_bytes, config, resolved, arrays, sourc
 
 
 def run(config_path, validate_only=False, *, config_override=None, training_plan=None, extra_code_files=(), expected_input_bytes=None):
+    """Validate an ROI input or publish a native preview with optional serial edits.
+
+    Parameters
+    ----------
+    config_path : str or pathlib.Path
+        Preview or study INI file; input bytes are checked against captured provenance.
+    validate_only : bool, optional
+        Check geometry/selection metadata and print JSON without reading voxel payloads or writing report artifacts.
+    config_override : dict or None, optional
+        Already parsed study configuration; None invokes the preview parser.
+    training_plan : dict or None, optional
+        Optional validated cohort plan embedded in the full report.
+    extra_code_files : sequence of pathlib.Path, optional
+        Additional implementation files to capture and hash.
+    expected_input_bytes : bytes or None, optional
+        Optional upstream INI snapshot; mismatching bytes are rejected.
+
+    Returns
+    -------
+    dict or None
+        Published report metadata, or None after metadata-only validation.
+
+    Notes
+    -----
+    Requires an empty output revision. Full mode prepares crops and executes
+    requested edits on copies; ROI-selection mode only renders control-point
+    review. Native source arrays are never overwritten. Optional anatomical
+    resolution may read RAW surface evidence during metadata validation.
+    """
     config_path = Path(config_path).expanduser().resolve()
     config_bytes = Path(config_path).read_bytes()
     if expected_input_bytes is not None and config_bytes != expected_input_bytes:
@@ -486,6 +618,22 @@ def run(config_path, validate_only=False, *, config_override=None, training_plan
 
 
 def main():
+    """Run one ROI preview command and report invalid inputs through argparse.
+
+    Parameters
+    ----------
+    None
+        Arguments are read from the process command line.
+
+    Returns
+    -------
+    None
+        Writes the requested files or prints CLI output; no return value.
+
+    Notes
+    -----
+    Prints metadata validation or preview results; handled failures exit with 2.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--validate-only', action='store_true', help='Check configuration, metadata and file sizes without reading voxel payloads')

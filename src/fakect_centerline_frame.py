@@ -25,10 +25,43 @@ REFERENCES = (
 
 
 def _norm(value):
+    """Compute a stable Euclidean norm over the final three-vector dimension.
+
+    Parameters
+    ----------
+    value : ndarray, shape (..., 3)
+        Numeric physical vectors; axis order follows their supplied coordinates.
+
+    Returns
+    -------
+    ndarray or numpy scalar
+        Euclidean length over the final dimension, using chained hypot to reduce overflow.
+    """
     return np.hypot(np.hypot(value[..., 0], value[..., 1]), value[..., 2])
 
 
 def _positive_number(value, name, *, allow_zero=False):
+    """Validate a finite positive or nonnegative numeric scalar.
+
+    Parameters
+    ----------
+    value : object
+        Scalar convertible to float; Boolean values are rejected.
+    name : str
+        Field name used in validation errors.
+    allow_zero : bool, optional
+        Accept zero as well as positive values.
+
+    Returns
+    -------
+    float
+        Validated finite scalar.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if isinstance(value, (bool, np.bool_)):
         raise ValueError(f'{name} must be a finite number')
     try:
@@ -42,13 +75,43 @@ def _positive_number(value, name, *, allow_zero=False):
 
 
 def _perpendicular(tangent):
+    """Choose a stable unit vector perpendicular to a unit tangent.
+
+    Parameters
+    ----------
+    tangent : ndarray, shape (3,)
+        Finite unit physical tangent.
+
+    Returns
+    -------
+    ndarray, shape (3,)
+        Unit normal obtained from the least-aligned coordinate axis.
+    """
     axis = np.eye(3)[int(np.argmin(np.abs(tangent)))]
     normal = axis - np.dot(axis, tangent) * tangent
     return normal / _norm(normal)
 
 
 def _transport(normal, first_tangent, last_tangent):
-    """Minimum rotation between neighboring tangents, followed by reprojection."""
+    """Transport a physical normal between tangents with minimum rotation.
+
+    Parameters
+    ----------
+    normal : ndarray, shape (3,)
+        Unit normal perpendicular to first_tangent.
+    first_tangent : ndarray, shape (3,)
+        Previous unit tangent.
+    last_tangent : ndarray, shape (3,)
+        Next unit tangent.
+
+    Returns
+    -------
+    normal : ndarray, shape (3,)
+        Reprojected unit normal perpendicular to last_tangent.
+    reversal : bool
+        True when an approximately 180-degree tangent reversal makes the rotation axis
+        ambiguous.
+    """
     cross = np.cross(first_tangent, last_tangent)
     cosine = float(np.clip(np.dot(first_tangent, last_tangent), -1., 1.))
     reversal = cosine < -1. + 1e-10
@@ -64,6 +127,26 @@ def _transport(normal, first_tangent, last_tangent):
 
 
 def _reference_frame(tangent, frenet_normal, bending):
+    """Build a transported display frame anchored at the first reliable bend.
+
+    Parameters
+    ----------
+    tangent : ndarray, shape (N, 3)
+        Ordered unit physical tangents.
+    frenet_normal : ndarray, shape (N, 3)
+        Principal normals defined at bending samples.
+    bending : ndarray of bool, shape (N,)
+        Samples with sufficiently defined principal curvature.
+
+    Returns
+    -------
+    reference_normal : ndarray, shape (N, 3)
+        Transported display normals; these do not define reliable inner/outer anatomy.
+    reference_binormal : ndarray, shape (N, 3)
+        Tangent cross reference normal.
+    ambiguous : ndarray of bool, shape (N,)
+        Samples affected by a tangent-reversal transport ambiguity.
+    """
     reference = np.empty_like(tangent)
     available = np.flatnonzero(bending)
     anchor = int(available[0]) if len(available) else 0
@@ -79,7 +162,35 @@ def _reference_frame(tangent, frenet_normal, bending):
 
 
 def _arc_samples(spline, parent_fraction, parent_length, step, maximum):
-    """Invert a bounded, dense cumulative spline-speed integral."""
+    """Invert bounded numerical spline-speed quadrature for physical arc sampling.
+
+    Parameters
+    ----------
+    spline : scipy.interpolate.BSpline
+        Physical three-coordinate spline on original parent fraction [0, 1].
+    parent_fraction : ndarray
+        Increasing normalized physical-polyline control fractions, including endpoints.
+    parent_length : float
+        Original parent-polyline length in millimetres.
+    step : float
+        Requested fitted-spline arc sample spacing in millimetres.
+    maximum : int
+        Maximum number of output samples.
+
+    Returns
+    -------
+    fractions : ndarray
+        Original parent parameters at approximately equal fitted-spline arc distances.
+    distances : ndarray
+        Corresponding fitted-spline cumulative distances in millimetres.
+    quadrature_count : int
+        Number of points in the bounded speed integration grid.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     # At least 32 samples per original segment, plus a step-based refinement.
     # This table is numerical quadrature, not another geometric smoothing step.
     estimated = parent_length / step
@@ -113,7 +224,7 @@ def _arc_samples(spline, parent_fraction, parent_length, step, maximum):
 
 def build_centerline_frame(nodes_ijk, spacing_ijk_mm, *, smoothing_mm=1., sample_step_mm=1.,
                            min_curvature_per_mm=.002, max_samples=MAX_FRAME_SAMPLES):
-    """Fit and sample a physical centerline reference, preserving parent u.
+    """Fit and physically sample an ordered centerline with qualified curvature directions.
 
     ``smoothing_mm`` is an RMS residual budget at the supplied controls, using
     FITPACK's sum of squared 3D residuals ``s = n * smoothing_mm**2``. It is not
@@ -125,6 +236,36 @@ def build_centerline_frame(nodes_ijk, spacing_ijk_mm, *, smoothing_mm=1., sample
     Consumers MUST gate inner/outer semantics using ``reliable``. Endpoints,
     stationary tangents, and sampled inflection/normal-turn candidates are
     excluded. ``reference_normal`` is a separate transported display frame.
+
+    Parameters
+    ----------
+    nodes_ijk : array_like, shape (N, 3)
+        Ordered native i,j,k control coordinates; the supplied order defines the path.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+    smoothing_mm : float, optional
+        Nonnegative RMS residual budget at input controls in millimetres; FITPACK uses
+        n*smoothing_mm**2.
+    sample_step_mm : float, optional
+        Positive requested fitted-spline arc sample spacing in millimetres.
+    min_curvature_per_mm : float, optional
+        Nonnegative principal-curvature threshold in inverse millimetres.
+    max_samples : int, optional
+        Output sample cap between 3 and MAX_FRAME_SAMPLES.
+
+    Returns
+    -------
+    dict
+        Sampled physical positions, parent and fitted-spline distances, unit frames,
+        inverse-millimetre curvature fields, reliability/status masks and fit/sampling
+        provenance. Inner/outer direction is valid only where reliable is True; source
+        controls are unchanged.
+
+    Raises
+    ------
+    ValueError
+        If numeric/geometry constraints, spline fitting, arc integration or sample budgets
+        fail.
     """
     smoothing = _positive_number(smoothing_mm, 'smoothing_mm', allow_zero=True)
     step = _positive_number(sample_step_mm, 'sample_step_mm')

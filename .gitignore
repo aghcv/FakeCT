@@ -36,7 +36,7 @@ temp/
 tmp/
 demos/outputs/
 # Keep only the small, public geometry fixtures in the input-data directory.
-# Student datasets belong in ignored storage; recipes/atlas CSVs remain tracked.
+# Generated datasets belong in ignored storage; recipes/atlas CSVs remain tracked.
 /data/*
 !/data/arm.vti
 !/data/carotid.stl

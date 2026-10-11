@@ -16,11 +16,37 @@ MODES = ('allowlist', 'permissive_except_bone_skin', 'stiffness')
 
 
 def _normalized(value):
+    """Normalize an anatomical text value to a lowercase underscore key.
+
+    Parameters
+    ----------
+    value : object
+        Name-like value; false-valued inputs become an empty string.
+
+    Returns
+    -------
+    str
+        Normalized text containing lowercase ASCII letters, digits and underscores.
+    """
     return re.sub(r'[^a-z0-9]+', '_', str(value or '').lower()).strip('_')
 
 
 def _record_reasons(record, categories):
-    """Conservative whole-label exclusions, using applied atlas fields only."""
+    """Identify whole-label exclusions from preserved atlas classifications.
+
+    Parameters
+    ----------
+    record : dict
+        Catalog record with original_id and applied classification fields.
+    categories : dict
+        Mapping from coarse tissue ID to tissue name.
+
+    Returns
+    -------
+    list of str
+        Diagnostic-release, background, bone and/or skin exclusion reasons found in the
+        record.
+    """
     classification = record.get('classification', {})
     group = classification.get('tissue_name', categories.get(classification.get('tissue_id'), 'unknown'))
     structure = _normalized(classification.get('structure_type'))
@@ -42,7 +68,30 @@ def _record_reasons(record, categories):
 
 
 def validate_reassignment_policy(catalog, policy, target_tissue=None, target_source_ids=()):
-    """Validate policy and metadata-only target protection without reading voxels."""
+    """Validate eligibility and stiffness settings against the original label catalog.
+
+    Parameters
+    ----------
+    catalog : dict
+        Original signed label identities and their applied tissue/atlas classifications.
+    policy : dict
+        Normalized reassignment eligibility and optional dimensionless stiffness settings.
+    target_tissue : str, optional
+        Selected coarse tissue name, when known.
+    target_source_ids : sequence of int, optional
+        Selected signed original label IDs to check for forbidden targets.
+
+    Returns
+    -------
+    dict
+        Validated mode, eligibility/ownership semantics and provenance references. Neither
+        the catalog nor voxel data is modified.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     mode = policy.get('mode', 'allowlist')
     if mode not in MODES:
         raise ValueError('reassignment.mode must be allowlist, permissive_except_bone_skin, or stiffness')
@@ -111,7 +160,24 @@ def validate_reassignment_policy(catalog, policy, target_tissue=None, target_sou
 
 
 def stiffness_coefficients(catalog, policy):
-    """Map catalogued original IDs to effective factors and their decision basis."""
+    """Resolve dimensionless resistance per original label with explicit precedence.
+
+    Parameters
+    ----------
+    catalog : dict
+        Original signed label identities and their applied tissue/atlas classifications.
+    policy : dict
+        Stiffness-mode policy containing default, tissues and optional signed-ID labels
+        under the stiffness key.
+
+    Returns
+    -------
+    dict
+        Signed-ID mapping to stiffness in [0, 1], semantic group and decision basis.
+        Background and diagnostic released identities remain rigid. Signed-ID overrides
+        precede semantic bone/skin and coarse tissue factors, then the default;
+        categorical protection is applied first.
+    """
     groups = {category['id']: category['name'] for category in catalog['categories']}
     spec = policy['stiffness']
     result = {}
@@ -137,7 +203,28 @@ def stiffness_coefficients(catalog, policy):
 
 
 def stiffness_field(labels, catalog, policy):
-    """Native coefficient field; uncatalogued identities are categorically rigid."""
+    """Map original native label identities to their resistance coefficients.
+
+    Parameters
+    ----------
+    labels : ndarray
+        Native signed label array; values must be exact representable original IDs.
+    catalog : dict
+        Original signed label identities and their applied tissue/atlas classifications.
+    policy : dict
+        Stiffness-mode policy containing default, tissues and optional signed-ID labels
+        under the stiffness key.
+
+    Returns
+    -------
+    ndarray of float
+        Same-shape dimensionless stiffness field; uncatalogued identities receive 1.
+
+    Raises
+    ------
+    ValueError
+        If labels contain nonfinite, fractional or out-of-range original identities.
+    """
     labels = _validated_labels(labels)
     coefficients = stiffness_coefficients(catalog, policy)
     values, inverse = np.unique(labels, return_inverse=True)
@@ -146,11 +233,37 @@ def stiffness_field(labels, catalog, policy):
 
 
 def reassignment_masks(labels, candidates, catalog, policy):
-    """Return ``eligible, protected, metadata`` for this pass's input state.
+    """Derive eligible donors/recipients and protected non-target voxels for a pass.
 
     Candidates are excluded from erosion recipient seeds as well as donors.
     ``protected`` excludes current candidates, so it can also enforce invariance
     of originally protected non-target voxels across a complete edit recipe.
+
+    Parameters
+    ----------
+    labels : ndarray
+        Native exact signed original label identities.
+    candidates : ndarray of bool
+        Current target membership, matching labels.
+    catalog : dict
+        Original signed label identities and their applied tissue/atlas classifications.
+    policy : dict
+        Normalized reassignment eligibility and optional dimensionless stiffness settings.
+
+    Returns
+    -------
+    eligible : ndarray of bool
+        Non-target voxels permitted as donors or recipient seeds.
+    protected : ndarray of bool
+        Ineligible non-target voxels; current candidates are excluded.
+    metadata : dict
+        Policy semantics, present-label counts, exclusion reasons and optional effective
+        stiffness.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     labels = _validated_labels(labels)
     candidates = np.asarray(candidates)

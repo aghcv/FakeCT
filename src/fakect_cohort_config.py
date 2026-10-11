@@ -13,6 +13,29 @@ FIELDS = {'stage', 'preflight_directory', 'dataset_directory', 'freeze_directory
 
 
 def parse_cohort_sections(parser, root=REPOSITORY_ROOT):
+    """Parse generation-only cohort INI sections using the strict recipe schema.
+
+    Parameters
+    ----------
+    parser : configparser.ConfigParser
+        Parsed cohort INI with required study and train sections and no model/defaults.
+    root : str or pathlib.Path
+        Repository base for resolving relative paths.
+
+    Returns
+    -------
+    dict
+        Typed cohort configuration with unassigned model splits and review/freeze paths.
+
+    Raises
+    ------
+    ValueError
+        Sections, fields, stages, review flags or recipe settings are invalid.
+
+    Notes
+    -----
+    An adapted parser copy is used; the caller parser is not mutated.
+    """
     from fakect_recipe_study_config import parse_recipe_study_sections
     if parser.defaults() or 'model' in parser:
         raise ValueError('Generation-only cohorts have no [DEFAULT] or [model]; use a separate model experiment')
@@ -48,11 +71,55 @@ def parse_cohort_sections(parser, root=REPOSITORY_ROOT):
 
 
 def _sha(path):
+    """Hash a small freeze or preflight artifact.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    str
+        SHA256 hexadecimal digest of the file bytes.
+    """
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def freeze_cohort(config, resolved, input_bytes):
-    """Freeze an explicitly reviewed recipe only after matching native preflight."""
+    """Freeze reviewed cohort inputs after a matching successful native preflight.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Freeze stage receipt, lock path and hashes binding input, preflight and
+        generation fingerprint.
+
+    Raises
+    ------
+    ValueError
+        Review flags, artifact integrity or native preflight do not match the current
+        cohort.
+    FileExistsError
+        The freeze output directory already exists.
+
+    Notes
+    -----
+    Writes exact INI and preflight snapshots plus freeze metadata into a newly reserved directory.
+
+    Freeze an explicitly reviewed recipe only after matching native preflight.
+    """
     from fakect_recipe_training import _fingerprint
     from fakect_training_data import _write_json
     if not config['roi']['coordinate_reviewed'] or not config['train']['parameters_reviewed']:
@@ -90,6 +157,30 @@ def freeze_cohort(config, resolved, input_bytes):
 
 
 def validate_cohort_freeze(config, resolved, input_bytes):
+    """Validate the reviewed input freeze before paired cohort generation.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Verified freeze lock; no new files are written.
+
+    Raises
+    ------
+    ValueError
+        Freeze is incomplete, absent, modified or no longer matches current dependencies
+        or review flags.
+    """
     from fakect_recipe_training import _fingerprint
     folder = config['train']['freeze_directory']
     if (folder/'INCOMPLETE').exists():

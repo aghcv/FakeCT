@@ -8,6 +8,25 @@ import numpy as np
 
 
 def _number_pair(value, name):
+    """Validate an interval as exactly two finite numeric endpoints.
+
+    Parameters
+    ----------
+    value : array_like
+        Two numeric endpoint values.
+    name : str
+        Field name used in validation errors.
+
+    Returns
+    -------
+    ndarray of float, shape (2,)
+        Validated numeric pair; ordering and domain bounds are checked by the caller.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     try:
         pair = np.asarray(value, dtype=float)
     except (TypeError, ValueError, OverflowError) as exc:
@@ -18,7 +37,31 @@ def _number_pair(value, name):
 
 
 def _endpoint(nodes, radii, distances, distance):
-    """Interpolate one endpoint, snapping only floating-point node coincidences."""
+    """Interpolate a tube endpoint and snap only floating-point control coincidences.
+
+    Parameters
+    ----------
+    nodes : ndarray, shape (N, 3)
+        Ordered native i,j,k controls.
+    radii : ndarray, shape (N,)
+        Positive control radii in millimetres.
+    distances : ndarray, shape (N,)
+        Strictly increasing physical-polyline distances in millimetres.
+    distance : float
+        Requested endpoint distance inside the parent path span, in millimetres.
+
+    Returns
+    -------
+    center : ndarray, shape (3,)
+        Interpolated native i,j,k center; an exact control may share input storage.
+    radius : float
+        Interpolated radius in millimetres.
+    distance : float
+        Effective endpoint arc distance in millimetres.
+    point_number : int or None
+        One-based original control number for a numerical coincidence; None for an interior
+        interpolation.
+    """
     insertion = int(np.searchsorted(distances, distance))
     nearest = min((max(0, insertion - 1), min(len(distances) - 1, insertion)),
                   key=lambda index: abs(float(distances[index]) - distance))
@@ -36,7 +79,7 @@ def _endpoint(nodes, radii, distances, distance):
 
 
 def resolve_tube_range(nodes_ijk, radii_mm, spacing_ijk_mm, *, point_range=None, path_percent=None):
-    """Return a tube subpath without sorting or changing caller-owned inputs.
+    """Extract an ordered tube interval using controls or physical arc percentages.
 
     ``point_range=(2, 8)`` retains original controls 2 through 8, inclusive,
     using one-based numbering. ``path_percent=(30, 75)`` takes 30% through 75%
@@ -47,6 +90,32 @@ def resolve_tube_range(nodes_ijk, radii_mm, spacing_ijk_mm, *, point_range=None,
 
     Ranges must have a strictly increasing start and end. Reversing the parent
     path reverses the direction in which percentages and point numbers run.
+
+    Parameters
+    ----------
+    nodes_ijk : array_like, shape (N, 3)
+        Ordered native i,j,k control coordinates; the supplied order defines the path.
+    radii_mm : array_like, shape (N,)
+        Positive radius in millimetres for each ordered control.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+    point_range : sequence of int, optional
+        One-based inclusive (start, end) control numbers, with start < end.
+    path_percent : sequence of float, optional
+        Increasing (start, end) percentages in [0, 100] of original physical-polyline
+        length. Mutually exclusive with point_range.
+
+    Returns
+    -------
+    dict
+        Selected immutable-tuple controls/radii and range metadata, including parent length,
+        millimetre start/end, fractions and retained original control numbers. No selector
+        returns the full path.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     if point_range is not None and path_percent is not None:
         raise ValueError('point_range and path_percent are mutually exclusive')

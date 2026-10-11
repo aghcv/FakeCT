@@ -31,6 +31,22 @@ RELEASED_CATEGORY = 254
 
 
 def _mask_sha256(mask):
+    """Hash mask dtype, shape and contiguous values for preview provenance.
+
+    Parameters
+    ----------
+    mask : numpy.ndarray
+        Native mask whose dtype, shape and byte content identify the displayed geometry.
+
+    Returns
+    -------
+    str
+        SHA256 hexadecimal digest of the canonical geometry header and contiguous array bytes.
+
+    Notes
+    -----
+    Reads the array without modifying it; no file access is performed.
+    """
     digest = hashlib.sha256()
     digest.update(json.dumps({'dtype': str(mask.dtype), 'shape': list(mask.shape)},
                              sort_keys=True, separators=(',', ':')).encode())
@@ -39,7 +55,24 @@ def _mask_sha256(mask):
 
 
 def _surface_edge_count(mask):
-    """Count crossings including the zero border, before allocating meshes."""
+    """Count occupancy transitions before allocating a marching-cubes mesh.
+
+    Parameters
+    ----------
+    mask : numpy.ndarray of bool, shape (k, j, i)
+        Native or pooled occupancy to evaluate.
+
+    Returns
+    -------
+    int
+        Number of neighboring occupancy crossings plus occupied samples on the six zero-border faces.
+
+    Notes
+    -----
+    This budget proxy does not construct triangles or alter the mask.
+
+    Count crossings including the zero border, before allocating meshes.
+    """
     edges = 0
     for axis in range(3):
         lower = [slice(None)] * 3
@@ -52,6 +85,22 @@ def _surface_edge_count(mask):
 
 
 def _controls_html(rows):
+    """Build independent visibility and opacity controls for surface traces.
+
+    Parameters
+    ----------
+    rows : list of dict
+        Surface display records containing keys, labels, colors, visibility and opacity.
+
+    Returns
+    -------
+    str
+        HTML fieldsets with visibility checkboxes and the predefined opacity choices.
+
+    Notes
+    -----
+    Escapes displayed labels; rows are read only and no assets are written.
+    """
     controls = []
     for row in rows:
         key = row['key']
@@ -115,6 +164,32 @@ _CONTROL_SCRIPT = """
 
 
 def _write_html(figure, path, counts, warnings, rows, has_context):
+    """Write an offline surface comparison page with independent trace controls.
+
+    Parameters
+    ----------
+    figure : plotly.graph_objects.Figure
+        Registered 3D surface scene with traces referenced by rows.
+    path : pathlib.Path
+        HTML destination; an existing file is replaced.
+    counts : dict
+        Native before, after, added and removed voxel counts.
+    warnings : list of str
+        Display notices describing absent anatomy, budgets or sampling limitations.
+    rows : list of dict
+        Surface display records containing keys, labels, colors, visibility and opacity.
+    has_context : bool
+        Whether optional final-category context traces are present.
+
+    Returns
+    -------
+    None
+        Writes the complete standalone HTML document to path.
+
+    Notes
+    -----
+    Embeds Plotly JavaScript and surface-control code; source arrays and the figure trace values are not edited.
+    """
     control_rows = [{'key': row['key'], 'trace_index': row['trace_index']} for row in rows]
     script = _CONTROL_SCRIPT.replace('__CONTROL_ROWS_JSON__', json.dumps(control_rows))
     plot = figure.to_html(include_plotlyjs=True, full_html=False,
@@ -159,6 +234,32 @@ input{margin-right:5px;accent-color:#354f69}.visibility{font-weight:600}.opacity
 
 
 def _write_png(meshes, bounds, counts, warnings, path, rows):
+    """Render a static view of the initial surface visibility and opacity settings.
+
+    Parameters
+    ----------
+    meshes : list of tuple
+        Trace keys, vertices shaped (n, 3) in i,j,k millimetres and triangle faces shaped (m, 3).
+    bounds : array_like, shape (3, 2)
+        Shared physical i,j,k limits in millimetres.
+    counts : dict
+        Native added and removed voxel counts for the title.
+    warnings : list of str
+        Display notices describing absent anatomy, budgets or sampling limitations.
+    path : pathlib.Path
+        PNG destination; an existing figure file is replaced.
+    rows : list of dict
+        Surface display records containing keys, labels, colors, visibility and opacity.
+
+    Returns
+    -------
+    None
+        Writes the PNG to path and closes the Matplotlib figure.
+
+    Notes
+    -----
+    Uses the Agg backend and may initialize MPLCONFIGDIR; no input geometry is modified.
+    """
     os.environ.setdefault('MPLCONFIGDIR', '/tmp/fakect-matplotlib')
     import matplotlib
     matplotlib.use('Agg')
@@ -198,6 +299,33 @@ def _write_png(meshes, bounds, counts, warnings, path, rows):
 
 
 def _context_inputs(before_labels, after_labels, catalog, shape):
+    """Validate optional coarse-label context against the comparison-mask grid.
+
+    Parameters
+    ----------
+    before_labels : array_like of int or None
+        Optional nonnegative before-category IDs on the comparison grid.
+    after_labels : array_like of int or None
+        Optional final nonnegative category IDs used for contextual surfaces.
+    catalog : dict or None
+        Optional catalog with unique nonnegative category IDs and names.
+    shape : tuple of three int
+        Expected native crop shape in k,j,i order.
+
+    Returns
+    -------
+    tuple
+        Final category array and ID-to-name mapping; (None, {}) when no context inputs were supplied.
+
+    Raises
+    ------
+    ValueError
+        If contextual labels or catalog entries are missing, malformed or inconsistent with shape.
+
+    Notes
+    -----
+    Returned arrays may share input storage and are read only in the rendering workflow.
+    """
     if before_labels is None and after_labels is None and catalog is None:
         return None, {}
     if after_labels is None or not isinstance(catalog, dict) or not isinstance(catalog.get('categories'), list):
@@ -219,7 +347,41 @@ def _context_inputs(before_labels, after_labels, catalog, shape):
 
 
 def _context_mesh(mask, origin, spacing, bounds, requested_stride, triangle_budget, *, native):
-    """Bound context independently, preserving every occupied category and marker voxel."""
+    """Create a context mesh within its independent triangle budget.
+
+    Parameters
+    ----------
+    mask : numpy.ndarray of bool, shape (k, j, i)
+        Native occupancy for one final tissue category.
+    origin : array_like, shape (3,)
+        Native i,j,k crop origin.
+    spacing : array_like, shape (3,)
+        Voxel widths in i,j,k order, in millimetres.
+    bounds : array_like, shape (3, 2)
+        Physical i,j,k crop edges in millimetres.
+    requested_stride : int
+        Configured display stride used when native context cannot fit.
+    triangle_budget : int
+        Maximum number of context triangles.
+    native : bool
+        If True, prohibit occupancy pooling; used for diagnostic released voxels.
+
+    Returns
+    -------
+    tuple
+        Vertices, triangle faces, actual pooling stride and pooled shape in k,j,i order.
+
+    Raises
+    ------
+    ValueError
+        If the required native context or maximally pooled context cannot fit the budget.
+
+    Notes
+    -----
+    Native sampling is tried first. Ordinary context may be pooled to meet the budget; the source mask remains unchanged.
+
+    Bound context independently, preserving every occupied category and marker voxel.
+    """
     stride = 1
     maximum_stride = max(mask.shape)
     while True:
@@ -238,7 +400,46 @@ def _context_mesh(mask, origin, spacing, bounds, requested_stride, triangle_budg
 def render_surface_overlay(before_mask, after_mask, *, crop_origin_ijk, spacing_ijk_mm,
                            volume_stride, output_dir, before_tissue_labels=None,
                            after_tissue_labels=None, catalog=None):
-    """Write standalone HTML and PNG overlays without modifying either mask.
+    """Write registered native before/after surfaces with optional final-tissue context.
+
+    Parameters
+    ----------
+    before_mask : numpy.ndarray of bool, shape (k, j, i)
+        Selected native target membership before editing.
+    after_mask : numpy.ndarray of bool, shape (k, j, i)
+        Selected native target membership after editing, on the same crop grid.
+    crop_origin_ijk : array_like, shape (3,)
+        Native zero-based i,j,k indices of the crop origin.
+    spacing_ijk_mm : array_like, shape (3,)
+        Positive finite voxel widths in i,j,k order, measured in millimetres.
+    volume_stride : int
+        Configured positive display stride; its use or provenance-only role is specified in Notes.
+    output_dir : str or pathlib.Path
+        Destination directory for generated preview assets.
+    before_tissue_labels : array_like of int, optional
+        Before-category IDs used to validate contextual grid compatibility.
+    after_tissue_labels : array_like of int, optional
+        Final-category IDs for optional context traces.
+    catalog : dict, optional
+        Category records naming the context labels.
+
+    Returns
+    -------
+    dict
+        Artifact paths, native membership counts, mesh hashes, opacity controls, context sampling and display limitations.
+
+    Raises
+    ------
+    ValueError
+        If mask/context contracts, physical geometry, stride or mesh budgets are invalid.
+    FileExistsError
+        If any overlay artifact already exists.
+
+    Notes
+    -----
+    Creates output_dir and writes edit-overlay.html, edit-overlay.png and edit-overlay.json. Before/after meshes always use native stride 1; volume_stride records the ordinary preview setting and controls only optional context fallback. Masks and label arrays are unchanged.
+
+    Write standalone HTML and PNG overlays without modifying either mask.
 
     ``volume_stride`` records the ordinary volume preview setting for provenance;
     this comparison always uses native stride 1 to preserve small edits. The

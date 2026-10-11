@@ -25,16 +25,56 @@ _FIELDS = ('normalized_name', 'canonical_name', 'system', 'subsystem',
 
 
 def normalize_name(value: str) -> str:
-    """DPI normalization: case/space/hyphen folding, without stripping digits."""
+    """Normalize an anatomical name using the DPI matching convention.
+
+    Parameters
+    ----------
+    value : str
+        Anatomical name to normalize.
+
+    Returns
+    -------
+    str
+        Lowercase name with spaces and hyphens folded to underscores; digits remain
+        intact.
+
+    Notes
+    -----
+    DPI normalization: case/space/hyphen folding, without stripping digits.
+    """
     return re.sub(r'_+', '_', re.sub(r'[\s-]', '_', value.strip().lower())).strip('_')
 
 
 def _source(path):
+    """Fingerprint a catalog dependency using its complete file bytes.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    dict
+        Resolved path and SHA256 of the source file.
+    """
     path = Path(path)
     return {'path': str(path.resolve()), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
 def _strip_comment(line):
+    """Remove an unquoted YAML comment without changing quoted text.
+
+    Parameters
+    ----------
+    line : str
+        One YAML source line, including any quoted scalar.
+
+    Returns
+    -------
+    str
+        Prefix before the first unquoted hash character, or the original line.
+    """
     quote = None
     for i, char in enumerate(line):
         if char in "\"'":
@@ -48,7 +88,29 @@ def _strip_comment(line):
 
 
 def _load_hierarchy(path):
-    """Read the scalar-only YAML subset supported by DPI; preserve regex slashes.
+    """Parse the scalar-only YAML hierarchy understood by DPI.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    tuple of dict and list of dict
+        Normalized aliases and rules sorted by descending priority and ID; rules contain
+        compiled regular expressions.
+
+    Raises
+    ------
+    ValueError
+        Unsupported YAML syntax, duplicate fields, invalid rule IDs or priorities.
+    re.error
+        A hierarchy regular expression is invalid.
+
+    Notes
+    -----
+    Read the scalar-only YAML subset supported by DPI; preserve regex slashes.
 
     Deliberately reject other YAML constructs instead of interpreting unsupported
     values. DPI strips quotes without YAML escape processing, which matters for
@@ -103,6 +165,19 @@ def _load_hierarchy(path):
 
 
 def _signature(row):
+    """Extract comparable anatomical classification fields from a record.
+
+    Parameters
+    ----------
+    row : dict
+        Classification or atlas record.
+
+    Returns
+    -------
+    tuple of str
+        Values of ``_FIELDS`` in their fixed order, with missing fields represented by
+        empty strings.
+    """
     return tuple(row.get(field, '') for field in _FIELDS)
 
 
@@ -110,6 +185,33 @@ class AtlasClassifier:
     """Classify names using explicit DPI files and a versioned grouping policy."""
 
     def __init__(self, atlas_path, hierarchy_path, policy_path):
+        """Load atlas evidence and validate the tissue grouping policy.
+
+        Parameters
+        ----------
+        atlas_path : str or pathlib.Path
+            Reviewed DPI atlas CSV path.
+        hierarchy_path : str or pathlib.Path
+            DPI scalar YAML aliases and hierarchy rules.
+        policy_path : str or pathlib.Path
+            Versioned JSON tissue policy with unique uint8 category IDs.
+
+        Returns
+        -------
+        None
+            Initializes aliases, compiled rules, category lookup, source hashes and atlas
+            audit statistics.
+
+        Raises
+        ------
+        ValueError
+            Atlas columns or policy categories, unknown category, rules or hierarchy syntax
+            are invalid.
+
+        Notes
+        -----
+        Reads the three dependency files and initializes instance state; it does not read voxel volumes.
+        """
         self.sources = {key: _source(path) for key, path in (
             ('atlas', atlas_path), ('hierarchy', hierarchy_path), ('policy', policy_path))}
         self.aliases, self.rules = _load_hierarchy(hierarchy_path)
@@ -161,9 +263,35 @@ class AtlasClassifier:
 
     @staticmethod
     def _active(row):
+        """Determine whether an atlas row is eligible as a reviewed override.
+
+        Parameters
+        ----------
+        row : dict
+            CSV row including internal ``_valid_width`` and optional ``review_action``
+            fields.
+
+        Returns
+        -------
+        bool
+            True when the row width is valid and its normalized review action is active.
+        """
         return row['_valid_width'] and normalize_name(row.get('review_action', '')) in _ACTIVE_ACTIONS
 
     def _tissue(self, metadata):
+        """Evaluate ordered grouping rules against anatomical metadata.
+
+        Parameters
+        ----------
+        metadata : dict
+            Hierarchy/classification fields used by the tissue policy.
+
+        Returns
+        -------
+        tuple of dict and list of dict
+            Chosen category and rule evidence; conflicting highest-priority categories
+            return the unknown category.
+        """
         matches = []
         for rule in self._policy_rules:
             valid = True
@@ -188,7 +316,32 @@ class AtlasClassifier:
         return self._categories[names.pop()], [{'kind': 'tissue_policy', 'rule': row['id']} for row in top]
 
     def classify(self, name, source_file=None, block_index=None):
-        """Return hierarchy, grouping and evidence without conflating ID namespaces.
+        """Classify a source name while keeping anatomical ID namespaces separate.
+
+        Parameters
+        ----------
+        name : str
+            Nonempty original anatomical name.
+        source_file : str or pathlib.Path or None
+            Exact source scope used to match reviewed overrides, when available.
+        block_index : int or None
+            Nonnegative DPI ``original_block_index``; never a voxel ACT ID or inferred local
+            ordinal.
+
+        Returns
+        -------
+        dict
+            Hierarchy metadata, tissue ID/name, status, atlas alternatives and
+            classification evidence.
+
+        Raises
+        ------
+        ValueError
+            Name or supplied DPI surface index is invalid.
+
+        Notes
+        -----
+        Return hierarchy, grouping and evidence without conflating ID namespaces.
 
         block_index is an actual DPI original_block_index, never an act ID or a
         local ordinal guessed while parsing one raw file. Scoped overrides match
@@ -316,6 +469,26 @@ class AtlasClassifier:
         return self._finish(result)
 
     def _finish(self, result, force_unknown=False):
+        """Apply review rules and assign a tissue category to a classification.
+
+        Parameters
+        ----------
+        result : dict
+            Classification mapping to mutate; includes original name, evidence and hierarchy
+            fields.
+        force_unknown : bool
+            Force the unknown category instead of applying grouping rules.
+
+        Returns
+        -------
+        dict
+            The same result mapping updated with review evidence, tissue ID/name and final
+            status.
+
+        Notes
+        -----
+        Mutates ``result`` and its evidence list in place.
+        """
         for rule in self.policy.get('hierarchy_review_rules', []):
             structure_type = result.get('structure_type')
             review_type = (('allowed_structure_types' in rule and
@@ -342,7 +515,27 @@ class AtlasClassifier:
 
 
 def read_organ_table(path) -> dict[int, str]:
-    """Read XCAT name = signed_id records, preserving repeated names across IDs."""
+    """Read XCAT name-to-signed-ID records without collapsing repeated names.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    dict of int to str
+        Original signed int32 IDs mapped to their anatomical names.
+
+    Raises
+    ------
+    ValueError
+        A record is malformed, an ID is out of range, or an ID has conflicting names.
+
+    Notes
+    -----
+    Read XCAT name = signed_id records, preserving repeated names across IDs.
+    """
     table = {}
     for lineno, line in enumerate(Path(path).read_text().splitlines(), 1):
         line = line.split('#', 1)[0].strip()
@@ -361,6 +554,30 @@ def read_organ_table(path) -> dict[int, str]:
 
 
 def build_catalog(classifier: AtlasClassifier, organ_table) -> dict:
+    """Build a reversible tissue catalog from original ID/name records.
+
+    Parameters
+    ----------
+    classifier : AtlasClassifier
+        Validated atlas classifier and grouping policy.
+    organ_table : mapping or str or pathlib.Path
+        Signed int32 ID/name mapping, or file accepted by ``read_organ_table``.
+
+    Returns
+    -------
+    dict
+        Versioned categories, original-ID classifications, source provenance and
+        unresolved-label counts.
+
+    Raises
+    ------
+    ValueError
+        An ID/name record or reserved background convention is invalid.
+
+    Notes
+    -----
+    Creates classification records; retaining the original voxel IDs is required for reversibility.
+    """
     sources = dict(classifier.sources)
     if isinstance(organ_table, (str, Path)):
         sources['organ_table'] = _source(organ_table)
@@ -399,6 +616,25 @@ def build_catalog(classifier: AtlasClassifier, organ_table) -> dict:
 
 
 def _validated_labels(original):
+    """Validate original label IDs before any coarse grouping.
+
+    Parameters
+    ----------
+    original : array_like
+        Finite, integral real values within signed int32 range; any array shape is
+        accepted.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array with the input shape and int32 dtype; may share memory with an int32
+        input.
+
+    Raises
+    ------
+    ValueError
+        Values are nonnumeric, fractional, nonfinite or out of signed int32 range.
+    """
     values = np.asarray(original)
     if values.dtype.kind not in 'iuf':
         raise ValueError('Original labels must be real numeric int32 IDs, not bool/object/complex')
@@ -410,7 +646,31 @@ def _validated_labels(original):
 
 
 def coarse_labels(original, catalog: Mapping, strict=False) -> np.ndarray:
-    """Return a new uint8 group volume; signed source labels remain untouched.
+    """Map preserved original IDs to a new coarse tissue volume.
+
+    Parameters
+    ----------
+    original : array_like
+        Signed original label IDs; slices or chunks can be supplied to bound memory.
+    catalog : Mapping
+        Catalog with validated categories and original-ID classification records.
+    strict : bool
+        Reject absent IDs and records assigned to the unknown category.
+
+    Returns
+    -------
+    numpy.ndarray
+        uint8 category array with exactly the original shape; the original array is not
+        modified.
+
+    Raises
+    ------
+    ValueError
+        Labels/catalog are invalid, or strict mode encounters unresolved IDs.
+
+    Notes
+    -----
+    Return a new uint8 group volume; signed source labels remain untouched.
 
     strict rejects IDs absent from the catalog AND catalog entries marked unknown.
     Arrays can be supplied one slice/chunk at a time to bound working memory.
@@ -426,7 +686,34 @@ def coarse_labels(original, catalog: Mapping, strict=False) -> np.ndarray:
 
 
 def subtype_mask(original, catalog: Mapping, tissue_id: int, original_ids=None) -> np.ndarray:
-    """Select fine anatomical IDs inside one coarse group from preserved labels.
+    """Select original anatomical IDs within one coarse tissue category.
+
+    Parameters
+    ----------
+    original : array_like
+        Preserved signed original label IDs.
+    catalog : Mapping
+        Versioned tissue catalog linking original IDs to coarse groups.
+    tissue_id : int
+        Existing uint8 tissue category ID.
+    original_ids : iterable of int or None
+        Optional subset of original IDs; None selects all IDs in this category.
+
+    Returns
+    -------
+    numpy.ndarray
+        Boolean mask with the original shape; fine labels are read from the preserved
+        source array.
+
+    Raises
+    ------
+    ValueError
+        Labels/catalog are invalid, the tissue is unknown, or selected IDs lie outside
+        it.
+
+    Notes
+    -----
+    Select fine anatomical IDs inside one coarse group from preserved labels.
 
     This requires the original voxel array. It never tries to reconstruct fine
     anatomy from uint8 coarse labels, which do not contain that information.
@@ -443,7 +730,28 @@ def subtype_mask(original, catalog: Mapping, tissue_id: int, original_ids=None) 
 
 
 def _validated_catalog_mapping(catalog):
-    """Reject edited catalogs that could truncate IDs or wrap uint8 codes."""
+    """Validate category and original-ID mappings before label conversion.
+
+    Parameters
+    ----------
+    catalog : Mapping
+        Catalog containing category rows and original-ID classification records.
+
+    Returns
+    -------
+    tuple of dict, int and dict
+        Original-ID-to-category mapping, unknown category ID and category-ID-to-name
+        mapping.
+
+    Raises
+    ------
+    ValueError
+        Category or original ID validity, uniqueness, or tissue-name agreement fails.
+
+    Notes
+    -----
+    Reject edited catalogs that could truncate IDs or wrap uint8 codes.
+    """
     categories, names = {}, set()
     for row in catalog['categories']:
         code, name = row['id'], row['name']

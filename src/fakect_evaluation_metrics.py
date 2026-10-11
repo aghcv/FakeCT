@@ -23,6 +23,18 @@ EMPTY_POLICY = ('Dice and IoU are 1 when truth and prediction are both empty; '
 
 
 def _sha256(path):
+    """Hash an evaluation dependency in bounded read chunks.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    str
+        SHA256 hexadecimal digest of complete file bytes.
+    """
     digest = hashlib.sha256()
     with Path(path).open('rb') as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b''):
@@ -31,6 +43,25 @@ def _sha256(path):
 
 
 def _metrics(tp, fp, fn, tn):
+    """Compute binary segmentation metrics with an explicit empty-mask policy.
+
+    Parameters
+    ----------
+    tp : int
+        True-positive voxel count.
+    fp : int
+        False-positive voxel count.
+    fn : int
+        False-negative voxel count.
+    tn : int
+        True-negative count retained in the input contract; foreground metrics do not
+        depend on it.
+
+    Returns
+    -------
+    dict of str to float
+        Dice, IoU, precision and recall; both-empty foreground receives one.
+    """
     empty = tp + fp + fn == 0
     return {'dice': 2 * tp / (2 * tp + fp + fn) if not empty else 1.,
             'iou': tp / (tp + fp + fn) if not empty else 1.,
@@ -39,12 +70,48 @@ def _metrics(tp, fp, fn, tn):
 
 
 def _identity(value, name):
+    """Require a nonempty string identity for evaluation metadata.
+
+    Parameters
+    ----------
+    value : str
+        Variant, case or family identifier.
+    name : str
+        Identity field label for errors.
+
+    Returns
+    -------
+    str
+        Unmodified validated identity.
+
+    Raises
+    ------
+    ValueError
+        The value is not a nonempty string.
+    """
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f'{name} must be a nonempty string')
     return value
 
 
 def _shape(value):
+    """Validate bounded positive held-out crop dimensions.
+
+    Parameters
+    ----------
+    value : list or tuple of int
+        Recorded native or model-grid crop shape.
+
+    Returns
+    -------
+    tuple of int
+        Python integer dimensions in k,j,i order.
+
+    Raises
+    ------
+    ValueError
+        Dimensions are invalid or exceed MAX_VOLUME_VOXELS.
+    """
     if (not isinstance(value, (list, tuple)) or len(value) != 3 or
             any(isinstance(n, (bool, np.bool_)) or not isinstance(n, (int, np.integer))
                 or n <= 0 for n in value)):
@@ -56,7 +123,34 @@ def _shape(value):
 
 
 def evaluate_segmentation_model(model_directory, manifest_path, *, threshold=0.5):
-    """Evaluate only frozen test samples, without writing or tuning anything.
+    """Evaluate frozen test samples using verified model and array provenance.
+
+    Parameters
+    ----------
+    model_directory : str or pathlib.Path
+        Directory containing ``model.keras`` and ``model-metadata.json``.
+    manifest_path : str or pathlib.Path
+        Prepared dataset manifest or frozen experiment-lock path.
+    threshold : float
+        Foreground probability cutoff strictly between zero and one.
+
+    Returns
+    -------
+    dict
+        Per-sample voxel counts/metrics, threshold, source/model hashes and test-only
+        provenance.
+
+    Raises
+    ------
+    ValueError
+        Threshold, test availability, model/source binding, payload validity or
+        predictions fail.
+
+    Notes
+    -----
+    Writes no files and performs no selection. At most one decoded pair and one predicted axial slice are retained; edge padding is excluded from counts.
+
+    Evaluate only frozen test samples, without writing or tuning anything.
 
     The model must have been trained from this exact manifest/experiment lock.
     Array and archive hashes are checked before inference; padded image tiles
@@ -149,10 +243,39 @@ def evaluate_segmentation_model(model_directory, manifest_path, *, threshold=0.5
 
 
 def _mean(rows):
+    """Compute equally weighted means of segmentation metric records.
+
+    Parameters
+    ----------
+    rows : nonempty sequence of dict
+        Validated records containing every metric in METRICS.
+
+    Returns
+    -------
+    dict of str to float
+        Arithmetic means of Dice, IoU, precision and recall.
+    """
     return {metric: math.fsum(row[metric] for row in rows) / len(rows) for metric in METRICS}
 
 
 def _checked_row(row):
+    """Validate metric values against their voxel confusion counts.
+
+    Parameters
+    ----------
+    row : dict
+        Sample identity, nonnegative counts, positive valid_voxels and finite metrics.
+
+    Returns
+    -------
+    dict
+        The unchanged validated sample record.
+
+    Raises
+    ------
+    ValueError
+        Identity/count validity, count totals or recomputed metrics disagree.
+    """
     if not isinstance(row, dict):
         raise ValueError('Evaluation samples must be mappings')
     for name in ('variant_id', 'case_id', 'anatomy_family'):
@@ -175,7 +298,30 @@ def _checked_row(row):
 
 
 def summarize_evaluations(evaluations):
-    """Average variants, then cases, then seeds, then independent families.
+    """Aggregate held-out metrics without treating siblings or seeds as independent anatomy.
+
+    Parameters
+    ----------
+    evaluations : list or tuple of dict
+        Nonempty completed records with fold_id, seed and checked test sample rows.
+
+    Returns
+    -------
+    dict
+        Equal-family macro metrics, per-seed and per-family reports, coverage counts and
+        weighting policy.
+
+    Raises
+    ------
+    ValueError
+        Identities, counts, thresholds, fold/seed completion or held-out sample coverage
+        are inconsistent.
+
+    Notes
+    -----
+    Averages variants within case, cases within family, seeds within family, then families overall. No patient-level confidence interval is inferred from sibling counts.
+
+    Average variants, then cases, then seeds, then independent families.
 
     Input records need fold_id, a nonnegative integer seed, and sample rows from
     evaluate_segmentation_model. Each outer test sample must appear exactly

@@ -12,6 +12,30 @@ from fakect_model_experiment import (fit_model_experiment, freeze_model_experime
 
 
 def run(config_path, *, stage='plan', validate_only=False, preview_splits=False):
+    """Execute a model stage against separately prepared immutable cohort revisions.
+
+    Parameters
+    ----------
+    config_path : str or pathlib.Path
+        Model-experiment INI file; its bytes are checked before and after execution.
+    stage : str, optional
+        plan, fit, test or summarize; grouped evaluation enables test/summarize.
+    validate_only : bool, optional
+        Validate the model plan without freezing output or fitting a model.
+    preview_splits : bool, optional
+        Preview provisional family assignments without loading dataset payloads; mutually exclusive with validate_only.
+
+    Returns
+    -------
+    dict
+        Stage-specific planning, training, testing or summary metadata.
+
+    Notes
+    -----
+    Stages may create fresh model artifacts; fitting lazily activates the
+    selected learning backend. This entry point never generates phantoms or
+    modifies prepared datasets. Invalid stages or changed INI bytes raise ValueError.
+    """
     path = Path(config_path).expanduser().resolve()
     original = path.read_bytes()
     config = load_model_experiment_config(path)
@@ -50,6 +74,22 @@ def run(config_path, *, stage='plan', validate_only=False, preview_splits=False)
 
 
 def main(argv=None):
+    """Parse and execute one model experiment command.
+
+    Parameters
+    ----------
+    argv : sequence of str or None, optional
+        Arguments excluding the executable name; None uses sys.argv[1:].
+
+    Returns
+    -------
+    int
+        Zero for successful/ready plans; two for handled failures or a nonready result.
+
+    Notes
+    -----
+    Prints finite JSON stage results to stdout and handled errors to stderr.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', required=True)
     parser.add_argument('--stage', choices=('plan', 'fit', 'test', 'summarize'), default='plan')

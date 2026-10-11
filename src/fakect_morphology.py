@@ -27,7 +27,32 @@ _STRUCTURE = ndimage.generate_binary_structure(3, 1)
 
 
 def apply_anatomical_protection(labels, resolved, eligible, protected, metadata):
-    """Keep excluded arteries out of donor/recipient ownership, with exact audit rows."""
+    """Exclude atlas-filtered arteries from donor and recipient ownership.
+
+    Parameters
+    ----------
+    labels : ndarray
+        Native k,j,i signed anatomical labels.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    eligible : ndarray of bool
+        Matching native k,j,i membership mask.
+    protected : ndarray of bool
+        Matching native k,j,i membership mask.
+    metadata : dict
+        Current policy counts and eligible/protected input-label audit rows.
+
+    Returns
+    -------
+    eligible : ndarray of bool
+        Donor/recipient eligibility after anatomical exclusions.
+    protected : ndarray of bool
+        Updated protected non-target mask.
+    metadata : dict
+        Matching exclusion counts and audit rows. With no excluded IDs, input objects are
+        returned unchanged.
+    """
     ids = tuple(resolved.get('anatomical_protected_ids', ()))
     if not ids:
         return eligible, protected, metadata
@@ -53,6 +78,27 @@ def apply_anatomical_protection(labels, resolved, eligible, protected, metadata)
 
 
 def _edit_spec(resolved, config):
+    """Validate one edit and normalize its physical budget and policy settings.
+
+    Parameters
+    ----------
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    dict
+        Operation, assignment mode, edit/search distances in millimetres, profile settings,
+        target/allowed tissue codes and protected source IDs.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     edit = config.get('edit', {})
     erosion_guard_spec(config)
     directional_spec(resolved, config)
@@ -112,12 +158,31 @@ def _edit_spec(resolved, config):
 
 
 def validate_edit_geometry(resolved, config):
-    """Validate policy and conservative edit/search halo without reading voxels.
+    """Check policy, crop bounds and conservative physical context before an edit.
 
     The entire continuous ROI envelope, enlarged by edit distance + recipient
     search distance + one largest-spacing step, must fit within loaded voxel
     centers. This deliberately rejects boundary-truncated trials rather than
     treating a missing outside crop/source as background.
+
+    Parameters
+    ----------
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    dict
+        Required halo in millimetres, whether it was checked and, for active edits, the
+        physical ROI envelope. No source voxel payload is read.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     spec = _edit_spec(resolved, config)
     spacing = np.asarray(resolved['spacing_ijk_mm'], dtype=float)
@@ -181,10 +246,32 @@ def validate_edit_geometry(resolved, config):
 
 
 def tube_position_mm(shape_kji, origin_ijk, nodes_ijk, spacing_ijk_mm):
-    """Physical arc coordinate of the closest point on an ordered centerline.
+    """Project native voxel centers to an ordered polyline arc coordinate.
 
     At equal distances the first supplied segment wins, matching the existing
     tube profile convention. Endcap positions clamp to the first/last point.
+
+    Parameters
+    ----------
+    shape_kji : sequence of int
+        Native array dimensions in k,j,i order.
+    origin_ijk : sequence of int
+        Native i,j,k index of the crop origin.
+    nodes_ijk : array_like, shape (N, 3)
+        Ordered native i,j,k control coordinates; the supplied order defines the path.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    ndarray of float64
+        Closest original-polyline arc distance in millimetres for every k,j,i crop voxel;
+        endpoints clamp to the first and last controls.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     spacing = np.asarray(spacing_ijk_mm, dtype=float)
     nodes = np.asarray(nodes_ijk, dtype=float) * spacing
@@ -209,7 +296,30 @@ def tube_position_mm(shape_kji, origin_ijk, nodes_ijk, spacing_ijk_mm):
 
 
 def strength_field_mm(shape_kji, resolved, config):
-    """Spatial edit budget, including zero-ended Gaussian tube arc-length taper."""
+    """Evaluate the longitudinal edit-distance budget on the native crop.
+
+    Parameters
+    ----------
+    shape_kji : sequence of int
+        Native array dimensions in k,j,i order.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    ndarray of float64
+        Nonnegative maximum grid-path distance in millimetres before angular weighting and
+        tissue resistance; inactive edits return zero. Gaussian support has zero budget
+        at and outside the configured shape_window endpoints.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     spec = _edit_spec(resolved, config)
     if spec['operation'] == 'none':
         return np.zeros(shape_kji, dtype=np.float64)
@@ -241,6 +351,22 @@ def strength_field_mm(shape_kji, resolved, config):
 
 
 def _neighbors(index, shape, spacing):
+    """Iterate existing six-face neighbors and their physical edge costs.
+
+    Parameters
+    ----------
+    index : int
+        C-order flat index in the native k,j,i crop.
+    shape : sequence of int
+        Crop dimensions in k,j,i order.
+    spacing : sequence of float
+        Physical voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    generator of tuple
+        (neighbor_flat_index, edge_cost_mm) pairs, with no edges outside the crop.
+    """
     nz, ny, nx = shape
     z, plane = divmod(index, ny * nx)
     y, x = divmod(plane, nx)
@@ -259,7 +385,27 @@ def _neighbors(index, shape, spacing):
 
 
 def _distances(domain, seeds, spacing, maximum, initial=None):
-    """Bounded weighted six-edge shortest paths, without ownership overhead."""
+    """Compute bounded six-edge physical shortest paths from input-state seeds.
+
+    Parameters
+    ----------
+    domain : ndarray of bool
+        Traversable voxels in a matching native k,j,i Boolean mask.
+    seeds : ndarray of bool
+        Source voxels with matching shape; seeds are initialized even if outside domain.
+    spacing : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+    maximum : float
+        Maximum accepted path cost in millimetres.
+    initial : ndarray, optional
+        Matching initial seed costs in millimetres; None assigns zero cost.
+
+    Returns
+    -------
+    ndarray of float
+        Minimum physical path costs on the native crop; unreachable or over-budget voxels
+        remain infinity.
+    """
     flat_domain = domain.ravel()
     distances = np.full(domain.size, np.inf)
     ids = np.flatnonzero(seeds)
@@ -281,7 +427,39 @@ def _distances(domain, seeds, spacing, maximum, initial=None):
 
 
 def _owned_paths(domain, seeds, spacing, maximum, labels, budgets=None, initial=None):
-    """Accepted frontier propagation; ties use original signed ID then seed index."""
+    """Propagate bounded paths with deterministic original-label seed ownership.
+
+    Parameters
+    ----------
+    domain : ndarray of bool
+        Traversable voxels in a matching native k,j,i Boolean mask.
+    seeds : ndarray of bool
+        Matching input-state seed mask.
+    spacing : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+    maximum : float
+        Global maximum accepted path cost, in millimetres.
+    labels : ndarray
+        Matching signed anatomical identities used to break equal-distance ties.
+    budgets : ndarray, optional
+        Matching local path-cost limits in millimetres for nonseed voxels.
+    initial : ndarray, optional
+        Matching nonnegative initial seed costs in millimetres; None assigns zero.
+
+    Returns
+    -------
+    distances : ndarray of float
+        Minimum accepted physical path costs; infinity denotes unreachable voxels.
+    owners : ndarray of int32
+        Winning input seed C-order flat index for each crop voxel; -1 means no accepted
+        owner. Equal path-cost ties choose the lowest signed original label, then the
+        earliest seed flat index.
+
+    Raises
+    ------
+    ValueError
+        If any initialized seed cost is nonfinite or negative.
+    """
     flat_domain, flat_labels, flat_seeds = domain.ravel(), labels.ravel(), seeds.ravel()
     limit = None if budgets is None else budgets.ravel()
     distances = np.full(domain.size, np.inf)
@@ -316,7 +494,23 @@ def _owned_paths(domain, seeds, spacing, maximum, labels, budgets=None, initial=
 
 
 def _erosion_boundary(candidates, spacing):
-    """Inside voxels adjacent to full candidate complement, with correct edge cost."""
+    """Find candidate voxels touching the complement and their first edge cost.
+
+    Parameters
+    ----------
+    candidates : ndarray of bool
+        Native k,j,i full current target membership.
+    spacing : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    seeds : ndarray of bool
+        Target boundary voxels touching the complement or an outside-crop face.
+    initial : ndarray of float
+        Smallest crossing edge cost in millimetres at each boundary seed; infinity
+        elsewhere.
+    """
     initial = np.full(candidates.shape, np.inf)
     for array_axis, edge_cost in enumerate(spacing[::-1]):
         for shift in (-1, 1):
@@ -330,20 +524,76 @@ def _erosion_boundary(candidates, spacing):
 
 
 def apply_morphology(arrays, resolved, config, *, erosion_reference=None):
-    """Apply an edit with optional erosion checks before accepting its output.
+    """Apply one bounded edit with configured erosion safeguards.
 
     Recipes pass a fixed pre-step reference to prevent repeated iterations from
     ratcheting down the volume floor. A standalone edit makes its own reference.
+
+    Parameters
+    ----------
+    arrays : dict of ndarray
+        Matching native k,j,i label (act), attenuation (atn), tissue, candidates, selected
+        and ROI arrays. Inputs are not mutated.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    erosion_reference : dict, optional
+        Fixed pre-step local-volume/connectivity reference reused across recipe passes; None
+        captures a standalone reference when needed.
+
+    Returns
+    -------
+    dict
+        Edited original/tissue labels, before/after target masks,
+        proposal/accepted/blocked/unresolved masks, millimetre strength field, copied
+        attenuation proxy and audit summary. Optional stiffness, directional, lineage and
+        released-marker fields follow the configured mode. Source arrays are unchanged.
+
+    Raises
+    ------
+    ValueError
+        If inputs, policies, geometry, unresolved recipients or erosion references are
+        invalid.
+    RuntimeError
+        If protected-label, growth, directional-support or lineage invariants fail.
     """
     return apply_guarded_erosion(arrays, resolved, config, reference=erosion_reference)
 
 
 def _apply_morphology_once(arrays, resolved, config):
-    """Return edited copies, exact audit masks, and a scalar COPY proxy.
+    """Apply a single morphology trial and record exact label and proxy changes.
 
     The configured policy determines eligible current-state donors/recipients.
     Release propagation traverses only requested release voxels;
     dilation traverses only accepted target/proposed eligible donor voxels.
+
+    Parameters
+    ----------
+    arrays : dict of ndarray
+        Matching native k,j,i label (act), attenuation (atn), tissue, candidates, selected
+        and ROI arrays. Inputs are not mutated.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    dict
+        Edited original/tissue labels, before/after target masks,
+        proposal/accepted/blocked/unresolved masks, millimetre strength field, copied
+        attenuation proxy and audit summary. Optional stiffness, directional, lineage and
+        released-marker fields follow the configured mode. Source arrays are unchanged.
+
+    Raises
+    ------
+    ValueError
+        If native inputs, selection, policy, halo or recipient assignment fail validation.
+    RuntimeError
+        If a protected-label, growth or directional-support invariant is violated.
     """
     labels = _validated_labels(arrays['act'])
     if labels.ndim != 3 or labels.size == 0:

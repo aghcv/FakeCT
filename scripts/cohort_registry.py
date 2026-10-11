@@ -10,10 +10,39 @@ from fakect_cohort_registry import register_dataset, load_registry_entry, list_r
 
 
 def _summary(entry):
+    """Build a registry summary without embedding the full dataset manifest.
+
+    Parameters
+    ----------
+    entry : dict
+        Verified or listed registry record with optional manifest field.
+
+    Returns
+    -------
+    dict
+        New shallow dictionary containing all fields except manifest.
+    """
     return {key: value for key, value in entry.items() if key != 'manifest'}
 
 
 def main(argv=None):
+    """Dispatch registry registration, listing or content verification.
+
+    Parameters
+    ----------
+    argv : sequence of str or None, optional
+        Arguments excluding the executable name; None uses sys.argv[1:].
+
+    Returns
+    -------
+    int
+        Zero on success; two for handled validation or filesystem errors.
+
+    Notes
+    -----
+    Prints JSON to stdout and errors to stderr. Registration pins a new
+    immutable revision; list/verify do not generate cohort data.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     register = commands.add_parser('register', help='Copy and pin a completed dataset as an immutable revision')

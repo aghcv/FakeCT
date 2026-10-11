@@ -21,6 +21,27 @@ MAX_INTEGER = 2**31 - 1
 
 
 def _integer(value, name, minimum=0):
+    """Parse a bounded unsigned evaluation setting.
+
+    Parameters
+    ----------
+    value : str
+        Unsigned decimal field text.
+    name : str
+        Evaluation field name used in errors.
+    minimum : int
+        Inclusive lower bound.
+
+    Returns
+    -------
+    int
+        Integer between minimum and MAX_INTEGER.
+
+    Raises
+    ------
+    ValueError
+        The text or allowed numeric interval is invalid.
+    """
     if not isinstance(value, str) or not re.fullmatch(r'[0-9]+', value):
         raise ValueError(f'evaluation.{name} must be an integer >= {minimum}')
     result = int(value)
@@ -30,7 +51,27 @@ def _integer(value, name, minimum=0):
 
 
 def parse_evaluation(values):
-    """Parse the optional model INI's explicit ``[evaluation]`` section.
+    """Parse explicit family-based holdout and repeat settings from INI text.
+
+    Parameters
+    ----------
+    values : dict of str to str
+        Single-line optional [evaluation] section fields.
+
+    Returns
+    -------
+    dict
+        Typed strategy, model seeds, threshold and applicable case-
+        count/validation/planning settings.
+
+    Raises
+    ------
+    ValueError
+        Fields, strategy-specific options, repeat seeds or threshold are invalid.
+
+    Notes
+    -----
+    Parse the optional model INI's explicit ``[evaluation]`` section.
 
     ``case_counts`` counts distinct base cases, never scenarios or dataset
     receipts. ``seeds`` are training repetitions; they do not redraw a split.
@@ -83,7 +124,27 @@ def parse_evaluation(values):
 
 
 def _typed_evaluation(evaluation):
-    """Check programmatic inputs with the same rules as the INI parser."""
+    """Validate programmatic evaluation settings through the INI parser contract.
+
+    Parameters
+    ----------
+    evaluation : dict
+        Strategy settings with typed integer lists and numeric threshold.
+
+    Returns
+    -------
+    dict
+        Validated typed settings identical in semantics to parse_evaluation output.
+
+    Raises
+    ------
+    ValueError
+        Typed field values or the reconstructed configuration are invalid.
+
+    Notes
+    -----
+    Check programmatic inputs with the same rules as the INI parser.
+    """
     if not isinstance(evaluation, dict):
         raise ValueError('Evaluation settings must be the parsed [evaluation] mapping')
     raw = {}
@@ -107,6 +168,25 @@ def _typed_evaluation(evaluation):
 
 
 def _families(datasets):
+    """Group distinct source cases into indivisible anatomy families.
+
+    Parameters
+    ----------
+    datasets : list or tuple of dict
+        Nonempty records identifying case_id and anatomy_family.
+
+    Returns
+    -------
+    dict of str to list of str
+        Sorted family-to-case mapping; repeated receipts for the same case do not add
+        weight.
+
+    Raises
+    ------
+    ValueError
+        Case/family identity is invalid, a case has multiple families, or family
+        capacity is exceeded.
+    """
     if not isinstance(datasets, (list, tuple)) or not datasets:
         raise ValueError('Evaluation requires prepared datasets with case_id and anatomy_family')
     by_case = {}
@@ -134,6 +214,22 @@ def _families(datasets):
 
 
 def _ordered(families, seed, context):
+    """Rank family names reproducibly within a split context.
+
+    Parameters
+    ----------
+    families : iterable of str
+        Candidate anatomy-family names.
+    seed : int
+        Split seed independent of model training repeat seeds.
+    context : str
+        Domain separator distinguishing holdout and validation selection.
+
+    Returns
+    -------
+    list of str
+        Names ordered by SHA256 rank, with name as a deterministic tie break.
+    """
     def rank(family):
         value = f'{seed}\0{context}\0{family}'.encode('utf-8')
         return hashlib.sha256(value).hexdigest(), family
@@ -142,7 +238,32 @@ def _ordered(families, seed, context):
 
 def validate_assignment(families, assignment, *, require_validation=True,
                         min_training_families=1):
-    """Require one complete split assignment per family; return split counts.
+    """Validate a complete indivisible family split and report its counts.
+
+    Parameters
+    ----------
+    families : dict of str to list of str
+        Each family mapped to distinct cases appearing nowhere else.
+    assignment : dict of str to str
+        One train/validation/test value for every family.
+    require_validation : bool
+        Require validation; false requires no validation for a final refit.
+    min_training_families : int
+        Minimum allowed number of training families.
+
+    Returns
+    -------
+    dict
+        Distinct case and family counts for train, validation and test.
+
+    Raises
+    ------
+    ValueError
+        Coverage, case uniqueness, split names or minimum nonempty partitions fail.
+
+    Notes
+    -----
+    Require one complete split assignment per family; return split counts.
 
     A family is indivisible. ``families`` must map each family to its distinct
     case IDs; a case appearing in more than one family is invalid. Nested final
@@ -176,7 +297,32 @@ def validate_assignment(families, assignment, *, require_validation=True,
 
 
 def _holdout_assignment(families, counts, seed):
-    """Exact group partition using a bounded two-dimensional dynamic program."""
+    """Solve an exact case-count partition without dividing anatomy families.
+
+    Parameters
+    ----------
+    families : dict of str to list of str
+        Distinct cases grouped by family.
+    counts : sequence of int
+        Required train, validation and test case counts, in that order.
+    seed : int
+        Split-ranking seed.
+
+    Returns
+    -------
+    dict of str to str
+        Deterministic family split assignment satisfying requested case counts.
+
+    Raises
+    ------
+    ValueError
+        Totals differ, exact partition is impossible or bounded dynamic-programming
+        capacity is exceeded.
+
+    Notes
+    -----
+    Exact group partition using a bounded two-dimensional dynamic program.
+    """
     total = sum(map(len, families.values()))
     if sum(counts) != total:
         raise ValueError(f'evaluation.case_counts sums to {sum(counts)}, but prepared datasets contain '
@@ -224,6 +370,29 @@ def _holdout_assignment(families, counts, seed):
 
 def _fold(fold_id, families, assignment, *, inner_folds=None, final_refit=False,
           min_training_families=1):
+    """Validate and describe one outer or inner family fold.
+
+    Parameters
+    ----------
+    fold_id : str
+        Stable outer/inner fold identifier.
+    families : dict of str to list of str
+        Distinct source cases grouped by family.
+    assignment : dict of str to str
+        Complete family split assignment.
+    inner_folds : list of dict or None
+        Nested development-fold records, when applicable.
+    final_refit : bool
+        Permit no validation for a final nested-CV refit.
+    min_training_families : int
+        Minimum training family count.
+
+    Returns
+    -------
+    dict
+        Fold ID, family membership, complete assignment, counts and optional nested
+        folds.
+    """
     counts = validate_assignment(families, assignment, require_validation=not final_refit,
                                  min_training_families=min_training_families)
     return {'id': fold_id, 'test_families': [family for family in families if assignment[family] == 'test'],
@@ -233,7 +402,33 @@ def _fold(fold_id, families, assignment, *, inner_folds=None, final_refit=False,
 
 
 def build_evaluation_design(datasets, evaluation, split_seed=42):
-    """Build explicit outer and optional inner partitions without loading data.
+    """Plan deterministic outer and optional nested family partitions without image I/O.
+
+    Parameters
+    ----------
+    datasets : list or tuple of dict
+        Prepared or provisional case_id/anatomy_family records.
+    evaluation : dict
+        Typed holdout, leave_one_out or nested_leave_one_out settings.
+    split_seed : int
+        Nonnegative bounded split seed; training-repeat seeds do not redraw test
+        partitions.
+
+    Returns
+    -------
+    dict
+        Versioned settings, family mapping, outer/inner folds and distinct-
+        case/family/fit counts.
+
+    Raises
+    ------
+    ValueError
+        Settings, family independence/counts, requested partition or planning budget
+        fail.
+
+    Notes
+    -----
+    Build explicit outer and optional inner partitions without loading data.
 
     Repeated receipts for the same case do not change its weight. A holdout uses
     exactly the requested case counts, retaining complete anatomy families.

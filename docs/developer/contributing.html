@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FakeCT · Developer conventions</title>
+<style>
+:root{--ink:#18283b;--muted:#536478;--accent:#08698b;--edge:#d6e3eb}*{box-sizing:border-box}body{margin:0;background:#f4f7fa;color:var(--ink);font:17px/1.65 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:36px 24px 64px}a{color:var(--accent)}header{border-bottom:3px solid var(--accent);padding-bottom:20px;margin-bottom:24px}h1{font-size:36px;line-height:1.2}h2{font-size:25px;margin-top:36px}h3{font-size:20px}p{margin:12px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#102337;color:#ecf7ff;padding:18px;border-radius:8px;font:14px/1.6 ui-monospace,monospace}code{font-family:ui-monospace,monospace}table{border-collapse:collapse;width:100%;background:white}th,td{padding:12px;text-align:left;border:1px solid var(--edge);vertical-align:top}th{background:#e8f3f8}.callout{padding:16px 20px;border-left:5px solid #087996;background:white}.muted{color:var(--muted)}nav{display:flex;gap:18px;flex-wrap:wrap}li{margin:8px 0}@media(max-width:650px){main{padding:24px 16px}h1{font-size:29px}table{font-size:14px}}
+</style>
+</head>
+<body><main>
+<header><p class="muted">FakeCT · Algorithm development</p><h1>Developer conventions and extension contracts</h1><nav><a href="index.html">Workflow guide</a><a href="api.html">API reference</a><a href="testing.html">Testing guide</a><a href="../reference/index.html">Method references</a></nav></header>
+<p>FakeCT separates source-volume access, physical geometry, morphology, immutable dataset preparation and model experiments. Extend one boundary at a time, document the data contract and verify the expected behavior with a small reproducible example.</p>
+
+<h2 id="layout">1. Choose the implementation boundary</h2>
+<table><thead><tr><th>Location</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><code>scripts/</code></td><td>Argument parsing and workflow dispatch. Keep entry points thin; reusable algorithms belong in <code>src/</code>.</td></tr>
+<tr><td><code>scripts/dev/</code>, <code>configs/development/</code></td><td>Import-free developer checks, API generation and the maintained documentation scope.</td></tr>
+<tr><td><code>src/</code></td><td>Source adapters, geometry, serial editing, report generation, paired datasets, registries and optional learning backends.</td></tr>
+<tr><td><code>configs/templates/</code>, <code>configs/examples/</code></td><td>Reusable configuration contracts and small examples. Preserve explicit units and review flags.</td></tr>
+<tr><td><code>tests/</code></td><td>Regression and integration contracts. Prefer generated fixtures to downloaded anatomy or recorded output snapshots.</td></tr>
+<tr><td><code>docs/developer/</code>, <code>docs/reference/</code></td><td>Workflow instructions, API contracts and algorithm details. Keep documentation readable offline.</td></tr>
+<tr><td><code>scripts/research/</code>, <code>archive/research/</code></td><td>Advanced adapters, case-study utilities and historical evidence. A historical input or result does not establish a portable default.</td></tr>
+</tbody></table>
+<p>Use existing configuration objects and stage boundaries rather than introducing a second parser or coupled training-and-generation command. The separate <code>prepare_cohort.py</code> and <code>model_experiment.py</code> interfaces are the default extension points.</p>
+
+<h2 id="functions">2. Make function contracts visible</h2>
+<p>Start every maintained function with a docstring that states its purpose, inputs and outputs. Use NumPy-style <code>Parameters</code> and <code>Returns</code> sections; add <code>Raises</code> for relevant failure conditions and <code>Notes</code> for units, array order, mutation, filesystem effects or implementation limits. Document public classes and their responsibilities. Private helpers still need a clear purpose and contract.</p>
+<p>State exact array shapes, dtypes, coordinate order and units when they affect correctness. Describe optional values and defaults. A function returning <code>None</code> should say what it writes or mutates. Avoid comments that merely restate the next line; explain assumptions, algorithmic choices and invariants.</p>
+<pre><code># Docstring template for a numerical helper; not an additional FakeCT API.
+def mask_volume_mm3(mask, spacing_ijk_mm):
+    """Measure physical foreground volume from a binary native-grid mask.
+
+    Parameters
+    ----------
+    mask : numpy.ndarray, shape (k, j, i), dtype bool
+        Foreground membership on the native voxel grid.
+    spacing_ijk_mm : tuple of three float
+        Positive voxel widths in i, j, k order, measured in millimetres.
+
+    Returns
+    -------
+    float
+        Foreground volume in cubic millimetres.
+
+    Raises
+    ------
+    ValueError
+        If geometry is nonfinite or any voxel width is not positive.
+
+    Notes
+    -----
+    The mask is read only. This helper performs no file or model access.
+    """</code></pre>
+<p>Use descriptive names and type annotations for new public interfaces. Keep explicit <code>_ijk</code>, <code>_kji</code>, <code>_mm</code> and <code>_mm3</code> suffixes when an order or unit could otherwise be ambiguous. Prefer named result fields over unexplained positional tuples. Preserve existing API signatures unless the corresponding callers, configuration schema and compatibility policy are updated together.</p>
+<p>The <a href="api.html">API reference</a> is generated from source syntax without importing modules or activating optional backends. Regenerate it after changing signatures or docstrings:</p>
+<pre><code>python scripts/dev/build_api_docs.py</code></pre>
+
+<h2 id="geometry">3. Preserve numerical and label semantics</h2>
+<table><thead><tr><th>Contract</th><th>Required behavior</th></tr></thead><tbody>
+<tr><td>Index and array order</td><td>INI centers and geometry vectors use <code>i,j,k</code>; volume arrays use <code>k,j,i</code>. Convert deliberately, including crop origins and anisotropic spacing.</td></tr>
+<tr><td>Physical units</td><td>Distances and tube radii use millimetres; native attenuation images use cm⁻¹. HU conversion belongs in a separately calibrated adapter. A voxel count is not a resolution-independent severity metric.</td></tr>
+<tr><td>Label identity</td><td>Keep original signed source IDs, coarse tissue categories and binary target masks distinct. Never recover an anatomical ID by rounding blended activity values or taking its absolute value.</td></tr>
+<tr><td>Source ownership</td><td>Source volumes and frozen arrays are read only. Edits operate on explicit copies and preserve ancestry, consistent labels/attenuation and unchanged exterior voxels.</td></tr>
+<tr><td>ROI behavior</td><td>The selector identifies original target ancestry; permitted growth can leave that selector. Crop context, edit distance, reassignment search and safeguards remain explicit.</td></tr>
+<tr><td>Visualization</td><td>Display interpolation and downsampling do not change native selection or edits. Coordinate text and perpendicular control-point views must describe the same physical point.</td></tr>
+</tbody></table>
+
+<h2 id="errors">4. Validate boundaries and explain failures</h2>
+<p>Reject unknown fields, duplicate sections, invalid shapes, nonfinite values, inconsistent point/radius lists and insufficient physical context at the appropriate boundary. Errors should identify the relevant field, invariant and corrective action. Use the existing module's exception types; do not convert a validation failure into a default value, empty mask or apparently successful report.</p>
+<p>Catch errors at the command boundary only when producing a clear CLI diagnostic. Avoid broad exception handlers that hide programming errors. Optional backends must remain lazy: geometry, editing and dataset preparation should not require a TensorFlow/PyTorch import or downloaded model. Keep metadata-only validation separate from voxel reads, output writes and model execution.</p>
+
+<h2 id="reproducibility">5. Preserve reproducible releases</h2>
+<p>Document all file writes and overwrite behavior. Fresh output revisions are required for changed sources, ROI geometry, tissue policy or parameter sweeps. Freeze records bind exact input bytes, dependency hashes and reviewed native preflight. Do not alter a signed receipt, historical source snapshot, published array or checksum to make a revised run appear unchanged.</p>
+<p>When implementation changes affect pinned dependency hashes, generate and review a new release. Previously published pairs remain immutable and can be reused by a separately pinned model experiment. Preserve the complete registry tree and explicit source-family grouping. Siblings, revisions and slices from one source family must remain together across training, validation and test assignments.</p>
+<p>Use deterministic seeds for generated fixtures and sample selection. Record the software revision, resolved dependency versions and preprocessing configuration for reproducible scientific runs. Generated arrays, caches, checkpoints and scratch work belong under ignored artifact folders, with separate backups.</p>
+
+<h2 id="checks">6. Run development checks</h2>
+<pre><code>python -m pip install -r requirements/dev.txt
+python scripts/dev/check_quality.py
+python -m pytest tests/integration
+MPLBACKEND=Agg python -m pytest</code></pre>
+<p>The static quality check validates source syntax, documented functions in the maintained workflow modules and generic repository language without importing runtime modules. The explicit scope is <code>configs/development/api.json</code>; historical and experimental modules have a separate documentation scope. It complements the regression suite; it does not establish numerical correctness, model accuracy or clinical validity. The <a href="testing.html">testing guide</a> describes backend-specific TensorFlow, pretrained and browser checks, including the meaning of skipped tests.</p>
+<ol>
+<li>Add a test for the changed scientific or data-handling contract, using an analytic shape or generated volume with a clear expected result.</li>
+<li>Run the smallest relevant tests during implementation and the complete core suite before review. Run the affected optional backend when model code changes.</li>
+<li>For reports, inspect the actual offline page as well as numerical resampling tests. Check endpoint and interior control points, native coordinates and physical radii.</li>
+<li>Regenerate API documentation, verify relative links and review <code>git diff</code> and <code>git status</code> for accidental data, checkpoint or historical-evidence changes.</li>
+<li>Describe the resulting behavior, input/output contract, exact checks and optional skips in the change description. Keep algorithmic changes separate from unrelated formatting.</li>
+</ol>
+<footer><p class="muted">Local, offline documentation · Updated 2026-10-11.</p></footer>
+</main></body></html>

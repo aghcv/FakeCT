@@ -23,7 +23,27 @@ RADIUS_COLOR = '#ffd34e'
 
 
 def control_frames(nodes_ijk, spacing_ijk_mm):
-    """Physical polyline frames at exact controls; reversal fallback is explicit."""
+    """Construct physical display-plane frames at the exact configured controls.
+
+    Parameters
+    ----------
+    nodes_ijk : array_like, shape (N, 3)
+        Ordered native i,j,k control coordinates; the supplied order defines the path.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    dict
+        Physical centers, unit tangent/u/v bases, cumulative ordered-polyline distance in
+        millimetres and per-control warnings. Sphere and reversal fallbacks are explicitly
+        identified.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     nodes = np.asarray(nodes_ijk, dtype=float)
     spacing = np.asarray(spacing_ijk_mm, dtype=float)
     if (nodes.ndim != 2 or nodes.shape[1:] != (3,) or not 1 <= len(nodes) <= MAX_CONTROL_POINTS
@@ -66,10 +86,45 @@ def control_frames(nodes_ijk, spacing_ijk_mm):
 
 def sample_section(fields, center_mm, u_basis, v_basis, spacing_ijk_mm, origin_ijk,
                    *, half_width_mm, pixel_mm):
-    """Resample a display plane; CT is linear, all other fields nearest neighbor.
+    """Sample a physical display plane without interpolating label identities.
 
     Validity uses native voxel-center bounds. Outside pixels are masked in the
     report, so zero padding is never shown as observed tissue or attenuation.
+
+    Parameters
+    ----------
+    fields : dict of ndarray
+        Matching native k,j,i crops; attenuation uses linear display interpolation and all
+        other names use nearest neighbor.
+    center_mm : sequence of float
+        Plane center in physical i,j,k-axis millimetres.
+    u_basis : sequence of float
+        First unit physical in-plane direction.
+    v_basis : sequence of float
+        Second unit physical direction, perpendicular to u_basis.
+    spacing_ijk_mm : sequence of float
+        Positive physical voxel spacing in i,j,k order, in millimetres.
+    origin_ijk : sequence of int
+        Native i,j,k index of the crop origin.
+    half_width_mm : float
+        Positive half-width of the square display plane, in millimetres.
+    pixel_mm : float
+        Requested positive display sampling distance; the side-length cap may coarsen it.
+
+    Returns
+    -------
+    sampled : dict of ndarray
+        Two-dimensional display fields; invalid pixels are zero-filled.
+    valid : ndarray of bool
+        Pixels inside the available native voxel-center bounds.
+    offsets : ndarray
+        Physical display-axis offsets in millimetres; the actual step follows the bounded
+        grid.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     spacing = np.asarray(spacing_ijk_mm, dtype=float)
     origin = np.asarray(origin_ijk, dtype=float)
@@ -112,17 +167,81 @@ def sample_section(fields, center_mm, u_basis, v_basis, spacing_ijk_mm, origin_i
 
 
 def _definitions(config):
+    """Iterate the main ROI followed by configured named ROI definitions.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    generator of tuple
+        (ROI name, definition) pairs in configuration order; definitions are input
+        references.
+    """
     yield 'main', config['roi']
     yield from config.get('rois', {}).items()
 
 
 def _contour(ax, mask, x, y, color, *, width=1.6):
+    """Draw a Boolean mask boundary when a nonconstant mask has one.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axes to update.
+    mask : ndarray of bool
+        Two-dimensional membership plane.
+    x : array_like
+        Horizontal sample coordinates accepted by Axes.contour.
+    y : array_like
+        Vertical sample coordinates accepted by Axes.contour.
+    color : str or tuple
+        Matplotlib contour color.
+    width : float, optional
+        Contour line width in points.
+
+    Returns
+    -------
+    None
+        Adds contour artists to ax; does not change the mask.
+    """
     if mask.any() and not mask.all():
         ax.contour(x, y, mask.astype(float), levels=[.5], colors=[color], linewidths=width)
 
 
 def render_control_point_panels(arrays, resolved, config, output_dir):
-    """Render CT and tissue versions of every configured ROI control card."""
+    """Write native i/j/k planes and a normal-section card for every ROI control.
+
+    Parameters
+    ----------
+    arrays : dict of ndarray
+        Matching native k,j,i label (act), attenuation (atn), tissue, candidates, selected
+        and ROI arrays. Inputs are not mutated.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    output_dir : str or pathlib.Path
+        Existing preview output directory; control-points/ is created beneath it.
+
+    Returns
+    -------
+    dict
+        ROI/control records, physical display frames, native coordinates, sampling evidence
+        and hashes of newly written attenuation and label PNGs.
+
+    Raises
+    ------
+    ValueError
+        If control counts, radii or source coverage are invalid.
+    FileExistsError
+        If a control-card filename already exists.
+    OSError
+        If image artifacts cannot be written.
+    """
     os.environ.setdefault('MPLCONFIGDIR', '/tmp/fakect-matplotlib')
     import matplotlib
     matplotlib.use('Agg')
@@ -257,7 +376,30 @@ def render_control_point_panels(arrays, resolved, config, output_dir):
 
 
 def write_roi_selection_report(output_dir, report, input_ini_text):
-    """Publish a self-contained navigation page with no network or 3D scripts."""
+    """Publish an offline HTML navigator with embedded control-point images.
+
+    Parameters
+    ----------
+    output_dir : str or pathlib.Path
+        Preview directory containing the images referenced by report.
+    report : dict
+        Preview evidence including configuration, ROI selection cards, source hashes and
+        geometry.
+    input_ini_text : str
+        Exact captured INI text shown as an escaped reference.
+
+    Returns
+    -------
+    dict
+        Relative report.html path, self-contained status and file size in bytes.
+
+    Raises
+    ------
+    FileExistsError
+        If report.html already exists.
+    OSError
+        If images cannot be read or the report cannot be written.
+    """
     output = Path(output_dir)
     destination = output/'report.html'
     if destination.exists():

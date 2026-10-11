@@ -45,6 +45,29 @@ _INTEGER = re.compile(r"[+-]?[0-9]+\Z")
 
 def _integer(value: str, label: str, minimum: Optional[int] = None,
              maximum: Optional[int] = None) -> int:
+    """Parse a decimal integer and enforce optional inclusive bounds.
+
+    Parameters
+    ----------
+    value : str
+        Text to parse; callers strip surrounding whitespace where required.
+    label : str
+        Field name used in validation error messages.
+    minimum : int, optional
+        Inclusive lower bound; None disables the bound.
+    maximum : int, optional
+        Inclusive upper bound; None disables the bound.
+
+    Returns
+    -------
+    int
+        Parsed integer.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if not _INTEGER.fullmatch(value):
         raise ValueError(f"{label} must be an integer")
     result = int(value)
@@ -57,6 +80,29 @@ def _integer(value: str, label: str, minimum: Optional[int] = None,
 
 def _float(value: str, label: str, *, positive: bool = False,
            opacity: bool = False) -> float:
+    """Parse a finite scalar with optional positivity or opacity constraints.
+
+    Parameters
+    ----------
+    value : str
+        Text to parse; callers strip surrounding whitespace where required.
+    label : str
+        Field name used in validation error messages.
+    positive : bool, optional
+        Require a strictly positive result.
+    opacity : bool, optional
+        Require a result in the inclusive interval [0, 1].
+
+    Returns
+    -------
+    float
+        Finite validated number.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     try:
         result = float(value)
     except ValueError as error:
@@ -71,6 +117,25 @@ def _float(value: str, label: str, *, positive: bool = False,
 
 
 def _parts(value: str, label: str):
+    """Split a comma-delimited field without accepting empty list items.
+
+    Parameters
+    ----------
+    value : str
+        Text to parse; callers strip surrounding whitespace where required.
+    label : str
+        Field name used in validation error messages.
+
+    Returns
+    -------
+    tuple of str
+        Stripped items; an empty field returns an empty tuple.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if not value:
         return ()
     parts = tuple(part.strip() for part in value.split(","))
@@ -80,6 +145,25 @@ def _parts(value: str, label: str):
 
 
 def _indices(value: str, label: str):
+    """Parse three nonnegative native voxel indices in i,j,k order.
+
+    Parameters
+    ----------
+    value : str
+        Text to parse; callers strip surrounding whitespace where required.
+    label : str
+        Field name used in validation error messages.
+
+    Returns
+    -------
+    tuple of int
+        Exactly three indices in i,j,k order.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     parts = _parts(value, label)
     if len(parts) != 3:
         raise ValueError(f"{label} must contain exactly three integers: i, j, k")
@@ -87,6 +171,25 @@ def _indices(value: str, label: str):
 
 
 def _coordinates(value: str, label: str):
+    """Parse three finite nonnegative native control coordinates.
+
+    Parameters
+    ----------
+    value : str
+        Text to parse; callers strip surrounding whitespace where required.
+    label : str
+        Field name used in validation error messages.
+
+    Returns
+    -------
+    tuple of float
+        Exactly three potentially fractional i,j,k coordinates.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     parts = _parts(value, label)
     if len(parts) != 3:
         raise ValueError(f"{label} must contain exactly three coordinates: i, j, k")
@@ -97,12 +200,54 @@ def _coordinates(value: str, label: str):
 
 
 def _name(value: str, label: str, pattern: re.Pattern) -> str:
+    """Validate an identifier against the supplied complete-match pattern.
+
+    Parameters
+    ----------
+    value : str
+        Text to parse; callers strip surrounding whitespace where required.
+    label : str
+        Field name used in validation error messages.
+    pattern : re.Pattern
+        Pattern defining the permitted identifier syntax.
+
+    Returns
+    -------
+    str
+        Unchanged validated identifier.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if not pattern.fullmatch(value):
         raise ValueError(f"{label} contains an invalid name: {value!r}")
     return value
 
 
 def _path(value: str, label: str, root: Path) -> Path:
+    """Resolve an explicit file or directory path against the repository root.
+
+    Parameters
+    ----------
+    value : str
+        Text to parse; callers strip surrounding whitespace where required.
+    label : str
+        Field name used in validation error messages.
+    root : str or pathlib.Path
+        Repository root used to resolve paths inside configuration sections.
+
+    Returns
+    -------
+    pathlib.Path
+        Expanded, absolute path; no existence check is performed.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     if not value:
         raise ValueError(f"{label} must contain a path")
     if "\x00" in value or "\n" in value:
@@ -124,6 +269,25 @@ def load_preview_config(path: Union[str, Path], *,
     ``source_ids``, ``context_tissues`` and ``allowed_tissues`` become empty tuples.
     ``selection.source_ids`` may also be omitted; tissue and ROI then define selection. No files other
     than the INI are read here and nothing is written.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        INI filename, resolved using the caller's working directory.
+    repo_root : str or pathlib.Path, optional
+        Root for paths inside the INI; defaults to the repository containing this module.
+
+    Returns
+    -------
+    dict
+        Normalized sections, including Path objects, numeric tuples and Boolean flags.
+
+    Raises
+    ------
+    ValueError
+        If INI syntax, section names, schema or field values are invalid.
+    OSError
+        If the INI cannot be read.
     """
     path = Path(path).expanduser()
     root = Path(repo_root).expanduser().resolve() if repo_root is not None else REPOSITORY_ROOT
@@ -142,7 +306,26 @@ def load_preview_config(path: Union[str, Path], *,
 
 
 def parse_preview_sections(parser, root=REPOSITORY_ROOT):
-    """Validate already-read workbench sections; shared by the study INI loader."""
+    """Validate already-read workbench sections and normalize their values.
+
+    Parameters
+    ----------
+    parser : configparser.ConfigParser
+        Already-read, case-sensitive configuration sections.
+    root : str or pathlib.Path
+        Repository root used to resolve paths inside configuration sections.
+
+    Returns
+    -------
+    dict
+        Validated preview or single-edit sections. The parser and voxel sources are
+        unchanged.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     root = Path(root).expanduser().resolve()
     if parser.defaults():
         raise ValueError("[DEFAULT] settings are unsupported; put each key in its named section")

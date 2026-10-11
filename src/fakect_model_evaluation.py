@@ -23,7 +23,25 @@ SCHEMA = 'fakect.model-evaluation-lock/1'
 
 
 def _write_json(path, value):
-    """Publish one complete file; partial writes never masquerade as results."""
+    """Atomically publish a complete evaluation metadata document.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Destination JSON file.
+    value : JSON-compatible object
+        Finite metadata to serialize.
+
+    Returns
+    -------
+    None
+        Writes a sibling temporary file and replaces the destination after
+        serialization.
+
+    Notes
+    -----
+    Publish one complete file; partial writes never masquerade as results.
+    """
     path = Path(path)
     temporary = path.with_name(path.name+'.tmp')
     temporary.write_text(json.dumps(value, indent=2, allow_nan=False)+'\n')
@@ -31,6 +49,18 @@ def _write_json(path, value):
 
 
 def _implementation():
+    """Fingerprint evaluation, preprocessing and segmentation consumers.
+
+    Parameters
+    ----------
+    None
+        This function takes no explicit arguments.
+
+    Returns
+    -------
+    dict of str to str
+        Implementation filenames mapped to their SHA256 digests.
+    """
     directory = Path(__file__).parent
     return {name: _sha256(directory/name) for name in (
         'fakect_model_evaluation.py', 'fakect_evaluation_design.py',
@@ -39,7 +69,28 @@ def _implementation():
 
 
 def preview_evaluation(config):
-    """Display provisional family rotations without publishing or loading pairs."""
+    """Preview provisional family rotations without opening paired arrays.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    dict
+        Planning-only design, fit count, project hash and unverified-family warning.
+
+    Raises
+    ------
+    ValueError
+        Planning project is absent, incompatible, duplicated or does not cover the
+        configured revisions.
+
+    Notes
+    -----
+    Display provisional family rotations without publishing or loading pairs.
+    """
     settings = config['evaluation']
     project_path = settings.get('planning_project')
     if not project_path:
@@ -66,11 +117,39 @@ def preview_evaluation(config):
 
 
 def _fit_count(design):
+    """Count inner and final model fits over all repeat seeds.
+
+    Parameters
+    ----------
+    design : dict
+        Evaluation design containing outer/inner folds and model seeds.
+
+    Returns
+    -------
+    int
+        Total planned training runs.
+    """
     per_seed = sum(len(fold['inner_folds'])+1 for fold in design['folds'])
     return per_seed * len(design['seeds'])
 
 
 def plan_evaluation(config):
+    """Validate prepared datasets and build an independent family evaluation design.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    dict
+        Readiness, base verified plan, design, fit count and accumulated errors.
+
+    Notes
+    -----
+    Does not create outputs or train; temporary fractions are used only for base verification before the explicit fold design.
+    """
     base_config = copy.deepcopy(config)
     base_config.pop('evaluation', None)
     # Verification needs a valid temporary assignment. The evaluation design,
@@ -91,6 +170,32 @@ def plan_evaluation(config):
 
 
 def freeze_evaluation(config, input_bytes):
+    """Freeze evaluation inputs, implementation and family folds in a new revision.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Evaluation lock path, design, fit count and publication flags.
+
+    Raises
+    ------
+    ValueError
+        Dataset or evaluation planning is not ready.
+    FileExistsError
+        The requested output directory already exists.
+
+    Notes
+    -----
+    Writes exact input.ini, evaluation-lock.json and its SHA256.
+    """
     plan = plan_evaluation(config)
     if not plan['ready']:
         raise ValueError('Evaluation is not ready: '+'; '.join(plan['errors']))
@@ -111,6 +216,27 @@ def freeze_evaluation(config, input_bytes):
 
 
 def _load_lock(config, input_bytes):
+    """Verify an evaluation lock against current input bytes and pinned consumers.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Verified evaluation lock with design and base plan.
+
+    Raises
+    ------
+    ValueError
+        Lock schema/fingerprint, INI, implementation hash or reconstructed fold design
+        differs.
+    """
     output = Path(config['experiment']['output_directory'])
     path = output/'evaluation-lock.json'
     if _sha256(path) != (output/'evaluation-lock.sha256').read_text().strip():
@@ -134,6 +260,28 @@ def _load_lock(config, input_bytes):
 
 
 def _fold_config(config, fold, seed, directory, *, fixed_epochs=None):
+    """Construct a fold-specific model configuration without mutating the parent.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    fold : dict
+        Fold record containing the complete family assignment.
+    seed : int
+        Model training repeat seed.
+    directory : str or pathlib.Path
+        Per-fold model experiment directory.
+    fixed_epochs : int or None
+        Externally selected final-refit budget; None retains validation-selected
+        fitting.
+
+    Returns
+    -------
+    dict
+        Copied experiment with explicit family assignment, seed, output and optional
+        fixed epoch budget.
+    """
     result = copy.deepcopy(config)
     result.pop('evaluation', None)
     result['experiment']['output_directory'] = str(directory)
@@ -148,10 +296,52 @@ def _fold_config(config, fold, seed, directory, *, fixed_epochs=None):
 
 
 def _run_directory(config, fold, seed):
+    """Locate one outer-fold training repeat.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    fold : dict
+        Outer fold identity record.
+    seed : int
+        Model repeat seed.
+
+    Returns
+    -------
+    pathlib.Path
+        Configured output/folds/fold-id/seed-N directory.
+    """
     return Path(config['experiment']['output_directory'])/'folds'/fold['id']/f'seed-{seed}'
 
 
 def _ensure_model(fold_config, base_plan, input_bytes):
+    """Freeze, fit or verify a resumable fold model under pinned settings.
+
+    Parameters
+    ----------
+    fold_config : dict
+        Exact fold-specific experiment settings.
+    base_plan : dict
+        Ready plan with payloads already verified.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Verified existing model metadata or metadata from a newly completed fit.
+
+    Raises
+    ------
+    ValueError
+        An existing lock or saved model does not match the requested fold.
+
+    Notes
+    -----
+    Creates missing fold locks and model outputs; existing completed models are checked before reuse.
+    """
     directory = Path(fold_config['experiment']['output_directory'])
     path = directory/'experiment-lock.json'
     if not path.exists():
@@ -169,6 +359,26 @@ def _ensure_model(fold_config, base_plan, input_bytes):
 
 
 def _check_model(directory, checked):
+    """Verify saved model completion and provenance for a frozen fold.
+
+    Parameters
+    ----------
+    directory : pathlib.Path
+        Model directory containing metadata and model.keras.
+    checked : dict
+        Verified experiment lock returned by inspect_experiment_lock.
+
+    Returns
+    -------
+    dict
+        Validated saved model metadata.
+
+    Raises
+    ------
+    ValueError
+        Model source/settings/hash, completed epochs or selected best epoch is
+        inconsistent.
+    """
     metadata = json.loads((directory/'model-metadata.json').read_text())
     if (metadata.get('source_manifest_sha256') != checked['sha256'] or
             Path(metadata.get('source_manifest', '')).resolve() != checked['path'] or
@@ -186,7 +396,27 @@ def _check_model(directory, checked):
 
 
 def fit_evaluation(config, input_bytes):
-    """Fit only training/validation partitions, with isolated outer models."""
+    """Train isolated fold models using development partitions only.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Completed fold/seed identities and flags confirming test evaluation has not run.
+
+    Notes
+    -----
+    Nested fits select the median inner best epoch rounded up, then refit all development families. Writes per-repeat selection.json; test payloads remain unused.
+
+    Fit only training/validation partitions, with isolated outer models.
+    """
     lock = _load_lock(config, input_bytes)
     completed = []
     for fold in lock['plan']['design']['folds']:
@@ -214,12 +444,47 @@ def fit_evaluation(config, input_bytes):
 
 def _clear_session():
     # TensorFlow is optional for planning. Release graphs between actual fits.
+    """Release TensorFlow graph state between completed model fits.
+
+    Parameters
+    ----------
+    None
+        This function takes no explicit arguments.
+
+    Returns
+    -------
+    None
+        Clears the Keras session when TensorFlow is already imported; otherwise returns
+        without importing it.
+    """
     import sys
     if 'tensorflow' in sys.modules:
         sys.modules['tensorflow'].keras.backend.clear_session()
 
 
 def _test_manifest(config, fold, seed):
+    """Verify outer model and inner-only epoch selection before releasing test data.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    fold : dict
+        Frozen outer fold with optional inner fold records.
+    seed : int
+        Model training repeat seed.
+
+    Returns
+    -------
+    tuple of pathlib.Path and dict
+        Outer-model directory and inspected experiment lock.
+
+    Raises
+    ------
+    ValueError
+        Outer/inner assignments, input identity, completion or final epoch selection
+        disagree.
+    """
     directory = _run_directory(config, fold, seed)/'outer-model'
     path = directory/'experiment-lock.json'
     checked = inspect_experiment_lock(path)
@@ -245,6 +510,25 @@ def _test_manifest(config, fold, seed):
 
 
 def test_evaluation(config, input_bytes):
+    """Evaluate all frozen outer test partitions after every required model is verified.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Summary/report paths and equal-family macro metrics from summarize_evaluation.
+
+    Notes
+    -----
+    Writes checksummed per-repeat evaluation.json for missing results and validates existing results before reuse. No tuning is performed using test outcomes.
+    """
     from fakect_evaluation_metrics import evaluate_segmentation_model
     lock = _load_lock(config, input_bytes)
     pending = []
@@ -268,12 +552,57 @@ def test_evaluation(config, input_bytes):
 
 
 def _read_result(path):
+    """Read a completed evaluation result after verifying its checksum.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Evaluation JSON path with a sibling .sha256 file.
+
+    Returns
+    -------
+    dict
+        Decoded evaluation record.
+
+    Raises
+    ------
+    ValueError
+        The result bytes differ from the recorded checksum.
+    """
     if _sha256(path) != path.with_suffix('.sha256').read_text().strip():
         raise ValueError('Evaluation result checksum changed')
     return json.loads(path.read_text())
 
 
 def _check_result(result, directory, checked, config, fold, seed):
+    """Validate saved test coverage and provenance against one frozen fold.
+
+    Parameters
+    ----------
+    result : dict
+        Decoded per-fold evaluation record.
+    directory : pathlib.Path
+        Outer-model experiment directory.
+    checked : dict
+        Inspected outer experiment lock.
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    fold : dict
+        Frozen fold record.
+    seed : int
+        Expected model repeat seed.
+
+    Returns
+    -------
+    None
+        Completes when identity, threshold, model/source hashes and tested samples
+        match.
+
+    Raises
+    ------
+    ValueError
+        Result identity, preprocessing, model provenance or sample coverage differs.
+    """
     if result['fold_id'] != fold['id'] or result['seed'] != seed or result['threshold'] != config['evaluation']['threshold']:
         raise ValueError('Result identity or threshold differs from frozen design')
     if (result.get('source_manifest') != str(checked['path']) or
@@ -291,6 +620,25 @@ def _check_result(result, directory, checked, config, fold, seed):
 
 
 def summarize_evaluation(config, input_bytes):
+    """Validate all fold results and write anatomy-balanced evaluation reports.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        JSON/HTML report paths and macro-average segmentation metrics.
+
+    Notes
+    -----
+    Writes evaluation-summary.json and evaluation-report.html after checking fold/model provenance; siblings and repeat seeds are not treated as independent families.
+    """
     from fakect_evaluation_metrics import summarize_evaluations
     lock = _load_lock(config, input_bytes)
     results = []
@@ -325,7 +673,34 @@ def summarize_evaluation(config, input_bytes):
 
 
 def train_fixed_segmentation(config, manifest_path):
-    """Fresh final nested-CV fit with an epoch budget selected by inner folds."""
+    """Refit a fresh model for the epoch count selected by inner validation folds.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    manifest_path : str or pathlib.Path
+        Prepared dataset manifest or frozen experiment-lock path.
+
+    Returns
+    -------
+    dict
+        Fixed-epoch model metadata and history with test payloads untouched.
+
+    Raises
+    ------
+    ValueError
+        The lock is not a valid fixed refit, training is empty/nonfinite or the manifest
+        changes.
+    FileExistsError
+        The model output directory is nonempty.
+
+    Notes
+    -----
+    No validation partition or best-epoch selection is used here. Writes history, final model.keras and model-metadata.json.
+
+    Fresh final nested-CV fit with an epoch budget selected by inner folds.
+    """
     from fakect_segmentation import MODEL_SCHEMA, PatchDataset, _tensorflow, build_unet, model_settings
     settings = model_settings(config)
     dataset = PatchDataset(manifest_path, settings)

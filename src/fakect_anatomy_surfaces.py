@@ -28,6 +28,23 @@ _HEADER = re.compile(r'[A-Za-z_][A-Za-z0-9_ .()/+\-]*\Z')
 
 
 def _fingerprint(path):
+    """Hash a surface dependency while checking for concurrent file changes.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    dict
+        Resolved path, byte size, nanosecond modification time and SHA256.
+
+    Raises
+    ------
+    ValueError
+        The file size or modification time changes while hashing.
+    """
     path = Path(path)
     before = path.stat()
     digest = hashlib.sha256()
@@ -42,7 +59,27 @@ def _fingerprint(path):
 
 
 def _read_small_source(path):
-    """Bind the bytes actually interpreted to stable source metadata."""
+    """Read bounded coordinate metadata and bind the exact interpreted bytes.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    tuple of bytes and dict
+        Content and stable path/size/mtime/SHA256 provenance.
+
+    Raises
+    ------
+    ValueError
+        Metadata exceeds one MiB or the source changes while reading.
+
+    Notes
+    -----
+    Bind the bytes actually interpreted to stable source metadata.
+    """
     path = Path(path)
     before = path.stat()
     if before.st_size > 1024 * 1024:
@@ -56,6 +93,23 @@ def _read_small_source(path):
 
 
 def _load_evidence():
+    """Load and verify the pinned RAW/BIN coordinate evidence.
+
+    Parameters
+    ----------
+    None
+        This function takes no explicit arguments.
+
+    Returns
+    -------
+    tuple of dict and dict
+        Decoded evidence and provenance of the evidence file.
+
+    Raises
+    ------
+    ValueError
+        The evidence content differs from the pinned SHA256.
+    """
     content, source = _read_small_source(LAYOUT_EVIDENCE)
     if source['sha256'] != LAYOUT_EVIDENCE_SHA256:
         raise ValueError('Pinned RAW/BIN coordinate evidence changed; review its provenance')
@@ -63,7 +117,37 @@ def _load_evidence():
 
 
 def _coordinate_contract(config, resolved, evidence, provenance):
-    """Return unavailable spatial evidence unless every bounded check passes."""
+    """Validate a narrowly scoped RAW/BIN coordinate registration contract.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    evidence : dict
+        Pinned generator/layout evidence and supported case/frame scope.
+    provenance : dict
+        Stable metadata and checksum of the pinned evidence source.
+
+    Returns
+    -------
+    dict
+        Validated spacing, raw-mm ROI envelope and grid origin, or unavailable status
+        with explicit reasons.
+
+    Raises
+    ------
+    ValueError
+        Resolved ROI nodes or radii are malformed after coordinate checks pass.
+
+    Notes
+    -----
+    Reads parameter metadata and generator bytes. Unsupported registration returns unavailable evidence; bounds overlap alone does not prove geometry intersection.
+
+    Return unavailable spatial evidence unless every bounded check passes.
+    """
     inp = config['input']
     result = {'status': 'unavailable', 'evidence': provenance,
               'evidence_id': evidence['evidence_id'],
@@ -140,7 +224,40 @@ def _coordinate_contract(config, resolved, evidence, provenance):
 
 
 def _scan_file(path, group, name_ids, coordinate_contract, artery_names=()):
-    """Stream chunks; retain at most MAX_TRIANGLES for one arterial block."""
+    """Inventory RAW blocks in bounded chunks and recover eligible centerlines.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Input file path.
+    group : str
+        RAW anatomical group name recorded in provenance.
+    name_ids : mapping of str to iterable of int
+        Exact original-name joins to signed voxel IDs; repeated names retain all
+        candidates.
+    coordinate_contract : dict
+        Validated or unavailable raw-grid registration contract.
+    artery_names : iterable of str
+        Names eligible for bounded triangle retention and centerline recovery.
+
+    Returns
+    -------
+    tuple of dict and list of dict
+        Stable file fingerprint and block records containing names, candidate IDs,
+        bounds and optional ring evidence.
+
+    Raises
+    ------
+    ValueError
+        A RAW header/triangle is invalid, a block is empty, a line exceeds its budget,
+        or the source changes.
+
+    Notes
+    -----
+    Only one eligible surface retains up to ``MAX_TRIANGLES``; triangles are not returned.
+
+    Stream chunks; retain at most MAX_TRIANGLES for one arterial block.
+    """
     before = path.stat()
     hasher = hashlib.sha256()
     records, pending = [], []
@@ -249,7 +366,33 @@ def _scan_file(path, group, name_ids, coordinate_contract, artery_names=()):
 
 
 def inventory_surfaces(config, resolved):
-    """Inventory all six RAW groups; never read BIN data or return triangles.
+    """Inventory six RAW groups without reading or voxelizing BIN images.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    dict
+        Surface records, file hashes, coordinate dependencies and identity/spatial
+        limitations.
+
+    Raises
+    ------
+    ValueError
+        Case/frame identity, RAW geometry, coordinate evidence or source stability is
+        invalid.
+    OSError
+        Required surface files cannot be read.
+
+    Notes
+    -----
+    Inventory all six RAW groups; never read BIN data or return triangles.
 
     ``resolved`` is the result of ``fakect_roi.resolve_preview``. Missing RAW
     files or malformed geometry fail. An unsupported coordinate contract still

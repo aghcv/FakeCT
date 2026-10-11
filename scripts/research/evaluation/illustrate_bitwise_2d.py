@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render a pixel teaching example using the actual FakeCT editing kernel.
+"""Render a pixel algorithm example using the actual FakeCT editing kernel.
 
 The inspected plane is inside an extruded synthetic 3D object. At unit spacing,
 its two-round four-neighbor Boolean masks equal the native six-neighbor proposals.
@@ -37,7 +37,7 @@ VIEW = (K, slice(LOW, HIGH), slice(LOW, HIGH))
 
 
 def shift(mask, dj, di):
-    """Nonwrapping shifts: outside the teaching grid is false."""
+    """Nonwrapping shifts: outside the example grid is false."""
     padded = np.pad(mask, 1)
     return padded[1+dj:1+dj+mask.shape[0], 1+di:1+di+mask.shape[1]]
 
@@ -167,7 +167,7 @@ def generate(output, overwrite=False):
     fig.subplots_adjust(left=.045, right=.982, bottom=.24, top=.80, wspace=.24, hspace=.58)
     fig.text(.035, .968, 'Bitwise morphology → borrowing and label reassignment',
              size=23, weight='bold', color=INK, va='top')
-    fig.text(.035, .929, 'A pixelated teaching example computed with the current FakeCT kernel. '
+    fig.text(.035, .929, 'A pixelated algorithm example computed with the current FakeCT kernel. '
              'Dilation and erosion each start from the same original grid.', size=11, color=MUTED)
     fig.text(.035, .897, 'Boolean mask T: 1 = selected artery, 0 = everything else.  '
              'Shifted copies N, S, E, W use face neighbors; original label IDs are kept separately.', size=10, color=INK)
@@ -215,7 +215,7 @@ def generate(output, overwrite=False):
     fig.legend(handles=handles, loc='lower center', bbox_to_anchor=(.5, .135), ncol=8, frameon=False, fontsize=9)
     fig.text(.035, .101, 'Reassignment cost = path length + (search cap × recipient stiffness). '
              'Choose the lowest cost within the cap; ties use original ID, then seed coordinate.', size=10, color=INK)
-    fig.text(.035, .077, 'Stiffness in this teaching grid: artery 0.05, soft tissue 0.40, lung 0, bone 1. '
+    fig.text(.035, .077, 'Stiffness in this example grid: artery 0.05, soft tissue 0.40, lung 0, bone 1. '
              'Propagation reads the pre-edit label map and copies the winning seed label.', size=10, color=INK)
     fig.text(.035, .053, 'No recipient within the cap → preserve the original artery label. '
              'With assign_surrounding_tissue=false, releases instead get a diagnostic marker, not a training-ready label.', size=9.5, color=MUTED)

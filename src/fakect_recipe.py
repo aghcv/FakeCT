@@ -29,17 +29,51 @@ _STRUCTURE = ndimage.generate_binary_structure(3, 1)
 
 
 def _region_key(name, edit):
+    """Resolve the planning-mask key for an edit and its optional tube interval.
+
+    Parameters
+    ----------
+    name : str
+        Edit identifier.
+    edit : dict
+        Normalized edit referencing a main/named ROI and optional point/path selector.
+
+    Returns
+    -------
+    str
+        Per-edit key for the main ROI or ranged edits; otherwise the original named ROI key.
+    """
     if edit['roi'] == 'main' or 'point_range' in edit or 'path_percent' in edit:
         return 'edit:' + name
     return edit['roi']
 
 
 def recipe_regions(config, resolved):
-    """Materialize per-edit path ranges without changing the input definitions.
+    """Materialize effective edit tube ranges while preserving parent ROI definitions.
 
     Explicit named regions remain available as planning overlays. Compact edit
     regions inherit coordinates and radii from their parent ROI; percentages are
     resolved with physical spacing, not by the number of control points.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+
+    Returns
+    -------
+    dict
+        Original named ROI definitions and derived per-edit regions with physical range
+        metadata and parent references. Unchanged named definitions may share input
+        references.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     regions = dict(config.get('rois', {}))
     for name, edit in config.get('edits', {}).items():
@@ -74,6 +108,27 @@ def recipe_regions(config, resolved):
 
 
 def _roi_geometry(roi, resolved):
+    """Resolve a named ROI into the common crop geometry and optional parent interval.
+
+    Parameters
+    ----------
+    roi : dict
+        Normalized sphere/tube definition, optionally including derived range metadata.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+
+    Returns
+    -------
+    dict
+        New resolved mapping with ROI controls/radii, focus, envelope and optional original-
+        parent arc interval. Original catalog/source references are retained.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     kind = roi.get('shape')
     if kind == 'sphere':
         center = np.asarray(roi['center_ijk'], dtype=float)
@@ -102,6 +157,23 @@ def _roi_geometry(roi, resolved):
 
 
 def _step_config(config, name, regions):
+    """Adapt a named recipe edit to the single-pass morphology configuration.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    name : str
+        Edit identifier defined in config.edits.
+    regions : dict
+        Materialized native ROI definitions from recipe_regions.
+
+    Returns
+    -------
+    dict
+        New top-level mapping with effective ROI and single-edit fields; unrelated sections
+        retain input references.
+    """
     edit = config['edits'][name]
     return {**config, 'roi': {**config['roi'], **regions[_region_key(name, edit)]},
             'edit': {key: value for key, value in edit.items()
@@ -109,12 +181,31 @@ def _step_config(config, name, regions):
 
 
 def validate_recipe(config, resolved):
-    """Return a serializable metadata-only plan; no voxel payload is read.
+    """Validate finite recipe ordering, ROI geometry, growth reach and physical context.
 
     Every active step's entire ROI envelope plus its edit/recipient halo must fit
     the common crop, even where the outer ROI later clips its editable mask.
     Overlap and nonempty-mask checks require native voxels and occur before the
     first pass in :func:`apply_recipe`.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+
+    Returns
+    -------
+    dict
+        Serializable ordered plan including pass counts, effective geometry, halo evidence
+        and optional centerline/growth semantics. Source voxel payloads are not opened.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
     """
     recipe = config['recipe']
     names = tuple(recipe.get('steps', ()))
@@ -198,6 +289,30 @@ def validate_recipe(config, resolved):
 
 
 def _native_masks(arrays, resolved, config):
+    """Evaluate named and ranged ROI masks on the common native crop.
+
+    Parameters
+    ----------
+    arrays : dict of ndarray
+        Matching native k,j,i label (act), attenuation (atn), tissue, candidates, selected
+        and ROI arrays. Inputs are not mutated.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    dict of ndarray of bool
+        Native k,j,i masks keyed by effective region name; range masks also enforce their
+        original parent tube and arc interval. The main outer ROI is not yet applied.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     shape = np.shape(arrays['act'])
     if len(shape) != 3 or not np.prod(shape) or np.prod(shape) > MAX_MORPHOLOGY_VOXELS:
         raise ValueError('Recipe requires a nonempty 3D crop within the morphology size limit')
@@ -221,7 +336,29 @@ def _native_masks(arrays, resolved, config):
 
 
 def recipe_masks(arrays, resolved, config):
-    """Return fixed native-grid named masks intersected with the outer ROI."""
+    """Intersect fixed effective recipe ROI masks with the common outer selection.
+
+    Parameters
+    ----------
+    arrays : dict of ndarray
+        Matching native k,j,i label (act), attenuation (atn), tissue, candidates, selected
+        and ROI arrays. Inputs are not mutated.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+
+    Returns
+    -------
+    dict of ndarray of bool
+        Fixed native k,j,i region masks clipped to arrays.roi.
+
+    Raises
+    ------
+    ValueError
+        If the supplied values violate the documented configuration or geometry constraints.
+    """
     outer = np.asarray(arrays['roi'])
     if outer.dtype.kind != 'b' or outer.shape != np.shape(arrays['act']):
         raise ValueError('Outer ROI must be a Boolean mask matching the crop')
@@ -229,6 +366,18 @@ def recipe_masks(arrays, resolved, config):
 
 
 def _digest(value):
+    """Hash contiguous array dtype, shape and values for state-chain evidence.
+
+    Parameters
+    ----------
+    value : array_like
+        Array whose native representation is to be fingerprinted.
+
+    Returns
+    -------
+    str
+        Lowercase SHA-256 digest of dtype, shape and C-order bytes.
+    """
     value = np.ascontiguousarray(value)
     digest = hashlib.sha256()
     digest.update(str(value.dtype).encode())
@@ -238,6 +387,30 @@ def _digest(value):
 
 
 def _state(labels, atn, catalog, source_ids, roi, spacing):
+    """Derive one pass input state from current labels, scalar proxy and ROI.
+
+    Parameters
+    ----------
+    labels : ndarray
+        Current signed original labels in native k,j,i order.
+    atn : ndarray
+        Matching current per-pixel attenuation or copied proxy.
+    catalog : dict
+        Original signed label identities and their applied tissue/atlas classifications.
+    source_ids : sequence of int
+        Signed original IDs belonging to the target tissue/anatomical selection.
+    roi : ndarray of bool
+        Fixed effective ROI mask on the same native crop.
+    spacing : sequence of float
+        Positive native i,j,k spacing, in millimetres; i spacing converts atn to inverse
+        centimetres.
+
+    Returns
+    -------
+    dict of ndarray
+        act/atn references, derived tissue/candidate/selected fields, ROI reference and
+        attenuation_cm_inverse. Referenced input arrays are not copied or changed.
+    """
     candidates = np.isin(labels, source_ids)
     return {'act': labels, 'atn': atn, 'tissue': coarse_labels(labels, catalog),
             'candidates': candidates, 'selected': candidates & roi, 'roi': roi,
@@ -245,11 +418,23 @@ def _state(labels, atn, catalog, source_ids, roi, spacing):
 
 
 def _components(mask):
+    """Count six-face connected components in a native membership mask.
+
+    Parameters
+    ----------
+    mask : ndarray
+        Three-dimensional native k,j,i membership; nonzero entries are foreground.
+
+    Returns
+    -------
+    int
+        Number of six-face connected components.
+    """
     return int(ndimage.label(mask, structure=_STRUCTURE)[1])
 
 
 def apply_recipe(arrays, resolved, config, on_step=None):
-    """Apply a finite ordered recipe; source arrays are never mutated.
+    """Apply a finite ordered recipe to copies of an immutable source crop.
 
     ``on_step(event)`` is called synchronously after each pass and must treat its
     array references as read-only. Events contain ``before_arrays``, ``result``,
@@ -261,6 +446,35 @@ def apply_recipe(arrays, resolved, config, on_step=None):
     ``ever_changed_mask`` records activity across all passes, including changes
     later reversed. ``scalar_changed_mask`` separately captures proxy changes
     even where the final original label has been restored.
+
+    Parameters
+    ----------
+    arrays : dict of ndarray
+        Matching native k,j,i label (act), attenuation (atn), tissue, candidates, selected
+        and ROI arrays. Inputs are not mutated.
+    resolved : dict
+        Resolved catalog, source identities and native crop geometry; coordinates use i,j,k
+        indices and spacing uses millimetres.
+    config : dict
+        Normalized configuration sections; paths are resolved Path objects.
+    on_step : callable, optional
+        Synchronous callback receiving each pass event. Treat array references in the event
+        as read-only; retaining events is optional.
+
+    Returns
+    -------
+    dict
+        Final labels/tissues/attenuation proxy, net before/after/add/remove masks, scalar
+        and ever-changed masks, cumulative proposal audits, per-pass summaries and optional
+        lineage/stiffness/release fields. All voxel fields use the native k,j,i crop.
+
+    Raises
+    ------
+    ValueError
+        If a recipe, native input, active selection, overlap policy or per-pass validation
+        fails.
+    RuntimeError
+        If region, protected-label or ancestry invariants fail.
     """
     diagnostic = uses_diagnostic_release(config) or np.any(np.asarray(arrays['act']) == RELEASED_LABEL_ID)
     if diagnostic:

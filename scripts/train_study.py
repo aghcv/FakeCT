@@ -21,6 +21,27 @@ ALL_STAGES = STAGES | {'preflight', 'freeze'}
 
 
 def study_plan(config, resolved, variants):
+    """Describe planned variants, geometry and preparation boundaries as JSON metadata.
+
+    Parameters
+    ----------
+    config : dict
+        Normalized study or recipe-cohort configuration.
+    resolved : dict
+        Resolved crop bounds, source metadata and physical i,j,k spacing in mm.
+    variants : sequence of dict
+        Validated discrete recipe/edit variants with provisional split assignments.
+
+    Returns
+    -------
+    dict
+        JSON-compatible plan with a dataset fingerprint, variant counts and validation scope.
+
+    Notes
+    -----
+    Only metadata is inspected. Native preflight is required to measure actual
+    edits, geometry duplicates, safeguards and reassignment success.
+    """
     shape = [int(b-a) for a, b in zip(resolved['crop_low_ijk'], resolved['crop_high_ijk_exclusive'])][::-1]
     if 'recipe' in config:
         from fakect_recipe_training import UNASSIGNED_WARNING
@@ -66,6 +87,33 @@ def study_plan(config, resolved, variants):
 
 
 def run(config_path, stage=None, validate_only=False, *, preview_mode=None):
+    """Dispatch explicit ROI, cohort-generation or legacy model-fitting study stages.
+
+    Parameters
+    ----------
+    config_path : str or pathlib.Path
+        Study/cohort INI file; exact input bytes are pinned and checked for changes.
+    stage : str or None, optional
+        Explicit stage override; None uses train.stage from the INI.
+    validate_only : bool, optional
+        Check all planned metadata/halo bounds without reading voxel payloads or writing outputs.
+    preview_mode : str or None, optional
+        Preview-only override: roi-selection for four panels or full for edit review.
+
+    Returns
+    -------
+    dict or None
+        Stage-specific report, validation receipt, frozen metadata, dataset or
+        fitting summary; None for metadata-only ROI-selection preview.
+
+    Notes
+    -----
+    ROI placement does not execute morphology sweeps. Native preflight measures
+    all discrete variants; generation-only cohorts require freeze before prepare.
+    Use model_experiment.py to train on separately registered cohorts.
+    Stage output is printed as JSON except when returned by preview dispatch.
+    Changed input bytes, unsupported stages and populated output revisions fail.
+    """
     config_path = Path(config_path).expanduser().resolve()
     input_bytes = config_path.read_bytes()
     config = load_study_config(config_path)
@@ -86,7 +134,7 @@ def run(config_path, stage=None, validate_only=False, *, preview_mode=None):
         raise ValueError('Generation-only cohorts use freeze/prepare; fitting belongs to a separate model experiment')
     if stage == 'preview' and config['preview'].get('mode') == 'roi-selection':
         # ROI placement is an independent display step. Do not execute or
-        # preflight a morphology sweep while a student is locating controls.
+        # preflight a morphology sweep while locating ROI controls.
         from preview_roi import run as preview
         return preview(config_path, validate_only=validate_only,
                        config_override=config, expected_input_bytes=input_bytes,
@@ -166,6 +214,23 @@ def run(config_path, stage=None, validate_only=False, *, preview_mode=None):
 
 
 def main():
+    """Parse study arguments and report stage failures at the command boundary.
+
+    Parameters
+    ----------
+    None
+        Arguments are read from the process command line.
+
+    Returns
+    -------
+    None
+        Writes the requested files or prints CLI output; no return value.
+
+    Notes
+    -----
+    Exits with status 2 for handled errors or native preflight that is not ready;
+    metadata-only validation does not assert native execution success.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--stage', choices=sorted(ALL_STAGES), help='Explicitly override train.stage; recipe preflight executes every planned combination without exporting training pairs')

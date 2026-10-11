@@ -23,7 +23,34 @@ ROI_COLOR = '#ff9800'
 
 
 def occupancy_grid(mask, stride, crop_origin_ijk, spacing_ijk_mm):
-    """Return block-maximum occupancy and block-center coordinates (i, j, k).
+    """Pool Boolean occupancy and locate each display block in physical coordinates.
+
+    Parameters
+    ----------
+    mask : array_like, shape (k, j, i)
+        Native crop occupancy, converted to Boolean without modifying the input.
+    stride : int
+        Positive number of native voxels per pooling block; every occupied voxel contributes.
+    crop_origin_ijk : array_like, shape (3,)
+        Native zero-based i,j,k indices of the crop origin.
+    spacing_ijk_mm : array_like, shape (3,)
+        Positive finite voxel widths in i,j,k order, measured in millimetres.
+
+    Returns
+    -------
+    tuple of numpy.ndarray and tuple of numpy.ndarray
+        Boolean block-max grid in k,j,i order and three i,j,k block-center coordinate vectors in millimetres.
+
+    Raises
+    ------
+    ValueError
+        If dimensions, stride, crop origin or spacing violate the 3D geometry contract.
+
+    Notes
+    -----
+    Reads source values only; partial final blocks use their actual centers.
+
+    Return block-maximum occupancy and block-center coordinates (i, j, k).
 
     Input/output arrays are kji. Coordinates include the source crop origin and
     use the true center of the last block even when its width is below stride.
@@ -51,7 +78,28 @@ def occupancy_grid(mask, stride, crop_origin_ijk, spacing_ijk_mm):
 
 
 def _surface(mask, axes_ijk, bounds_ijk_mm):
-    """March occupied blocks, retaining the exact outer crop boundary."""
+    """Extract a voxel-boundary mesh from occupied display blocks.
+
+    Parameters
+    ----------
+    mask : numpy.ndarray, shape (k, j, i)
+        Boolean occupancy grid.
+    axes_ijk : tuple of three numpy.ndarray
+        Physical i,j,k block-center coordinates in millimetres.
+    bounds_ijk_mm : array_like, shape (3, 2)
+        Lower and upper physical crop edges in i,j,k order, in millimetres.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        Vertices with shape (n_vertices, 3) in i,j,k millimetres and integer faces with shape (n_faces, 3); empty occupancy returns empty arrays.
+
+    Notes
+    -----
+    A zero border closes surfaces at the exact crop edges; source arrays are unchanged. Coordinates follow the supplied axes/bounds: normally millimetres, or native-index display units in recipe overviews.
+
+    March occupied blocks, retaining the exact outer crop boundary.
+    """
     from skimage.measure import marching_cubes
     if not np.any(mask):
         return np.empty((0, 3)), np.empty((0, 3), dtype=np.int32)
@@ -66,6 +114,28 @@ def _surface(mask, axes_ijk, bounds_ijk_mm):
 
 
 def _sphere(center, radius, n_longitude=48, n_latitude=25):
+    """Build an analytic sphere mesh for an ROI planning overlay.
+
+    Parameters
+    ----------
+    center : array_like, shape (3,)
+        Sphere center in i,j,k physical coordinates, in millimetres.
+    radius : float
+        Sphere radius in millimetres.
+    n_longitude : int, optional
+        Number of longitude samples; defaults to 48.
+    n_latitude : int, optional
+        Number of latitude samples, including both poles; defaults to 25.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        Floating vertices with shape (n_latitude * n_longitude, 3) and int32 triangle faces in the same physical frame.
+
+    Notes
+    -----
+    Constructs display geometry only; no volume data is read or changed.
+    """
     theta = np.linspace(0, 2 * np.pi, n_longitude, endpoint=False)
     phi = np.linspace(0, np.pi, n_latitude)
     xyz = np.stack((np.sin(phi[:, None]) * np.cos(theta),
@@ -82,6 +152,22 @@ def _sphere(center, radius, n_longitude=48, n_latitude=25):
 
 
 def _box_coordinates(bounds):
+    """Convert physical crop bounds into disconnected wireframe edges.
+
+    Parameters
+    ----------
+    bounds : array_like, shape (3, 2)
+        Lower and upper i,j,k crop edges in millimetres.
+
+    Returns
+    -------
+    list of tuple
+        Three coordinate sequences for i,j,k; None separators disconnect the twelve box edges.
+
+    Notes
+    -----
+    Returns plotting coordinates without writing files.
+    """
     corners = np.asarray([[bounds[0][i], bounds[1][j], bounds[2][k]]
                           for i in range(2) for j in range(2) for k in range(2)])
     values = []
@@ -97,7 +183,62 @@ def render_volume_preview(original_labels, tissue_labels, catalog, selection_mas
                           context_tissues, volume_stride, volume_opacity, context_opacity,
                           output_dir, roi_mask=None, roi_nodes_ijk=None, roi_radii_mm=None,
                           roi_shape='sphere'):
-    """Write self-contained HTML Volume rendering and a static surface PNG.
+    """Write bounded interactive occupancy and static surface previews of an ROI.
+
+    Parameters
+    ----------
+    original_labels : array_like of integer-valued IDs, shape (k, j, i)
+        Original signed anatomical labels.
+    tissue_labels : array_like, shape (k, j, i)
+        Coarse tissue-category IDs on the same native crop.
+    catalog : dict
+        Tissue categories and original-label records used for names and contextual groups.
+    selection_mask : numpy.ndarray of bool, shape (k, j, i)
+        Selected target membership on the native crop.
+    crop_origin_ijk : array_like, shape (3,)
+        Native zero-based i,j,k indices of the crop origin.
+    spacing_ijk_mm : array_like, shape (3,)
+        Positive finite voxel widths in i,j,k order, measured in millimetres.
+    roi_center_ijk : array_like, shape (3,), optional
+        Sphere center in native i,j,k indices; required when roi_shape is sphere.
+    roi_radius_mm : float, optional
+        Positive sphere radius in millimetres; required for a sphere.
+    context_tissues : sequence of str or int
+        Category names or IDs to include as separate contextual traces.
+    volume_stride : int
+        Configured positive display stride; its use or provenance-only role is specified in Notes.
+    volume_opacity : float
+        Selected-occupancy opacity in [0, 1].
+    context_opacity : float
+        Contextual-occupancy opacity in [0, 1], except diagnostic released markers.
+    output_dir : str or pathlib.Path
+        Destination directory for generated preview assets.
+    roi_mask : numpy.ndarray of bool, optional
+        Full-resolution tube occupancy, matching the native crop.
+    roi_nodes_ijk : array_like, shape (n, 3), optional
+        Ordered native i,j,k tube points; at least two are required for a tube.
+    roi_radii_mm : array_like, shape (n,), optional
+        One finite positive radius in millimetres per tube control point.
+    roi_shape : str, optional
+        Planning geometry: sphere or tube; defaults to sphere.
+
+    Returns
+    -------
+    dict
+        Preview metadata, absolute/relative artifact paths, native counts, sampling information, category traces and warnings.
+
+    Raises
+    ------
+    ValueError
+        If array geometry, ROI settings, category names or display budgets are invalid.
+    FileExistsError
+        If any intended preview asset already exists.
+
+    Notes
+    -----
+    Creates output_dir and writes roi-volume.html, roi-surfaces.png and roi-volume.json. Source arrays remain unchanged. Display pooling is separate from native ROI geometry.
+
+    Write self-contained HTML Volume rendering and a static surface PNG.
 
     ``context_tissues`` accepts category names or numeric IDs. The selected mask
     is excluded from contextual groups before pooling. Hover coordinates and all

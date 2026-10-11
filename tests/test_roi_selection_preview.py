@@ -1,4 +1,4 @@
-"""Portable, physical-coordinate contracts for the student ROI workbench."""
+"""Portable, physical-coordinate contracts for the ROI workbench."""
 import hashlib
 import json
 from pathlib import Path
@@ -43,7 +43,7 @@ def tiny_phantom(root):
     config = root/'run.ini'
     config.write_text(f'''[study]
 schema_version = fakect.preview/2
-name = student-tube
+name = roi-tube
 [input]
 root = {root}
 case_id = 001

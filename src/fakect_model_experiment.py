@@ -26,6 +26,18 @@ MODEL_FIELDS = {'architecture', 'patch_size', 'slice_axis', 'normalization',
 
 
 def _sha256(path):
+    """Hash a model-experiment artifact in bounded chunks.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    str
+        SHA256 hexadecimal digest of complete file bytes.
+    """
     digest = hashlib.sha256()
     with Path(path).open('rb') as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b''):
@@ -34,10 +46,43 @@ def _sha256(path):
 
 
 def _canonical(value):
+    """Serialize model lock metadata deterministically.
+
+    Parameters
+    ----------
+    value : JSON-compatible object
+        Lock, plan or identity metadata to serialize.
+
+    Returns
+    -------
+    str
+        Sorted compact JSON with nonfinite values rejected.
+    """
     return json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False)
 
 
 def _integer(value, label, minimum=0):
+    """Parse an unsigned decimal model setting within signed-int32 bounds.
+
+    Parameters
+    ----------
+    value : str
+        Decimal input setting without signs or whitespace.
+    label : str
+        Parameter label used in errors.
+    minimum : int
+        Inclusive lower bound.
+
+    Returns
+    -------
+    int
+        Parsed Python integer between minimum and 2147483647.
+
+    Raises
+    ------
+    ValueError
+        The setting syntax or allowed numeric range fails.
+    """
     if not re.fullmatch(r'[0-9]+', value):
         raise ValueError(f'{label} must be an integer >= {minimum}')
     result = int(value)
@@ -47,7 +92,32 @@ def _integer(value, label, minimum=0):
 
 
 def load_model_experiment_config(path, *, repo_root=None):
-    """Parse a model-only INI without resolving datasets or opening volumes."""
+    """Parse model-only INI settings without opening dataset volumes.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+    repo_root : str or pathlib.Path or None
+        Base directory for relative configuration paths; defaults to the repository
+        root.
+
+    Returns
+    -------
+    dict
+        Typed experiment, family split, model and optional resampling/evaluation
+        sections.
+
+    Raises
+    ------
+    ValueError
+        INI schema/sections, dataset names, split fractions or model settings are
+        invalid.
+
+    Notes
+    -----
+    Parse a model-only INI without resolving datasets or opening volumes.
+    """
     root = Path(repo_root or REPOSITORY_ROOT).expanduser().resolve()
     parser = configparser.ConfigParser(interpolation=None, inline_comment_prefixes=('#',),
                                        strict=True, empty_lines_in_values=False)
@@ -113,6 +183,26 @@ def load_model_experiment_config(path, *, repo_root=None):
 
 
 def _family_splits(families, settings):
+    """Assign complete reviewed families to experiment splits.
+
+    Parameters
+    ----------
+    families : iterable of str
+        Distinct reviewed anatomy-family names.
+    settings : dict
+        Family split settings; fractions/seed or an explicit full assignment.
+
+    Returns
+    -------
+    dict of str to str
+        Family-to-train/validation/test mapping, from explicit assignment or seeded
+        ranking.
+
+    Raises
+    ------
+    ValueError
+        Assignment, empty-validation policy or family counts leave invalid partitions.
+    """
     if settings.get('mode') != 'anatomy_family':
         raise ValueError('Model splits must use anatomy_family')
     if 'assignment' in settings:
@@ -144,7 +234,27 @@ def _family_splits(families, settings):
 
 
 def _allow_empty_validation(config):
-    """Only a final refit with externally selected epochs may omit validation."""
+    """Validate whether a final externally selected fixed-epoch refit may omit validation.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    bool
+        True only for an explicit fixed_epochs assignment permitting no validation.
+
+    Raises
+    ------
+    ValueError
+        Protocol, flag type or explicit family assignment is inconsistent.
+
+    Notes
+    -----
+    Only a final refit with externally selected epochs may omit validation.
+    """
     split = config['split']
     allow = split.get('allow_empty_validation', False)
     if type(allow) is not bool:
@@ -156,17 +266,64 @@ def _allow_empty_validation(config):
 
 
 def _nonempty_splits(counts, config):
+    """Check split sample counts against the configured fitting protocol.
+
+    Parameters
+    ----------
+    counts : dict of str to int
+        Counts for train, validation and test samples.
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    bool
+        True for nonempty train/test and required validation partitions.
+    """
     allow = _allow_empty_validation(config)
     return counts['train'] > 0 and counts['test'] > 0 and (allow or counts['validation'] > 0)
 
 
 def _dataset_selection(config):
+    """Normalize dataset identity independently of fold assignments.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    dict
+        Resolved registry path and sorted configured revision names.
+    """
     settings = config['experiment']
     return {'registry': str(Path(settings['registry']).expanduser().resolve()),
             'datasets': sorted(settings['datasets'])}
 
 
 def _contract(manifest, target_spacing=None):
+    """Validate common native dataset semantics for a model experiment.
+
+    Parameters
+    ----------
+    manifest : dict
+        Verified prepared dataset manifest.
+    target_spacing : sequence of float or None
+        Optional positive i,j,k millimetre spacing overriding native spacing in the
+        contract.
+
+    Returns
+    -------
+    dict
+        Units, array order, physical spacing, orientation, image method and target
+        semantics.
+
+    Raises
+    ------
+    ValueError
+        Geometry, volume budget, units or orientation are unsupported.
+    """
     geometry = manifest['geometry']
     spacing = geometry.get('spacing_ijk_mm')
     if (not isinstance(spacing, (list, tuple)) or len(spacing) != 3
@@ -189,7 +346,24 @@ def _contract(manifest, target_spacing=None):
 
 
 def _source_identity(entry, manifest):
-    """Known shared source identities cannot acquire a new family via a receipt."""
+    """Collect known shared-source identities to prevent family relabeling.
+
+    Parameters
+    ----------
+    entry : dict
+        Registry receipt with optional native crop hashes.
+    manifest : dict
+        Prepared metadata with case, source files and crop identities.
+
+    Returns
+    -------
+    list of tuple of str and str
+        Case identity, known source paths/hashes and canonical crop hashes.
+
+    Notes
+    -----
+    Known shared source identities cannot acquire a new family via a receipt.
+    """
     result = [('case_id', str(manifest['case_id']))]
     sources = manifest.get('source_files', manifest.get('provenance', {}).get('source_files', {}))
     for channel, info in sources.items():
@@ -204,7 +378,28 @@ def _source_identity(entry, manifest):
 
 
 def plan_model_experiment(config, *, verify_payloads=True):
-    """Return all missing/unverified inputs together; never allocate outputs."""
+    """Verify registered inputs and assign complete anatomy families without outputs.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    verify_payloads : bool
+        Whether to read and validate NPZ payload bytes and array contracts, rather than
+        metadata only.
+
+    Returns
+    -------
+    dict
+        Plan with ready flag, accumulated errors/missing revisions, pinned samples,
+        splits and preprocessing.
+
+    Notes
+    -----
+    All datasets are inspected to report missing or unverified inputs together. Full payload validation is controlled by verify_payloads.
+
+    Return all missing/unverified inputs together; never allocate outputs.
+    """
     from fakect_cohort_registry import load_registry_entry
     settings = config['experiment']
     result = {'schema_version': SCHEMA, 'ready': False, 'model_fitted': False,
@@ -307,6 +502,18 @@ def plan_model_experiment(config, *, verify_payloads=True):
 
 
 def _preprocessing_contract(config):
+    """Bind optional model-time physical resampling to its implementation.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    dict
+        Resampling contract, or an empty mapping when conversion is disabled.
+    """
     if not config.get('preprocess'):
         return {}
     from fakect_model_resampling import resampling_contract
@@ -314,7 +521,32 @@ def _preprocessing_contract(config):
 
 
 def reassign_model_plan(verified_base_plan, fold_config):
-    """Reuse one payload verification across folds, checking pinned metadata anew.
+    """Reuse verified payload identities while rechecking a new family fold.
+
+    Parameters
+    ----------
+    verified_base_plan : dict
+        Ready plan whose payload verification succeeded.
+    fold_config : dict
+        Fold-specific model experiment with identical datasets and preprocessing.
+
+    Returns
+    -------
+    dict
+        Deep-copied plan with refreshed assignment and per-split sample/family/case
+        counts.
+
+    Raises
+    ------
+    ValueError
+        Base readiness, registry identities, preprocessing or split counts differ from
+        the pinned plan.
+
+    Notes
+    -----
+    Metadata is checked again; NPZ payloads are not decoded a second time.
+
+    Reuse one payload verification across folds, checking pinned metadata anew.
 
     All original datasets and samples stay in the experiment; only complete
     families change partition. Raw archives are not decoded a second time.
@@ -373,7 +605,36 @@ def reassign_model_plan(verified_base_plan, fold_config):
 
 
 def freeze_model_experiment(config, input_bytes, *, prepared_plan=None):
-    """Create an immutable manifest of dataset versions, family splits and model."""
+    """Publish immutable dataset, family split and model settings in an experiment lock.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+    prepared_plan : dict or None
+        Optional fully verified base plan reused with new family assignment.
+
+    Returns
+    -------
+    dict
+        Lock path/hash, family assignment, split/sample counts and publication flags.
+
+    Raises
+    ------
+    ValueError
+        The experiment plan is not ready.
+    FileExistsError
+        The experiment output directory already exists.
+
+    Notes
+    -----
+    Writes exact input.ini, experiment-lock.json and its SHA256 into a newly reserved directory.
+
+    Create an immutable manifest of dataset versions, family splits and model.
+    """
     plan = (plan_model_experiment(config) if prepared_plan is None
             else reassign_model_plan(prepared_plan, config))
     if not plan['ready']:
@@ -396,7 +657,28 @@ def freeze_model_experiment(config, input_bytes, *, prepared_plan=None):
 
 
 def inspect_experiment_lock(path):
-    """Validate frozen identities without opening any sample NPZ payloads.
+    """Validate frozen identities and split metadata without decoding sample NPZs.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    dict
+        Training-consumer manifest with path/hash, normalized samples, split sizes and
+        verified lock.
+
+    Raises
+    ------
+    ValueError
+        Lock, input, source receipts, prepared metadata, preprocessing or split
+        consistency fails.
+
+    Notes
+    -----
+    Validate frozen identities without opening any sample NPZ payloads.
 
     Train/validation samples are hash-checked when PatchDataset loads them.
     The test partition is reserved; its arrays are not opened during fitting.
@@ -495,7 +777,32 @@ def inspect_experiment_lock(path):
 
 
 def fit_model_experiment(config, input_bytes):
-    """Explicit model-only fitting against an already frozen experiment."""
+    """Fit a model against the exact previously frozen experiment.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    input_bytes : bytes
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Completed model metadata from validation-selected or fixed-epoch fitting.
+
+    Raises
+    ------
+    ValueError
+        INI, frozen lock or train/validation archive bytes changed.
+
+    Notes
+    -----
+    Training consumes prepared datasets only, not XCAT sources, ROI files or generation code; outputs are written to the locked model directory.
+
+    Explicit model-only fitting against an already frozen experiment.
+    """
     from fakect_segmentation import train_segmentation
     path = Path(config['experiment']['output_directory'])/'experiment-lock.json'
     checked = inspect_experiment_lock(path)

@@ -13,6 +13,23 @@ from fakect_anatomy import create_anatomy_selection
 
 
 def load_config(path):
+    """Choose the strict preview or study parser from the declared INI schema.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        UTF-8 INI input whose study.schema_version selects the parser.
+
+    Returns
+    -------
+    dict
+        Normalized configuration with resolved paths; no voxel volumes are read.
+
+    Notes
+    -----
+    Malformed INI syntax is reported as ValueError. This reads configuration
+    metadata and does not write an anatomical selection.
+    """
     parser = configparser.ConfigParser(interpolation=None, inline_comment_prefixes=('#',))
     try:
         with Path(path).open(encoding='utf-8-sig') as stream:
@@ -27,6 +44,23 @@ def load_config(path):
 
 
 def main():
+    """Resolve and save an optional anatomical selector from stable input bytes.
+
+    Parameters
+    ----------
+    None
+        Arguments are read from the process command line.
+
+    Returns
+    -------
+    None
+        Writes the requested files or prints CLI output; no return value.
+
+    Notes
+    -----
+    Writes the configured selection artifact and prints IDs, counts and warnings
+    as JSON. Does not edit geometry or prepare a dataset. CLI failures exit with 2.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, required=True)
     args = parser.parse_args()

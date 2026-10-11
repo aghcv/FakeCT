@@ -30,10 +30,34 @@ _EROSION_GUARD_FIELDS = ('min_volume_ratio', 'preserve_connectivity', 'backoff_f
 
 
 def _recipe_study(config):
+    """Check whether a configuration uses ordered recipe generation.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    bool
+        True for the recipe-study and recipe-cohort schema versions.
+    """
     return config.get('study', {}).get('schema_version') in ('fakect.recipe-study/1', 'fakect.recipe-cohort/1')
 
 
 def _json_value(value):
+    """Convert paths, NumPy scalars and nested containers to JSON-compatible values.
+
+    Parameters
+    ----------
+    value : object
+        Value or nested metadata structure to convert.
+
+    Returns
+    -------
+    object
+        Converted values, with dictionary keys represented as strings.
+    """
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, dict):
@@ -46,10 +70,34 @@ def _json_value(value):
 
 
 def _canonical(value):
+    """Serialize generation metadata with deterministic converted JSON values.
+
+    Parameters
+    ----------
+    value : object
+        Metadata convertible by ``_json_value``.
+
+    Returns
+    -------
+    str
+        Sorted compact JSON, rejecting nonfinite values.
+    """
     return json.dumps(_json_value(value), sort_keys=True, separators=(',', ':'), allow_nan=False)
 
 
 def _file_hash(path):
+    """Hash a preparation artifact using bounded reads.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Input file path.
+
+    Returns
+    -------
+    str
+        SHA256 hexadecimal digest of the complete file bytes.
+    """
     digest = hashlib.sha256()
     with Path(path).open('rb') as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b''):
@@ -58,10 +106,43 @@ def _file_hash(path):
 
 
 def _array_hash(array):
+    """Fingerprint contiguous source or generated array values.
+
+    Parameters
+    ----------
+    array : array_like
+        Array values to hash.
+
+    Returns
+    -------
+    str
+        SHA256 of the array contiguous C-order bytes.
+    """
     return hashlib.sha256(np.ascontiguousarray(array).tobytes(order='C')).hexdigest()
 
 
 def _number_list(values, name, maximum=None):
+    """Validate and sort distinct positive sweep values.
+
+    Parameters
+    ----------
+    values : list or tuple
+        Nonempty sweep values; Boolean values are rejected.
+    name : str
+        Parameter label used in errors.
+    maximum : float or None
+        Optional inclusive upper bound in the same units as values.
+
+    Returns
+    -------
+    tuple of float
+        Sorted positive finite numbers.
+
+    Raises
+    ------
+    ValueError
+        Values are empty, duplicated, nonfinite, nonpositive or exceed the bound.
+    """
     if not isinstance(values, (tuple, list)) or not values:
         raise ValueError(f'{name} must be a nonempty list')
     result = []
@@ -79,7 +160,27 @@ def _number_list(values, name, maximum=None):
 
 
 def plan_variants(config):
-    """Return a deterministic baseline and Cartesian edit plan, without file I/O.
+    """Plan deterministic baseline and Cartesian edits without file I/O.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+
+    Returns
+    -------
+    list of dict
+        Variant metadata with identities and provisional scenario splits, or recipe
+        variants for a recipe schema.
+
+    Raises
+    ------
+    ValueError
+        Sweep, capacity, family, seed, image method or split settings are invalid.
+
+    Notes
+    -----
+    Return a deterministic baseline and Cartesian edit plan, without file I/O.
 
     The plan's splits are provisional until exact mask geometries are known.
     During preparation, equal masks become one split group; baseline-equivalent
@@ -150,6 +251,25 @@ def plan_variants(config):
 
 
 def _variant_config(config, variant):
+    """Copy a study configuration and apply one variant edit specification.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    variant : dict
+        Planned edit record with operation/profile/distance/shape settings.
+
+    Returns
+    -------
+    dict
+        Independent configuration with operation, physical distance, profile and
+        effective erosion guard settings.
+
+    Notes
+    -----
+    Deep-copies the input configuration; the caller data is not mutated.
+    """
     result = deepcopy(config)
     for key in ('operation', 'distance_mm', 'shape_k', 'shape_window', 'profile', 'profile_axis'):
         result['edit'][key] = variant[key]
@@ -162,6 +282,20 @@ def _variant_config(config, variant):
 
 
 def _geometry(resolved):
+    """Record native crop geometry for a prepared dataset.
+
+    Parameters
+    ----------
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    dict
+        K,j,i crop shape, i,j,k crop origin/bounds, source shape, millimetre spacing and
+        ROI nodes/radii.
+    """
     low, high = resolved['crop_low_ijk'], resolved['crop_high_ijk_exclusive']
     return {'array_order': 'kji', 'crop_origin_ijk': list(low),
             'crop_high_ijk_exclusive': list(high),
@@ -174,7 +308,29 @@ def _geometry(resolved):
 
 
 def _anatomy_provenance(resolved):
-    """Revalidate optional anatomical evidence before binding a data snapshot."""
+    """Revalidate optional selection evidence before recording generation provenance.
+
+    Parameters
+    ----------
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    dict
+        Anatomy audit, selector hash and protected IDs, or an empty mapping when no
+        selector exists.
+
+    Raises
+    ------
+    ValueError
+        An optional selector or dependency changed.
+
+    Notes
+    -----
+    Revalidate optional anatomical evidence before binding a data snapshot.
+    """
     if resolved.get('anatomical_selection') is None:
         return {}
     from fakect_anatomy import verify_selection_sources
@@ -185,10 +341,43 @@ def _anatomy_provenance(resolved):
 
 
 def _anatomy_code_modules(resolved):
+    """Select additional selector dependencies bound by generation provenance.
+
+    Parameters
+    ----------
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    tuple of str
+        Anatomy module filenames when selection evidence is present, otherwise an empty
+        tuple.
+    """
     return ('fakect_anatomy.py', 'fakect_anatomy_surfaces.py', 'fakect_anatomy_centerlines.py') if resolved.get('anatomical_selection') is not None else ()
 
 
 def _write_anatomical_selection_snapshot(output, resolved):
+    """Persist the selection audit alongside prepared cohort artifacts.
+
+    Parameters
+    ----------
+    output : pathlib.Path
+        Existing preparation output directory.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    None
+        Writes anatomical-selection.json when an audit exists.
+
+    Notes
+    -----
+    Preserves exact captured selection bytes when available; otherwise serializes the in-memory audit.
+    """
     if resolved.get('anatomical_selection') is None:
         return
     payload = resolved.get('anatomy_selection_bytes')
@@ -199,6 +388,27 @@ def _write_anatomical_selection_snapshot(output, resolved):
 
 
 def _provenance(config, resolved):
+    """Collect data-generating settings, dependencies and source state.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    dict
+        Provenance excluding model/display/output settings that do not determine
+        prepared data.
+
+    Raises
+    ------
+    ValueError
+        Catalog, audit or optional anatomical dependencies changed after resolution.
+    """
     if _recipe_study(config):
         from fakect_recipe_training import recipe_provenance
         return recipe_provenance(config, resolved)
@@ -226,7 +436,29 @@ def _provenance(config, resolved):
 
 
 def dataset_fingerprint(config, resolved):
-    """Bind data semantics, source state, atlas, geometry and generating code.
+    """Bind generation semantics and source state to a stable dataset identity.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    str
+        SHA256 of canonical generation provenance.
+
+    Raises
+    ------
+    ValueError
+        A bound catalog/audit or anatomical selection dependency changed.
+
+    Notes
+    -----
+    Bind data semantics, source state, atlas, geometry and generating code.
 
     Training stage, model hyperparameters, run/output directories and display
     settings do not alter prepared data and are deliberately excluded.
@@ -235,6 +467,26 @@ def dataset_fingerprint(config, resolved):
 
 
 def _target_ids(config, resolved):
+    """Validate explicit training target IDs against tissue and edit selection.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    tuple of int
+        Distinct original signed int32 target IDs.
+
+    Raises
+    ------
+    ValueError
+        Targets are invalid/absent, outside the tissue, or omit an edit source ID.
+    """
     values = config['train']['target_source_ids']
     if not values or len(set(values)) != len(values):
         raise ValueError('train.target_source_ids must explicitly list distinct original signed labels')
@@ -252,7 +504,31 @@ def _target_ids(config, resolved):
 
 
 def validate_study_plan(config, resolved):
-    """Validate every planned variant against resolved metadata, without crop I/O.
+    """Validate every edit variant against native metadata without crop reads.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+
+    Returns
+    -------
+    list of dict
+        Validated variants with provisional splits; realization may later regroup
+        duplicate masks.
+
+    Raises
+    ------
+    ValueError
+        Target identity, diagnostic release policy, edit geometry, crop bounds or
+        required halos fail.
+
+    Notes
+    -----
+    Validate every planned variant against resolved metadata, without crop I/O.
 
     Target identity, edit-candidate scope, all morphology policies, crop bounds
     and required halos must pass before a caller advertises a preparable plan.
@@ -272,6 +548,24 @@ def validate_study_plan(config, resolved):
 
 
 def _write_json(path, value):
+    """Write complete JSON using an exclusively created temporary file.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Destination JSON file.
+    value : object
+        Metadata convertible by ``_json_value``.
+
+    Returns
+    -------
+    None
+        Atomically replaces the destination after the temporary file is fully written.
+
+    Notes
+    -----
+    Writes a sibling .tmp file before publication; serialization rejects nonfinite values.
+    """
     temporary = path.with_name(path.name + '.tmp')
     with temporary.open('x', encoding='utf-8') as handle:
         handle.write(json.dumps(_json_value(value), indent=2, allow_nan=False) + '\n')
@@ -279,6 +573,24 @@ def _write_json(path, value):
 
 
 def _write_npz(path, **arrays):
+    """Publish compressed paired arrays after a complete temporary write.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Destination archive path.
+    **arrays : numpy.ndarray
+        Keyword-named archive members.
+
+    Returns
+    -------
+    None
+        Atomically replaces the destination NPZ.
+
+    Notes
+    -----
+    Writes an exclusively created sibling .tmp file before replacing the destination.
+    """
     temporary = path.with_name(path.name + '.tmp')
     with temporary.open('xb') as handle:
         np.savez_compressed(handle, **arrays)
@@ -286,7 +598,38 @@ def _write_npz(path, **arrays):
 
 
 def prepare_training_dataset(config, resolved, *, input_bytes=None):
-    """Prepare a fresh, bounded, immutable crop dataset; never train a model.
+    """Prepare bounded image/mask pairs from independent original snapshots.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    input_bytes : bytes or None
+        Exact captured INI bytes corresponding to ``config``; retained without rewriting
+        when provided.
+
+    Returns
+    -------
+    dict
+        Published manifest path/hash, dataset fingerprint, samples and realized
+        split/geometry counts.
+
+    Raises
+    ------
+    FileExistsError
+        The requested dataset directory already exists.
+    ValueError
+        Input bytes, target geometry, output locality, proxy attenuation or source
+        provenance fails.
+
+    Notes
+    -----
+    Writes source and variant NPZs, exact optional INI and provenance into a fresh directory. Images use inverse centimetres; a failed run remains INCOMPLETE. Model fitting is separate.
+
+    Prepare a fresh, bounded, immutable crop dataset; never train a model.
 
     Each variant starts from the same read-only original arrays. Files are
     atomically published inside a newly reserved directory; the manifest is
@@ -410,7 +753,32 @@ def prepare_training_dataset(config, resolved, *, input_bytes=None):
 
 
 def validate_dataset(config, resolved, manifest_path=None):
-    """Verify a frozen dataset and all artifact bytes before reuse or fitting.
+    """Validate frozen dataset artifacts before reuse against current generation settings.
+
+    Parameters
+    ----------
+    config : dict
+        Typed workflow configuration parsed from INI sections.
+    resolved : dict
+        Native source, catalog and crop geometry from ``resolve_preview``; indices use
+        i,j,k and array shapes use k,j,i.
+    manifest_path : str or pathlib.Path or None
+        Explicit manifest path; None uses train.dataset_directory.
+
+    Returns
+    -------
+    dict
+        Verified prepared manifest; no outputs are written.
+
+    Raises
+    ------
+    ValueError
+        Completeness, fingerprint, hashes, inventory paths or split/geometry identities
+        fail.
+
+    Notes
+    -----
+    Verify a frozen dataset and all artifact bytes before reuse or fitting.
 
     This checks test archive integrity as bytes; it does not load test arrays or
     use their values for fitting, normalization, or model selection.

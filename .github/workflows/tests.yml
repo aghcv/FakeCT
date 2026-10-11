@@ -1,4 +1,4 @@
-name: Student framework regression
+name: FakeCT regression and quality
 
 on:
   push:
@@ -49,6 +49,8 @@ jobs:
           PY
       - name: Check declared dependencies
         run: python -m pip check
+      - name: Verify source syntax and documented contracts
+        run: python scripts/dev/check_quality.py
       - name: Run every CPU contract and synthetic workflow
         run: python -m pytest --junitxml=test-results/core.xml
       - name: Save test evidence and resolved dependency versions
