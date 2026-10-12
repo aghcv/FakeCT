@@ -13,6 +13,9 @@ HAS_TF = importlib.util.find_spec('tensorflow') is not None
 
 
 class StepContractTests(unittest.TestCase):
+    # Purpose: Reject invalid training settings before activating TensorFlow.
+    # Inputs: Zero dimensions, nonfinite learning rate, invalid clipping, proposal count and loss weight.
+    # Outputs: ValueError from locator and classifier factories.
     def test_configuration_rejected_before_tensorflow_import(self):
         for settings in [dict(overview_shape=(0, 4, 4)), dict(overview_shape=(4, 4, 4), clipnorm=0),
                          dict(overview_shape=(4, 4, 4), learning_rate=float('nan'))]:
@@ -23,6 +26,9 @@ class StepContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             make_classifier_steps(None, (4, 4, 4), (4, 4, 4), regression_weight=-1)
 
+    # Purpose: Detect retracing through the trace-count audit.
+    # Inputs: Mock train/predict functions with zero traces, then two training traces.
+    # Outputs: Initial counts accepted; excessive training traces raise RuntimeError.
     def test_trace_audit_detects_growth(self):
         class Trace:
             def __init__(self, n): self.n = n
@@ -65,6 +71,9 @@ class TensorFlowStepTests(unittest.TestCase):
         score = tf.keras.layers.Dense(1, activation='sigmoid')(merged)
         return tf.keras.Model(inputs, {'coa_logit': logit, 'local_volume_loss': score})
 
+    # Purpose: Verify locator learning reuses a fixed TensorFlow graph.
+    # Inputs: Tiny 4-cube model, varying image values and a six-coordinate target over 20 updates.
+    # Outputs: Loss decreases, gradients stay finite, traces and optimizer slots stay stable.
     def test_locator_learns_and_uses_one_trace_for_changing_tensor_values(self):
         tf = self.tf
         model = self.locator()
@@ -84,6 +93,9 @@ class TensorFlowStepTests(unittest.TestCase):
         self.assertEqual(int(steps.optimizer.iterations.numpy()), 20)
         self.assertEqual(len(steps.optimizer.variables), optimizer_variables_before)
 
+    # Purpose: Verify auxiliary locator outputs support a custom loss.
+    # Inputs: Tiny locator with box/logit outputs, image tensor and six-coordinate target.
+    # Outputs: Finite training loss, both prediction keys and one trace per step.
     def test_auxiliary_output_loss_and_prediction_structure(self):
         tf = self.tf
         model = self.locator(auxiliary=True)
@@ -95,6 +107,9 @@ class TensorFlowStepTests(unittest.TestCase):
         self.assertEqual(set(steps.predict(image)), {'box', 'box_logits'})
         self.assertEqual(steps.assert_stable_traces(), {'train': 1, 'predict': 1})
 
+    # Purpose: Prevent invalid locator inputs from updating parameters.
+    # Inputs: NaN image and wrong batch shape, with initial model weights captured.
+    # Outputs: Input errors, unchanged weights and zero optimizer iterations.
     def test_nonfinite_and_wrong_shape_inputs_cannot_update_model(self):
         tf = self.tf
         model = self.locator()
@@ -110,6 +125,9 @@ class TensorFlowStepTests(unittest.TestCase):
             steps.train(tf.ones((2,) + self.shape + (2,), tf.float32), target)
         self.assertEqual(int(steps.optimizer.iterations.numpy()), 0)
 
+    # Purpose: Verify classifier loss composition and saved-model equivalence.
+    # Inputs: Tiny classifier, overview/detail tensors, proposal boxes and weighted BCE/Huber targets.
+    # Outputs: Analytic loss matches training; reloaded predictions match and tracing stays stable.
     def test_classifier_matches_configured_losses_and_roundtrips(self):
         tf = self.tf
         model = self.classifier()

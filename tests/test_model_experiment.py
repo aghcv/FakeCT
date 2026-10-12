@@ -125,6 +125,9 @@ learning_rate = .001
 seed = 1729
 '''
 
+    # Purpose: Verify model-only INI parsing resolves repository-relative paths.
+    # Inputs: Valid three-dataset INI, then ROI section, duplicate dataset or NaN split fraction.
+    # Outputs: Expected config produced; unrelated or invalid configuration rejected.
     def test_ini_contains_only_model_inputs_and_repo_relative_paths(self):
         path = self.root/'model.ini'
         path.write_text(self.ini())
@@ -136,6 +139,9 @@ seed = 1729
             with self.assertRaises(ValueError):
                 load_model_experiment_config(path, repo_root=self.root)
 
+    # Purpose: Verify planning reports missing and unverified datasets together without writes.
+    # Inputs: One pending dataset name and one family marked unverified.
+    # Outputs: Plan not ready, both lists populated and no experiment directory.
     def test_validation_reports_missing_and_unverified_together_without_writes(self):
         self.config['experiment']['datasets'].append('pending-phantom')
         self.entries['case-0']['family_verified'] = False
@@ -145,6 +151,9 @@ seed = 1729
         self.assertEqual(report['unverified_datasets'], ['case-0'])
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    # Purpose: Verify an absent registry reports every requested dataset as pending.
+    # Inputs: Synthetic config after removing registry resolver mocks.
+    # Outputs: All dataset names missing, plan unready and registry/output directories absent.
     def test_missing_real_registry_reports_all_pending_names(self):
         patch.stopall()
         report = plan_model_experiment(self.config)
@@ -153,6 +162,9 @@ seed = 1729
         self.assertFalse(Path(self.config['experiment']['registry']).exists())
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    # Purpose: Verify optional preprocessing requires explicit positive spacing.
+    # Inputs: Valid spacing 1,1,2 and zero/NaN/malformed/unknown-key/multiline alternatives.
+    # Outputs: Valid preprocessing parsed; invalid spacing sections raise ValueError.
     def test_optional_preprocessing_ini_requires_explicit_positive_spacing(self):
         path = self.root/'model.ini'
         path.write_text(self.ini()+'\n[preprocess]\ntarget_spacing_mm = 1, 1, 2\n')
@@ -165,6 +177,9 @@ seed = 1729
             with self.subTest(text=text), self.assertRaises(ValueError):
                 load_model_experiment_config(path, repo_root=self.root)
 
+    # Purpose: Verify evaluation INI parsing is strict and resolves project paths.
+    # Inputs: Holdout counts/seeds/project and incomplete or unsupported evaluation alternatives.
+    # Outputs: Expected defaults and absolute project path; invalid sections rejected.
     def test_optional_evaluation_ini_is_strict_and_resolves_planning_project(self):
         path = self.root/'model.ini'
         path.write_text(self.ini()+'''\n[evaluation]
@@ -193,6 +208,9 @@ planning_project = configs/cohort.ini
             config['training_protocol'] = 'fixed_epochs'
         return config
 
+    # Purpose: Verify explicit split assignments are complete and family-wide.
+    # Inputs: Repeated family dataset, reversed dataset order and invalid assignment maps.
+    # Outputs: Deterministic splits 4/2/2; missing, extra, malformed or empty-validation assignments unready.
     def test_explicit_assignments_are_complete_deterministic_and_family_wide(self):
         self.make_dataset('case-0-later', 'family-0', 4)
         self.config['experiment']['datasets'].append('case-0-later')
@@ -212,6 +230,9 @@ planning_project = configs/cohort.ini
             with self.subTest(assignment=assignment):
                 self.assertFalse(plan_model_experiment(changed)['ready'])
 
+    # Purpose: Verify empty validation requires explicit fixed-epoch refitting.
+    # Inputs: Final train/train/test assignment and missing protocol/permission/assignment fields.
+    # Outputs: Ready 4/0/2 frozen split; incomplete configs and tampered protocol rejected.
     def test_empty_validation_requires_explicit_fixed_epoch_refit(self):
         config = self.explicit_config(final=True)
         plan = plan_model_experiment(config)
@@ -231,6 +252,9 @@ planning_project = configs/cohort.ini
         with self.assertRaisesRegex(ValueError, 'fixed_epochs'):
             inspect_experiment_lock(path)
 
+    # Purpose: Verify prepared plans can change splits without rereading payloads or mutating state.
+    # Inputs: Verified base plan reassigned for fixed refit with NPZ reads mocked to fail.
+    # Outputs: Original plan preserved, split counts 4/0/2 and matching frozen lock.
     def test_prepared_plan_reassignment_reuses_payload_verification_without_mutation(self):
         base = plan_model_experiment(self.config)
         original = copy.deepcopy(base)
@@ -247,6 +271,9 @@ planning_project = configs/cohort.ini
         self.assertEqual(inspect_experiment_lock(frozen['lock_path'])['split_sizes'], reassigned['split_counts'])
         self.assertTrue(all(call.kwargs['verify'] is False for call in self.registry.call_args_list))
 
+    # Purpose: Reject prepared plans with changed verification, dataset selection or registry evidence.
+    # Inputs: Unready/unverified plan, changed datasets/registry and mutated registry receipt.
+    # Outputs: ValueError rejects invalid plan or stale selection/receipt.
     def test_prepared_plan_rejects_unverified_changed_dataset_or_registry(self):
         base = plan_model_experiment(self.config)
         for field, value in (('ready', False), ('verified_payloads', False)):
@@ -264,6 +291,9 @@ planning_project = configs/cohort.ini
         with self.assertRaisesRegex(ValueError, 'receipt or prepared manifest changed'):
             reassign_model_plan(base, self.explicit_config())
 
+    # Purpose: Verify fixed-epoch dispatch uses the frozen lock and detects stale inputs.
+    # Inputs: Final-refit lock, mocked fixed trainer and altered runtime or saved INI bytes.
+    # Outputs: One correct trainer dispatch; changed inputs rejected before another fit.
     def test_fixed_epoch_fit_dispatch_and_stale_parent_snapshot(self):
         config = self.explicit_config(final=True)
         path = Path(freeze_model_experiment(config, self.raw)['lock_path'])
@@ -283,6 +313,9 @@ planning_project = configs/cohort.ini
         for index, entry in enumerate(self.entries.values()):
             entry['manifest']['geometry']['spacing_ijk_mm'] = [1., 1.+index/2, 2.]
 
+    # Purpose: Verify resampling harmonizes physical spacing and preserves native archives.
+    # Inputs: Three anisotropic source grids resampled to 1 mm and development patch iteration.
+    # Outputs: Common spacing, binary masks, complete valid coverage, no test reads and unchanged NPZ bytes.
     def test_resampling_harmonizes_spacing_without_mutating_native_archives(self):
         self.enable_resampling()
         original = {s['_path']: Path(s['_path']).read_bytes()
@@ -311,6 +344,9 @@ planning_project = configs/cohort.ini
         path.write_text(json.dumps(lock))
         (path.parent/'experiment-lock.sha256').write_text(digest(path))
 
+    # Purpose: Reject resampling locks after implementation or dependency changes.
+    # Inputs: Frozen resampling contract with altered code digest or dependency version.
+    # Outputs: ValueError identifies changed resampling contract.
     def test_resampling_lock_rejects_code_and_dependency_changes(self):
         self.enable_resampling()
         path = self.freeze()
@@ -322,6 +358,9 @@ planning_project = configs/cohort.ini
                 with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'resampling contract'):
                     inspect_experiment_lock(path)
 
+    # Purpose: Reject resealed locks with invented geometry, family membership or omitted samples.
+    # Inputs: Recomputed lock signatures after changing spacing, shape, family or removing a sample.
+    # Outputs: Geometry/family mismatch or omitted-prepared-sample ValueError.
     def test_resealed_lock_cannot_invent_resampled_geometry_or_family_membership(self):
         self.enable_resampling()
         path = self.freeze()
@@ -341,6 +380,9 @@ planning_project = configs/cohort.ini
         with self.assertRaisesRegex(ValueError, 'omits prepared samples'):
             inspect_experiment_lock(path)
 
+    # Purpose: Verify experiments require three verified independent families.
+    # Inputs: Dataset selection reduced to two families.
+    # Outputs: Plan not ready, freeze rejected and no output directory.
     def test_three_verified_families_are_required(self):
         self.config['experiment']['datasets'] = ['case-0', 'case-1']
         report = plan_model_experiment(self.config)
@@ -350,6 +392,9 @@ planning_project = configs/cohort.ini
             self.freeze()
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    # Purpose: Verify family partitioning is deterministic with repeated families.
+    # Inputs: Fourth dataset sharing family-0, then reversed dataset order.
+    # Outputs: Same family assignment, eight unique IDs, three partitions and original manifests unassigned.
     def test_family_partition_deterministic_with_repeated_family_and_namespaced_ids(self):
         extra = self.make_dataset('case-0-later', 'family-0', 4)
         self.config['experiment']['datasets'].append(extra['name'])
@@ -363,6 +408,9 @@ planning_project = configs/cohort.ini
         self.assertEqual(set(s['split'] for s in report['samples']), {'train', 'validation', 'test'})
         self.assertTrue(all(s['split'] == 'unassigned' for m in self.manifests.values() for s in m['samples']))
 
+    # Purpose: Reject purportedly independent families sharing case or source identity.
+    # Inputs: Case-1 given case-0 case ID, source files or source crop digest.
+    # Outputs: Unready plan reports shared source for each identity collision.
     def test_same_case_or_source_cannot_be_declared_independent(self):
         for key in ('case_id', 'source_files', 'source_crop_sha256'):
             with self.subTest(key=key):
@@ -373,6 +421,9 @@ planning_project = configs/cohort.ini
                 self.assertTrue(any('Shared source' in e for e in report['errors']))
                 self.entries['case-1']['manifest'][key] = old
 
+    # Purpose: Reject duplicated payload or mask geometry across families.
+    # Inputs: Different-family sample given matching payload hash or shape/mask hash.
+    # Outputs: Duplicate-sample errors recorded for both collision forms.
     def test_duplicate_sample_or_geometry_across_families_is_rejected(self):
         one, two = self.entries['case-0']['manifest']['samples'][0], self.entries['case-1']['manifest']['samples'][0]
         two['sha256'] = one['sha256']
@@ -381,6 +432,9 @@ planning_project = configs/cohort.ini
         two['shape_kji'], two['mask_sha256'] = one['shape_kji'], one['mask_sha256']
         self.assertTrue(any('Duplicate sample' in e for e in plan_model_experiment(self.config)['errors']))
 
+    # Purpose: Reject incompatible units, spacing, orientation or target scope.
+    # Inputs: One dataset changed to HU, different spacing/orientation or whole-anatomy scope.
+    # Outputs: Plan not ready for every incompatible dataset contract.
     def test_incompatible_units_spacing_orientation_and_target_scope_rejected(self):
         manifest = self.entries['case-1']['manifest']
         for owner, key, value in ((manifest, 'image_units', 'HU'),
@@ -393,6 +447,9 @@ planning_project = configs/cohort.ini
                 self.assertFalse(plan_model_experiment(self.config)['ready'])
                 owner[key] = original
 
+    # Purpose: Verify experiment locks are immutable without requiring raw sources.
+    # Inputs: Prepared synthetic datasets with unavailable raw paths, repeat freeze and appended lock bytes.
+    # Outputs: Verified splits 2/2/2; overwrite and changed-lock checksum rejected.
     def test_lock_is_immutable_and_does_not_require_raw_sources(self):
         path = self.freeze()
         self.assertEqual(inspect_experiment_lock(path)['split_sizes'], {'train': 2, 'validation': 2, 'test': 2})
@@ -403,6 +460,9 @@ planning_project = configs/cohort.ini
         with self.assertRaisesRegex(ValueError, 'checksum changed'):
             inspect_experiment_lock(path)
 
+    # Purpose: Reject registry receipt and manifest changes after freezing.
+    # Inputs: Frozen experiment with registry receipt modified then restored and manifest modified.
+    # Outputs: ValueError identifies changed receipt or prepared manifest.
     def test_registry_and_manifest_mutation_are_detected(self):
         path = self.freeze()
         receipt = Path(self.entries['case-0']['registry_entry_path'])
@@ -416,6 +476,9 @@ planning_project = configs/cohort.ini
         with self.assertRaisesRegex(ValueError, 'receipt or prepared manifest changed'):
             inspect_experiment_lock(path)
 
+    # Purpose: Verify variable crop tiling is complete without opening held-out payloads.
+    # Inputs: Frozen crops of varying shapes with all test NPZs deleted.
+    # Outputs: Train/validation validity covers every voxel; no held-out reads or redundant payload verification.
     def test_variable_crops_are_tiled_completely_and_test_payloads_never_open(self):
         path = self.freeze()
         locked = inspect_experiment_lock(path)
@@ -434,6 +497,9 @@ planning_project = configs/cohort.ini
         self.assertTrue(all(not call.kwargs['verify'] for call in self.registry.call_args_list[-3:]))
         self.assertTrue(all(not call.kwargs['verify_payloads'] for call in self.verifier.call_args_list))
 
+    # Purpose: Verify fitting uses frozen model settings and checks training bytes first.
+    # Inputs: Valid frozen fit, changed epochs and tampered training NPZ.
+    # Outputs: Correct backend arguments; changed config/data rejected before trainer invocation.
     def test_fit_uses_frozen_model_and_checks_training_bytes_before_runner(self):
         path = self.freeze()
         with patch('fakect_segmentation.train_segmentation', return_value={'fitted': True}) as fit:
@@ -454,6 +520,9 @@ planning_project = configs/cohort.ini
                 fit_model_experiment(self.config, self.raw)
             fit.assert_not_called()
 
+    # Purpose: Verify CLI validation reports readiness without fitting or publication.
+    # Inputs: Fit-stage CLI call with validate_only and mocked fitter.
+    # Outputs: Ready summary omits samples, fitter uncalled and output directory absent.
     def test_cli_validation_never_fits_or_writes_and_reports_readiness(self):
         import model_experiment
         config_path = self.root/'model.ini'

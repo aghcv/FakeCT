@@ -14,6 +14,9 @@ from fakect_roi import (crop_bounds, prepare_crop, read_crop, resolve_preview,
 
 
 class RoiPreviewTests(unittest.TestCase):
+    # Purpose: Verify spherical ROI masks use native anisotropic coordinates.
+    # Inputs: 7-cube crop at [10,20,30], center [13,23,33], spacing [1,2,3], and radius 3.
+    # Outputs: Mask matches the exact physical distance predicate at every voxel.
     def test_anisotropic_sphere_native_coordinates(self):
         mask = sphere_mask((7, 7, 7), (10, 20, 30), (13, 23, 33), (1, 2, 3), 3)
         self.assertTrue(mask[3, 3, 6])  # Three i voxels = 3 mm.
@@ -25,6 +28,9 @@ class RoiPreviewTests(unittest.TestCase):
             expected[k, j, i] = (i-3)**2 + ((j-3)*2)**2 + ((k-3)*3)**2 <= 9
         np.testing.assert_array_equal(mask, expected)
 
+    # Purpose: Verify crop bounds clip to source edges and obey limits.
+    # Inputs: Edge center [0,5,6], anisotropic spacing, outside center, and oversized crop.
+    # Outputs: Valid bounds are [0,3,5]-[5,8,8]; invalid requests raise ValueError.
     def test_crop_bounds_clipping_spacing_and_limits(self):
         self.assertEqual(crop_bounds((0, 5, 6), 4, (20, 20, 20), (1, 2, 4)), ((0, 3, 5), (5, 8, 8)))
         with self.assertRaises(ValueError):
@@ -32,6 +38,9 @@ class RoiPreviewTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             crop_bounds((300, 300, 300), 300, (700, 700, 700), (1, 1, 1))
 
+    # Purpose: Verify tubes use continuous anisotropic segments with round caps.
+    # Inputs: Two-node K tube, spacing [1,2,3], and radius 2.
+    # Outputs: Every voxel matches the analytic capped-cylinder distance predicate.
     def test_anisotropic_tube_round_caps_and_continuous_segments(self):
         nodes = ((5, 4, 3), (5, 4, 7))
         mask = tube_mask((11, 11, 11), (0, 0, 0), nodes, (1, 2, 3), (2, 2))
@@ -47,6 +56,9 @@ class RoiPreviewTests(unittest.TestCase):
             expected[k, j, i] = (i-5)**2 + (2*(j-4))**2 + axial_distance**2 <= 4
         np.testing.assert_array_equal(mask, expected)
 
+    # Purpose: Verify tapered tubes are unions of interpolated balls.
+    # Inputs: Two-node tube with radii 1 to 3 and anisotropic spacing.
+    # Outputs: Intermediate and cap voxels follow ball-union geometry rather than nearest-center radius.
     def test_taper_is_union_of_interpolated_balls_not_radius_at_nearest_center(self):
         mask = tube_mask((12, 11, 11), (0, 0, 0), ((5, 5, 3), (5, 5, 7)), (1, 2, 1), (1, 3))
         # At k=5 the centerline radius is 2 mm, but the swept balls include this
@@ -59,12 +71,18 @@ class RoiPreviewTests(unittest.TestCase):
         self.assertTrue(mask[2, 5, 5])  # Narrow endpoint round cap.
         self.assertFalse(mask[1, 5, 5])
 
+    # Purpose: Verify steep taper minima resolve to endpoint balls.
+    # Inputs: Short tube segments with rapidly increasing endpoint radii.
+    # Outputs: Tube masks equal the larger endpoint sphere.
     def test_steep_taper_quadratic_and_linear_minima_use_endpoints(self):
         for end_k, radii in [(4, (1, 4)), (5, (1, 3))]:
             actual = tube_mask((10, 10, 10), (0, 0, 0), ((4, 4, 3), (4, 4, end_k)), (1, 1, 1), radii)
             expected = sphere_mask((10, 10, 10), (0, 0, 0), (4, 4, end_k), (1, 1, 1), radii[-1])
             np.testing.assert_array_equal(actual, expected)
 
+    # Purpose: Verify tube reversal invariance while preserving control order.
+    # Inputs: Three-node bent tube, reversed controls/radii, and differently reordered controls.
+    # Outputs: Reversal gives the same mask; changing path order changes diagonal inclusion.
     def test_tube_preserves_order_and_is_invariant_under_path_reversal(self):
         nodes = ((2, 2, 2), (8, 8, 2), (2, 8, 2))
         radii = (.4, .8, .5)
@@ -76,6 +94,9 @@ class RoiPreviewTests(unittest.TestCase):
         self.assertTrue(forward[2, 5, 5])
         self.assertFalse(reordered[2, 5, 5])
 
+    # Purpose: Verify fractional tube envelopes and malformed geometry rejection.
+    # Inputs: Fractional nodes, duplicate controls, invalid radius lists, and out-of-source node.
+    # Outputs: Bounds normalize correctly; duplicate/nonpositive/nonfinite/outside geometry raises ValueError.
     def test_tube_fractional_controls_crop_envelope_and_rejections(self):
         nodes = ((.5, 5.25, 6.5), (7.25, 5.25, 9.5))
         self.assertEqual(tube_crop_bounds(nodes, 4, (20, 20, 20), (1, 2, 4)),
@@ -88,6 +109,9 @@ class RoiPreviewTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'outside source'):
             tube_crop_bounds(((1, 1, 1), (20, 2, 2)), 1, (20, 20, 20), (1, 1, 1))
 
+    # Purpose: Verify native crop reads preserve exact signed values and source bytes.
+    # Inputs: 7x8x9 signed float32 binary source and crop [2,3,1]-[6,7,5].
+    # Outputs: Crop equals native slicing, read count matches slabs, source stays intact, and outside bounds fail.
     def test_crop_reads_exact_native_signed_values(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'labels.bin'
@@ -128,6 +152,9 @@ class RoiPreviewTests(unittest.TestCase):
                   'preview': {'slice_ijk': None, 'volume_stride': 1, 'context_tissues': ()}}
         return config, label
 
+    # Purpose: Verify preview resolution maps selected labels and attenuation units.
+    # Inputs: Signed artery fixture, anisotropic sphere, explicit then omitted source IDs.
+    # Outputs: Crop matches native data, three targets/five candidates resolve, and attenuation converts to 0.18.
     def test_resolution_selection_and_crop_mask(self):
         with tempfile.TemporaryDirectory() as directory:
             config, source = self.fixture(Path(directory))
@@ -143,6 +170,9 @@ class RoiPreviewTests(unittest.TestCase):
             config['selection']['source_ids'] = ()
             self.assertEqual(resolve_preview(config)['source_ids'], (-7,))
 
+    # Purpose: Verify ROI selection separates nearby vessels sharing the same ID.
+    # Inputs: Two parallel ID -7 arteries and narrow then wide tissue-only tubes.
+    # Outputs: Narrow tube selects seven connected voxels; wide tube reports two components without source changes.
     def test_tissue_only_tube_excludes_nearby_artery_with_same_source_id(self):
         with tempfile.TemporaryDirectory() as directory:
             config, source = self.fixture(Path(directory))
@@ -174,6 +204,9 @@ class RoiPreviewTests(unittest.TestCase):
             self.assertEqual(diag['components_voxels_6'], [9, 9])
             self.assertIn('disconnected', diag['warnings'][0])
 
+    # Purpose: Verify connected vessel diagnostics do not equate source IDs with components.
+    # Inputs: One connected line containing IDs -7/8, then empty selection.
+    # Outputs: Diagnostics report one component and exact ID counts; empty selection reports a warning.
     def test_multiple_source_ids_in_one_connected_selection_are_not_multiple_vessels(self):
         act = np.zeros((5, 5, 5), dtype=np.float32)
         act[:2, 2, 2], act[2:, 2, 2] = -7, 8
@@ -188,6 +221,9 @@ class RoiPreviewTests(unittest.TestCase):
         self.assertEqual(selection_diagnostics(arrays)['component_count_6'], 0)
         self.assertIn('no voxels', selection_diagnostics(arrays)['warnings'][0])
 
+    # Purpose: Verify fractional ROI focus and crop radius validation.
+    # Inputs: Sphere center [4.25,4,4.75], then radius larger than crop half-width.
+    # Outputs: Focus rounds to [4,4,5], two targets select, and oversized radius raises ValueError.
     def test_fractional_sphere_and_tube_focus_crop_and_radius_validation(self):
         with tempfile.TemporaryDirectory() as directory:
             config, _ = self.fixture(Path(directory))
@@ -201,6 +237,9 @@ class RoiPreviewTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'largest ROI radius'):
                 resolve_preview(config)
 
+    # Purpose: Reject incorrect tissue IDs and changed audited metadata.
+    # Inputs: Background selected as artery, then altered parameter metadata bytes.
+    # Outputs: Resolution raises ValueError for wrong tissue and changed audit evidence.
     def test_reject_wrong_group_and_changed_metadata(self):
         with tempfile.TemporaryDirectory() as directory:
             config, _ = self.fixture(Path(directory))
@@ -212,6 +251,9 @@ class RoiPreviewTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'changed audited metadata'):
                 resolve_preview(config)
 
+    # Purpose: Verify catalog provenance retains the exact loaded snapshot.
+    # Inputs: Resolved preview followed by catalog file rewritten to empty JSON.
+    # Outputs: Saved catalog bytes/hash and original artery record remain unchanged.
     def test_catalog_provenance_matches_loaded_snapshot(self):
         with tempfile.TemporaryDirectory() as directory:
             config, _ = self.fixture(Path(directory))
@@ -222,6 +264,9 @@ class RoiPreviewTests(unittest.TestCase):
             self.assertEqual(resolved['catalog_sha256'], hashlib.sha256(old_bytes).hexdigest())
             self.assertEqual(resolved['catalog']['records'][1]['original_name'], 'test_artery')
 
+    # Purpose: Reject slices outside the crop and display strides collapsing axes.
+    # Inputs: Slice [0,0,0] outside crop, then volume_stride 10.
+    # Outputs: Resolution raises ValueError for outside slice or fewer than two blocks.
     def test_reject_slice_outside_crop_and_too_coarse_volume(self):
         with tempfile.TemporaryDirectory() as directory:
             config, _ = self.fixture(Path(directory))
@@ -233,6 +278,9 @@ class RoiPreviewTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'fewer than two blocks'):
                 resolve_preview(config)
 
+    # Purpose: Recommend the finest display stride fitting budget without shrinking native crop.
+    # Inputs: 101x151x201 source with stride 2 then 3 and two context tissues.
+    # Outputs: Error recommends stride 3/394956 cells; valid resolution retains full native bounds.
     def test_display_budget_recommends_finest_valid_stride_without_reducing_crop(self):
         with tempfile.TemporaryDirectory() as directory:
             config, _ = self.fixture(Path(directory))
@@ -257,6 +305,9 @@ class RoiPreviewTests(unittest.TestCase):
             self.assertEqual(resolved['crop_low_ijk'], (0, 0, 0))
             self.assertEqual(resolved['crop_high_ijk_exclusive'], (201, 151, 101))
 
+    # Purpose: Avoid recommending display strides that collapse short axes.
+    # Inputs: 2x2x200001 source with long tube and excessive display cells.
+    # Outputs: Error states no valid larger stride fits while retaining two blocks per axis.
     def test_display_budget_never_recommends_stride_with_too_few_axis_blocks(self):
         with tempfile.TemporaryDirectory() as directory:
             config, _ = self.fixture(Path(directory))

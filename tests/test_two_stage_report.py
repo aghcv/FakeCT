@@ -79,6 +79,9 @@ class TwoStageReportTests(unittest.TestCase):
                 patch.object(report, '_history', return_value='<p>fixture history</p>'):
             return report.render_report(self.root)
 
+    # Purpose: Generate portable review figures from saved evaluation data.
+    # Inputs: Two-stage results, prediction NPZs, training histories and prehashed model artifacts.
+    # Outputs: Six 2D prediction figures and a linked two-scene 3D viewer; saved weights/measurements stay unchanged.
     def test_portable_figures_preserve_saved_weights_and_measurements(self):
         files = [p for p in self.root.rglob('*') if p.is_file()]
         original = {p: _hash(p) for p in files}
@@ -97,6 +100,9 @@ class TwoStageReportTests(unittest.TestCase):
         self.assertIn('entire saved', (self.root/'report-3d'/'index.html').read_text())
         self.assertEqual(original, {p: _hash(p) for p in files})
 
+    # Purpose: Support reports for reconstruction from an already segmented mask.
+    # Inputs: Mask-model results with no stage-one entry.
+    # Outputs: Reference-recovery and 3D sections present; segmentation/chained pipeline sections omitted.
     def test_mask_only_results_skip_model1_and_chained_sections(self):
         self.results['schema_version'] = 'fakect.mask-model-results/1'
         self.results.pop('stage1')
@@ -108,6 +114,9 @@ class TwoStageReportTests(unittest.TestCase):
         self.assertIn('Estimate the reference shape from a segmented aorta', document)
         self.assertEqual(result['interactive_3d']['scenarios'], 2)
 
+    # Purpose: Keep numeric results readable when prediction artifacts were not saved.
+    # Inputs: Saved stage metrics with no prediction_file fields or control summaries.
+    # Outputs: Zero embedded prediction figures, explanatory messages and retained Dice values.
     def test_predictions_disabled_still_reports_metrics_and_empty_controls(self):
         for stage in ('stage1', 'stage2'):
             self.results[stage]['controls_summary'] = {}
@@ -121,6 +130,9 @@ class TwoStageReportTests(unittest.TestCase):
         self.assertIn('No measurements are available', document)
         self.assertIn('0.712', document)
 
+    # Purpose: Escape user-provided text before including it in report HTML.
+    # Inputs: Warning and family-case names containing script/image markup.
+    # Outputs: Escaped text appears without executable injected elements.
     def test_user_text_is_escaped(self):
         self.results['warnings'] = ['<script>alert("bad")</script>']
         self.results['design']['families']['test-family'] = ['<img onerror="bad">']
@@ -131,6 +143,9 @@ class TwoStageReportTests(unittest.TestCase):
         self.assertIn('&lt;script&gt;', document)
         self.assertIn('&lt;img onerror=', document)
 
+    # Purpose: Choose a review slice from true changes on the saved model grid.
+    # Inputs: Prediction NPZ with edits on k=2 and anisotropic spacing, then a wrong sample ID.
+    # Outputs: Correct slice, 2D mask shape and spacing; identity mismatch rejected.
     def test_slice_choice_uses_true_changes_and_physical_grid(self):
         path = self.root/'test-model2'/'0001-prediction.npz'
         fields, spacing, k = report._slice_prediction(path, 'case:sample-1')
@@ -140,6 +155,9 @@ class TwoStageReportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'another sample'):
             report._slice_prediction(path, 'wrong sample')
 
+    # Purpose: Select review examples by known morphology rather than model performance.
+    # Inputs: Control/edit records with conflicting predicted scores and a strongest known edit.
+    # Outputs: Control and highest native-edit burden selected despite their model scores.
     def test_representatives_ignore_prediction_scores(self):
         rows = deepcopy(self.results['stage2']['records'])
         extra = dict(rows[1], sample_id='case:strongest', native_added_voxels=999,
@@ -147,6 +165,9 @@ class TwoStageReportTests(unittest.TestCase):
         rows[1]['metrics'] = {'dice': 1.0}; rows.append(extra)
         self.assertEqual(report._representatives(rows), ['case:sample-0', 'case:strongest'])
 
+    # Purpose: Distinguish native edit burden from resampled model-grid burden.
+    # Inputs: Saved native/model counts and different physical voxel spacings.
+    # Outputs: Separate count/volume labels, correct volumes and a grid-comparison caveat.
     def test_native_and_model_counts_and_volumes_remain_distinct(self):
         document = Path(self.render_fast()['report']).read_text()
         self.assertIn('Native added voxels', document)
@@ -155,11 +176,17 @@ class TwoStageReportTests(unittest.TestCase):
         self.assertIn('0.750', document)
         self.assertIn('Voxel counts on different grids are not directly comparable', document)
 
+    # Purpose: Constrain report prediction paths to the evaluation directory.
+    # Inputs: Parent-relative and absolute prediction filenames.
+    # Outputs: ValueError for both escaping paths.
     def test_prediction_paths_cannot_escape_evaluation_folder(self):
         for name in ('../model1/model.keras', '/tmp/prediction.npz'):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 report._prediction_path(self.root/'test-model1', name)
 
+    # Purpose: Display unavailable nonfinite metrics without misleading numeric text.
+    # Inputs: NaN and positive/negative infinity values in metric formatting and saved summaries.
+    # Outputs: Unavailable-value marker with no rendered nan or inf table values.
     def test_nonfinite_metrics_have_no_nan_or_infinity_text(self):
         for value in (float('nan'), float('inf'), -float('inf')):
             self.assertEqual(report._number(value), '—')

@@ -120,6 +120,9 @@ class RevisionReferenceTests(unittest.TestCase):
                                       lock_digest=values['lock_digest'],
                                       checkpoint_digest=values['checkpoint_digest'])
 
+    # Purpose: Verify a failed reference authorizes only the controlled longer diagnostic.
+    # Inputs: Completed failed 100-epoch reference with matching metadata and a copied failed result.
+    # Outputs: Reference validation preserves inputs; failed evidence cannot authorize a larger pilot.
     def test_failed_reference_can_authorize_only_controlled_longer_diagnostic(self):
         before = deepcopy((self.c, self.contract, self.reference_config,
                            self.reference_lock, self.documents))
@@ -139,6 +142,9 @@ class RevisionReferenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             exp.require_diagnostic(self.c, self.reference_lock)
 
+    # Purpose: Reject revision changes beyond the permitted diagnostic epoch budget.
+    # Inputs: Reference revision with altered epochs, panel, learning rates, gate, filters, weights or seeds.
+    # Outputs: ValueError rejects every unauthorized controlled-revision change.
     def test_only_diagnostic_epoch_budget_may_change(self):
         for section, key, value in [
                 ('diagnostic', 'epochs', 199), ('diagnostic', 'case_ids', ['260613']),
@@ -152,6 +158,9 @@ class RevisionReferenceTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.validate(c=changed)
 
+    # Purpose: Reject changes to frozen panel, crop, geometry, labels and reserved identities.
+    # Inputs: Reference contract with removed sample, shifted crop, changed spacing, label or test reservation.
+    # Outputs: ValueError rejects each contract mismatch.
     def test_reference_panel_crop_geometry_and_labels_cannot_change(self):
         for mutation in ('sample', 'crop', 'geometry', 'label', 'test'):
             with self.subTest(mutation=mutation):
@@ -170,6 +179,9 @@ class RevisionReferenceTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.validate(contract=changed)
 
+    # Purpose: Verify reference completion, checkpoints and initialization agree.
+    # Inputs: Reference results, predictions, audit, initialization and smoke with inconsistent fields.
+    # Outputs: ValueError rejects incomplete training, lock/checkpoint mismatch and changed initialization.
     def test_reference_completion_checkpoint_and_initialization_must_agree(self):
         changes = [('results', 'epochs_completed', 99), ('results', 'optimizer_steps', 199),
                    ('results', 'test_evaluated', True), ('results', 'locator_unchanged', False),
@@ -187,6 +199,9 @@ class RevisionReferenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.validate(checkpoint_digest='changed checkpoint')
 
+    # Purpose: Verify reference history is complete and follows original checkpoint selection.
+    # Inputs: History with missing/duplicate epoch, better unselected checkpoint or changed selected records.
+    # Outputs: ValueError rejects each history or selected-checkpoint inconsistency.
     def test_reference_history_must_be_complete_and_selected_by_original_rule(self):
         for mutation in ('missing_epoch', 'duplicate_epoch', 'better_checkpoint', 'wrong_records'):
             with self.subTest(mutation=mutation):
@@ -212,6 +227,9 @@ class RevisionResourceTests(unittest.TestCase):
         self.c = revision_config(self.root)
         self.lock = fixture_contract(self.root)
 
+    # Purpose: Verify revision 2 permits 200 epochs without relaxing revision 1.
+    # Inputs: Revision-2 INI at 200 epochs and revision-1 INIs at 200 then 100 epochs.
+    # Outputs: Revision 2 loads; revision 1 rejects 200 and accepts 100.
     def test_new_revision_allows_200_without_relaxing_frozen_r1(self):
         path = self.root / 'revision.ini'
         write_ini(path, self.c)
@@ -226,6 +244,9 @@ class RevisionResourceTests(unittest.TestCase):
         write_ini(path, old)
         self.assertEqual(parent.load_config(path), old)
 
+    # Purpose: Verify new-revision smoke requires its own lock, GPU and balanced batch.
+    # Inputs: Valid smoke receipt, then wrong lock, absent GPU, batch 1 or failed parity.
+    # Outputs: Valid receipt accepted; every altered prerequisite raises ValueError.
     def test_new_revision_smoke_requires_own_lock_gpu_and_balanced_batch(self):
         output = Path(self.c['experiment']['output_directory'])
         output.mkdir()
@@ -281,6 +302,9 @@ class RevisionBindingTests(unittest.TestCase):
         self.stack.enter_context(patch.object(exp, 'classifier', fake_classifier))
         self.stack.enter_context(patch.object(exp, 'paired_parent', fake_parent))
 
+    # Purpose: Verify frozen revision pins reference artifacts and inherited source bytes.
+    # Inputs: Synthetic reference bundle and source files, followed by source/input/history/checkpoint mutations.
+    # Outputs: Pinned hashes and only 100-to-200 budget change; tampering and repeat freeze rejected.
     def test_reference_artifacts_and_inherited_sources_are_pinned_and_immutable(self):
         self.assertTrue(set(parent.CODE_FILES).issubset(exp.CODE_FILES))
         self.assertIn('src/fakect_coa_paired_steps.py', exp.CODE_FILES)
@@ -320,6 +344,9 @@ class RevisionBindingTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             exp.freeze(self.c, input_bytes)
 
+    # Purpose: Reject failed or incomplete references before loading their lock.
+    # Inputs: Failure or INCOMPLETE markers at reference root and diagnostic folder.
+    # Outputs: ValueError occurs before parent lock inspection.
     def test_reference_failure_or_incomplete_markers_stop_before_reference_load(self):
         self.fake_parent.inspect_lock.reset_mock()
         for relative in ('INCOMPLETE', 'failure.json', 'diagnostic/INCOMPLETE',
@@ -349,6 +376,9 @@ class RevisionTensorFlowTests(unittest.TestCase):
         MiniVolume.accessed = []
         MiniVolume.returned_mask_value = None
 
+    # Purpose: Verify revised fitting preserves balanced updates and frozen locator.
+    # Inputs: One synthetic epoch, two balanced batches and a seeded classifier matching reference weights.
+    # Outputs: Two updates, unchanged locator, no test access, stable traces and checkpoint/proposal parity.
     def test_tiny_v2_training_reuses_initialization_and_keeps_locator_frozen(self):
         from test_multiscale_v3_integration import config as parent_config
         import fakect_multiscale_experiment_v3 as geometry

@@ -17,6 +17,9 @@ from voxel_fixture import write_voxel_fixture
 
 
 class VoxelRoiIntegrationTests(unittest.TestCase):
+    # Purpose: Verify physical section sampling preserves continuous signals and signed labels.
+    # Inputs: 64- and 96-voxel fixtures, anisotropic spacing, fractional controls, and a physical affine ramp.
+    # Outputs: Sections match the ramp within 2e-12 and nearest labels retain ID -7.
     def test_physical_sections_preserve_affine_signal_and_signed_ids_at_both_resolutions(self):
         for size in (64, 96):
             with self.subTest(size=size), tempfile.TemporaryDirectory() as temporary:
@@ -58,6 +61,9 @@ class VoxelRoiIntegrationTests(unittest.TestCase):
                 self.assertTrue(np.any(np.asarray(resolved['roi_nodes_ijk']) % 1))
                 self.assertTrue(np.any(low > 0))
 
+    # Purpose: Distinguish padded section pixels from sampled tissue.
+    # Inputs: Voxel fixture sampled near the crop edge with a 4 mm half-width.
+    # Outputs: Validity marks both regions; padded attenuation and labels are zero while tissue remains positive.
     def test_section_padding_is_distinguished_from_observed_tissue(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = write_voxel_fixture(Path(temporary)/'source')
@@ -76,6 +82,9 @@ class VoxelRoiIntegrationTests(unittest.TestCase):
             self.assertTrue(np.all(section['activity'][~valid] == 0))
             self.assertGreater(float(section['attenuation'][valid].max()), 0)
 
+    # Purpose: Verify complete ROI report artifacts preserve native source data.
+    # Inputs: Generated voxel fixture processed by the ROI selection preview.
+    # Outputs: Every control has hashed PNGs; HTML embeds images and source bytes remain unchanged.
     def test_real_report_covers_every_control_and_preserves_source_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = write_voxel_fixture(Path(temporary)/'source')

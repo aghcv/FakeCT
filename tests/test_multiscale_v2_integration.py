@@ -51,6 +51,9 @@ class V2GateAndInputTests(unittest.TestCase):
     def tearDown(self):
         ShiftedValidationVolume.returned_mask_value = None
 
+    # Purpose: Verify baseline coverage gates require both original and current anatomy.
+    # Inputs: No changed voxels with independently zero/full before and after coverage.
+    # Outputs: Gate passes only when both anatomy coverage values are one.
     def test_original_requires_before_and_after_anatomy_despite_no_edits(self):
         c = config('/tmp/unused-fakect-test')
         empty_changes = dict(target_coverage=0., before_coverage=0.,
@@ -61,6 +64,9 @@ class V2GateAndInputTests(unittest.TestCase):
         self.assertTrue(exp.coverage_gate({**empty_changes, 'before_coverage': 1.,
                                           'target_coverage': 1.}, c))
 
+    # Purpose: Verify resource failures are recorded before raising.
+    # Inputs: Mock host RSS/peak 13000 MiB above the configured limit.
+    # Outputs: RuntimeError and saved failed audit with stage and observed RSS.
     def test_resource_guard_persists_failure_before_raising(self):
         with tempfile.TemporaryDirectory() as directory:
             c = config(directory)
@@ -74,6 +80,9 @@ class V2GateAndInputTests(unittest.TestCase):
             self.assertEqual(result['records'][-1]['stage'], 'simulated-budget-excess')
             self.assertEqual(result['records'][-1]['rss_mib'], 13000.)
 
+    # Purpose: Verify resource guard detects unexpected graph retracing.
+    # Inputs: Mock step counts train 2/predict 1 with modest host memory.
+    # Outputs: Retracing RuntimeError and persisted observed trace counts.
     def test_resource_guard_rejects_second_graph_trace(self):
         class RetracedSteps:
             def tracing_counts(self):
@@ -87,6 +96,9 @@ class V2GateAndInputTests(unittest.TestCase):
             result = exp.checked_json(Path(directory) / 'training-runtime.json')
             self.assertEqual(result['records'][-1]['traces'], {'train': 2, 'predict': 1})
 
+    # Purpose: Verify classifier predictors remain independent of returned truth masks.
+    # Inputs: ShiftedValidationVolume fixture with returned mask changed to one.
+    # Outputs: Identical overview, proposal boxes, and two detail channels.
     def test_supervision_masks_do_not_change_predictor_inputs(self):
         row = fixture_rows()[1]
         proposal = dict(origins_kji=[[-8, -8, -8], [-4, -8, -8]],
@@ -127,6 +139,9 @@ class V2RealTensorFlowIntegrationTests(unittest.TestCase):
                                         return_value=(self.tf, self.network)))
         return stack
 
+    # Purpose: Verify real v2 staged fitting derives TRAIN-only priors and reloads selected predictions.
+    # Inputs: Tiny shifted-validation volumes with real TensorFlow locator/classifier pipeline.
+    # Outputs: Classifier trained, one graph trace, TRAIN-original prior, exact reload scores, and no test access.
     def test_prepare_stable_fit_prior_isolation_and_checkpoint_reload(self):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -160,6 +175,9 @@ class V2RealTensorFlowIntegrationTests(unittest.TestCase):
             self.assertNotIn('test:never_open', MiniVolume.accessed)
             self.assertTrue((out / 'report.html').is_file())
 
+    # Purpose: Verify baseline anatomy misses stop classifier fitting at the locator gate.
+    # Inputs: Real locator fixture with original before/after coverage forced to zero.
+    # Outputs: Stopped status, both originals named failed, no classifier construction/checkpoint.
     def test_original_anatomy_miss_stops_classifier_even_with_no_changed_voxels(self):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)

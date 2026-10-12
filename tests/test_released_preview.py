@@ -80,6 +80,9 @@ class ReleasedFigureTests(unittest.TestCase):
                                              self.output, before_is_source=False)
         return metadata, snapshots
 
+    # Purpose: Verify diagnostic release visuals distinguish unassigned markers.
+    # Inputs: 35 released voxels in 12-cubed fixture with preserved attenuation and figure snapshots.
+    # Outputs: Magenta marker legends, native release focus/PNG, correct counts, and unchanged arrays/signals.
     def test_diagnostic_release_has_own_color_label_and_native_neighbor_closeup(self):
         from matplotlib.colors import to_rgba
         original_arrays = copy.deepcopy(self.arrays)
@@ -99,6 +102,9 @@ class ReleasedFigureTests(unittest.TestCase):
             np.testing.assert_array_equal(self.arrays[name], array)
         np.testing.assert_array_equal(self.edit['attenuation_proxy_per_pixel'], self.arrays['atn'])
 
+    # Purpose: Verify normal reassignment keeps historical figures without diagnostic artifacts.
+    # Inputs: Released fixture converted to assigned soft tissue with marker metadata removed.
+    # Outputs: Reassigned legend/title, absent release metadata, and no released-neighborhood PNG.
     def test_assigned_surrounding_tissue_keeps_legacy_rendering_and_no_marker_artifact(self):
         self.config['edit']['assign_surrounding_tissue'] = True
         self.edit['summary'].pop('release_assignment')
@@ -133,6 +139,9 @@ class ReleasedReportTests(unittest.TestCase):
         metadata = write_preview_report(self.output, self.report, '[edit]\nassign_surrounding_tissue = false\n')
         return metadata, (self.output/'report.html').read_text()
 
+    # Purpose: Verify diagnostic reports explain placeholder signals and neighboring-label evidence.
+    # Inputs: 35-voxel release summary with label -2147483648, tissue 254, and neighbor rows.
+    # Outputs: Exact marker counts/IDs, embedded closeup, unassigned-attenuation explanation, and neighbor table.
     def test_single_edit_reports_placeholder_attenuation_and_observed_neighboring_labels(self):
         metadata, document = self.write()
         self.assertIn('<td>Newly marked released in this edit</td><td>35</td>', document)
@@ -147,6 +156,9 @@ class ReleasedReportTests(unittest.TestCase):
         self.assertIn('do not establish which tissue should replace the released voxels', document)
         self.assertIn('<td>10</td><td>remaining_artery</td><td>artery</td><td>42</td><td>artery</td><td>0.05</td>', document)
 
+    # Purpose: Verify recipe release reports distinguish pass and cumulative markers safely.
+    # Inputs: Growth/erosion recipe, pass/final closeups, and unsafe neighbor name.
+    # Outputs: Pass/cumulative/current counts, both embedded images, escaped name, and one legitimate script.
     def test_recipe_reports_per_pass_and_current_markers_separately_and_escapes_names(self):
         release = release_metadata()
         payload = '<script>window.BAD=true</script><img src=x onerror=bad()>'

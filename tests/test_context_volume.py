@@ -91,6 +91,9 @@ class ContextVolumeTests(unittest.TestCase):
                 image[out] += native[tuple(q)] * weight
         return dict(image=image, mask=mask, valid=valid)
 
+    # Purpose: Verify native unit conversion and separate overlay/mask crop offsets.
+    # Inputs: 7x8x9 anisotropic source with edited image and before/after mask crops.
+    # Outputs: Expected float32 image, uint8 mask/validity and all native voxels valid.
     def test_native_conversion_overlay_and_mask_offsets(self):
         result = self.volume().read_block([0, 0, 0], self.shape, self.spacing)
         image, target = self.expected_native()
@@ -101,6 +104,9 @@ class ContextVolumeTests(unittest.TestCase):
         self.assertEqual(result['mask'].dtype, np.uint8)
         self.assertEqual(result['valid'].dtype, np.uint8)
 
+    # Purpose: Verify anisotropic interpolation and padding match an explicit sampler.
+    # Inputs: Offset partially padded 12x11x14 output grid with spacing 0.65, 0.8, 1.2 mm.
+    # Outputs: Linear image interpolation, nearest mask and validity exactly match brute sampling.
     def test_anisotropic_linear_image_nearest_mask_and_padding(self):
         origin, shape, spacing = np.array([-1, -1, -2]), (12, 11, 14), [.65, .8, 1.2]
         result = self.volume().read_block(origin, shape, spacing)
@@ -109,6 +115,9 @@ class ContextVolumeTests(unittest.TestCase):
         for key in ('mask', 'valid'):
             np.testing.assert_array_equal(result[key], expected[key])
 
+    # Purpose: Verify interpolation uses native halo across an edit boundary.
+    # Inputs: Single half-i-spacing sample mixing unedited i=2 and edited i=3.
+    # Outputs: Interpolated image equals the 75/25 percent source-and-overlay mixture.
     def test_interpolation_crosses_edit_boundary_using_source_halo(self):
         # i=5 at half spacing samples native i=2.25, mixing unedited i=2
         # with edited i=3. A crop-only resample would miss this contribution.
@@ -117,6 +126,9 @@ class ContextVolumeTests(unittest.TestCase):
         expected = .75 * image[2, 2, 2] + .25 * image[2, 2, 3]
         self.assertAlmostEqual(float(result['image'][0, 0, 0]), float(expected), places=6)
 
+    # Purpose: Verify an unchanged overlay equals whole-body interpolation.
+    # Inputs: Overlay reset to native values and output resampled at 0.5, 0.7, 1.1 mm.
+    # Outputs: Image matches independent whole-body linear interpolation.
     def test_unchanged_overlay_is_same_as_whole_body_linear_interpolation(self):
         self.overlay = (np.fromfile(self.source, '<f4').reshape(self.shape)[2:5, 2:5, 3:6]
                         * np.float32(10 / self.spacing[0]))
@@ -127,6 +139,9 @@ class ContextVolumeTests(unittest.TestCase):
         expected = self.brute_block(origin, tuple(shape), spacing)
         np.testing.assert_allclose(result['image'], expected['image'], rtol=0, atol=1e-7)
 
+    # Purpose: Verify tiled reads agree across slab boundaries.
+    # Inputs: One anisotropic 10-plane read split into four-plane and six-plane reads.
+    # Outputs: Concatenated images, masks and validity match the whole read.
     def test_tiled_and_single_reads_agree_across_slab_boundaries(self):
         v = self.volume()
         origin, shape, spacing = [-1, 1, 2], [10, 7, 10], [.6, .9, 1.25]
@@ -136,6 +151,9 @@ class ContextVolumeTests(unittest.TestCase):
         for key in whole:
             np.testing.assert_allclose(np.concatenate((first[key], second[key])), whole[key], atol=1e-7)
 
+    # Purpose: Verify physical source edges are valid and distant padding is zero.
+    # Inputs: Block far outside source and first voxel sampled at half spacing.
+    # Outputs: Far block entirely zero; edge valid with source corner image value.
     def test_zero_padding_and_edges_within_physical_extent(self):
         v = self.volume()
         r = v.read_block([-50, -50, -50], [2, 2, 2], self.spacing)
@@ -145,6 +163,9 @@ class ContextVolumeTests(unittest.TestCase):
         image, _ = self.expected_native()
         self.assertAlmostEqual(float(edge['image'][0, 0, 0]), float(image[0, 0, 0]))
 
+    # Purpose: Verify model-grid shape depends on physical extent, not block budget.
+    # Inputs: Native, half-native and 0.7, 1.3, 2.1 mm spacing; block budget forced to one.
+    # Outputs: Correct ceil shapes 7x8x9, doubled dimensions and 6x7x11.
     def test_model_shape_is_physical_ceil_without_whole_volume_budget(self):
         v = self.volume()
         self.assertEqual(v.model_shape(self.spacing), self.shape)
@@ -153,6 +174,9 @@ class ContextVolumeTests(unittest.TestCase):
         with patch('fakect_context_volume.MAX_BLOCK_VOXELS', 1):
             self.assertEqual(v.model_shape(self.spacing), self.shape)
 
+    # Purpose: Verify foreground sampling is deterministic and true on the output grid.
+    # Inputs: Anisotropic model spacing, max five points and seed 7.
+    # Outputs: Five unique repeatable points whose sampled target values are all one.
     def test_foreground_points_are_deterministic_and_true_on_model_grid(self):
         v = self.volume()
         spacing = [.6, .8, 1.2]
@@ -163,6 +187,9 @@ class ContextVolumeTests(unittest.TestCase):
         for pt in pts:
             self.assertEqual(int(v.read_block(pt, [1, 1, 1], spacing)['mask'][0, 0, 0]), 1)
 
+    # Purpose: Verify foreground verification follows loader arithmetic at ties.
+    # Inputs: Sparse masks on 0.9 mm native grid sampled at 0.6 and 1.2 mm.
+    # Outputs: Returned points are valid foreground; coarse tie case returns only 2,2,2.
     def test_foreground_verification_matches_loader_at_sampling_ties(self):
         self.row['spacing_ijk_mm'] = [.9, .9, .9]
         self.mask_data['spacing_ijk_mm'] = np.array([.9, .9, .9])
@@ -186,12 +213,18 @@ class ContextVolumeTests(unittest.TestCase):
         pts = v.foreground_points([1.2]*3, max_points=100, seed=7)
         np.testing.assert_array_equal(pts, [[2, 2, 2]])
 
+    # Purpose: Verify empty masks produce an explicit empty foreground point array.
+    # Inputs: Before, after, added and removed masks all zero.
+    # Outputs: Foreground points have shape 0x3.
     def test_empty_foreground_is_explicit(self):
         for key in ('before', 'after', 'added', 'removed'):
             self.mask_data[key] = np.zeros_like(self.after)
         self.save_masks()
         self.assertEqual(self.volume().foreground_points(self.spacing).shape, (0, 3))
 
+    # Purpose: Reject changed source metadata and invalid overlay bounds.
+    # Inputs: Wrong source mtime, source shape or edit crop origin outside bounds.
+    # Outputs: ValueError identifies source stat, geometry or bounds violation.
     def test_fails_changed_source_stat_or_geometry(self):
         row = copy.deepcopy(self.row)
         row['source_atn']['mtime_ns'] += 1
@@ -206,6 +239,9 @@ class ContextVolumeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'source bounds'):
             self.volume(row)
 
+    # Purpose: Verify skipping checksum verification still enforces crop geometry.
+    # Inputs: Wrong variant hash followed by a mismatching declared edit shape.
+    # Outputs: Checksum rejected normally; skip permits hash mismatch but still rejects shape/type mismatch.
     def test_hashes_enforced_but_explicit_skip_keeps_geometry_checks(self):
         row = copy.deepcopy(self.row)
         row['variant_npz_sha256'] = '0' * 64
@@ -216,6 +252,9 @@ class ContextVolumeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'shape/type'):
             self.volume(row, verify_hashes=False)
 
+    # Purpose: Reject mask spacing, bounds, net-change identity and binary violations.
+    # Inputs: Mask spacing mismatch, shifted crop, wrong added mask and after values 2.
+    # Outputs: ValueError identifies each invalid mask family.
     def test_rejects_bad_spacing_shifted_mask_or_binary_identity(self):
         self.mask_data['spacing_ijk_mm'] = [1, 1, 1]
         self.save_masks()
@@ -236,6 +275,9 @@ class ContextVolumeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'binary'):
             self.volume()
 
+    # Purpose: Reject wrong mask sample IDs and inconsistent mask shapes.
+    # Inputs: NPZ sample ID changed, then before mask reduced to 1-cube.
+    # Outputs: ValueError identifies sample ID or shape/type mismatch.
     def test_rejects_wrong_mask_sample_or_shape(self):
         self.mask_data['sample_id'] = np.array('other:edited')
         self.save_masks()
@@ -247,6 +289,9 @@ class ContextVolumeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'shape/type'):
             self.volume()
 
+    # Purpose: Reject nonfinite edited image values.
+    # Inputs: Overlay with a NaN and an updated valid checksum.
+    # Outputs: ValueError reports nonfinite image data.
     def test_rejects_nonfinite_images(self):
         overlay = self.overlay.copy()
         overlay[0, 0, 0] = np.nan
@@ -255,6 +300,9 @@ class ContextVolumeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'nonfinite'):
             self.volume()
 
+    # Purpose: Verify native stat changes after opening fail before block reads.
+    # Inputs: Open volume followed by a one-millisecond source mtime change.
+    # Outputs: read_block raises stat-changed ValueError.
     def test_stat_changes_after_open_fail_before_reads(self):
         v = self.volume()
         stat = self.source.stat()
@@ -262,6 +310,9 @@ class ContextVolumeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'stat changed'):
             v.read_block([0, 0, 0], [1, 1, 1], self.spacing)
 
+    # Purpose: Verify volume reads preserve files, metadata and immutable stored masks.
+    # Inputs: Hashed inputs and copied row; caller mutates returned image and mask arrays.
+    # Outputs: Fresh reads unaffected, hashes and row unchanged, mask read-only and source memory mapped.
     def test_input_files_rows_and_arrays_remain_immutable(self):
         original = copy.deepcopy(self.row)
         hashes = [sha256(p) for p in (self.source, self.variant, self.maskfile)]
@@ -276,6 +327,9 @@ class ContextVolumeTests(unittest.TestCase):
             v.mask_after[:] = 0
         self.assertIsInstance(v._base, np.memmap)
 
+    # Purpose: Reject voxel-budget excesses and invalid read geometry.
+    # Inputs: Tiny block/slab/crop budgets, invalid spacing and fractional output origin.
+    # Outputs: Explicit budget or geometry ValueError for each invalid request.
     def test_voxel_budgets_and_invalid_requests_fail_explicitly(self):
         v = self.volume()
         with patch('fakect_context_volume.MAX_BLOCK_VOXELS', 1):

@@ -21,6 +21,9 @@ class PretrainedReportTests(unittest.TestCase):
         truth[5:20, 9:16, 9:16] = True
         return truth, np.ones(truth.shape, bool)
 
+    # Purpose: Verify identical native masks have perfect overlap and surface metrics.
+    # Inputs: Matching cylindrical truth/prediction and full domain at 1 mm spacing.
+    # Outputs: Whole-core Dice 1, HD95 zero and surface Dice 1.
     def test_identical_native_masks_perfect_surface_metrics(self):
         truth, domain = self.masks()
         m = evaluate_arrays(truth, truth, [1, 1, 1], domain_mask=domain)
@@ -29,6 +32,9 @@ class PretrainedReportTests(unittest.TestCase):
         self.assertEqual(s["hd95_mm"], 0.)
         self.assertEqual(s["surface_dice"], 1.)
 
+    # Purpose: Verify surface distance uses physical voxel spacing.
+    # Inputs: Truth shifted one i voxel with spacing 2,1,1 mm.
+    # Outputs: HD95 2 mm and surface Dice below one.
     def test_physical_shift_surface_distance_and_tolerance(self):
         truth, domain = self.masks()
         shifted = np.roll(truth, 1, axis=2)
@@ -37,6 +43,9 @@ class PretrainedReportTests(unittest.TestCase):
         self.assertAlmostEqual(s["hd95_mm"], 2.)
         self.assertLess(s["surface_dice"], 1.)
 
+    # Purpose: Verify local metrics expose a missed small narrowing.
+    # Inputs: 75-voxel interior removal predicted as unchanged with 3 mm local context.
+    # Outputs: Known changed count 75, one local region and local Dice below whole-core Dice.
     def test_local_score_exposes_missed_small_narrowing(self):
         before, domain = self.masks()
         after = before.copy(); after[11:14, 10:15, 10:15] = False
@@ -47,6 +56,9 @@ class PretrainedReportTests(unittest.TestCase):
         self.assertLess(m["lesion_local"]["dice"], m["whole_thoracic_core"]["dice"])
         self.assertEqual(m["local_region_count"], 1)
 
+    # Purpose: Verify cropped end caps are excluded from surface distances.
+    # Inputs: Cap-touching truth with first two predicted planes removed and 3 mm margin.
+    # Outputs: HD95 zero after cap exclusion while volumetric Dice remains below one.
     def test_crop_caps_excluded_from_surface_distances(self):
         truth, domain = self.masks()
         truth[:5, 9:16, 9:16] = True
@@ -55,6 +67,9 @@ class PretrainedReportTests(unittest.TestCase):
         self.assertEqual(m["whole_thoracic_core"]["surfaces"]["hd95_mm"], 0.)
         self.assertLess(m["whole_thoracic_core"]["dice"], 1.)
 
+    # Purpose: Verify empty predictions do not imply zero surface distance.
+    # Inputs: Nonempty native truth and entirely empty prediction.
+    # Outputs: Dice zero, undefined HD95 and surface Dice zero.
     def test_empty_prediction_not_reported_as_zero_distance(self):
         truth, domain = self.masks()
         m = evaluate_arrays(truth, np.zeros_like(truth), [1, 1, 1], domain_mask=domain)
@@ -62,6 +77,9 @@ class PretrainedReportTests(unittest.TestCase):
         self.assertIsNone(m["whole_thoracic_core"]["surfaces"]["hd95_mm"])
         self.assertEqual(m["whole_thoracic_core"]["surfaces"]["surface_dice"], 0.)
 
+    # Purpose: Verify boundary-touching components are distinguished from interior islands.
+    # Inputs: Cap-connected main body plus separate interior component.
+    # Outputs: Two components with one boundary-touching and one interior component.
     def test_boundary_components_not_mislabeled_as_interior_islands(self):
         truth, domain = self.masks()
         truth[:5, 9:16, 9:16] = True
@@ -71,18 +89,27 @@ class PretrainedReportTests(unittest.TestCase):
         self.assertEqual(c["boundary_touching_components"], 1)
         self.assertEqual(c["interior_components"], 1)
 
+    # Purpose: Verify unchanged baselines omit lesion-local metrics.
+    # Inputs: Identical masks and all-zero changed mask.
+    # Outputs: No local metric and explicit unchanged-baseline/no-interior-change status.
     def test_unchanged_baseline_has_no_lesion_metric(self):
         truth, domain = self.masks()
         m = evaluate_arrays(truth, truth, [1, 1, 1], domain_mask=domain, changed_mask=np.zeros_like(truth))
         self.assertIsNone(m["lesion_local"])
         self.assertEqual(m["local_status"], "unchanged_baseline_or_no_interior_changes")
 
+    # Purpose: Verify prediction outside the thoracic domain is excluded.
+    # Inputs: Extra predicted abdominal voxels where domain is false.
+    # Outputs: Whole-thoracic-core Dice remains one.
     def test_domain_excludes_abdominal_prediction(self):
         truth, domain = self.masks(); domain[:5] = False
         prediction = truth.copy(); prediction[:4, 9:16, 9:16] = True
         m = evaluate_arrays(truth, prediction, [1, 1, 1], domain_mask=domain)
         self.assertEqual(m["whole_thoracic_core"]["dice"], 1.)
 
+    # Purpose: Reject incompatible grids, nonpositive spacing and nonbinary masks.
+    # Inputs: Mismatched prediction shape, spacing zero and fractional truth values.
+    # Outputs: ValueError rejects each invalid native-grid metric input.
     def test_reject_incompatible_grids_or_invalid_spacing(self):
         truth, domain = self.masks()
         with self.assertRaises(ValueError):
@@ -109,6 +136,9 @@ class PretrainedNiftiReportTests(unittest.TestCase):
             row[name + "_nifti_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
         return row
 
+    # Purpose: Verify NIfTI reports publish offline viewers with checked output hashes.
+    # Inputs: Signed matching native input/truth/prediction/domain NIfTI fixture.
+    # Outputs: One perfect sample, one viewer scene, expected opacity presets and verified artifacts.
     def test_native_nifti_report_offline_viewer_and_checksums(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); row = self.fixture(root)
@@ -124,6 +154,9 @@ class PretrainedNiftiReportTests(unittest.TestCase):
             for name, checksum in provenance["outputs_sha256"].items():
                 self.assertEqual(checksum, hashlib.sha256((root / "review" / name).read_bytes()).hexdigest())
 
+    # Purpose: Reject mismatched NIfTI affines without partial publication.
+    # Inputs: Prediction affine translated 2 mm from the reference.
+    # Outputs: ValueError before review directory creation.
     def test_wrong_affine_rejected_without_resampling_or_partial_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); row = self.fixture(root)
@@ -136,6 +169,9 @@ class PretrainedNiftiReportTests(unittest.TestCase):
                 write_report({"samples": [row]}, root / "review")
             self.assertFalse((root / "review").exists())
 
+    # Purpose: Verify streamed adapter NIfTIs interoperate with native metric reports.
+    # Inputs: Adapter-exported target/domain/changed masks and exact copied target prediction.
+    # Outputs: Exact masks, global/local Dice 1, two changes and preserved affine/origin slice mapping.
     def test_streamed_adapter_export_native_mask_and_report_interoperate(self):
         from fakect_pretrained_adapter import export_thorax_nifti, ThoracicCoreProvider
         from test_pretrained_adapter import PretrainedAdapterTests

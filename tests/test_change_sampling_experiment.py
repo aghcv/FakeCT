@@ -30,12 +30,18 @@ class ConfigurationTests(unittest.TestCase):
             path.write_text(source.replace(old, new) if old else source)
             return exp.load_config(path)
 
+    # Purpose: Verify the diagnostic configuration has a finite small budget.
+    # Inputs: Archived two-case sampling pilot INI.
+    # Outputs: Cases are 260602/260613, patches are 96 cubes, and training totals 1792 updates.
     def test_initial_diagnostic_is_small_and_finite(self):
         config = self.load()
         self.assertEqual(config['diagnostic']['case_ids'], ['260602', '260613'])
         self.assertEqual(config['training']['epochs']*config['training']['steps_per_epoch'], 1792)
         self.assertEqual(config['training']['patch_shape_kji'], [96]*3)
 
+    # Purpose: Reject unsupported diagnostic and training inputs.
+    # Inputs: Out-of-range epochs, steps, quantiles, weights, overlap, and duplicate case IDs.
+    # Outputs: Each malformed configuration raises ValueError.
     def test_bounds_and_unsupported_inputs_fail(self):
         changes = [('epochs = 64', 'epochs = 0'), ('epochs = 64', 'epochs = 201'),
                    ('steps_per_epoch = 28', 'steps_per_epoch = 27'),
@@ -47,6 +53,9 @@ class ConfigurationTests(unittest.TestCase):
             with self.subTest(new=new), self.assertRaises(ValueError):
                 self.load(old, new)
 
+    # Purpose: Prevent diagnostic output from overwriting the reference experiment.
+    # Inputs: Output redirected beneath the reference diverse-change directory.
+    # Outputs: Configuration raises ValueError.
     def test_output_cannot_modify_reference(self):
         with self.assertRaises(ValueError):
             self.load('outputs/experiments/aorta/change-sampling-pilot-r1',
@@ -54,6 +63,9 @@ class ConfigurationTests(unittest.TestCase):
 
 
 class PanelTests(unittest.TestCase):
+    # Purpose: Verify deterministic balanced diagnostic panel selection.
+    # Inputs: Added/removed/mixed rows for cases a and b in reversed orders.
+    # Outputs: Twelve unique selections cover each case, change class, and burden tier identically.
     def test_balances_case_class_burden_and_is_order_invariant(self):
         rows = edited_rows('a')+edited_rows('b')
         selected, slots = exp.select_panel(rows, ['b', 'a'])
@@ -69,6 +81,9 @@ class PanelTests(unittest.TestCase):
             self.assertGreater(slot['actual_mask_counts'][slot['mode']], 0)
             self.assertEqual(slot['mixed_changes'], slot['burden_bin'] == 1)
 
+    # Purpose: Exclude zero-change samples from positive diagnostic strata.
+    # Inputs: Case a rows plus a no-op with zero added and removed burden.
+    # Outputs: The no-op is absent and every selected target count is positive.
     def test_zero_burden_is_never_positive(self):
         rows = edited_rows('a')
         rows += [{'sample_id': 'a:noop', 'case_id': 'a', 'baseline': False,
@@ -77,6 +92,9 @@ class PanelTests(unittest.TestCase):
         self.assertNotIn('a:noop', {row['sample_id'] for row in selected})
         self.assertTrue(all(row['target_voxels'] > 0 for row in slots))
 
+    # Purpose: Reject invalid actual mask burden counts.
+    # Inputs: Added counts -1, True, 1.5, and None.
+    # Outputs: Panel selection raises ValueError for each malformed count.
     def test_invalid_or_missing_actual_counts_rejected(self):
         for value in (-1, True, 1.5, None):
             rows = edited_rows('a')
@@ -84,6 +102,9 @@ class PanelTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 exp.select_panel(rows, ['a'])
 
+    # Purpose: Reject panels missing a change class or containing duplicate IDs.
+    # Inputs: Removed-only rows and repeated sample IDs.
+    # Outputs: Both panel requests raise ValueError.
     def test_missing_class_and_duplicate_id_rejected(self):
         rows = [row for row in edited_rows('a') if row['mask_counts']['added'] == 0]
         with self.assertRaises(ValueError):
@@ -141,6 +162,9 @@ class SourceFixture:
 
 
 class PlanTests(unittest.TestCase):
+    # Purpose: Verify diagnostic planning uses only training samples and frozen crops.
+    # Inputs: Two-case source lock and all-training proposals at [10,20,30].
+    # Outputs: Fourteen samples and twelve strata have no test evaluation; proposal origins stay frozen.
     def test_only_training_panel_and_frozen_crop_origins_enter_plan(self):
         with tempfile.TemporaryDirectory() as directory:
             source = SourceFixture(directory)
@@ -157,6 +181,9 @@ class PlanTests(unittest.TestCase):
                              {(10, 20, 30)})
             self.assertFalse(lock['classifier_started'])
 
+    # Purpose: Reject held-out diagnostic cases before loading masks.
+    # Inputs: Source fixture with heldout or reserved case IDs and a mask verification spy.
+    # Outputs: Planning raises ValueError and never invokes mask verification.
     def test_heldout_and_reserved_cases_rejected_before_mask_loading(self):
         with tempfile.TemporaryDirectory() as directory:
             source = SourceFixture(directory)
@@ -168,6 +195,9 @@ class PlanTests(unittest.TestCase):
                         exp.plan(config)
                     verify.assert_not_called()
 
+    # Purpose: Reject proposal records assigned to non-training roles.
+    # Inputs: Source proposal audit changed to final_test split.
+    # Outputs: Planning raises ValueError.
     def test_non_training_proposal_role_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             source = SourceFixture(directory)
@@ -176,6 +206,9 @@ class PlanTests(unittest.TestCase):
             with patch.object(exp.reference, 'inspect_lock'), self.assertRaises(ValueError):
                 exp.plan(source.config)
 
+    # Purpose: Reject changes to inherited training settings and validation gates.
+    # Inputs: Reference learning rate or minimum Dice halved.
+    # Outputs: Planning raises ValueError for either configuration change.
     def test_changed_model_loss_and_gate_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             source = SourceFixture(directory)
@@ -185,6 +218,9 @@ class PlanTests(unittest.TestCase):
                 with patch.object(exp.reference, 'inspect_lock'), self.assertRaises(ValueError):
                     exp.plan(config)
 
+    # Purpose: Reject mask payloads whose burden disagrees with metadata.
+    # Inputs: Selected payload gains an added voxel and its stored hash is updated.
+    # Outputs: Planning raises ValueError despite the matching payload hash.
     def test_actual_payload_burden_mismatch_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             source = SourceFixture(directory)
@@ -203,6 +239,9 @@ class PlanTests(unittest.TestCase):
 
 
 class ProvenanceTests(unittest.TestCase):
+    # Purpose: Verify unsigned JSON still obeys its frozen digest.
+    # Inputs: Unsigned JSON read correctly, then changed from true to false.
+    # Outputs: The initial document loads and the modified bytes raise ValueError.
     def test_unsigned_json_still_requires_frozen_hash(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'old.json'
@@ -213,6 +252,9 @@ class ProvenanceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 exp._read_json(path, digest)
 
+    # Purpose: Verify signed JSON checks expected digests and sidecars.
+    # Inputs: Signed JSON with an all-zero expected hash, then an altered hash sidecar.
+    # Outputs: Both verification attempts raise ValueError.
     def test_signed_json_requires_sidecar_and_expected_digest(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'new.json'
@@ -223,6 +265,9 @@ class ProvenanceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 exp._read_json(path)
 
+    # Purpose: Detect source and payload mutations after diagnostic freezing.
+    # Inputs: Frozen INI plus pinned source file, then altered source and mask bytes.
+    # Outputs: Initial inspection matches the lock; each dependency mutation raises ValueError.
     def test_freeze_and_inspection_detect_source_and_dependency_changes(self):
         with tempfile.TemporaryDirectory() as directory:
             source = SourceFixture(directory)

@@ -35,6 +35,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.path.write_text(stream.getvalue())
         return loader(self.path, repo_root=self.root)
 
+    # Purpose: Verify recipe loading dispatches typed settings without source files.
+    # Inputs: Thoracic recipe fixture loaded by recipe and preview loaders in a temporary root.
+    # Outputs: Both loaders agree on ordered edits, signed stiffness, ROI geometry, paths, and absent training settings.
     def test_example_types_dispatch_and_paths_without_source_files(self):
         config = self.load()
         self.assertEqual(config, self.load(loader=load_preview_config))
@@ -62,6 +65,9 @@ class RecipeConfigurationTests(unittest.TestCase):
             "profile": "gaussian", "profile_axis": "tube", "shape_k": 6., "shape_window": (0., 1.)})
         self.assertFalse(config["output"]["directory"].exists())
 
+    # Purpose: Verify omitted reassignment mode preserves legacy allowlists.
+    # Inputs: No stiffness sections, omitted/explicit allowlist mode, and permissive mode.
+    # Outputs: Implicit and explicit allowlists agree; empty/permissive policies contain no stiffness metadata.
     def test_optional_reassignment_mode_defaults_to_legacy_allowlist(self):
         parser = self.parser()
         parser.remove_section("stiffness")
@@ -81,6 +87,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(permissive["reassignment"]["mode"], "permissive_except_bone_skin")
         self.assertNotIn("stiffness", permissive["reassignment"])
 
+    # Purpose: Verify erosion assignment is typed per edit and preserves legacy defaults.
+    # Inputs: Absent/true/false assignment flags plus selected main range and inner direction.
+    # Outputs: Only explicit flags appear, booleans retain types, parser stays intact, and other config matches legacy.
     def test_optional_erosion_assignment_flag_is_per_edit_and_preserves_legacy_dictionaries(self):
         legacy = self.load()
         self.assertTrue(all("assign_surrounding_tissue" not in edit for edit in legacy["edits"].values()))
@@ -104,6 +113,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(config["edits"]["descending_narrow"]["direction"], "inner")
         self.assertEqual(config["recipe"]["roi_role"], "selection")
 
+    # Purpose: Reject invalid assignment flags and incompatible edit contracts.
+    # Inputs: Nonliteral booleans, false on nonerosion, misspelled flag, and missing required edit fields.
+    # Outputs: Invalid edits raise ValueError; explicit true remains valid on nonerosion operations.
     def test_erosion_assignment_flag_rejects_invalid_booleans_operations_and_unknown_fields(self):
         for value in ("", "False", "TRUE", "0", "1", "yes", "no", "nan", "false,true", "false\ntrue"):
             with self.subTest(value=value), self.assertRaises(ValueError):
@@ -129,6 +141,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 parser.remove_option("edit.descending_narrow", field)
                 self.load(parser)
 
+    # Purpose: Verify typed erosion safeguards preserve legacy dictionaries.
+    # Inputs: Ratio 0/1, literal connectivity flags, factors, and backoff counts 0-20.
+    # Outputs: Only requested safeguard keys appear with correct types; parser and legacy defaults stay intact.
     def test_optional_erosion_safeguards_are_typed_per_edit_and_preserve_legacy(self):
         legacy = self.load()
         cases = ({"min_volume_ratio": ("0", 0.)}, {"min_volume_ratio": ("1", 1.)},
@@ -154,6 +169,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 self.assertEqual(config, legacy)
                 self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, snapshot)
 
+    # Purpose: Verify safeguards combine with selected ranges and diagnostic erosion.
+    # Inputs: Inner main path 25-65%, unassigned release, ratio 0.8, connectivity, and backoff.
+    # Outputs: All selectors and safeguard settings retain normalized typed values.
     def test_erosion_safeguards_combine_with_main_ranges_direction_and_diagnostic_release(self):
         parser = self.parser()
         parser["recipe"]["roi_role"] = "selection"
@@ -169,6 +187,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(edit["backoff_factor"], .5)
         self.assertEqual(edit["max_backoff_steps"], 8)
 
+    # Purpose: Reject invalid or misplaced safeguard settings with edit diagnostics.
+    # Inputs: Out-of-range/nonfinite/untyped values, safeguards on nonerosion, or unknown/misplaced fields.
+    # Outputs: ValueError names the edit/field and rejects incompatible operations or locations.
     def test_erosion_safeguards_reject_invalid_values_with_named_edit_diagnostics(self):
         invalid = {"min_volume_ratio": ("-.1", "1.1", "nan", "inf", "-inf", "true", "", ".5,.6"),
                    "preserve_connectivity": ("False", "TRUE", "yes", "no", "0", "1", "", "false,true"),
@@ -198,6 +219,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown.*min_volume_ratios"):
             self.load(parser)
 
+    # Purpose: Verify recipe loading needs no anatomical source-ID inputs.
+    # Inputs: Blank versus omitted source IDs and absent label stiffness overrides.
+    # Outputs: Configurations agree with empty source-ID tuple and label override dictionary.
     def test_recipe_needs_no_anatomical_id_inputs(self):
         parser = self.parser()
         parser["selection"]["source_ids"] = ""
@@ -209,6 +233,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(omitted["selection"]["source_ids"], ())
         self.assertEqual(omitted["reassignment"]["stiffness"]["labels"], {})
 
+    # Purpose: Enforce unambiguous reassignment modes and required policy fields.
+    # Inputs: Unknown modes, nonempty permissive allowlists, and missing reassignment fields.
+    # Outputs: Parsing rejects every unsupported or ambiguous policy.
     def test_permissive_mode_rejects_ambiguous_allowlists_unknown_modes_and_missing_fields(self):
         for mode in ("", "permissive", "all", "Allowlist", "permissive_except_bone_skin\nextra"):
             with self.subTest(mode=mode), self.assertRaises(ValueError):
@@ -229,6 +256,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 parser.remove_option("reassignment", key)
                 self.load(parser)
 
+    # Purpose: Verify stiffness accepts valid tissue factors and exact signed ID overrides.
+    # Inputs: Factors in [0,1], optional fluid, and signed int32 endpoint/+7 label keys.
+    # Outputs: Factors normalize to floats, signed IDs remain exact, and absent/empty label sections are allowed.
     def test_stiffness_all_values_editable_optional_categories_and_signed_id_overrides(self):
         parser = self.parser()
         parser["stiffness"] = {"default": "1", "bone": "0.25", "skin": "0", "fluid": ".3"}
@@ -241,6 +271,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         parser["stiffness.labels"] = {}
         self.assertEqual(self.load(parser)["reassignment"]["stiffness"]["labels"], {})
 
+    # Purpose: Require stiffness mode and all mandatory stiffness fields.
+    # Inputs: Stiffness sections under other modes, missing default/bone/skin, or nonempty allowlist.
+    # Outputs: Parsing raises ValueError for incompatible modes or incomplete stiffness contracts.
     def test_stiffness_sections_require_matching_mode_and_required_settings(self):
         for mode in ("allowlist", "permissive_except_bone_skin"):
             for remaining in (("stiffness", "stiffness.labels"), ("stiffness",), ("stiffness.labels",)):
@@ -264,6 +297,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "must be blank"):
             self.load(parser)
 
+    # Purpose: Reject invalid stiffness categories, factors, and duplicate normalized IDs.
+    # Inputs: Unknown categories, out-of-range/nonfinite factors, bad int32 keys, and 7/+7/007 aliases.
+    # Outputs: Parsing rejects malformed values and reports duplicate original IDs.
     def test_stiffness_rejects_invalid_categories_factors_id_keys_and_normalized_duplicates(self):
         for name in ("Bone", "background", "peri", "stifness", "2897"):
             with self.subTest(category=name), self.assertRaisesRegex(ValueError, "unknown"):
@@ -288,6 +324,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 parser["stiffness.labels"] = {first: ".2", second: ".3"}
                 self.load(parser)
 
+    # Purpose: Verify recipe step order is explicit without parser mutation.
+    # Inputs: Steps reordered to arch_refine, descending_narrow, ascending_expand.
+    # Outputs: Parsed tuple keeps the requested order and parser sections remain identical.
     def test_steps_order_is_explicit_and_parser_is_not_mutated(self):
         parser = self.parser()
         parser["recipe"]["steps"] = "arch_refine, descending_narrow, ascending_expand"
@@ -296,6 +335,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(config["recipe"]["steps"], ("arch_refine", "descending_narrow", "ascending_expand"))
         self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
 
+    # Purpose: Verify optional global ROI role preserves legacy settings.
+    # Inputs: Omitted role and explicit boundary/selection roles.
+    # Outputs: Only explicit role is added; loaders agree and parser/other configuration stay intact.
     def test_optional_recipe_roi_role_preserves_legacy_and_retains_explicit_choice(self):
         legacy = self.load()
         self.assertNotIn("roi_role", legacy["recipe"])
@@ -310,6 +352,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 self.assertEqual(config, legacy)
                 self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
 
+    # Purpose: Reject ambiguous ROI role spellings and values.
+    # Inputs: Blank/mixed-case/unknown/multiline roles and role seed.
+    # Outputs: Parsing raises ValueError with diagnostics describing boundary and selection semantics.
     def test_recipe_roi_role_rejects_unknown_case_and_ambiguous_values(self):
         for value in ("", "Boundary", "Selection", "seed", "crop", "all", "boundary,selection",
                       "selection\nboundary"):
@@ -322,6 +367,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "boundary.*inside the ROI.*selection.*initial targets"):
             self.load(parser)
 
+    # Purpose: Require ROI role at recipe scope without relaxing mandatory fields.
+    # Inputs: Role inserted in ROI/edit sections or recipe steps/overlap omitted.
+    # Outputs: Parsing rejects misplaced role and missing required fields.
     def test_recipe_roi_role_is_global_and_does_not_relax_required_recipe_fields(self):
         for section in ("roi", "roi.ascending", "edit.ascending_expand"):
             with self.subTest(section=section), self.assertRaisesRegex(ValueError, "unknown.*roi_role"):
@@ -335,6 +383,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 parser.remove_option("recipe", key)
                 self.load(parser)
 
+    # Purpose: Permit shared edit ROIs and unused named definitions.
+    # Inputs: Arch refinement reuses ascending ROI and overlap policy error.
+    # Outputs: Unused arch ROI remains available and shared edit reference/order policy load correctly.
     def test_multiple_steps_can_share_roi_and_unused_roi_is_allowed(self):
         parser = self.parser()
         parser["edit.arch_refine"]["roi"] = "ascending"
@@ -345,6 +396,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(config["edits"]["arch_refine"]["roi"], "ascending")
         self.assertEqual(config["recipe"]["overlap"], "error")
 
+    # Purpose: Permit all edits to share main ROI without named ROIs.
+    # Inputs: All named ROI sections removed and edit references changed to main.
+    # Outputs: Named ROI dictionary is empty, edit defaults persist, loaders agree, and parser stays intact.
     def test_main_roi_can_be_shared_by_edits_without_any_named_rois(self):
         parser = self.parser()
         for section in list(parser.sections()):
@@ -362,12 +416,18 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertTrue(all(edit["roi"] == "main" for edit in config["edits"].values()))
         self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
 
+    # Purpose: Reserve the main name for the top-level ROI.
+    # Inputs: Explicit roi.main section copied from ascending.
+    # Outputs: Parsing raises ValueError explaining the reserved top-level ROI name.
     def test_explicit_named_main_roi_is_reserved(self):
         parser = self.parser()
         parser["roi.main"] = dict(parser["roi.ascending"])
         with self.assertRaisesRegex(ValueError, r"\[roi.main\] is reserved.*top-level \[roi\]"):
             self.load(parser)
 
+    # Purpose: Verify point ranges normalize inclusive one-based tube intervals.
+    # Inputs: Main range 2-8 and named ascending ranges 2-4/1-4.
+    # Outputs: Ranges become integer tuples, parent node counts stay intact, and unrelated edits gain no selector.
     def test_point_range_normalizes_1_based_inclusive_main_or_named_node_interval(self):
         for roi_name, interval, expected in (("main", "2,8", (2, 8)),
                                              ("ascending", " 2, 4 ", (2, 4)),
@@ -382,6 +442,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 self.assertEqual(len(config["roi"]["center_ijk"]), 14)
                 self.assertEqual(len(config["rois"]["ascending"]["center_ijk"]), 4)
 
+    # Purpose: Verify percentage ranges normalize physical tube intervals.
+    # Inputs: Main ranges 0-100/30-75 and ascending range 2.5-70.125.
+    # Outputs: Ranges become float tuples without adding point_range.
     def test_path_percent_normalizes_main_or_named_physical_path_interval(self):
         for roi_name, interval, expected in (("main", "0,100", (0., 100.)),
                                              ("main", "30,75", (30., 75.)),
@@ -393,6 +456,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 self.assertEqual(config["edits"]["ascending_expand"]["path_percent"], expected)
                 self.assertNotIn("point_range", config["edits"]["ascending_expand"])
 
+    # Purpose: Reject malformed and invalid range selectors.
+    # Inputs: Bad token counts, separators, multiline values, out-of-bounds/nonfinite or reversed intervals.
+    # Outputs: Point and percentage selector parsing raises ValueError.
     def test_selector_rejects_malformed_values_bounds_and_nonincreasing_intervals(self):
         invalid = {
             "point_range": ("", "2", "1,2,3", "1,,3", "1,4,", "0,3", "-1,3",
@@ -407,6 +473,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                     parser["edit.ascending_expand"][selector] = value
                     self.load(parser)
 
+    # Purpose: Require mutually exclusive selectors on tube geometry.
+    # Inputs: Both selectors together, then point/percent selector on main or named spheres.
+    # Outputs: Parsing rejects conflicting selectors and non-tube referenced ROIs.
     def test_selectors_are_mutually_exclusive_and_require_a_tube_base(self):
         parser = self.parser()
         parser["edit.ascending_expand"].update(point_range="1,4", path_percent="0,100")
@@ -423,6 +492,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "requires the referenced ROI to have shape=tube"):
                         self.load(parser)
 
+    # Purpose: Preserve required edit fields when optional selectors are present.
+    # Inputs: Point range with each required field omitted, then misspelled point_ranges.
+    # Outputs: Parsing rejects missing fields and the unknown plural selector.
     def test_optional_selectors_preserve_required_edit_fields_and_reject_unknown_fields(self):
         for key in ("roi", "iterations", "operation", "distance_mm", "profile",
                     "profile_axis", "shape_k", "shape_window"):
@@ -436,6 +508,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown=.*point_ranges"):
             self.load(parser)
 
+    # Purpose: Validate main edit profiles against the main geometry.
+    # Inputs: Main sphere with Gaussian tube axis, then K axis.
+    # Outputs: Tube profile fails; K-axis edit loads with main reference and no range selector.
     def test_main_sphere_edit_validates_profile_against_main_not_named_roi(self):
         parser = self.parser()
         parser["roi"].update(shape="sphere", center_ijk="387,360,1352", radius_mm="10")
@@ -448,6 +523,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(config["edits"]["ascending_expand"]["profile_axis"], "k")
         self.assertNotIn("point_range", config["edits"]["ascending_expand"])
 
+    # Purpose: Verify optional centerline settings use defaults without changing legacy edits.
+    # Inputs: Absent/empty centerline section, zero smoothing, or partial/full numeric overrides.
+    # Outputs: Typed defaults/overrides load; unrelated edits and parser remain unchanged.
     def test_optional_centerline_defaults_and_partial_overrides_leave_legacy_edits_unchanged(self):
         legacy = self.load()
         self.assertNotIn("centerline", legacy)
@@ -470,6 +548,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 self.assertEqual(config, legacy)
                 self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
 
+    # Purpose: Verify directional edits infer angular and centerline defaults.
+    # Inputs: Main/named tubes with inner or outer direction.
+    # Outputs: Direction is retained, angle defaults to 180 degrees, and centerline defaults apply only as needed.
     def test_directional_main_or_named_edits_supply_angle_and_centerline_defaults(self):
         for roi_name in ("main", "ascending"):
             for direction in ("inner", "outer"):
@@ -484,6 +565,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                     self.assertNotIn("direction", config["edits"]["descending_narrow"])
                     self.assertNotIn("angular_width_deg", config["edits"]["descending_narrow"])
 
+    # Purpose: Verify directional subranges retain parent geometry and explicit settings.
+    # Inputs: Point range 2-3 or path 30-75%, angle 75.5, sample step 0.25.
+    # Outputs: Four parent nodes remain; selectors/angle normalize and missing centerline fields default.
     def test_directional_range_validates_original_parent_and_retains_explicit_settings(self):
         for selector, interval, expected in (("point_range", "2,3", (2, 3)),
                                              ("path_percent", "30,75", (30., 75.))):
@@ -504,6 +588,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                     "smoothing_mm": 1., "sample_step_mm": .25, "min_curvature_per_mm": .002})
                 self.assertEqual({section: dict(parser[section]) for section in parser.sections()}, before)
 
+    # Purpose: Verify explicit all-direction sphere edits preserve ordinary behavior.
+    # Inputs: Named sphere with K profile and direction all.
+    # Outputs: Only direction is added and no centerline defaults appear.
     def test_explicit_all_preserves_ordinary_sphere_edits_without_centerline_defaults(self):
         parser = self.parser()
         parser["roi.ascending"].update(shape="sphere", center_ijk="387,360,1352", radius_mm="10")
@@ -515,6 +602,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         self.assertEqual(config, baseline)
         self.assertNotIn("centerline", config)
 
+    # Purpose: Require directional parent tubes with at least four nodes.
+    # Inputs: Main/named spheres and two-/three-node tubes with outer direction.
+    # Outputs: Parsing raises ValueError naming the parent tube requirement.
     def test_directional_edits_reject_spheres_and_parents_with_fewer_than_four_nodes(self):
         for roi_name in ("main", "ascending"):
             for shape, centers, radii in (
@@ -529,6 +619,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "parent tube.*at least four"):
                         self.load(parser)
 
+    # Purpose: Reject malformed directions and invalid or unused angular widths.
+    # Inputs: Bad direction strings, widths outside (0,180], and widths without inner/outer direction.
+    # Outputs: Invalid settings fail; widths 0.1 and 180 normalize successfully.
     def test_direction_and_angular_width_reject_invalid_or_unused_settings(self):
         for direction in ("", "Inner", "inside", "both", "inner,outer", "inner\nouter"):
             with self.subTest(direction=direction), self.assertRaises(ValueError):
@@ -553,6 +646,9 @@ class RecipeConfigurationTests(unittest.TestCase):
             parser["edit.ascending_expand"].update(direction="outer", angular_width_deg=width)
             self.assertEqual(self.load(parser)["edits"]["ascending_expand"]["angular_width_deg"], float(width))
 
+    # Purpose: Validate centerline numeric bounds and strict field names.
+    # Inputs: Nonfinite/negative/multiline values, zero positive-only settings, and misspelled fields.
+    # Outputs: Parsing raises ValueError for invalid values or unknown keys.
     def test_centerline_rejects_unknown_nonfinite_negative_and_nonpositive_settings(self):
         for key in ("smoothing_mm", "sample_step_mm", "min_curvature_per_mm"):
             invalid = ("", "-1", "nan", "inf", "-inf", "1,2", "1\n2")
@@ -573,6 +669,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "unknown"):
                     self.load(parser)
 
+    # Purpose: Validate named sphere profiles against their own geometry.
+    # Inputs: Ascending sphere radius 50 with K, Gaussian tube, then uniform tube profile.
+    # Outputs: K/uniform profiles load; Gaussian tube axis on the sphere raises ValueError.
     def test_named_sphere_is_validated_against_its_own_profile_axis(self):
         parser = self.parser()
         parser["roi.ascending"].update({"shape": "sphere", "center_ijk": "387.5,360,1352", "radius_mm": "50"})
@@ -586,6 +685,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         parser["edit.ascending_expand"]["profile"] = "uniform"
         self.assertEqual(self.load(parser)["edits"]["ascending_expand"]["profile_axis"], "tube")
 
+    # Purpose: Require exact recipe steps and valid ROI references.
+    # Inputs: Empty/partial/unknown/duplicate steps and missing/malformed/case-mismatched ROI names.
+    # Outputs: Every invalid list or reference raises ValueError.
     def test_rejects_unlisted_duplicate_and_unknown_steps_and_roi_references(self):
         for value in ("", "ascending_expand,descending_narrow", "ascending_expand,descending_narrow,missing",
                       "ascending_expand,descending_narrow,arch_refine,arch_refine", "ascending_expand,,arch_refine"):
@@ -599,6 +701,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 parser["edit.ascending_expand"]["roi"] = value
                 self.load(parser)
 
+    # Purpose: Bound per-step and total iterations including inactive steps.
+    # Inputs: Invalid iteration values, then counts 10/9 and 10/10 plus remaining step.
+    # Outputs: Valid total 20 loads; invalid per-step values or excessive total raise ValueError.
     def test_rejects_unbounded_or_fractional_iterations_and_counts_inactive_steps(self):
         for value in ("0", "11", "-1", "1.5", "nan", ""):
             with self.subTest(iterations=value), self.assertRaises(ValueError):
@@ -613,6 +718,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "20 total iterations"):
             self.load(parser)
 
+    # Purpose: Reject unknown sections, keys, implicit defaults, and misplaced crop widths.
+    # Inputs: Training/edit typo sections, extra keys, DEFAULT iterations, or named crop_half_width_mm.
+    # Outputs: Strict recipe parsing raises ValueError for each unsupported field/section.
     def test_rejects_unknown_sections_keys_and_implicit_defaults(self):
         for section in ("edit", "train", "model", "roi_typo", "edit.", "roi.bad name"):
             with self.subTest(section=section), self.assertRaises(ValueError):
@@ -633,6 +741,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "crop_half_width_mm"):
             self.load(parser)
 
+    # Purpose: Require recipe, reassignment, referenced ROI/edit sections, and mandatory fields.
+    # Inputs: Removed required sections or steps/review/iterations/ROI fields.
+    # Outputs: Parsing raises ValueError for incomplete recipe contracts.
     def test_required_named_sections_and_fields(self):
         for sections in (("recipe",), ("reassignment",), ("roi.ascending", "roi.arch", "roi.descending"),
                          ("edit.ascending_expand", "edit.descending_narrow", "edit.arch_refine")):
@@ -648,6 +759,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 parser.remove_option(section, key)
                 self.load(parser)
 
+    # Purpose: Reject invalid geometry/edit parameters and ambiguous multiline values.
+    # Inputs: Unknown shapes/operations, bad radii/nodes/windows/distances, untyped review, or multiline lists.
+    # Outputs: Recipe parsing raises ValueError for every malformed case.
     def test_rejects_invalid_shapes_parameters_and_ambiguous_multiline_values(self):
         cases = [("recipe", "overlap", "parallel"), ("roi.ascending", "shape", "box"),
                  ("roi.ascending", "radius_mm", "10,10"),
@@ -666,6 +780,9 @@ class RecipeConfigurationTests(unittest.TestCase):
                 parser[section][key] = value
                 self.load(parser)
 
+    # Purpose: Reject recipe sections under legacy schemas or the wrong loader.
+    # Inputs: Preview/edit/study schema versions applied to recipe content.
+    # Outputs: Preview dispatch rejects incompatible sections and recipe loader requires fakect.recipe/1.
     def test_old_schemas_cannot_accept_recipe_sections_and_wrong_loader_rejects(self):
         for version in ("fakect.preview/1", "fakect.preview/2", "fakect.edit/1", "fakect.study/1"):
             with self.subTest(version=version), self.assertRaises(ValueError):
@@ -677,6 +794,9 @@ class RecipeConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "fakect.recipe/1"):
             self.load(parser)
 
+    # Purpose: Verify starter parameters reference existing numbered explanatory notes.
+    # Inputs: Archived starter recipe and its NOTE definitions/assignment comments.
+    # Outputs: More than sixty assignments each link to a defined note.
     def test_each_starter_parameter_references_an_existing_numbered_note(self):
         starter = (ROOT / "archive/research/configs/studies/thoracic-aorta-recipe.ini").read_text()
         notes = set(re.findall(r"^# NOTE ([0-9]+) --", starter, re.MULTILINE))

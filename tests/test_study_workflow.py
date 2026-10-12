@@ -116,6 +116,9 @@ class StudyWorkflowTests(unittest.TestCase):
             result = module.run(self.path, stage=stage, validate_only=validate_only)
         return result, captured.getvalue()
 
+    # Purpose: Verify study previews retain full target evidence and explicit rerun stage.
+    # Inputs: Synthetic aorta study requesting fit overridden to preview with prepare/fit mocked to fail.
+    # Outputs: Full target PNG/crop embedded, preview rerun command, exact INI and no dataset/model.
     def test_preview_embeds_full_target_and_correct_study_command_without_preparing_or_fitting(self):
         # An explicit preview override must remain a preview when rerun from
         # the report, even though the preserved source INI requests fitting.
@@ -147,6 +150,9 @@ class StudyWorkflowTests(unittest.TestCase):
             self.assertGreater(np.count_nonzero(target & ~data['roi_mask']), 0)
             np.testing.assert_array_equal(target, self.labels == -7)
 
+    # Purpose: Verify study planning reads only metadata and saves exact input provenance.
+    # Inputs: Seven-variant synthetic study with crop and fit operations mocked to fail.
+    # Outputs: Plan records scenario splits/target/crop geometry, exact INI and no voxel/dataset/model outputs.
     def test_plan_reads_metadata_only_and_preserves_input_snapshot(self):
         original = self.path.read_bytes()
         with patch('fakect_roi.read_crop', side_effect=AssertionError('plan cannot read voxels')), \
@@ -166,6 +172,9 @@ class StudyWorkflowTests(unittest.TestCase):
         self.assertFalse(self.dataset.exists())
         self.assertFalse(self.model.exists())
 
+    # Purpose: Verify explicit preparation publishes complete binary pairs without fitting.
+    # Inputs: Synthetic study prepare stage with fitter mocked to fail.
+    # Outputs: Seven samples, matching INI hash and complete baseline aorta mask excluding neighboring artery.
     def test_prepare_is_explicit_and_freezes_exact_input_and_complete_binary_pairs(self):
         original = self.path.read_bytes()
         with patch('fakect_segmentation.train_segmentation', side_effect=AssertionError('prepare cannot fit')):
@@ -182,6 +191,9 @@ class StudyWorkflowTests(unittest.TestCase):
             self.assertTrue(data['mask'][0, 15, 15])
             self.assertFalse(data['mask'][0, 2, 2])
 
+    # Purpose: Verify study fitting validates prepared data first and never prepares implicitly.
+    # Inputs: Mock successful validator/fitter, then validator raising dataset-not-prepared ValueError.
+    # Outputs: Validate-before-fit order, model provenance saved and failed validation prevents fitter invocation.
     def test_fit_requires_dataset_validation_first_and_never_prepares_implicitly(self):
         events = []
         def validate(*args, **kwargs):
@@ -207,6 +219,9 @@ class StudyWorkflowTests(unittest.TestCase):
                 self.run_stage('fit')
             fit_mock.assert_not_called()
 
+    # Purpose: Verify validate-only mode has no native reads or writes at any stage.
+    # Inputs: Preview, plan, prepare and fit with crop/preparation/training calls mocked to fail.
+    # Outputs: Correct stage receipts, false read/write flags and no report/dataset/model directories.
     def test_validate_only_creates_no_outputs_or_crop_reads_at_any_stage(self):
         with patch('fakect_roi.read_crop', side_effect=AssertionError('validate-only cannot read voxels')), \
                 patch('fakect_training_data.prepare_crop', side_effect=AssertionError('validate-only cannot read crops')), \

@@ -32,6 +32,9 @@ class ProjectLayoutTests(unittest.TestCase):
                                 text=True, capture_output=True, timeout=20)
         return result
 
+    # Purpose: Verify top-level workflow and documentation layout is unambiguous.
+    # Inputs: Repository scripts, config/doc directories, and required workflow files.
+    # Outputs: Directory/file sets match the supported public layout.
     def test_workflow_commands_and_guide_directories_are_unambiguous(self):
         self.assertEqual({p.name for p in (ROOT / 'scripts').glob('*.py')}, WORKFLOW_SCRIPTS)
         for directory, permitted in (
@@ -46,6 +49,9 @@ class ProjectLayoutTests(unittest.TestCase):
                          'requirements/dev.txt', 'requirements/tensorflow.txt'):
             self.assertTrue((ROOT / relative).is_file(), relative)
 
+    # Purpose: Verify case-study configurations and runtime atlas assets remain available.
+    # Inputs: COA project metadata, public data inventory, and atlas references.
+    # Outputs: Twelve unique cases resolve to phantom INIs and required atlas files are nonempty.
     def test_case_study_paths_and_runtime_atlas_remain_available(self):
         project = json.loads((ROOT / 'configs/case-studies/coa/project.json').read_text())
         cases = project['cases']
@@ -68,6 +74,9 @@ class ProjectLayoutTests(unittest.TestCase):
         self.assertEqual({str(p.relative_to(ROOT)) for p in (ROOT / 'data').iterdir()
                           if p.is_file() and p.name != 'README.md'}, PUBLIC_DATA)
 
+    # Purpose: Verify relocated historical JSON retains its original bytes.
+    # Inputs: Archive layout-migration manifest and moved JSON files.
+    # Outputs: Every relocated JSON hash matches its recorded original fingerprint.
     def test_relocated_historical_json_retains_original_bytes(self):
         manifest = json.loads((ROOT / 'archive/research/layout-migration.json').read_text())
         checked = []
@@ -82,6 +91,9 @@ class ProjectLayoutTests(unittest.TestCase):
         self.assertTrue(any(Path(path).name == 'source-snapshot.json' for path in checked))
         self.assertIn('docs/integration/2026-09-16/xcat-results.json', checked)
 
+    # Purpose: Verify Git ignores generated artifacts while retaining public examples.
+    # Inputs: check-ignore over output/cache/checkpoint paths and public source assets.
+    # Outputs: Exactly the generated artifact paths are ignored.
     def test_git_ignores_generated_artifacts_but_keeps_source_examples(self):
         ignored = (
             'outputs/demo/cases/demo01/source_act_1.bin',
@@ -101,6 +113,9 @@ class ProjectLayoutTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(set(result.stdout.splitlines()), set(ignored))
 
+    # Purpose: Verify tracked/unignored sources contain no generated payloads.
+    # Inputs: Git tracked and untracked file inventory excluding public volume exceptions.
+    # Outputs: No generated output, checkpoint, or NIfTI payload paths are present.
     def test_existing_git_sources_do_not_contain_generated_payloads(self):
         result = self.git('ls-files', '--cached', '--others', '--exclude-standard', '-z')
         self.assertEqual(result.returncode, 0, result.stderr)

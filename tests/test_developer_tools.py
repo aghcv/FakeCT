@@ -14,6 +14,9 @@ from build_api_docs import build_reference, render_reference
 
 
 class DeveloperToolsTests(unittest.TestCase):
+    # Purpose: Verify API contracts document actual argument names and returns.
+    # Inputs: Parsed function with positional/keyword-only parameters and wrong or missing doc sections.
+    # Outputs: Missing spacing/strict, nonexistent wrong_name and missing Returns errors reported.
     def test_contracts_require_real_argument_names_and_return_sections(self):
         tree = ast.parse('''
 def f(mask, /, spacing, *, strict=False):
@@ -39,6 +42,9 @@ def f(mask, /, spacing, *, strict=False):
         tree.body[0].body[0].value.value = "Measure a physical mask."
         self.assertIn("missing or empty Returns section", contract_errors(tree.body[0]))
 
+    # Purpose: Verify class methods are checked without requiring callback documentation.
+    # Inputs: Parsed Loader.read with an inner callback and no method docstring.
+    # Outputs: Only Loader.read collected and missing-docstring error reported.
     def test_class_methods_are_checked_without_requiring_local_callbacks(self):
         tree = ast.parse('''
 class Loader:
@@ -51,6 +57,9 @@ class Loader:
         self.assertEqual([name for name, _ in functions], ["Loader.read"])
         self.assertEqual(contract_errors(functions[0][1]), ["missing function docstring"])
 
+    # Purpose: Reject invalid developer scope paths and empty syntax roots.
+    # Inputs: Escaping, absolute, duplicate or non-Python module paths and empty syntax_roots.
+    # Outputs: ValueError rejects every malformed scope.
     def test_scope_rejects_escaping_duplicate_and_invalid_module_paths(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "scope.json"
@@ -67,6 +76,9 @@ class Loader:
                     with self.assertRaises(ValueError):
                         load_scope(path)
 
+    # Purpose: Verify API generation escapes source text and never executes modules.
+    # Inputs: Source containing a raising statement, unavailable import and unsafe documentation text.
+    # Outputs: Escaped deterministic HTML with correct byte count; source imports never executed.
     def test_api_generation_escapes_text_and_never_executes_source(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -102,6 +114,9 @@ def compare(image, *, mode="<unsafe>"):
             self.assertEqual(document, render_reference(root, scope))
             self.assertEqual(output.read_bytes(), document.encode("utf-8"))
 
+    # Purpose: Verify source checking reports syntax and documentation failures.
+    # Inputs: Malformed syntax file, undocumented API function and a valid language file.
+    # Outputs: Failed quality result with both syntax/read and missing-docstring messages.
     def test_source_checker_reports_syntax_and_contract_failures(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -116,6 +131,9 @@ def compare(image, *, mode="<unsafe>"):
             self.assertTrue(any("syntax/read failure" in message for message in messages))
             self.assertIn("undocumented: missing function docstring", messages)
 
+    # Purpose: Verify checked-in API reference matches current documented source.
+    # Inputs: Repository development scope, source modules and saved docs/developer/api.html.
+    # Outputs: Quality passes, over 300 functions documented and reference HTML matches regeneration.
     def test_checked_in_reference_matches_source_and_real_scope_passes(self):
         scope = load_scope(SCOPE)
         result = check_repository(ROOT, scope)
@@ -124,6 +142,9 @@ def compare(image, *, mode="<unsafe>"):
         self.assertEqual((ROOT / "docs/developer/api.html").read_text(),
                          render_reference(ROOT, scope))
 
+    # Purpose: Verify the quality CLI runs with only the standard library.
+    # Inputs: check_quality.py --json in a Python subprocess using -S.
+    # Outputs: Exit code zero and JSON passed flag true.
     def test_quality_cli_uses_only_the_standard_library(self):
         script = ROOT / "scripts/dev/check_quality.py"
         result = subprocess.run([sys.executable, "-S", str(script), "--json"],

@@ -97,6 +97,9 @@ def fixture(root, completed=5):
 
 
 class BudgetReportTests(unittest.TestCase):
+    # Purpose: Verify paired budget comparisons retain exact tied-score metrics.
+    # Inputs: Five-family fixture with tied baseline and perfect epoch-200 controls.
+    # Outputs: Baseline AUROC 0.5, control AUROC 1, 60 matched pairs, and zero severity MAE.
     def test_exact_ties_and_paired_tables(self):
         with tempfile.TemporaryDirectory() as tmp:
             _, _, baseline, controls, manifest = fixture(Path(tmp))
@@ -108,6 +111,9 @@ class BudgetReportTests(unittest.TestCase):
             self.assertEqual(analysis["paired_comparisons"][0]["equal_family_delta"]["auroc"]["mean"], .5)
             self.assertEqual(analysis["protocols"]["epoch200"]["equal_family_metrics"]["severity_mae_percentage_points"]["mean"], 0.)
 
+    # Purpose: Verify mean ROC interpolation preserves ordered vertical steps.
+    # Inputs: P,N,N,P ROC path with AUROC 0.5.
+    # Outputs: TPR 0.5 at FPR 0.75, exact area 0.5, and finite-grid area 0.50025.
     def test_ordered_vertical_roc_steps_avoid_optimistic_diagonal(self):
         # P,N,N,P gives [(0,0),(0,.5),(.5,.5),(1,.5),(1,1)].
         # Removing the lower endpoint at FPR=1 overstates the area to .75.
@@ -118,6 +124,9 @@ class BudgetReportTests(unittest.TestCase):
         self.assertAlmostEqual(result["finite_grid_integral"], .50025)
         self.assertIsNone(result["confidence_interval"])
 
+    # Purpose: Verify incomplete control runs remain partial.
+    # Inputs: Five-family fixture with only one completed control stage.
+    # Outputs: Partial analysis, pending paired comparison, four pending stages, and 72 records.
     def test_pending_control_has_no_full_paired_comparison(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, lock, _, _, _ = fixture(Path(tmp), completed=1)
@@ -127,6 +136,9 @@ class BudgetReportTests(unittest.TestCase):
             self.assertEqual(sum(s["status"] == "pending" for s in analysis["stage_status"]), 4)
             self.assertEqual(len(analysis["records"]), 72)
 
+    # Purpose: Verify paired analyses enforce complete, finite, leakage-free panels.
+    # Inputs: Duplicate/missing rows, NaN score, reserved case, wrong split/label, and fold overlap.
+    # Outputs: ValueError for every invalid prediction panel or train/evaluation overlap.
     def test_leakage_nonfinite_duplicates_and_incomplete_panels_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             _, _, baseline, controls, manifest = fixture(Path(tmp))
@@ -143,6 +155,9 @@ class BudgetReportTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 analyze_records(baseline, controls, changed)
 
+    # Purpose: Verify fixed-budget selection uses only TRAIN history and final epoch.
+    # Inputs: 200-epoch history altered with validation, wrong updates, epoch 50, or held-out pair.
+    # Outputs: Valid history accepted and ValueError for each selection/update/leakage mutation.
     def test_train_only_final_epoch_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, lock, _, _, _ = fixture(Path(tmp), completed=1)
@@ -164,6 +179,9 @@ class BudgetReportTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 checked_history(changed, receipt, stage)
 
+    # Purpose: Verify source bundles reject provenance and completion drift.
+    # Inputs: Mutated parent pin, receipt epoch, result lock, predictions, or parent INCOMPLETE marker.
+    # Outputs: ValueError for each altered dependency or incompatible completion artifact.
     def test_source_hash_receipt_and_lock_identity_gates(self):
         for mutation in ("parent_pin", "receipt", "own_result_lock", "prediction_artifact", "parent_INCOMPLETE"):
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
@@ -190,6 +208,9 @@ class BudgetReportTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     source_bundle(root, lock)
 
+    # Purpose: Verify failed-stage markers are distinguished from pending stages.
+    # Inputs: No completed controls, one hashed failure marker, then tampered marker bytes.
+    # Outputs: Blocked-by-failure status, one failed/four pending stages, and checksum rejection.
     def test_failed_marker_checked_and_pending_not_failed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, lock, _, _, _ = fixture(Path(tmp), completed=0)
@@ -204,6 +225,9 @@ class BudgetReportTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "checksum"):
                 source_bundle(root, lock)
 
+    # Purpose: Verify report revisions preserve prior artifacts and expose provenance.
+    # Inputs: Complete five-family fixture rendered twice.
+    # Outputs: Three figures per format, 120 records, verified hashes, and immutable review-r1 plus review-r2.
     def test_fresh_report_revisions_and_artifact_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, lock, _, _, _ = fixture(Path(tmp))

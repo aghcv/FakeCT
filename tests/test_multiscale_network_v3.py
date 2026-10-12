@@ -14,6 +14,9 @@ import fakect_multiscale_network_v3 as network
 
 
 class SpatialContractTests(unittest.TestCase):
+    # Purpose: Verify lazy TensorFlow import and stride-four heatmap coordinates.
+    # Inputs: Subprocess module import, 160x96x96 geometry, and invalid dimension 17.
+    # Outputs: Import loads no TensorFlow; grid edges match voxel centers and nondivisible geometry fails.
     def test_lazy_import_and_stride_four_voxel_edge_coordinates(self):
         code = "import sys; sys.path.insert(0,'src'); import fakect_multiscale_network_v3; assert 'tensorflow' not in sys.modules"
         subprocess.run([sys.executable, '-c', code], cwd=ROOT, check=True, capture_output=True)
@@ -45,6 +48,9 @@ class SpatialLocatorTests(unittest.TestCase):
             image[index, ..., 0] = np.exp(-radius_squared / 8.)
         return image
 
+    # Purpose: Verify heatmap coordinates match actual stride-two convolution sampling.
+    # Inputs: 32-cube coordinate ramp passed through two centered stride-two convolutions.
+    # Outputs: Convolved coordinates match heatmap_grid within 1e-7.
     def test_grid_matches_two_actual_same_stride_convolutions(self):
         tf = self.tf
         grid = np.indices((32, 32, 32), dtype=np.float32)
@@ -59,6 +65,9 @@ class SpatialLocatorTests(unittest.TestCase):
             x = convolution(x)
         np.testing.assert_allclose(x.numpy()[0, ..., 0], network.heatmap_grid((32, 32, 32))[..., 0], atol=1e-7)
 
+    # Purpose: Verify wrong heatmaps retain corrective gradients while ignoring padding.
+    # Inputs: Far-away high logit, invalid first heatmap slice, and a fixed target box.
+    # Outputs: Finite loss and corrective peak gradients ignore padding; target heatmap sums to one.
     def test_distant_wrong_heatmap_retains_corrective_gradient_and_ignores_padding(self):
         tf = self.tf
         components = network._components()
@@ -85,6 +94,9 @@ class SpatialLocatorTests(unittest.TestCase):
         np.testing.assert_array_equal(target[:, 0], 0)
         np.testing.assert_allclose(target.sum(), 1, atol=1e-6)
 
+    # Purpose: Verify locator centers depend on images rather than prior coordinates.
+    # Inputs: Same image with different center priors and a legacy locator.
+    # Outputs: Predicted centers match; no flattened head exists and incompatible legacy reuse raises ValueError.
     def test_center_does_not_use_prior_and_no_flattened_coordinate_head_exists(self):
         image = self.images([(15, 15, 15)])
         first = network.build_locator((32, 32, 32), base_filters=2,
@@ -100,6 +112,9 @@ class SpatialLocatorTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'stride-four'):
             network.build_classifier((32, 32, 32), (16, 16, 16), base_filters=2, locator=old_locator)
 
+    # Purpose: Verify translation learning and safe reuse of a saved locator.
+    # Inputs: Four translated Gaussian images, 60 TensorFlow updates, and saved locator/classifier.
+    # Outputs: Loss halves with one trace; translations track targets and both checkpoint reloads match.
     def test_synthetic_translation_learning_and_safe_classifier_reuse(self):
         tf = self.tf
         centers = [(7, 15, 15), (11, 15, 15), (19, 15, 15), (23, 15, 15)]

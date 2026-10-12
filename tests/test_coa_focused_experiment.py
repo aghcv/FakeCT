@@ -125,6 +125,9 @@ class FocusedContractTests(unittest.TestCase):
         self.config = fixture_config(self.root)
         self.contract = fixture_contract(self.root)
 
+    # Purpose: Verify diagnostics select only matched edited TRAIN sibling pairs.
+    # Inputs: 32/8 panel and diagnostic cases 260613/260616.
+    # Outputs: Four negative/high-positive TRAIN siblings selected and full parent panel preserved.
     def test_diagnostic_uses_matched_training_siblings_and_keeps_parent_panel(self):
         before = deepcopy(self.contract)
         selected = exp.select_diagnostic(self.config, self.contract)
@@ -136,6 +139,9 @@ class FocusedContractTests(unittest.TestCase):
         self.assertEqual(self.contract, before)
         self.assertEqual(len(self.contract['samples']), 40)
 
+    # Purpose: Verify diagnostic case selection enforces the TRAIN roster.
+    # Inputs: Validation, reserved-test, unknown, and repeated diagnostic case IDs.
+    # Outputs: ValueError for each invalid diagnostic roster.
     def test_validation_reserved_test_unknown_and_repeated_cases_rejected(self):
         for cases in (['260602'], ['260612'], ['999999'], ['260613', '260613']):
             with self.subTest(cases=cases):
@@ -144,6 +150,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.select_diagnostic(config, self.contract)
 
+    # Purpose: Verify diagnostic roles require unique correctly labelled siblings.
+    # Inputs: Missing, duplicated, or positively relabelled edited-negative sibling.
+    # Outputs: ValueError for every invalid role panel.
     def test_missing_duplicate_or_relabelled_diagnostic_role_rejected(self):
         for mutation in ('missing', 'duplicate', 'label'):
             with self.subTest(mutation=mutation):
@@ -159,6 +168,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.select_diagnostic(self.config, contract)
 
+    # Purpose: Verify diagnostic labels agree with the frozen severity threshold.
+    # Inputs: Negative score 0.3, positive score 0.1, and NaN positive score.
+    # Outputs: ValueError for inconsistent class/score pairs and nonfinite severity.
     def test_score_and_class_must_agree_with_frozen_engineering_threshold(self):
         changes = [('edited_negative', .3, False), ('higher_positive', .1, True),
                    ('higher_positive', float('nan'), True)]
@@ -170,6 +182,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.select_diagnostic(self.config, contract)
 
+    # Purpose: Verify paired diagnostics share companion edits and reviewed crop origins.
+    # Inputs: Changed declared/actual companion distance or higher-positive proposal origin.
+    # Outputs: ValueError for confounded edit parameters or mismatched sampling.
     def test_companion_edits_and_reviewed_sampling_must_match_within_pair(self):
         for mutation in ('declared_companions', 'actual_companions', 'crop_origin'):
             with self.subTest(mutation=mutation):
@@ -185,11 +200,17 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.select_diagnostic(self.config, contract)
 
+    # Purpose: Verify focused configuration preserves its public settings.
+    # Inputs: Fixture config serialized to focused.ini.
+    # Outputs: Loaded configuration equals the original settings.
     def test_ini_roundtrip_keeps_user_facing_values(self):
         path = self.root / 'focused.ini'
         write_ini(path, self.config)
         self.assertEqual(exp.load_config(path), self.config)
 
+    # Purpose: Verify focused config loading rejects unchecked configuration entries.
+    # Inputs: Unknown diagnostic field, extra section, and DEFAULT entry.
+    # Outputs: ValueError for each unsupported configuration extension.
     def test_ini_rejects_unknown_fields_sections_and_defaults(self):
         path = self.root / 'focused.ini'
         for mutation in ('field', 'section', 'defaults'):
@@ -205,6 +226,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.load_config(path)
 
+    # Purpose: Verify configuration rejects invalid learning/resource budgets.
+    # Inputs: Zero epochs/cache/memory/filters, NaN/Inf rates, invalid gap/BCE, and negative regression weight.
+    # Outputs: ValueError for every malformed training or resource value.
     def test_ini_rejects_nonfinite_or_invalid_resource_and_learning_values(self):
         path = self.root / 'focused.ini'
         changes = [('diagnostic', 'epochs', 0), ('diagnostic', 'learning_rate', 'nan'),
@@ -223,6 +247,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.load_config(path)
 
+    # Purpose: Verify experiment output cannot overwrite parent or review trees.
+    # Inputs: Output paths equal to or below parent/review directories.
+    # Outputs: ValueError for each conflicting output destination.
     def test_output_cannot_be_parent_or_nested_under_review(self):
         path = self.root / 'focused.ini'
         for out in (self.root / 'parent', self.root / 'parent/new',
@@ -234,6 +261,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.load_config(path)
 
+    # Purpose: Verify planning retains the full panel while budgeting diagnostic inputs.
+    # Inputs: Mock source contract with standard detail shape and then 1024-cubed detail.
+    # Outputs: 32/8 panel retained, four diagnostic samples, 2.4 mm features, and oversized-cache rejection.
     def test_plan_retains_full_panel_and_cache_budget_is_enforced(self):
         with patch.object(exp.classifier, 'source_contract', return_value=self.contract):
             document = exp.plan(self.config)
@@ -252,6 +282,9 @@ class FocusedContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '[Cc]ache|RAM'):
                 exp.plan(self.config)
 
+    # Purpose: Verify classifier runtime uses frozen geometry and requested model settings.
+    # Inputs: Parent geometry plus focused filters, seed, epochs, and output config.
+    # Outputs: Same physical input grids, requested classifier settings, and unchanged contract.
     def test_runtime_keeps_physical_geometry_and_applies_classifier_settings(self):
         before = deepcopy(self.contract)
         runtime = exp.runtime_config(self.config, self.contract)
@@ -263,6 +296,9 @@ class FocusedContractTests(unittest.TestCase):
         self.assertEqual(runtime['experiment']['output_directory'], self.config['experiment']['output_directory'])
         self.assertEqual(self.contract, before)
 
+    # Purpose: Verify experiment freezing pins code, copied source, config, and locator.
+    # Inputs: Tiny runtime source/config and individually tampered original/snapshot/dependency files.
+    # Outputs: Stable inspected lock, repeat-freeze refusal, and rejection of every byte change.
     def test_frozen_sources_snapshots_input_and_dependencies_cannot_change(self):
         runtime = self.root / 'src/runtime.py'
         runtime.parent.mkdir()
@@ -325,6 +361,9 @@ class FocusedContractTests(unittest.TestCase):
         exp.write_json(output / 'diagnostic/results.json', result)
         exp.write_json(output / 'diagnostic/classifier-predictions.json', predictions)
 
+    # Purpose: Verify accepted diagnostics bind their records and checkpoint digest.
+    # Inputs: Four correct sibling predictions and then modified classifier checkpoint.
+    # Outputs: Three pinned dependencies and checkpoint-change ValueError.
     def test_diagnostic_gate_binds_four_matched_labels_and_checkpoint(self):
         output, result, predictions = self._stage_fixture()
         self._write_diagnostic(output, result, predictions)
@@ -336,6 +375,9 @@ class FocusedContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '[Cc]heckpoint'):
             exp.require_diagnostic(self.config, self.contract)
 
+    # Purpose: Verify global approval cannot bypass per-record diagnostic validation.
+    # Inputs: Approved summary with altered probability, label, score, split, case, family, or role.
+    # Outputs: ValueError for each failing prediction or inconsistent identity join.
     def test_diagnostic_summary_cannot_override_failed_case_or_label_join(self):
         output, valid_result, valid_predictions = self._stage_fixture()
         changes = [('probability', .51), ('label', 0), ('score_label', .25),
@@ -353,6 +395,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.require_diagnostic(self.config, self.contract)
 
+    # Purpose: Verify diagnostic authorization requires complete provenance and passing evidence.
+    # Inputs: Changed lock, missing/duplicate rows, test use, locator change, failed parity, or failed gate.
+    # Outputs: ValueError for every invalid authorization artifact.
     def test_diagnostic_gate_rejects_wrong_source_missing_records_and_approval_flags(self):
         output, valid_result, valid_predictions = self._stage_fixture()
         for mutation in ('source', 'missing', 'duplicate', 'test', 'locator', 'parity', 'gate'):
@@ -378,6 +423,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.require_diagnostic(self.config, self.contract)
 
+    # Purpose: Verify smoke authorization binds architecture, lock, traces, and GPU state.
+    # Inputs: Valid smoke then altered lock/status/parity/detail shape/proposals/traces/GPU visibility.
+    # Outputs: Exact valid smoke returned and ValueError for every incompatible record.
     def test_full_size_smoke_is_architecture_and_lock_specific(self):
         output, _, _ = self._stage_fixture()
         detail = self.contract['parent_config']['input.detail']
@@ -397,6 +445,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.require_smoke(self.config, self.contract)
 
+    # Purpose: Verify diagnostic failure/completion markers prevent full-fit authorization.
+    # Inputs: Otherwise valid diagnostic with failure.json or INCOMPLETE marker.
+    # Outputs: ValueError while either blocking marker exists.
     def test_failed_or_incomplete_diagnostic_cannot_authorize_full_fit(self):
         output, result, predictions = self._stage_fixture()
         self._write_diagnostic(output, result, predictions)
@@ -410,6 +461,9 @@ class FocusedContractTests(unittest.TestCase):
                 finally:
                     marker.unlink()
 
+    # Purpose: Verify every matched case must satisfy diagnostic learning thresholds.
+    # Inputs: Good pairs, one case with excessive BCE, and invalid split/missing/duplicate-class rows.
+    # Outputs: Good gate passes, high-BCE case fails, and malformed pairs raise ValueError.
     def test_gate_requires_each_case_to_learn_instead_of_pooled_average(self):
         _, result, _ = self._stage_fixture()
         rows = result['predictions']
@@ -433,6 +487,9 @@ class FocusedContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     learning.diagnostic_gate(self.config, invalid)
 
+    # Purpose: Verify fine-input caching is bounded, immutable, and independent of targets.
+    # Inputs: MiniVolume sibling inputs, changed masks, test split, fractional origins, and small cache.
+    # Outputs: Read-only image channels, bounded eviction/hits, unchanged predictors, and pre-read test rejection.
     def test_cache_is_bounded_readonly_image_only_and_excludes_test_payloads(self):
         runtime = deepcopy(self.contract['parent_config'])
         runtime['input.detail']['spacing_ijk_mm'] = [1., 1., 1.]
@@ -469,6 +526,9 @@ class FocusedContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '[Bb]udget'):
                 too_small.classifier(rows[1], proposal)
 
+    # Purpose: Verify signal audits quantify differences and reject malformed channels.
+    # Inputs: 2-cubed zero image with one value changed to 2, wrong shape, then NaN.
+    # Outputs: Fraction 0.125, max difference 2, expected RMS, and ValueError for shape/nonfinite data.
     def test_signal_difference_audit_rejects_invalid_arrays(self):
         before = np.zeros((2, 2, 2), np.float32)
         after = before.copy()
@@ -484,6 +544,9 @@ class FocusedContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             learning.difference_summary(before, after)
 
+    # Purpose: Verify fitting uses the inspected lock and rejects test rows before setup.
+    # Inputs: Caller TRAIN row replaced by test row in mocked verified lock.
+    # Outputs: ValueError before TensorFlow configuration or volume access.
     def test_fit_binds_verified_lock_and_rejects_test_before_reading(self):
         output = Path(self.config['experiment']['output_directory'])
         output.mkdir()
@@ -518,6 +581,9 @@ class FocusedTensorFlowIntegrationTests(unittest.TestCase):
         MiniVolume.accessed = []
         MiniVolume.returned_mask_value = None
 
+    # Purpose: Verify real TensorFlow diagnostics respect frozen locator and checkpoint parity.
+    # Inputs: Two epochs on four MiniVolume TRAIN siblings with actual saved locator replay.
+    # Outputs: Eight updates, exact reload parity, fixed locator bytes, no test/validation access, and no overwrite.
     def test_diagnostic_reads_only_four_training_siblings_and_reloads_exactly(self):
         from test_multiscale_v3_integration import config as parent_config
         from test_multiscale_experiment_review import mini_overview

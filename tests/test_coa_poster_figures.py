@@ -13,6 +13,9 @@ from fakect_coa_poster_figures import (checked_predictions, empirical_roc,
 
 
 class PosterMetricTests(unittest.TestCase):
+    # Purpose: Verify empirical ROC matches perfect and reversed ranking.
+    # Inputs: Two negative and two positive labels with correctly or inversely ordered probabilities.
+    # Outputs: AUROC 1 or 0, correct class counts and monotone curves from 0,0 to 1,1.
     def test_perfect_and_reversed_ranking(self):
         for probabilities, expected in [([.1, .2, .8, .9], 1.),
                                          ([.9, .8, .2, .1], 0.)]:
@@ -25,6 +28,9 @@ class PosterMetricTests(unittest.TestCase):
                 self.assertTrue(np.all(np.diff(result['fpr']) >= 0))
                 self.assertTrue(np.all(np.diff(result['tpr']) >= 0))
 
+    # Purpose: Verify tied probabilities enter ROC together with half credit.
+    # Inputs: One mixed-class 0.5 tie and a second case with all scores tied.
+    # Outputs: AUROC 0.875 with expected points; all-tied AUROC 0.5 with two endpoints.
     def test_ties_enter_roc_together_and_have_half_credit(self):
         result = empirical_roc([0, 1, 0, 1], [.1, .5, .5, .9])
         self.assertAlmostEqual(result['auroc'], .875)
@@ -34,6 +40,9 @@ class PosterMetricTests(unittest.TestCase):
         self.assertEqual(tied['auroc'], .5)
         self.assertEqual(len(tied['fpr']), 2)
 
+    # Purpose: Reject undefined or malformed empirical ROC inputs.
+    # Inputs: Empty, single-class, mismatched, invalid-label, nonfinite or out-of-range scores.
+    # Outputs: ValueError rejects every invalid ROC input family.
     def test_roc_rejects_undefined_or_invalid_inputs(self):
         invalid = [([], []), ([1, 1], [.2, .8]), ([0, 0], [.2, .8]),
                    ([0, 1], [.2]), ([0, 2], [.2, .8]),
@@ -56,10 +65,16 @@ class PosterPredictionTests(unittest.TestCase):
                      label=1, probability=.8, logit=math.log(.8/.2),
                      score_label=.4, score_prediction=.3, near_threshold=False)]
 
+    # Purpose: Verify checked predictions preserve observed values.
+    # Inputs: Valid original and higher-positive validation records with consistent logits.
+    # Outputs: Validated records equal the input records.
     def test_checked_records_preserve_observed_values(self):
         rows = self.records()
         self.assertEqual(checked_predictions(rows), rows)
 
+    # Purpose: Reject duplicate, reserved and invalid prediction records.
+    # Inputs: Duplicate IDs, test split, bad probabilities/labels/scores or inconsistent logit.
+    # Outputs: ValueError rejects every malformed or reserved prediction.
     def test_duplicates_reserved_predictions_and_invalid_values_fail(self):
         rows = self.records()
         with self.assertRaises(ValueError):
@@ -140,6 +155,9 @@ class PosterSourceTests(unittest.TestCase):
         write('pilot/classifier-history.json',history)
         write('pilot/classifier-predictions.json',artifact)
 
+    # Purpose: Verify poster source bundles require only checked metadata.
+    # Inputs: Hashed synthetic experiment and prediction bundle without images or model payloads.
+    # Outputs: Four predictions and epoch 2 verified; changing the input invalidates source verification.
     def test_verified_bundle_needs_no_imaging_or_checkpoint_payloads(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -153,6 +171,9 @@ class PosterSourceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 verify_sources(bundle)
 
+    # Purpose: Reject poster bundles with corrupt checksums or invalid identity evidence.
+    # Inputs: Checksum mismatch, annotation mismatch, reserved overlap or incomplete marker.
+    # Outputs: ValueError rejects every invalid source bundle.
     def test_checksum_annotation_and_reserved_identity_failures_are_rejected(self):
         for failure in ('checksum','annotation','reserved','incomplete'):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:

@@ -121,6 +121,9 @@ class PilotContractTests(unittest.TestCase):
         # do not mutate their globals or load any real cohort payload.
         self.stack.enter_context(patch.object(exp, 'parent', self.fake_parent))
 
+    # Purpose: Verify pilot configuration roundtrips and bounds reviewed cache settings.
+    # Inputs: Pilot INI with normal settings, cache 0/6145/16384 MB, and unreviewed option.
+    # Outputs: Exact config roundtrip and ValueError for invalid cache/unknown option.
     def test_clean_ini_roundtrip_and_bounded_cache(self):
         path = self.root / 'pilot.ini'
         write_ini(path, self.c)
@@ -138,6 +141,9 @@ class PilotContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             exp.load_config(path)
 
+    # Purpose: Verify pilot plans inherit the reviewed full panel and initialization reference.
+    # Inputs: Passed focused reference with 32 TRAIN and 8 validation samples.
+    # Outputs: Unchanged samples/proposals/geometry/model, pinned reference artifacts, and fresh-weight digest.
     def test_pilot_retains_frozen_32_8_panel_and_fresh_initialization(self):
         document = exp.plan(self.c)
         self.assertEqual(document['samples'], self.reference_lock['samples'])
@@ -155,6 +161,9 @@ class PilotContractTests(unittest.TestCase):
             path = reference / relative
             self.assertEqual(document['dependency_sha256'][str(path)], exp.sha256(path))
 
+    # Purpose: Verify pilot authorization rechecks parent diagnostic evidence.
+    # Inputs: Failed status/gate, weak case probability, short epoch count, or mismatched checkpoint digest.
+    # Outputs: ValueError for each forged or incomplete parent approval.
     def test_failed_or_forged_parent_gate_cannot_authorize_pilot(self):
         reference = Path(self.c['reference']['experiment_directory'])
         for mutation in ('status', 'gate', 'case_probability', 'epochs', 'checkpoint'):
@@ -182,6 +191,9 @@ class PilotContractTests(unittest.TestCase):
                 parent.write_json(reference / 'diagnostic/classifier-predictions.json', predictions)
 
 
+    # Purpose: Verify pilot planning enforces full-cache and partition/role completeness.
+    # Inputs: 4000 MB cache or reference panel with test, missing, moved-split, or duplicate-role row.
+    # Outputs: ValueError for insufficient memory and each invalid full panel.
     def test_insufficient_full_panel_cache_or_leaking_partition_is_rejected(self):
         changed_config = deepcopy(self.c)
         changed_config['training']['cache_limit_mb'] = 4000
@@ -203,6 +215,9 @@ class PilotContractTests(unittest.TestCase):
                     exp.plan(self.c)
         self.fake_parent.inspect_lock.return_value = deepcopy(self.reference_lock)
 
+    # Purpose: Verify pilot freezes inherited runtime and reference sampling identity.
+    # Inputs: Tampered runtime/snapshot/checkpoint/history, spacing, crop origin, or source path.
+    # Outputs: Stable valid lock and ValueError for every frozen-source or reference-contract change.
     def test_pilot_lock_pins_reference_geometry_panel_and_runtime_sources(self):
         source_names = ('src/inherited_runtime.py', 'src/pilot_runtime.py')
         for name in source_names:
@@ -245,6 +260,9 @@ class PilotContractTests(unittest.TestCase):
                 self.fake_parent.inspect_lock.return_value = deepcopy(self.reference_lock)
                 self.assertEqual(exp.inspect_lock(self.c, data), lock)
 
+    # Purpose: Verify smoke authorization proves full resident-cache model updates.
+    # Inputs: Valid 40-sample GPU smoke then altered lock, gradients, residency, memory, or trace proof.
+    # Outputs: Valid smoke accepted and every incomplete/inconsistent resource proof rejected.
     def test_full_size_smoke_requires_full_cache_in_own_lock_and_gpu(self):
         lock = exp.plan(self.c)
         output = Path(self.c['experiment']['output_directory'])
@@ -293,6 +311,9 @@ class PilotContractTests(unittest.TestCase):
 
 
 class PilotCacheTests(unittest.TestCase):
+    # Purpose: Verify full-cache probing allocates actual independent predictor buffers.
+    # Inputs: Forty two-proposal 8-cubed samples with mock host guard and 1 MB budget.
+    # Outputs: Exact resident bytes, finite read-only independent arrays, touched pages, and budget rejection.
     def test_full_cache_probe_allocates_distinct_readonly_touched_image_buffers(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
@@ -326,6 +347,9 @@ class PilotCacheTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             learning.full_cache_memory_probe(runtime, Guard(), sample_count=40, cache_limit_mb=.01)
 
+    # Purpose: Verify pilot cache readers reject reserved test rows before I/O.
+    # Inputs: Test-marked fixture row and forbidden ContextVolume mock.
+    # Outputs: ValueError with no payload reader invocation.
     def test_cache_reader_refuses_reserved_test_before_reading_any_payload(self):
         with tempfile.TemporaryDirectory() as directory:
             contract = fixture_contract(directory)
@@ -339,6 +363,9 @@ class PilotCacheTests(unittest.TestCase):
                 forbidden.assert_not_called()
 
 
+    # Purpose: Verify preload validates the whole panel and cache budget before I/O.
+    # Inputs: Test row, duplicate sample, or 1 MB cache with forbidden reader mock.
+    # Outputs: ValueError for each invalid preload and no volume opened.
     def test_preload_rejects_test_duplicates_and_insufficient_cache_before_payloads(self):
         with tempfile.TemporaryDirectory() as directory:
             contract = fixture_contract(directory)
@@ -373,6 +400,9 @@ class PilotTensorFlowTests(unittest.TestCase):
         MiniVolume.accessed = []
         MiniVolume.returned_mask_value = None
 
+    # Purpose: Verify real TensorFlow pilot trains fresh balanced pairs and selects by validation BCE.
+    # Inputs: One-epoch 32/8 MiniVolume panel with shifted validation signals and frozen locator.
+    # Outputs: Sixteen updates, correct fresh digest, validation-selected reload parity, and forty cached inputs.
     def test_full_32_8_pilot_trains_fresh_then_selects_validation_checkpoint(self):
         from test_multiscale_v3_integration import config as parent_config
         import fakect_multiscale_experiment_v3 as geometry

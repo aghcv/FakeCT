@@ -14,6 +14,9 @@ from preview_roi import run
 
 
 class RoiReportWorkflowTests(unittest.TestCase):
+    # Purpose: Verify tissue-only tube geometry isolates one of two same-ID arteries.
+    # Inputs: 13-cube phantom with parallel -7 arteries and a tube around only one.
+    # Outputs: 18 candidates, nine selected in one component, portable checked report and unchanged native labels.
     def test_tissue_only_tube_isolates_one_of_two_nearby_arteries(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

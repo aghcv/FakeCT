@@ -70,6 +70,9 @@ class ComparisonReportTests(unittest.TestCase):
     def arm(self,name='baseline_only'):
         return reporter.inspect_arm(self.root,self.lock,name)
 
+    # Purpose: Verify unstarted comparisons make no accuracy claims.
+    # Inputs: Frozen comparison lock with neither arm trained.
+    # Outputs: HTML marks comparison incomplete and has no verified test Dice.
     def test_unstarted_report_contains_no_claim_of_accuracy(self):
         path=reporter.report(self.root)
         text=path.read_text()
@@ -77,6 +80,9 @@ class ComparisonReportTests(unittest.TestCase):
         self.assertIn('No verified held-out metrics yet',text)
         self.assertNotIn('Test family Dice:',text)
 
+    # Purpose: Verify live history remains visibly provisional.
+    # Inputs: INCOMPLETE model folder with one unverified epoch.
+    # Outputs: No verified training metadata; HTML labels provisional history with dashed plotting.
     def test_live_history_is_unverified(self):
         model=self.root/'baseline_only/model';model.mkdir(parents=True)
         (model/'INCOMPLETE').write_text('running')
@@ -88,6 +94,9 @@ class ComparisonReportTests(unittest.TestCase):
         self.assertIn('Live history is provisional',text)
         self.assertIn('stroke-dasharray',text)
 
+    # Purpose: Verify complete matched arms show verified held-out differences.
+    # Inputs: Two signed completed arms with family Dice 0.7 and 0.8.
+    # Outputs: All matching checks pass; report complete with +0.1000 gain and verified Dice 0.8000.
     def test_complete_matched_report(self):
         for arm,dice in zip(reporter.ARMS,(.7,.8)):
             self.complete(arm,dice)
@@ -100,6 +109,9 @@ class ComparisonReportTests(unittest.TestCase):
         self.assertIn('Test family Dice: 0.8000',text)
         self.assertNotIn('<script',text)
 
+    # Purpose: Verify corrupt checkpoints hide all metrics for their arm.
+    # Inputs: Completed arm whose checkpoint bytes are changed afterward.
+    # Outputs: Training, evaluation and history hidden with a metrics-hidden status.
     def test_checkpoint_corruption_hides_entire_arm(self):
         self.complete('baseline_only')
         (self.root/'baseline_only/model/checkpoint.keras').write_bytes(b'changed')
@@ -108,6 +120,9 @@ class ComparisonReportTests(unittest.TestCase):
         self.assertFalse(row['history'])
         self.assertIn('metrics hidden',row['status'])
 
+    # Purpose: Verify corrupt evaluation preserves only verified training.
+    # Inputs: Completed arm whose result JSON is replaced with an unsigned empty object.
+    # Outputs: Training remains available; evaluation hidden and test-metrics-hidden status shown.
     def test_result_corruption_retains_verified_fit_only(self):
         self.complete('baseline_only')
         (self.root/'baseline_only/evaluation/results.json').write_text('{}')
@@ -115,6 +130,9 @@ class ComparisonReportTests(unittest.TestCase):
         self.assertIsNotNone(row['training']);self.assertIsNone(row['evaluation'])
         self.assertIn('test metrics hidden',row['status'])
 
+    # Purpose: Reject incorrect aggregates even when the result is resigned.
+    # Inputs: Verified evaluation rewritten with family Dice 0.99 and a new signature.
+    # Outputs: Evaluation hidden and aggregate inconsistency recorded.
     def test_resigned_incorrect_aggregate_is_hidden(self):
         _,result=self.complete('baseline_only')
         result['summary']['family_macro']['dice']=.99
@@ -122,6 +140,9 @@ class ComparisonReportTests(unittest.TestCase):
         row=self.arm();self.assertIsNone(row['evaluation'])
         self.assertIn('aggregate',row['errors'][0])
 
+    # Purpose: Reject incorrect test identities even when the result is resigned.
+    # Inputs: Resigned evaluation row changed to training case a.
+    # Outputs: Evaluation hidden and family/case/split inconsistency recorded.
     def test_resigned_wrong_test_identity_is_hidden(self):
         _,result=self.complete('baseline_only')
         result['records'][0]['case_id']='a'
@@ -129,6 +150,9 @@ class ComparisonReportTests(unittest.TestCase):
         row=self.arm();self.assertIsNone(row['evaluation'])
         self.assertIn('family/case/split',row['errors'][0])
 
+    # Purpose: Verify changed frozen INI replaces stale reports with hidden metrics.
+    # Inputs: Completed reported arm followed by an altered input.ini.
+    # Outputs: Regenerated HTML hides all metrics and omits test Dice.
     def test_changed_ini_replaces_stale_report_with_no_metrics(self):
         self.complete('baseline_only')
         reporter.report(self.root)
@@ -137,6 +161,9 @@ class ComparisonReportTests(unittest.TestCase):
         self.assertIn('All metrics hidden',text)
         self.assertNotIn('Test family Dice:',text)
 
+    # Purpose: Verify diagnostic locks cannot be presented as held-out comparisons.
+    # Inputs: Signed comparison lock marked diagnostic.
+    # Outputs: HTML hides metrics and points to the diagnostic reporter.
     def test_diagnostic_lock_not_reported_as_heldout(self):
         self.lock['diagnostic']=True
         self.signed(self.root/'experiment-lock.json',self.lock)
@@ -144,6 +171,9 @@ class ComparisonReportTests(unittest.TestCase):
         self.assertIn('report_context_diagnostic.py',text)
         self.assertIn('All metrics hidden',text)
 
+    # Purpose: Verify differing patch schedules prevent matched-comparison claims.
+    # Inputs: Signed completed arms with altered physical-patch event hash in one history.
+    # Outputs: Report marks matching checks failed despite verified artifact signatures.
     def test_schedule_difference_prevents_matched_claim(self):
         for arm in reporter.ARMS:
             self.complete(arm)

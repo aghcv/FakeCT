@@ -40,6 +40,9 @@ class NativeCenterlineSamplingTests(unittest.TestCase):
         sample_surface_centerlines(self.evidence, self.arrays, self.resolved)
         return self.evidence['records'][0]['native_centerline_samples']
 
+    # Purpose: Verify RAW world centerlines sample native ACT cells.
+    # Inputs: Anisotropic spacing [2,3,4], crop offset [10,20,30], and signed ACT labels.
+    # Outputs: Four distinct cells and two ROI cells are counted without ordinal or background IDs.
     def test_anisotropic_world_coordinates_crop_offset_and_signed_act_values(self):
         actual = self.sample()
         self.assertEqual(actual['sample_voxels'], 4)
@@ -49,10 +52,16 @@ class NativeCenterlineSamplingTests(unittest.TestCase):
         self.assertNotIn(2, actual['sampled_id_counts'])  # RAW ordinal is not an ACT label.
         self.assertNotIn(9876, actual['sampled_id_counts'])  # k,j,i addressing must be correct.
 
+    # Purpose: Verify containing-cell lookup applies the boundary origin once.
+    # Inputs: Two nearby centerline points in native cell [10,20,30].
+    # Outputs: Only signed label -7 is sampled once.
     def test_containing_cell_uses_boundary_origin_without_second_half_offset(self):
         self.evidence['records'] = [self.surface([[10.1, 20.1, 30.1], [10.2, 20.1, 30.1]])]
         self.assertEqual(self.sample()['sampled_id_counts'], {-7: 1})
 
+    # Purpose: Verify repeated surface names retain separate native evidence.
+    # Inputs: Two same-name surfaces with candidate IDs -7,1547,1550 and different paths.
+    # Outputs: Candidate sets agree; the second path samples only ID 1547 rather than surface ordinal 3.
     def test_repeated_names_keep_candidate_set_but_sample_distinct_native_voxels(self):
         self.evidence['records'].append(self.surface([[11.1, 20.25, 30.25], [11.8, 20.25, 30.25]], ordinal=3))
         self.sample()
@@ -61,11 +70,17 @@ class NativeCenterlineSamplingTests(unittest.TestCase):
         self.assertEqual(second['native_centerline_samples']['matching_name_id_counts'], {1547: 1})
         self.assertNotIn(3, second['native_centerline_samples']['sampled_id_counts'])
 
+    # Purpose: Verify sampling deduplicates cells independently of path direction.
+    # Inputs: The same centerline sampled forwards and backwards.
+    # Outputs: Both directions produce identical sample counts and metadata.
     def test_resampling_and_reverse_direction_do_not_double_count_voxels(self):
         first = self.sample()
         self.evidence['records'][0]['centerline']['centerline_raw_mm'].reverse()
         self.assertEqual(self.sample(), first)
 
+    # Purpose: Skip native evidence when coordinate or centerline verification is unavailable.
+    # Inputs: Unavailable coordinate contract, then unavailable centerline status.
+    # Outputs: Neither case adds native_centerline_samples.
     def test_unavailable_contract_or_unverified_centerline_has_no_samples(self):
         self.evidence['coordinate_contract']['status'] = 'unavailable'
         sample_surface_centerlines(self.evidence, self.arrays, self.resolved)
@@ -75,11 +90,17 @@ class NativeCenterlineSamplingTests(unittest.TestCase):
         sample_surface_centerlines(self.evidence, self.arrays, self.resolved)
         self.assertNotIn('native_centerline_samples', self.evidence['records'][0])
 
+    # Purpose: Reject native sampling with inconsistent physical spacing.
+    # Inputs: Contract spacing [1,1,1] versus resolved spacing [2,3,4].
+    # Outputs: ValueError identifies the spacing disagreement.
     def test_contract_spacing_mismatch_is_rejected(self):
         self.evidence['coordinate_contract']['spacing_ijk_mm'] = [1, 1, 1]
         with self.assertRaisesRegex(ValueError, 'spacing disagrees'):
             self.sample()
 
+    # Purpose: Verify path clipping limits sampling to the native crop.
+    # Inputs: A million-cell crossing path and a wholly outside segment.
+    # Outputs: Crossing samples four crop IDs; the outside path adds no native samples.
     def test_clip_distant_path_before_sampling_and_discard_outside_segments(self):
         self.evidence['records'] = [self.surface([[-1e6, 20.25, 30.25], [1e6, 20.25, 30.25]])]
         self.assertEqual(self.sample()['sampled_id_counts'], {-7: 1, 999: 1, 1547: 1, 1550: 1})
@@ -87,6 +108,9 @@ class NativeCenterlineSamplingTests(unittest.TestCase):
         sample_surface_centerlines(self.evidence, self.arrays, self.resolved)
         self.assertNotIn('native_centerline_samples', self.evidence['records'][0])
 
+    # Purpose: Enforce the aggregate sampling budget before allocating combined segments.
+    # Inputs: Eight alternating points spanning 20000 cells and a concatenate failure mock.
+    # Outputs: ValueError reports the aggregate budget before concatenation.
     def test_aggregate_budget_stops_many_segments_before_concatenation(self):
         labels = np.zeros((1, 1, 20000), dtype=np.float32)
         arrays = {'act': labels, 'roi': np.ones(labels.shape, dtype=bool)}
@@ -101,6 +125,9 @@ class NativeCenterlineSamplingTests(unittest.TestCase):
 
 
 class AnatomyCliConfigurationTests(unittest.TestCase):
+    # Purpose: Verify the anatomy CLI loads cohort configuration without native data.
+    # Inputs: Archived 260602 anatomy INI and a creation mock that must not run.
+    # Outputs: Recipe-cohort schema, thoracic_aorta selection, empty source IDs, and freeze settings load.
     def test_cohort_example_uses_generation_loader_without_reading_native_data(self):
         spec = importlib.util.spec_from_file_location('fakect_resolve_anatomy_cli_test', ROOT / 'scripts/resolve_anatomy.py')
         module = importlib.util.module_from_spec(spec)

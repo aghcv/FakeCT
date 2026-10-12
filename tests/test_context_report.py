@@ -13,6 +13,9 @@ from fakect_context_report import _baseline_rows, _plane_mask, _slice_specs
 
 
 class ContextReportTests(unittest.TestCase):
+    # Purpose: Require exactly one report baseline per case.
+    # Inputs: Two cases with one baseline each, then a duplicate baseline.
+    # Outputs: Two baselines load initially; duplication raises ValueError.
     def test_baselines_required_once_per_case(self):
         rows = [{'case_id': 'a', 'baseline': True}, {'case_id': 'a', 'baseline': False},
                 {'case_id': 'b', 'baseline': True}]
@@ -21,6 +24,9 @@ class ContextReportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Exactly one'):
             _baseline_rows({'samples': rows})
 
+    # Purpose: Verify native plane masks use crop offsets and selected axes.
+    # Inputs: One target voxel at [1,2,3], shifted crop coordinates, and each plane axis.
+    # Outputs: Each intersecting plane retains one voxel; a disjoint plane is empty.
     def test_native_slice_offsets_and_axes(self):
         mask = np.zeros((3, 4, 5), bool)
         mask[1, 2, 3] = True
@@ -34,6 +40,9 @@ class ContextReportTests(unittest.TestCase):
             self.assertEqual(plane.sum(), 1)
         self.assertFalse(_plane_mask(mask, [10, 20, 30], [0, 0, 0], [1, 5, 6], 0).any())
 
+    # Purpose: Verify report slices select target area with physical context.
+    # Inputs: Single axial target patch, crop origin [30,20,10], and anisotropic spacing.
+    # Outputs: Axial index and coronal/sagittal bounds match expected native coordinates.
     def test_slice_indices_use_target_area_and_physical_context(self):
         mask = np.zeros((4, 5, 6), bool)
         mask[2, 1:4, 2:5] = True
@@ -47,6 +56,9 @@ class ContextReportTests(unittest.TestCase):
         self.assertEqual(sagittal['shape_kji'], [10, 90, 1])
 
 
+    # Purpose: Verify offline context report includes native slices and surface controls.
+    # Inputs: Small native attenuation volume, core/branch masks, baseline pair, and mocked dataset.
+    # Outputs: One case has three slices, no omitted surfaces, interactive HTML, PNG output, and no INCOMPLETE marker.
     def test_complete_offline_report_has_native_slices_and_surface_controls(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

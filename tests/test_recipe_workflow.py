@@ -68,6 +68,9 @@ class RecipeWorkflowTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             return module.run(self.path, validate_only)
 
+    # Purpose: Verify recipe workflow exports chained pass states and portable evidence.
+    # Inputs: Synthetic lower growth and upper shrink recipe with frozen INI/native sources.
+    # Outputs: Consistent chained/final NPZs, embedded pass figures/viewers, checked hashes and preserved sources.
     def test_recipe_exports_chained_states_and_embeds_every_pass(self):
         original_ini = self.path.read_bytes()
         config = load_preview_config(self.path)
@@ -118,12 +121,18 @@ class RecipeWorkflowTests(unittest.TestCase):
         self.assertFalse(self.fixture.dataset.exists())
         self.assertFalse(self.fixture.model.exists())
 
+    # Purpose: Verify recipe validation performs metadata checks without crop reads or edits.
+    # Inputs: Recipe fixture with crop read and apply_recipe mocked to fail.
+    # Outputs: Validation succeeds and output directory remains absent.
     def test_validate_only_reads_no_crop_or_outputs(self):
         with patch('fakect_roi.read_crop', side_effect=AssertionError('metadata validation cannot read crop')), \
                 patch('fakect_recipe.apply_recipe', side_effect=AssertionError('validation cannot edit')):
             self.run_preview(validate_only=True)
         self.assertFalse(self.output.exists())
 
+    # Purpose: Verify selection recipes export offspring with exact ancestry across passes.
+    # Inputs: Main selector, two growth iterations then shrink with blank source-ID filter.
+    # Outputs: Outside-selector growth/removal, consistent ancestor chain, protected neighbor and verified artifacts.
     def test_selection_role_exports_outside_roi_growth_and_exact_ancestor_state_chain(self):
         sections = self.fixture.sections
         sections.pop('roi.lower')
@@ -189,6 +198,9 @@ class RecipeWorkflowTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256((self.output/name).read_bytes()).hexdigest(), digest, name)
         self.assertFalse((self.output/'INCOMPLETE').exists())
 
+    # Purpose: Verify compact main percent ranges constrain native edits and appear in reports.
+    # Inputs: Three-node main tube with growth restricted to 30-75 percent path interval.
+    # Outputs: Resolved 13-to-17.5 node range, no changes outside strict arc bounds and portable closeups/viewers.
     def test_compact_main_percent_range_reaches_masks_artifacts_and_report(self):
         sections = self.fixture.sections
         sections.pop('roi.lower')
@@ -218,6 +230,9 @@ class RecipeWorkflowTests(unittest.TestCase):
         self.assertTrue((self.output/'recipe-roi-closeups.png').is_file())
         self.assertEqual(len(_Document(document).frames), 4)
 
+    # Purpose: Verify overlap failures leave incomplete evidence without publishing results.
+    # Inputs: Recipe overlap policy error with overlapping named regions.
+    # Outputs: Overlap ValueError, INCOMPLETE marker and no report, final NPZ or step artifacts.
     def test_overlap_failure_leaves_incomplete_marker_and_no_published_result(self):
         self.fixture.sections['recipe']['overlap'] = 'error'
         self.fixture.write_input()
@@ -229,6 +244,9 @@ class RecipeWorkflowTests(unittest.TestCase):
         self.assertFalse((self.output/'edit.npz').exists())
         self.assertFalse((self.output/'steps').exists())
 
+    # Purpose: Verify outer-curvature ranged edits export direction evidence and portable frames.
+    # Inputs: Curved five-node tube, 20-80 percent range and outer 180-degree 2 mm growth.
+    # Outputs: Reliable-side changes, preserved sources, matching frame metadata and verified embedded assets.
     def test_curvature_outer_range_exports_direction_evidence_and_portable_frame(self):
         sections = self.fixture.sections
         for name in ('roi.lower', 'roi.upper', 'edit.shrink'):

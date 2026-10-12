@@ -14,6 +14,9 @@ import test_recipe
 
 
 class DiagnosticRecipeTests(unittest.TestCase):
+    # Purpose: Verify diagnostic catalog extension preserves source identity.
+    # Inputs: Original recipe catalog plus released-label or released-category collisions.
+    # Outputs: Extension is idempotent and preserves records; conflicting identities raise ValueError.
     def test_derived_catalog_preserves_source_and_rejects_identity_collisions(self):
         _, resolved, _ = test_recipe.RecipeTests().fixture()
         original = deepcopy(resolved['catalog'])
@@ -31,6 +34,9 @@ class DiagnosticRecipeTests(unittest.TestCase):
             with self.subTest(kind=kind), self.assertRaisesRegex(ValueError, 'collides'):
                 released_catalog(bad)
 
+    # Purpose: Verify released tissue cannot seed or supply subsequent growth.
+    # Inputs: Grow/shrink/regrow recipe with unassigned erosion release.
+    # Outputs: Six released voxels remain marked, block regrowth, lose ancestry, and preserve source scalars.
     def test_release_after_growth_persists_and_cannot_seed_or_supply_later_growth(self):
         arrays, resolved, config = test_recipe.RecipeTests().fixture()
         config['recipe'].update(steps=('grow', 'shrink', 'regrow'), roi_role='selection')
@@ -60,6 +66,9 @@ class DiagnosticRecipeTests(unittest.TestCase):
             np.testing.assert_array_equal(arrays[key], original[key])
         self.assertEqual(resolved['catalog'], original_catalog)
 
+    # Purpose: Verify repeated diagnostic erosion handles exhausted targets.
+    # Inputs: Two shrink iterations with surrounding assignment disabled.
+    # Outputs: Target becomes empty; second pass removes nothing and original attenuation stays intact.
     def test_repeated_diagnostic_erosion_handles_exhausted_target_without_reassigning_marker(self):
         arrays, resolved, config = test_recipe.RecipeTests().fixture()
         config['recipe']['steps'] = ('shrink',)
@@ -72,6 +81,9 @@ class DiagnosticRecipeTests(unittest.TestCase):
         self.assertEqual(events[1]['result']['summary']['counts']['removed'], 0)
         np.testing.assert_array_equal(result['attenuation_proxy_per_pixel'], arrays['atn'])
 
+    # Purpose: Reject unassigned attenuation when forming training pairs.
+    # Inputs: Study plan with assign_surrounding_tissue false.
+    # Outputs: Validation raises ValueError because training pairs cannot be formed.
     def test_unassigned_attenuation_cannot_be_prepared_as_training_pairs(self):
         with self.assertRaisesRegex(ValueError, 'cannot form training pairs'):
             validate_study_plan({'edit': {'assign_surrounding_tissue': False}}, {})

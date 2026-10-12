@@ -48,6 +48,9 @@ class RecipeTests(unittest.TestCase):
         arrays['candidates'] = np.isin(arrays['act'], resolved['source_ids'])
         arrays['selected'] = arrays['candidates'] & arrays['roi']
 
+    # Purpose: Verify repeated recipe passes use the latest labels and attenuation.
+    # Inputs: Single artery voxel and two 1 mm dilation iterations.
+    # Outputs: 1 to 7 to 25 targets, 24 activity additions, copied seed signals, and chained channels.
     def test_repeated_passes_use_updated_target_and_proxy(self):
         arrays, resolved, config = self.fixture()
         config['edits']['grow']['iterations'] = 2
@@ -65,6 +68,9 @@ class RecipeTests(unittest.TestCase):
         self.assertEqual(events[1]['result']['summary']['blocked_input_labels'], [])
         self.assertTrue(np.all(result['attenuation_proxy_per_pixel'][result['added_mask']] == arrays['atn'][15, 15, 15]))
 
+    # Purpose: Verify recipe ordering controls state and empty targets skip later passes.
+    # Inputs: Grow-then-shrink compared with shrink-then-grow on one target voxel.
+    # Outputs: One versus zero final targets and explicit empty-target dilation skip.
     def test_order_changes_result_and_empty_current_target_is_reported_noop(self):
         arrays, resolved, config = self.fixture()
         config['recipe']['steps'] = ('grow', 'shrink')
@@ -77,6 +83,9 @@ class RecipeTests(unittest.TestCase):
         self.assertEqual(shrink_first['summary']['steps'][1]['requested_operation'], 'dilation')
         self.assertIn('pass skipped', shrink_first['summary']['steps'][1]['no_op_reason'])
 
+    # Purpose: Verify restored labels remain distinct from edit activity and scalar drift.
+    # Inputs: Grow followed by shrink on one target voxel.
+    # Outputs: Zero net label change, six ever-changed voxels, twelve activity changes, and scalar changes.
     def test_net_restoration_differs_from_activity_and_scalar_changes(self):
         arrays, resolved, config = self.fixture()
         config['recipe']['steps'] = ('grow', 'shrink')
@@ -90,6 +99,9 @@ class RecipeTests(unittest.TestCase):
         np.testing.assert_array_equal(result['edited_labels'], arrays['act'])
         self.assertEqual(result['summary']['transitions'], [])
 
+    # Purpose: Verify serial recipes preserve inputs and reproduce outputs.
+    # Inputs: Same grow/shrink recipe applied twice to snapshotted fixture arrays.
+    # Outputs: Unchanged sources and identical labels, scalar channels, masks, and summaries.
     def test_sources_immutable_and_results_deterministic(self):
         arrays, resolved, config = self.fixture()
         config['recipe']['steps'] = ('grow', 'shrink')
@@ -102,6 +114,9 @@ class RecipeTests(unittest.TestCase):
             np.testing.assert_array_equal(first[name], second[name])
         self.assertEqual(first['summary'], second['summary'])
 
+    # Purpose: Verify named edits respect the outer ROI and protected native labels.
+    # Inputs: 9 mm named ROI inside 2 mm outer mask with bone 30 and unknown 999 obstacles.
+    # Outputs: Clipping reported, no outside label/scalar changes, and protected labels preserved.
     def test_fixed_outer_boundary_clips_named_masks_and_preserves_protected_tissue(self):
         arrays, resolved, config = self.fixture()
         config['rois']['center']['radius_mm'] = 9.
@@ -117,6 +132,9 @@ class RecipeTests(unittest.TestCase):
         for value in (30, 999):
             np.testing.assert_array_equal(result['edited_labels'][arrays['act'] == value], arrays['act'][arrays['act'] == value])
 
+    # Purpose: Verify overlap policy treats distinct active ROI names explicitly.
+    # Inputs: Overlapping center/other ROIs under error, sequential, and same-name configurations.
+    # Outputs: Early error with no callback, sequential overlap recorded, and same-name reuse accepted.
     def test_overlap_error_checks_distinct_active_names_before_any_callback(self):
         arrays, resolved, config = self.fixture()
         config['rois']['other'] = {**config['rois']['center'], 'center_ijk': (16, 15, 15)}
@@ -134,6 +152,9 @@ class RecipeTests(unittest.TestCase):
         result = apply_recipe(arrays, resolved, config)
         self.assertEqual(result['summary']['roi_overlaps'], [])  # Same named ROI is intentional.
 
+    # Purpose: Verify recipe ROI masks use physical distances on anisotropic native arrays.
+    # Inputs: 1/2/3 mm spacing with 2.1 mm sphere and tube radii.
+    # Outputs: Expected j inclusion, k exclusion, and rounded tube-end inclusion.
     def test_sphere_and_tube_masks_use_native_anisotropic_spacing(self):
         arrays, resolved, config = self.fixture(spacing=(1., 2., 3.))
         config['rois']['center']['radius_mm'] = 2.1
@@ -146,6 +167,9 @@ class RecipeTests(unittest.TestCase):
         self.assertFalse(masks['tube'][16, 15, 17])
         self.assertTrue(masks['tube'][15, 15, 19])
 
+    # Purpose: Verify metadata validation checks halo and pass budgets without voxel work.
+    # Inputs: Forbidden native-mask mock, oversized named ROI, and 21-pass recipe.
+    # Outputs: Valid one-pass plan and ValueError for insufficient halo or total-pass cap.
     def test_metadata_plan_validates_named_halos_and_pass_budget_without_masks(self):
         arrays, resolved, config = self.fixture()
         with patch('fakect_recipe._native_masks', side_effect=AssertionError('Voxel work in metadata validation')):
@@ -163,6 +187,9 @@ class RecipeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '20 total passes'):
             validate_recipe(config, resolved)
 
+    # Purpose: Verify recipes reject active regions clipped to no voxels.
+    # Inputs: Fixture with empty outer ROI and callback collector.
+    # Outputs: ValueError for empty effective ROI and no pass callback.
     def test_empty_effective_active_roi_fails_before_any_pass(self):
         arrays, resolved, config = self.fixture()
         arrays['roi'][:] = False
@@ -172,6 +199,9 @@ class RecipeTests(unittest.TestCase):
             apply_recipe(arrays, resolved, config, on_step=events.append)
         self.assertEqual(events, [])
 
+    # Purpose: Verify recipe validation rejects malformed control metadata and array disagreement.
+    # Inputs: Invalid iterations, missing ROI, repeated step names, and inconsistent candidates.
+    # Outputs: ValueError for every invalid recipe/input contract.
     def test_invalid_metadata_and_input_contracts_fail(self):
         arrays, resolved, config = self.fixture()
         for replacement in (0, 11, 1.5, True):
@@ -191,6 +221,9 @@ class RecipeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'candidates disagrees'):
             apply_recipe(arrays, resolved, config)
 
+    # Purpose: Verify Gaussian recipe strength follows the named tube path.
+    # Inputs: Named tube from k=11 to 19 and peak dilation 1.5 mm.
+    # Outputs: Tube step resolution, nonempty additions, midpoint peak 1.5, and zero endpoint strength.
     def test_gaussian_tube_step_uses_named_path_geometry(self):
         arrays, resolved, config = self.fixture()
         config['rois']['center'] = {'shape': 'tube', 'center_ijk': ((15, 15, 11), (15, 15, 19)),
@@ -203,6 +236,9 @@ class RecipeTests(unittest.TestCase):
         self.assertAlmostEqual(result['strength_mm'][15, 15, 15], 1.5)
         self.assertEqual(result['strength_mm'][11, 15, 15], 0)
 
+    # Purpose: Verify recipe connectivity summaries retain full-crop target components.
+    # Inputs: Selected center target plus distant target outside ROI.
+    # Outputs: One ROI component and two full-target components before/after and per step.
     def test_full_crop_components_are_separate_from_roi_clipped_components(self):
         arrays, resolved, config = self.fixture()
         arrays['act'][2, 15, 15] = -7
@@ -215,6 +251,9 @@ class RecipeTests(unittest.TestCase):
         self.assertEqual(events[0]['result']['summary']['full_target_components_before'], 2)
         self.assertEqual(result['summary']['steps'][0]['full_target_components_after'], 2)
 
+    # Purpose: Verify blocked-label audits retain signed identities and catalog names.
+    # Inputs: Adjacent signed bone -30, unselected artery -11, and unknown label 999.
+    # Outputs: Exact signed/name/tissue count rows in pass/recipe summaries and matching blocked total.
     def test_blocked_input_labels_preserve_signed_ids_and_catalog_names(self):
         arrays, resolved, config = self.fixture()
         resolved['catalog']['records'].extend([

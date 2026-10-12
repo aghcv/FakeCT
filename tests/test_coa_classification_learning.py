@@ -20,6 +20,9 @@ from test_multiscale_v3_integration import config
 
 
 class ClassificationMetricTests(unittest.TestCase):
+    # Purpose: Verify classification metrics retain frozen definitions without severity.
+    # Inputs: Three labeled probability records with and without score fields.
+    # Outputs: Legacy classification metrics match, score MAE omitted and empty input returns None.
     def test_only_classification_metrics_match_frozen_definitions(self):
         records = [dict(label=y, probability=p, score_prediction=s, score_label=t)
                    for y, p, s, t in [(0, .2, .9, .1), (1, .8, .1, .7), (1, 0., .2, .4)]]
@@ -31,6 +34,9 @@ class ClassificationMetricTests(unittest.TestCase):
         self.assertEqual(control.classification_metrics(without_severity), reference)
         self.assertIsNone(control.classification_metrics([]))
 
+    # Purpose: Verify exported predictions withhold untrained severity without mutating rows.
+    # Inputs: Prediction record with score label 0.4 and auxiliary prediction 0.93.
+    # Outputs: Auxiliary prediction cleared, severity marked untrained, source preserved and export idempotent.
     def test_exports_withhold_auxiliary_prediction_without_mutation(self):
         raw = [{'sample_id': 'sample', 'label': 1, 'probability': .8,
                 'score_label': .4, 'score_prediction': .93}]
@@ -43,6 +49,9 @@ class ClassificationMetricTests(unittest.TestCase):
         self.assertEqual(control.sanitize_predictions(exported), exported)
         self.assertNotIn('score_mae', control.classification_metrics(exported))
 
+    # Purpose: Reject missing or nonzero regression weights before fitting.
+    # Inputs: None, nonzero, boolean, string and NaN regression_weight values with mocked fitter.
+    # Outputs: ValueError identifies regression_weight and the fitter is never called.
     def test_nonzero_or_missing_weight_rejected_before_fitter(self):
         with patch.object(budget, 'fit_classifier') as fitter:
             for value in (None, 1, .001, -1, True, False, '0', float('nan')):
@@ -51,6 +60,9 @@ class ClassificationMetricTests(unittest.TestCase):
                                            {'training': {'regression_weight': value}})
             fitter.assert_not_called()
 
+    # Purpose: Verify temporary metrics patches restore after fitting failure.
+    # Inputs: Zero regression weight and fitter raising fixture RuntimeError.
+    # Outputs: RuntimeError propagates and the original metrics function is restored.
     def test_metrics_patch_restored_on_fitter_failure(self):
         before = control.learning.legacy.metrics
         with patch.object(budget, 'fit_classifier', side_effect=RuntimeError('fixture failure')):
@@ -68,6 +80,9 @@ class ClassificationTensorFlowTests(unittest.TestCase):
         cls.network = network
         cls.tf = network.focused._tensorflow()
 
+    # Purpose: Verify zero regression weight makes updates independent of severity targets.
+    # Inputs: Identical seeded classifiers, shared inputs and two different severity target sets.
+    # Outputs: Same BCE loss and learned weights; severity head unchanged and traces stable.
     def test_zero_weight_updates_are_independent_of_severity_targets(self):
         self.tf.keras.backend.clear_session()
         shape = [16, 16, 16]
@@ -121,6 +136,9 @@ class ClassificationTensorFlowTests(unittest.TestCase):
         self.assertEqual(set(TinyFineInputs.accessed), {r['sample_id'] for r in rows})
         return receipt, console.getvalue()
 
+    # Purpose: Verify classification wrapper preserves initialization and training updates.
+    # Inputs: Raw and wrapped two-epoch fits using identical synthetic fine inputs.
+    # Outputs: Same initial predictions and weights, 12 updates, checkpoint parity and no severity metrics.
     def test_wrapper_preserves_both_output_initialization_and_all_updates(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

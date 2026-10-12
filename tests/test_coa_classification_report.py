@@ -126,6 +126,9 @@ def fixture(root, completed=5):
 
 
 class ClassificationReportTests(unittest.TestCase):
+    # Purpose: Verify matched classification comparisons omit disabled severity outputs.
+    # Inputs: Five-family tied baseline and perfect classification-only controls.
+    # Outputs: AUROC 0.5 versus 1, 60 pairs, absent severity metrics, and null score predictions.
     def test_exact_classification_comparison_without_severity_metrics(self):
         with tempfile.TemporaryDirectory() as tmp:
             _, _, baseline, controls, manifest = fixture(Path(tmp))
@@ -137,6 +140,9 @@ class ClassificationReportTests(unittest.TestCase):
             self.assertTrue(all(r["score_prediction"] is None for r in result["records"]))
             self.assertFalse(result["severity_trained"])
 
+    # Purpose: Verify unfinished controls retain complete baseline evidence.
+    # Inputs: Five-family fixture with zero or one completed control.
+    # Outputs: Pending/partial status, pending paired comparison, and all five baseline folds retained.
     def test_pending_and_partial_keep_complete_baseline_without_full_comparison(self):
         for completed in (0, 1):
             with self.subTest(completed=completed), tempfile.TemporaryDirectory() as tmp:
@@ -147,6 +153,9 @@ class ClassificationReportTests(unittest.TestCase):
                 self.assertEqual(result["protocols"][BASELINE]["completed_fold_runs"], 5)
                 self.assertEqual(len(result["training_history"]), 1000 + completed * 200)
 
+    # Purpose: Verify classification panels preserve identities, targets, and disabled-head state.
+    # Inputs: Duplicate/missing records, NaN, reserved/train rows, wrong score labels, and score output.
+    # Outputs: ValueError for every incompatible panel mutation.
     def test_exact_panels_targets_probability_and_untrained_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             _, _, baseline, controls, manifest = fixture(Path(tmp))
@@ -160,6 +169,9 @@ class ClassificationReportTests(unittest.TestCase):
                 with self.subTest(first=rows[0]), self.assertRaises(ValueError):
                     analyze_records(baseline, rows, manifest)
 
+    # Purpose: Verify fixed-budget histories exclude validation selection and severity training.
+    # Inputs: 200-epoch control history mutated with validation, wrong updates, score MAE, or selected epoch.
+    # Outputs: Valid history accepted and invalid selection/update/severity records rejected.
     def test_training_only_and_disabled_severity_gates(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, lock, _, _, _ = fixture(Path(tmp), completed=1)
@@ -177,6 +189,9 @@ class ClassificationReportTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 checked_history(history, dict(receipt, selected_epoch=100), stage)
 
+    # Purpose: Verify classification control provenance matches its pinned comparison.
+    # Inputs: Altered ancestor pins, lock, pair order, initialization, proposals, receipt, or predictions.
+    # Outputs: ValueError for every provenance mutation and incomplete comparison stage.
     def test_pinned_ancestry_pair_order_initialization_proposal_and_result_identity(self):
         for mutation in ("parent_pin", "comparison_pin", "own_lock", "pair_order", "initialization", "proposal", "receipt", "prediction", "comparison_INCOMPLETE"):
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
@@ -202,6 +217,9 @@ class ClassificationReportTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     source_bundle(root, lock)
 
+    # Purpose: Verify failure markers block reporting while untouched stages stay pending.
+    # Inputs: No completed controls, one hashed hardware-failure marker, then changed bytes.
+    # Outputs: Blocked-by-failure analysis, four pending stages, and checksum mismatch rejected.
     def test_failed_receipt_checksum_and_pending_status(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, lock, _, _, _ = fixture(Path(tmp), completed=0)
@@ -214,6 +232,9 @@ class ClassificationReportTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "checksum"):
                 source_bundle(root, lock)
 
+    # Purpose: Verify classification reports export auditable revisions without severity data.
+    # Inputs: Complete control fixture rendered into two report revisions.
+    # Outputs: Three figures per format, populated classification CSVs, verified hashes, and immutable prior revision.
     def test_exports_are_immutable_metadata_only_and_classification_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, lock, _, _, _ = fixture(Path(tmp))

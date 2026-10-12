@@ -74,6 +74,9 @@ directory = {root/'output'}
 
 
 class ControlGeometryTests(unittest.TestCase):
+    # Purpose: Verify control frames use physical coordinates and orthonormal section bases.
+    # Inputs: Three fractional controls with 2/3/4 mm anisotropic spacing.
+    # Outputs: Exact physical centers/distances, expected tangent, and orthonormal tangent/u/v bases.
     def test_anisotropic_tangent_arc_length_and_exact_controls(self):
         nodes = np.array([[2.5,3,1],[3.5,3,2],[3.5,4,2]])
         frame = control_frames(nodes,[2,3,4])
@@ -84,6 +87,9 @@ class ControlGeometryTests(unittest.TestCase):
             np.testing.assert_allclose([np.linalg.norm(tangent),np.linalg.norm(u),np.linalg.norm(v)],[1,1,1])
             np.testing.assert_allclose([np.dot(tangent,u),np.dot(tangent,v),np.dot(u,v)],[0,0,0],atol=1e-12)
 
+    # Purpose: Verify reversing paths and sphere controls have explicit frame conventions.
+    # Inputs: Backtracking three-point path, one fractional sphere point, and duplicate controls.
+    # Outputs: Reversal/sphere warnings, expected tangent directions, and duplicate-point rejection.
     def test_reversal_is_explicit_and_sphere_supported(self):
         frame = control_frames([[2,2,2],[3,2,2],[2,2,2]],[1,1,1])
         self.assertIn('reverses',frame['warnings'][1])
@@ -94,6 +100,9 @@ class ControlGeometryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             control_frames([[1,1,1],[1,1,1]],[1,1,1])
 
+    # Purpose: Verify fractional sections interpolate signals physically and preserve discrete labels.
+    # Inputs: Anisotropic offset affine CT ramp with signed labels -17/83 and 0.4 mm section pixels.
+    # Outputs: Exact affine signal, all-valid section, and int32 labels limited to original IDs.
     def test_physical_linear_ct_and_nearest_labels_on_fractional_section(self):
         k,j,i = np.indices((7,8,9))
         spacing = np.array([2,3,4])
@@ -110,6 +119,9 @@ class ControlGeometryTests(unittest.TestCase):
         self.assertEqual(set(np.unique(sampled['label'])),{-17,83})
         self.assertEqual(sampled['label'].dtype,np.int32)
 
+    # Purpose: Verify section sampling bounds resolution and marks outside-volume pixels.
+    # Inputs: 3-cubed Boolean ROI sampled over 4 mm half-width at requested 0.001 mm pixels.
+    # Outputs: 321x321 plane cap, invalid pixels zeroed, Boolean labels, and centered offset.
     def test_invalid_pixels_are_marked_and_sampling_is_bounded(self):
         ones = np.ones((3,3,3),dtype=bool)
         sampled,valid,offsets = sample_section({'roi':ones},[0,0,0],[1,0,0],[0,1,0],[1,1,1],[0,0,0],
@@ -128,6 +140,9 @@ class RoiSelectionWorkflowTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.config = tiny_phantom(self.root)
 
+    # Purpose: Verify ROI-workbench mode/content settings are strict with compatible defaults.
+    # Inputs: Valid labels ROI-selection INI, typo values/key, then removed mode/content entries.
+    # Outputs: Valid explicit settings, invalid entries rejected, and default full/attenuation mode.
     def test_strict_mode_content_and_compatible_defaults(self):
         text = self.config.read_text()
         config = load_preview_config(self.config)
@@ -142,6 +157,9 @@ class RoiSelectionWorkflowTests(unittest.TestCase):
         self.assertEqual(defaults['preview']['mode'],'full')
         self.assertEqual(defaults['preview']['content'],'attenuation')
 
+    # Purpose: Verify workbench-only resolution bypasses unused 3D checks but validates native files.
+    # Inputs: Display cap 1, stale slice, full-mode comparison, then corrupted ACT payload.
+    # Outputs: Control-derived slice, full-mode budget rejection, and workbench source-size rejection.
     def test_selection_ignores_unused_3d_budget_and_stale_slice_but_keeps_source_checks(self):
         config = load_preview_config(self.config)
         with patch('fakect_roi.MAX_DISPLAY_CELLS',1):
@@ -155,6 +173,9 @@ class RoiSelectionWorkflowTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'source size'):
             resolve_preview(config)
 
+    # Purpose: Verify ROI-selection workflow exports every control without changing sources.
+    # Inputs: 13-cubed signed-label phantom, two fractional tube controls, and forbidden 3D render mocks.
+    # Outputs: Portable four-image report, nine selected voxels, preserved source/input bytes, hashes, and no overwrite.
     def test_end_to_end_simple_portable_report_source_safety_and_every_control(self):
         original_input = self.config.read_bytes()
         files = [self.root/'001'/f'001_{channel}_1.bin' for channel in ('act','atn')]
@@ -193,6 +214,9 @@ class RoiSelectionWorkflowTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'Output exists'):
             run(self.config)
 
+    # Purpose: Verify ROI-selection review does not execute configured morphology.
+    # Inputs: Edit INI with 1000 mm dilation/search and forbidden edit/halo mocks.
+    # Outputs: No edited geometry or edit summary and no morphology/halo invocation.
     def test_selection_does_not_execute_or_require_edit_halo(self):
         text = self.config.read_text().replace('fakect.preview/2','fakect.edit/1')
         text += '''\n[edit]
@@ -214,6 +238,9 @@ unresolved = error
         self.assertFalse(report['geometry_edited'])
         self.assertNotIn('edit',report)
 
+    # Purpose: Verify named sphere selectors retain their exact control coordinates.
+    # Inputs: Main tube plus local sphere centered at 6.5/6.25/6.5 with radius 1.5.
+    # Outputs: Main/local cards, exact sphere center, zero arc distance, sphere warning, and attenuation image.
     def test_named_sphere_gets_its_own_card_and_exact_coordinates(self):
         config = load_preview_config(self.config)
         config['rois'] = {'local':{'shape':'sphere','center_ijk':(6.5,6.25,6.5),

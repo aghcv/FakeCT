@@ -96,6 +96,9 @@ class PopulationTests(unittest.TestCase):
         self.c['variation']['directions'] = ['all']
         self.c['variation']['distance_fraction'] = [.5,1.]
 
+    # Purpose: Verify recipe sampling is deterministic, balanced and preserves source settings.
+    # Inputs: Frozen source recipe, seed-based 256-sibling sampling and alternate seed.
+    # Outputs: 85/85/86 groups, unique varied recipes, bounded settings, copied safeguards and unchanged source.
     def test_sampler_is_reproducible_balanced_varied_and_preserves_source_settings(self):
         original = deepcopy(self.original)
         rows = population.sample_recipes(self.c,original,source_identity='sourcehash')
@@ -125,6 +128,9 @@ class PopulationTests(unittest.TestCase):
         other = deepcopy(self.c);other['population']['seed']+=1
         self.assertNotEqual(rows,population.sample_recipes(other,original,source_identity='sourcehash'))
 
+    # Purpose: Verify sampled directional widths are valid engine inputs.
+    # Inputs: Variation directions inner, outer and all.
+    # Outputs: All requested directions represented; all has no width and directed widths at most 180 degrees.
     def test_direction_widths_are_real_engine_inputs_not_unsupported_approximations(self):
         c = deepcopy(self.c);c['variation']['directions']=['inner','outer','all']
         rows = population.sample_recipes(c,self.original)
@@ -137,6 +143,9 @@ class PopulationTests(unittest.TestCase):
                 else:
                     self.assertLessEqual(e['angular_width_deg'],180)
 
+    # Purpose: Verify trunk continuity tolerates old fragments but rejects new breaks.
+    # Inputs: Connected trunk plus old island, then removal of the trunk midpoint.
+    # Outputs: Original passes; broken trunk fails with two descendant components.
     def test_trunk_continuity_allows_old_fragments_but_rejects_new_break(self):
         before = np.zeros((9,5,5),bool);before[1:8,2,2]=True;before[0,0,0]=True
         origins = np.where(before,np.arange(before.size).reshape(before.shape),-1)
@@ -146,6 +155,9 @@ class PopulationTests(unittest.TestCase):
         audit = population.trunk_connectivity(before,after,removed_origins)
         self.assertFalse(audit['passed']);self.assertEqual(audit['trunk_descendant_components'],2)
 
+    # Purpose: Verify population plans avoid native images and pin source metadata.
+    # Inputs: Metadata-only 256-recipe plan, unknown case and frozen source-crop mutation.
+    # Outputs: No plan outputs/reads, unknown case rejected and changed source metadata invalidates lock.
     def test_metadata_plan_never_loads_images_and_pins_changed_sources(self):
         with patch.object(population,'_load_source',side_effect=AssertionError('native read')):
             lock = population.plan(self.c)
@@ -162,6 +174,9 @@ class PopulationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'source metadata'):
             population.inspect_lock(self.c,content)
 
+    # Purpose: Verify native sibling export is readable and preserves original payloads.
+    # Inputs: Frozen 21-variant plan and one selected maximum enlargement trial.
+    # Outputs: Baseline plus sibling, finite image reads, exact change masks, unchanged sources and no overwrite.
     def test_single_native_export_is_readable_and_original_files_unchanged(self):
         self.c['population']['variants_per_case']=21
         content=b'# bounded fixture native trial\n'
@@ -189,6 +204,9 @@ class PopulationTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             population._generate(self.c,lock,'001',directory,selected,trial=True)
 
+    # Purpose: Verify native failures prevent population release while retaining evidence.
+    # Inputs: Two sibling recipes with apply_recipe raising bad-native-edit ValueError.
+    # Outputs: Two failure records, incomplete manifest/marker and collect refuses release.
     def test_native_failure_is_recorded_and_prevents_population_release(self):
         self.c['population']['variants_per_case']=21
         lock=population.freeze(self.c,b'# native failure fixture\n')

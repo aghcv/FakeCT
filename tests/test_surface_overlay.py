@@ -27,6 +27,9 @@ class SurfaceOverlayTests(unittest.TestCase):
                                       self.after if after is None else after,
                                       output_dir=output, **(self.kwargs | kwargs))
 
+    # Purpose: Verify overlays retain native single-voxel changes and physical registration.
+    # Inputs: Read-only 6x8x10 before/after masks, offset origin, anisotropic spacing, and requested stride 3.
+    # Outputs: Native stride 1, exact counts/bounds, 1920x1600 PNG, preserved inputs, and overwrite refusal.
     def test_registered_native_surfaces_preserve_one_voxel_edits_and_inputs(self):
         original_before, original_after = self.before.copy(), self.after.copy()
         self.before.setflags(write=False)
@@ -57,6 +60,9 @@ class SurfaceOverlayTests(unittest.TestCase):
         np.testing.assert_array_equal(self.before, original_before)
         np.testing.assert_array_equal(self.after, original_after)
 
+    # Purpose: Verify standalone overlay controls independently manage both surfaces.
+    # Inputs: Registered before/after masks rendered to embedded Plotly HTML.
+    # Outputs: Two mesh traces, separate visibility/opacity controls, and 15/45/80 percent presets.
     def test_standalone_overlay_has_independent_visibility_and_three_opacity_choices(self):
         with tempfile.TemporaryDirectory() as output:
             result = self.render(output)
@@ -81,6 +87,9 @@ class SurfaceOverlayTests(unittest.TestCase):
             self.assertEqual(result['opacity_presets'], [.15, .45, .8])
             self.assertEqual(result['initial_opacity'], {'before': .15, 'after': .45})
 
+    # Purpose: Verify unchanged and empty overlays report their missing differences/geometry.
+    # Inputs: Equal nonempty masks and equal empty masks.
+    # Outputs: Zero additions/removals, equal hashes, explicit warnings, and absent empty bounds/surfaces.
     def test_identical_and_absent_geometry_are_explicit(self):
         for mask in (self.before, np.zeros_like(self.before)):
             with self.subTest(empty=not mask.any()), tempfile.TemporaryDirectory() as output:
@@ -94,6 +103,9 @@ class SurfaceOverlayTests(unittest.TestCase):
                     self.assertEqual(result['surfaces'][0]['surface_triangles'], 0)
                     self.assertIsNone(result['surfaces'][1]['bounds_ijk_relative_mm'])
 
+    # Purpose: Verify complete removal retains the registered original surface.
+    # Inputs: Full 5x4x7 before mask and empty after mask.
+    # Outputs: Exact crop/before bounds, no after triangles, all voxels removed, and before-only warning.
     def test_empty_after_keeps_before_and_exact_crop_boundary(self):
         before = np.ones((5, 4, 7), dtype=bool)
         with tempfile.TemporaryDirectory() as output:
@@ -105,6 +117,9 @@ class SurfaceOverlayTests(unittest.TestCase):
             self.assertEqual(result['counts']['removed_voxels'], before.size)
             self.assertTrue(any('only the before surface' in item for item in result['warnings']))
 
+    # Purpose: Verify overlay validation rejects malformed masks and physical settings before output.
+    # Inputs: Wrong dtype/shape, thin grid, invalid origin/spacing, and invalid stride.
+    # Outputs: ValueError for every invalid input and absent output directory.
     def test_invalid_inputs_fail_without_publishing_outputs(self):
         invalid = [{'before': self.before.astype(np.uint8)}, {'after': self.after[:, :, :-1]},
                    {'before': np.ones((1, 4, 4), dtype=bool), 'after': np.ones((1, 4, 4), dtype=bool)},
@@ -119,6 +134,9 @@ class SurfaceOverlayTests(unittest.TestCase):
                     self.render(output, **kwargs)
                 self.assertFalse(output.exists())
 
+    # Purpose: Verify overlay mesh/source caps fail before artifact publication.
+    # Inputs: Normal fixture with source cap 100 or triangle cap 10.
+    # Outputs: ValueError for native-voxel/complexity budget and no output directory.
     def test_resource_caps_reject_before_writing(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / 'must-not-exist'
@@ -128,6 +146,9 @@ class SurfaceOverlayTests(unittest.TestCase):
                 self.render(output)
             self.assertFalse(output.exists())
 
+    # Purpose: Verify context overlays use final categories and preserve released markers at native resolution.
+    # Inputs: Final category labels 1/5/19/254/255 plus obsolete before-only bone label.
+    # Outputs: Only final contexts, native magenta release mesh, independent controls, and unchanged labels.
     def test_final_categories_have_independent_controls_and_native_released_marker(self):
         before_labels = np.zeros(self.before.shape, dtype=np.uint8)
         before_labels[0] = 2  # A category absent in the final state is not a context.
@@ -174,6 +195,9 @@ class SurfaceOverlayTests(unittest.TestCase):
         for actual, expected in zip((before_labels, final_labels), originals):
             np.testing.assert_array_equal(actual, expected)
 
+    # Purpose: Verify dense context pooling respects separate mesh budgets and escaped names.
+    # Inputs: 16-cubed alternating tissue labels, one release marker, unsafe name, and tight mesh caps.
+    # Outputs: Contexts within 650 triangles, pooled ordinary labels, native release marker, and escaped HTML.
     def test_context_pooling_has_separate_budget_counts_and_safe_names(self):
         shape = (16, 16, 16)
         final_labels = np.where(np.indices(shape).sum(axis=0) % 2, 2, 1).astype(np.uint8)
@@ -202,6 +226,9 @@ class SurfaceOverlayTests(unittest.TestCase):
             self.assertIn('overlay-category-1-visible', html)
             self.assertTrue(any('occupancy stride' in warning for warning in result['warnings']))
 
+    # Purpose: Verify context contracts and native-marker mesh limits are enforced before writing.
+    # Inputs: Missing context pairing/catalog, wrong dtype/shape, duplicate categories, and release cap 7.
+    # Outputs: ValueError for malformed context or unmeshable native marker and no output directory.
     def test_bad_context_inputs_and_unmeshable_native_marker_fail_before_writing(self):
         labels = np.zeros_like(self.before, dtype=np.uint8)
         catalog = {'categories': [{'id': 0, 'name': 'background'}]}

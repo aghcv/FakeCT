@@ -49,6 +49,9 @@ class TwoStageLearningTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.config, self.manifest = fixture(self.temporary.name)
 
+    # Purpose: Validate patch compatibility with U-Net downsampling depth.
+    # Inputs: Tiny two-stage settings with depth 3, then a 12x8x8 patch.
+    # Outputs: Divisible settings accepted; incompatible patch dimensions rejected.
     def test_settings_validate_depth_and_patch(self):
         self.config['model']['depth'] = 3
         self.assertEqual(settings_for(self.config, 2)['depth'], 3)
@@ -56,6 +59,9 @@ class TwoStageLearningTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'divisible'):
             settings_for(self.config, 2)
 
+    # Purpose: Prevent family and baseline-reference leakage across model splits.
+    # Inputs: Three-family manifest edited to share family identity or a reference path across splits.
+    # Outputs: Family-crossing and shared-reference ValueError.
     def test_rejects_family_and_reference_cross_split(self):
         self.manifest['samples'][2]['anatomy_family'] = 'family-0'
         with self.assertRaisesRegex(ValueError, 'crosses splits'):
@@ -65,6 +71,9 @@ class TwoStageLearningTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Shared reference'):
             inspect_manifest(self.manifest)
 
+    # Purpose: Load checksum-pinned pairs while respecting allowed split access.
+    # Inputs: 8-cube baseline/edit pairs and a training-only volume loader.
+    # Outputs: Four added/removed voxels, exact reconstruction and rejection of a test-split load.
     def test_loader_supports_frozen_manifest_hashes_and_booleans(self):
         rows, _ = inspect_manifest(self.manifest)
         loader = VolumeLoader(rows, settings_for(self.config, 2), ['train'])
@@ -75,6 +84,9 @@ class TwoStageLearningTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'split is unavailable'):
             loader.load(rows[4])
 
+    # Purpose: Reject native payloads changed after manifest creation.
+    # Inputs: Training variant NPZ replaced by corrupt bytes.
+    # Outputs: Volume loading raises a hash-change error.
     def test_changed_payload_is_rejected(self):
         rows, _ = inspect_manifest(self.manifest)
         Path(rows[0]['variant_npz']).write_bytes(b'corrupt')
@@ -82,6 +94,9 @@ class TwoStageLearningTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'hash changed'):
             loader.load(rows[0])
 
+    # Purpose: Maintain reference reconstruction on a resampled physical grid.
+    # Inputs: Native 8-cube pair resampled to 1.5/1/0.5-mm spacing.
+    # Outputs: 16x8x6 masks retain the exact before/after change identity.
     def test_resampling_masks_preserves_boolean_identity(self):
         rows, _ = inspect_manifest(self.manifest)
         self.config['model']['target_spacing_mm'] = [1.5, 1., .5]
@@ -90,6 +105,9 @@ class TwoStageLearningTests(unittest.TestCase):
         self.assertEqual(volume['after'].shape, (16, 8, 6))
         self.assertTrue(np.array_equal((volume['after'].astype(bool) & ~volume['added']) | volume['removed'], volume['before']))
 
+    # Purpose: Derive consistent binary and probabilistic change representations.
+    # Inputs: Observed binary mask, reference probabilities and threshold 0.7.
+    # Outputs: Added/removed masks reconstruct thresholded reference; probability identity also holds.
     def test_threshold_changes_reconstruct_at_nondefault_threshold(self):
         observed = np.array([0, 1, 0, 1], np.uint8)
         reference = np.array([.7, .65, .69, .1])
@@ -100,6 +118,9 @@ class TwoStageLearningTests(unittest.TestCase):
         add_prob, remove_prob = change_probabilities(observed, reference)
         self.assertTrue(np.allclose(observed-add_prob+remove_prob, reference))
 
+    # Purpose: Include segmentation errors in changes derived from chained model input.
+    # Inputs: Normal observed mask, deliberately imperfect predicted mask and the same reference.
+    # Outputs: Observed input has no changes; predicted input creates two change voxels.
     def test_chained_changes_use_actual_input(self):
         actual_after = np.array([1, 1, 0], np.uint8)
         predicted_after = np.array([1, 0, 1], np.uint8)
@@ -109,6 +130,9 @@ class TwoStageLearningTests(unittest.TestCase):
         a, r = change_masks(predicted_after, before)
         self.assertEqual(int(a.sum()+r.sum()), 2)
 
+    # Purpose: Verify tiled inference covers uneven volumes and padded patches.
+    # Inputs: Identity predictor on random 3x7x5 and 13x19x11 arrays using 8-cube tiles.
+    # Outputs: Full-volume predictions reproduce inputs within numerical tolerance.
     def test_overlap_prediction_covers_awkward_volume_and_padding(self):
         class Identity:
             def predict_on_batch(self, value):
@@ -118,6 +142,9 @@ class TwoStageLearningTests(unittest.TestCase):
             prediction = predict_volume(Identity(), value, [8, 8, 8], 3)
             self.assertTrue(np.allclose(prediction, value, atol=1e-7))
 
+    # Purpose: Separate exhaustive validation coverage from bounded random training patches.
+    # Inputs: Two validation 8-cube volumes, 4-cube patches and a fixed sampling seed.
+    # Outputs: All validation voxels counted once; two training origins stay within bounds.
     def test_validation_exhaustive_voxels_and_training_bounds(self):
         rows, _ = inspect_manifest(self.manifest)
         settings = settings_for(self.config, 2)
@@ -130,6 +157,9 @@ class TwoStageLearningTests(unittest.TestCase):
         self.assertTrue(all(all(0 <= n <= 4 for n in p) for p in positions))
         self.assertEqual(len(positions), 2)
 
+    # Purpose: Handle empty targets and physical false-positive burden.
+    # Inputs: Empty binary truth with empty or all-positive predictions and 2-mm3 voxels.
+    # Outputs: Dice is one for empty agreement, zero for false positives, with 8 mm3 false-positive volume.
     def test_metrics_empty_and_false_positive(self):
         empty = np.zeros(4, bool)
         self.assertEqual(binary_metrics(empty, empty, 2.)['dice'], 1.)
@@ -137,6 +167,9 @@ class TwoStageLearningTests(unittest.TestCase):
         self.assertEqual(result['dice'], 0.)
         self.assertEqual(result['false_positive_mm3'], 8.)
 
+    # Purpose: Avoid overweighting cases with more siblings in family summaries.
+    # Inputs: Two zero-Dice siblings from case a and one perfect sibling from case b.
+    # Outputs: Family-macro Dice is 0.5; sample-macro Dice is one third.
     def test_family_means_give_cases_equal_weight(self):
         records = [dict(case_id='a', anatomy_family='f', metrics={'aorta': {'dice': 0.}}),
                    dict(case_id='a', anatomy_family='f', metrics={'aorta': {'dice': 0.}}),
@@ -147,6 +180,9 @@ class TwoStageLearningTests(unittest.TestCase):
 
 
 class TwoStageTensorFlowSmokeTests(unittest.TestCase):
+    # Purpose: Exercise real CPU fitting, model reload and two-stage heldout evaluation.
+    # Inputs: Tiny three-family dataset with test payloads hidden during both fits and restored for evaluation.
+    # Outputs: Finite reloaded predictions, no fit leakage, exact change identities and tamper rejection.
     @unittest.skipUnless(importlib.util.find_spec('tensorflow'), 'TensorFlow unavailable')
     def test_real_fit_reload_and_oracle_chained_test(self):
         code = r'''

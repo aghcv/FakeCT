@@ -23,6 +23,9 @@ from fakect_training_data import dataset_fingerprint, _write_anatomical_selectio
 
 
 class AnatomyIntegrationTests(unittest.TestCase):
+    # Purpose: Verify optional anatomical selection parsing preserves the legacy contract.
+    # Inputs: ROI INI with human anatomy names, label lists and invalid selector options.
+    # Outputs: Normalized names, defaults and paths; invalid options raise ValueError without outputs.
     def test_optional_human_anatomy_inputs_and_unchanged_legacy_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -64,6 +67,9 @@ class AnatomyIntegrationTests(unittest.TestCase):
         arrays['selected'] = arrays['candidates'] & arrays['roi']
         return arrays, resolved, config
 
+    # Purpose: Verify dilation protects an excluded neighboring artery.
+    # Inputs: Morphology fixture with target -7 and protected artery 8.
+    # Outputs: Neighbor label and attenuation preserved and marked blocked; removing protection permits growth.
     def test_filtered_neighbor_artery_cannot_be_borrowed_by_dilation(self):
         arrays, resolved, config = self._morphology('dilation')
         protected = apply_morphology(arrays, resolved, config)
@@ -75,6 +81,9 @@ class AnatomyIntegrationTests(unittest.TestCase):
         unprotected = apply_morphology(arrays, resolved, config)
         self.assertEqual(unprotected['edited_labels'][15, 15, 16], -7)
 
+    # Purpose: Verify erosion cannot use an excluded artery as replacement tissue.
+    # Inputs: Erosion fixture with target -7 beside protected artery 8.
+    # Outputs: Protected removal stays unresolved; unprotected replacement takes label 8.
     def test_filtered_neighbor_artery_cannot_seed_erosion_reassignment(self):
         arrays, resolved, config = self._morphology('erosion')
         protected = apply_morphology(arrays, resolved, config)
@@ -84,6 +93,9 @@ class AnatomyIntegrationTests(unittest.TestCase):
         unprotected = apply_morphology(arrays, resolved, config)
         self.assertEqual(unprotected['edited_labels'][15, 15, 15], 8)
 
+    # Purpose: Reject anatomical protection of targets or nonarterial labels.
+    # Inputs: Dilation fixture with protected IDs -7, 20 or unknown 12345.
+    # Outputs: ValueError reports protection must stay outside the selected target.
     def test_anatomical_protection_cannot_overwrite_target_or_nonarterial_policy(self):
         arrays, resolved, config = self._morphology('dilation')
         for ids in ((-7,), (20,), (12345,)):
@@ -98,6 +110,9 @@ class AnatomyIntegrationTests(unittest.TestCase):
         self.addCleanup(fixture.doCleanups)
         return fixture
 
+    # Purpose: Verify manual anatomy resolution filters labels without reading voxels.
+    # Inputs: Training fixture selecting aorta by name and crop reads mocked to fail.
+    # Outputs: Metadata selects -7, protects 8 and yields the expected ROI mask.
     def test_manual_anatomical_name_filters_roi_without_reading_voxels_in_resolution(self):
         fixture = self._training_fixture()
         config = deepcopy(fixture.config)
@@ -113,6 +128,9 @@ class AnatomyIntegrationTests(unittest.TestCase):
         self.assertEqual(set(base['source_ids']), {-7, 8})
         self.assertNotIn('anatomical_selection', base)
 
+    # Purpose: Verify anatomical audit and protection affect dataset identity.
+    # Inputs: Resolved aorta fixture with protection or audit changed and a snapshot directory.
+    # Outputs: Both changes alter fingerprint; snapshot JSON equals anatomical selection.
     def test_selection_audit_and_protection_change_dataset_identity(self):
         fixture = self._training_fixture()
         config = deepcopy(fixture.config)
@@ -131,6 +149,9 @@ class AnatomyIntegrationTests(unittest.TestCase):
         self.assertEqual(json.loads((output/'anatomical-selection.json').read_bytes()),
                          resolved['anatomical_selection'])
 
+    # Purpose: Verify recipe preflight publishes anatomical selection provenance.
+    # Inputs: Recipe training fixture with aorta selection and frozen input bytes.
+    # Outputs: Valid preflight, checksum inventoried selection snapshot and matching data provenance.
     def test_recipe_preflight_saves_anatomical_selection_snapshot(self):
         fixture = test_recipe_training.RecipeTrainingTests()
         fixture.setUp()

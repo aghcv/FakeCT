@@ -82,6 +82,9 @@ class AnatomyReportTests(unittest.TestCase):
         metadata = write_preview_report(self.output, self.report, '[selection]\ntissue = artery\n')
         return metadata, (self.output / 'report.html').read_text()
 
+    # Purpose: Verify anatomy decisions and downloadable audit preserve the captured snapshot.
+    # Inputs: Three-record anatomy audit serialized compactly with trailing newlines.
+    # Outputs: Visible decisions, exact embedded and saved JSON bytes, and matching SHA256.
     def test_decisions_download_preserves_exact_snapshot(self):
         raw = json.dumps(self.audit, separators=(',', ':')).encode() + b'\n\n'
         self.capture(raw)
@@ -101,6 +104,9 @@ class AnatomyReportTests(unittest.TestCase):
         self.assertEqual((self.output / 'anatomy-selection.json').read_bytes(), raw)
         self.assertEqual(metadata['embedded_assets']['anatomy-selection.json']['sha256'], hashlib.sha256(raw).hexdigest())
 
+    # Purpose: Verify untrusted anatomy and surface text cannot become HTML.
+    # Inputs: Script payload in anatomy, warning, decision, name, and surface fields.
+    # Outputs: Escaped script text with no raw payload in the report.
     def test_untrusted_names_paths_reasons_and_warnings_are_escaped(self):
         payload = '<script>alert("atlas")</script>'
         self.audit['anatomy'] = payload
@@ -115,6 +121,9 @@ class AnatomyReportTests(unittest.TestCase):
         self.assertNotIn(payload, document)
         self.assertIn('&lt;script&gt;alert(&quot;atlas&quot;)&lt;/script&gt;', document)
 
+    # Purpose: Verify reports support selection without anatomy filtering.
+    # Inputs: Report and config with anatomy keys removed.
+    # Outputs: Tissue-only explanation and title, no anatomy section, and no captured artifact.
     def test_absent_option_preserves_tissue_only_report_and_title(self):
         del self.report['selection']['anatomical_selection']
         del self.config['selection']['anatomy']
@@ -126,6 +135,9 @@ class AnatomyReportTests(unittest.TestCase):
         self.assertEqual(selection_title(self.config, {}), 'artery; all source IDs in group; bounded by ROI')
         self.assertIsNone(capture_anatomy_selection({}, self.output))
 
+    # Purpose: Verify captured anatomy audits cannot drift or overwrite artifacts.
+    # Inputs: Wrong digest, altered accepted IDs, repeated capture, and tampered JSON file.
+    # Outputs: ValueError for mismatches and FileExistsError for repeated capture.
     def test_snapshot_mismatch_and_overwrite_are_rejected(self):
         raw = json.dumps(self.audit).encode()
         with self.assertRaisesRegex(ValueError, 'snapshot changed'):
@@ -144,11 +156,17 @@ class AnatomyReportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'does not match'):
             self.render()
 
+    # Purpose: Verify filtered titles identify the accepted source-ID scope.
+    # Inputs: Thoracic-aorta config and accepted IDs 2922 and 18.
+    # Outputs: Title names thoracic_aorta and two accepted whole source IDs.
     def test_filtered_title_describes_effective_ids(self):
         title = selection_title(self.config, {'source_ids': (2922, 18), 'anatomical_selection': self.audit})
         self.assertIn('thoracic_aorta; 2 accepted whole source IDs', title)
         self.assertNotIn('all source IDs', title)
 
+    # Purpose: Verify manual label selection reports its limited evidence.
+    # Inputs: Named-label audit without connectivity counts or surface evidence.
+    # Outputs: Report marks connectivity unrequested and title describes named labels.
     def test_manual_name_only_capture_has_no_native_connectivity_claim(self):
         self.audit.update(anatomy=None, method='explicit_original_or_canonical_names',
                           connectivity_scope='not_requested', counts={})
@@ -166,6 +184,9 @@ class AnatomyReportTests(unittest.TestCase):
         self.assertIn('named anatomical labels', title)
         self.assertNotIn('native connectivity', title)
 
+    # Purpose: Verify shared surface evidence is summarized once.
+    # Inputs: Two anatomy records sharing one surface with centerline coordinates and sample counts.
+    # Outputs: One surface row with both IDs and status, without raw centerline coordinates.
     def test_visible_surface_evidence_deduplicates_and_summarizes(self):
         surface = self.audit['records'][0]['surface_matches'][0]
         surface['centerline'] = {'status': 'verified_two_pole_rings', 'centerline_raw_mm': [[987654, 0, 0]]}
@@ -180,6 +201,9 @@ class AnatomyReportTests(unittest.TestCase):
         self.assertIn('surface_record_count', document)
         self.assertNotIn('987654', document)
 
+    # Purpose: Verify indexed and inline surface references can coexist.
+    # Inputs: Shared surface_refs plus duplicate inline evidence and captured compact JSON.
+    # Outputs: One surface row with both IDs and exact downloadable snapshot bytes.
     def test_indexed_surface_evidence_supports_compact_audit(self):
         surface = self.audit['records'][0].pop('surface_matches')[0]
         self.audit['surface_evidence']['records'] = [surface]
@@ -195,6 +219,9 @@ class AnatomyReportTests(unittest.TestCase):
         links = [link for link in Links(document).links if link.get('download') == 'anatomy-selection.json']
         self.assertEqual(base64.b64decode(links[0]['href'].split(',', 1)[1]), raw)
 
+    # Purpose: Verify incomplete surface metadata does not collapse distinct records.
+    # Inputs: Indexed surfaces named first and second with shared anatomy associations.
+    # Outputs: One row per surface and combined associated source IDs.
     def test_indexed_surface_without_group_metadata_remains_distinct(self):
         self.audit['surface_evidence']['records'] = [{'original_name': 'first'}, {'original_name': 'second'}]
         self.audit['records'][0].pop('surface_matches')
@@ -206,6 +233,9 @@ class AnatomyReportTests(unittest.TestCase):
         self.assertEqual(document.count('<td>second</td>'), 1)
         self.assertIn('<td>2922, 18</td>', document)
 
+    # Purpose: Verify surface references require valid inventory indices.
+    # Inputs: References -1, 0, True, and string 0 against missing indexed evidence.
+    # Outputs: ValueError identifying an invalid surface reference.
     def test_invalid_surface_reference_is_rejected(self):
         for reference in (-1, 0, True, '0'):
             with self.subTest(reference=reference):
@@ -213,6 +243,9 @@ class AnatomyReportTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'invalid surface reference'):
                     self.render()
 
+    # Purpose: Verify global anatomy display locates accepted IDs across the volume.
+    # Inputs: 5-cubed labels with ID 2922 inside/outside ROI and excluded ID 22.
+    # Outputs: Accepted outside-ROI voxel displayed, excluded label hidden, and locator scope recorded.
     def test_global_filtered_view_is_an_id_locator_not_native_mask(self):
         labels = np.zeros((5, 5, 5), dtype='<f4')
         labels[0, 0, 0] = labels[2, 2, 2] = 2922

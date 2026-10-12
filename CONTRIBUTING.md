@@ -16,6 +16,11 @@ mutation, file writes and meaningful failure conditions when relevant. The
 maintained scope is declared in `configs/development/api.json`; add new workflow
 modules to that scope. Editor defaults are provided in `.editorconfig`.
 
+Give every test a brief comment header with `Purpose`, `Inputs` and `Outputs`.
+Name the fixtures or failure cases it supplies and the result, artifact or
+invariant it asserts. Place the header above decorators and the test definition.
+See the [test header convention](docs/developer/contributing.html#test-headers).
+
 Install the development dependencies and check a change from the repository root:
 
 ```bash

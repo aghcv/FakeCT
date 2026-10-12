@@ -17,6 +17,9 @@ def row(sample,case,label,split='train',companion=1):
 
 
 class RotationLearningTests(unittest.TestCase):
+    # Purpose: Verify production smoke evidence covers geometry, memory, gradients and GPU.
+    # Inputs: Passing smoke receipt, then invalid device, shape, gradient, trace and resident-cache evidence.
+    # Outputs: Valid receipt accepted; each invalid production prerequisite raises ValueError.
     def test_production_smoke_checks_geometry_resident_cache_and_gpu_evidence(self):
         c={'experiment':{'output_directory':'/tmp/fixture'},'training':{'cache_limit_mb':1,
             'host_memory_limit_mb':1024,'gpu_memory_limit_mb':512,'require_gpu':True}}
@@ -38,6 +41,9 @@ class RotationLearningTests(unittest.TestCase):
                 smoke[key]=old
             smoke['full_cache_memory_probe']['physical_pages_touched']=False
             with self.assertRaises(ValueError):require_smoke(c,lock)
+    # Purpose: Verify matched pairs use companion edits rather than input order.
+    # Inputs: Shuffled opposite-label pairs plus missing, duplicate, unmatched or mixed-split rows.
+    # Outputs: Deterministic a/b negative-positive pairs; invalid pair families rejected.
     def test_matching_uses_companion_edits_and_not_list_order(self):
         rows=[row('b+','b',True),row('a-','a',False),row('a+','a',True),row('b-','b',False)]
         pairs=matched_pairs(rows)
@@ -48,6 +54,9 @@ class RotationLearningTests(unittest.TestCase):
                         [row('x','a',False),row('y','a',True,split='validation')]):
             with self.assertRaises(ValueError):matched_pairs(invalid)
 
+    # Purpose: Verify stage allowlists block reserved samples before native reads.
+    # Inputs: One allowed final-test row, an unlisted sample and a changed split.
+    # Outputs: Allowed read mapped to validation; unauthorized rows rejected with only one reader call.
     def test_allowlist_rejects_reserved_samples_before_native_reader(self):
         allowed=row('x','a',False,split='final_test')
         inputs=StageFineInputs({},256,[allowed])
@@ -59,6 +68,9 @@ class RotationLearningTests(unittest.TestCase):
                 with self.assertRaises(ValueError):inputs.classifier(bad,{})
             self.assertEqual(read.call_count,1)
 
+    # Purpose: Verify refit budgets use all inner selections and exclude test evidence.
+    # Inputs: Four completed inner stages with epochs 10-13 and 20-23, then altered receipts.
+    # Outputs: Refit budgets 12 and 22; test-evaluated or wrong-lock receipts rejected.
     def test_refit_budget_uses_all_inner_validation_results_and_no_test(self):
         stages=[{'id':f'i{i}','outer_fold_id':'outer','stage':'inner_selection','seed':42} for i in range(4)]
         lock={'stages':stages}

@@ -15,6 +15,9 @@ import fakect_multiscale_network_v2 as network
 
 
 class PriorContractTests(unittest.TestCase):
+    # Purpose: Verify network imports stay lazy and priors invert the bounded-box parameterization.
+    # Inputs: Fresh subprocess import and explicit six-value prior box.
+    # Outputs: No TensorFlow import and reconstructed center/extent matches the prior.
     def test_import_stays_lazy_and_prior_is_explicit_data(self):
         code = "import sys; sys.path.insert(0,'src'); import fakect_multiscale_network_v2; assert 'tensorflow' not in sys.modules"
         subprocess.run([sys.executable, '-c', code], cwd=ROOT, check=True, capture_output=True)
@@ -25,6 +28,9 @@ class PriorContractTests(unittest.TestCase):
         center = extent / 2 + (1 - extent) * probability[:3]
         np.testing.assert_allclose(np.concatenate([center, extent]), prior, atol=1e-7)
 
+    # Purpose: Verify malformed box priors fail before model construction.
+    # Inputs: Five-value prior, zero extent, out-of-bounds center, and NaN prior.
+    # Outputs: ValueError for every invalid prior.
     def test_invalid_prior_fails_before_tensorflow(self):
         for prior in ([.5] * 5, [.5, .5, .5, 0, .1, .1], [.95, .5, .5, .2, .2, .2],
                       [np.nan, .5, .5, .2, .2, .2]):
@@ -44,6 +50,9 @@ class StableLocatorTests(unittest.TestCase):
     def setUp(self):
         self.tf.keras.backend.clear_session()
 
+    # Purpose: Verify TensorFlow classifiers reuse reloaded singleton-list encoders.
+    # Inputs: Locator encoder wrapped in one-output list model and tiny classifier input.
+    # Outputs: Same frozen encoder, finite heads, exact reload predictions, and multiple-output rejection.
     def test_classifier_accepts_singleton_list_encoder_without_replacing_weights(self):
         tf = self.tf
         original = network.build_locator((16, 16, 16), base_filters=2)
@@ -73,6 +82,9 @@ class StableLocatorTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'exactly one'):
             network._single_feature_output([encoder.output, encoder.output], 'overview_encoder')
 
+    # Purpose: Verify locator logit loss retains corrective gradients at saturation.
+    # Inputs: Wrong center logits at magnitudes 20 and 1000 with bounded-box target.
+    # Outputs: Finite loss and correctly signed center gradients above magnitude 0.08.
     def test_raw_loss_has_corrective_gradient_when_wrong_sigmoid_saturates(self):
         tf = self.tf
         BoundedBox, _, _ = network.base._components()
@@ -88,6 +100,9 @@ class StableLocatorTests(unittest.TestCase):
             self.assertLess(gradient[0, 1], -.08)
             self.assertGreater(gradient[0, 2], .08)
 
+    # Purpose: Verify locator raw-logit loss agrees with box loss for ordinary predictions.
+    # Inputs: Benign logits and exact prior-derived logits for target box.
+    # Outputs: Matching losses and near-zero loss for exact target.
     def test_raw_and_box_loss_agree_at_benign_logits_and_correct_box_has_zero_loss(self):
         tf = self.tf
         BoundedBox, _, _ = network.base._components()
@@ -100,6 +115,9 @@ class StableLocatorTests(unittest.TestCase):
         exact_prediction = BoundedBox()(exact_logits)
         np.testing.assert_allclose(network.locator_loss(truth, exact_prediction, logits=exact_logits), 0, atol=1e-7)
 
+    # Purpose: Verify corrected locators start near priors and train/save without retracing.
+    # Inputs: 16-cubed seeded image, explicit prior, six Adam updates, and saved locator.
+    # Outputs: Reduced finite loss, one trace, reload parity, and frozen reused classifier encoder.
     def test_model_starts_near_prior_trains_with_single_trace_and_reloads(self):
         tf = self.tf
         prior = np.array([.66, .47, .49, .12, .13, .08], np.float32)

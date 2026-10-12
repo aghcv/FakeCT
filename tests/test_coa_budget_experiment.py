@@ -181,6 +181,9 @@ class BudgetExperimentTests(unittest.TestCase):
         self.source_patch.start()
         self.addCleanup(self.source_patch.stop)
 
+    # Purpose: Preserve reviewed fold partitions in the extended classifier budget.
+    # Inputs: Five completed parent folds with 48 training and 12 test samples each.
+    # Outputs: Plan retains all panels, geometry, initialization, and settings while setting 200 epochs.
     def test_plan_retains_exact_five_primary_partitions_and_training_settings(self):
         lock = exp.plan(self.f.c)
         self.assertEqual(len(lock['stages']), 5)
@@ -199,6 +202,9 @@ class BudgetExperimentTests(unittest.TestCase):
             self.assertEqual(stage['expected_initial_weights_sha256'], INITIAL)
             self.assertEqual(stage['parent_inner_stage_ids'], [])
 
+    # Purpose: Require five eligible primary folds with seed 42.
+    # Inputs: Missing/duplicate folds, seed 7, ineligible stage, or validation cases.
+    # Outputs: Planning raises ValueError for each invalid reviewed fold.
     def test_requires_five_unique_seed42_primary_folds(self):
         for mutation in ('count', 'fold', 'seed', 'eligible', 'validation'):
             with self.subTest(mutation=mutation):
@@ -219,6 +225,9 @@ class BudgetExperimentTests(unittest.TestCase):
                     exp.plan(self.f.c)
         self.f.rewrite_parent_document(self.f.document)
 
+    # Purpose: Prevent locator prior leakage across fold boundaries.
+    # Inputs: Locator receipt containing held-out or reserved baseline IDs.
+    # Outputs: Planning raises ValueError for partition isolation.
     def test_locator_prior_cannot_include_heldout_or_reserved_originals(self):
         folder = self.f.stage_folder()
         receipt_path, result_path = folder / 'locator/locator-result.json', folder / 'results.json'
@@ -235,6 +244,9 @@ class BudgetExperimentTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'isolation'):
                     exp.plan(self.f.c)
 
+    # Purpose: Prevent classifier receipt leakage into held-out samples.
+    # Inputs: A final-test sample appended to classifier training IDs.
+    # Outputs: Planning raises ValueError for partition isolation.
     def test_classifier_receipt_cannot_add_heldout_training_sample(self):
         folder = self.f.stage_folder()
         receipt_path, result_path = folder / 'classifier/receipt.json', folder / 'results.json'
@@ -246,6 +258,9 @@ class BudgetExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'isolation'):
             exp.plan(self.f.c)
 
+    # Purpose: Verify classifier receipt and checkpoint identity.
+    # Inputs: Altered initialization hash followed by modified learned weights.
+    # Outputs: Planning rejects mismatched receipts and changed checkpoint bytes.
     def test_modified_receipt_and_checkpoint_are_rejected(self):
         folder = self.f.stage_folder()
         receipt = folder / 'classifier/receipt.json'
@@ -258,6 +273,9 @@ class BudgetExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'checkpoint changed'):
             exp.plan(self.f.c)
 
+    # Purpose: Enforce reviewed training proposal membership and coverage.
+    # Inputs: Duplicate/missing records, wrong role, failed coverage, or enabled selection.
+    # Outputs: Planning raises ValueError for each altered audit.
     def test_reviewed_crop_panel_roles_and_training_coverage_are_enforced(self):
         path = self.f.stage_folder() / 'proposal-audit.json'
         original = base.checked_json(path)
@@ -278,6 +296,9 @@ class BudgetExperimentTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.plan(self.f.c)
 
+    # Purpose: Require intact parent checksums and clean completion.
+    # Inputs: Parent lock with added bytes, then an INCOMPLETE stage marker.
+    # Outputs: Planning rejects checksum mismatch and unfinished stages.
     def test_parent_lock_checksum_and_completion_markers_are_required(self):
         path = self.f.parent / 'experiment-lock.json'
         original = path.read_bytes()
@@ -290,6 +311,9 @@ class BudgetExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'finish cleanly'):
             exp.plan(self.f.c)
 
+    # Purpose: Verify immutable output and parent artifact pinning.
+    # Inputs: Frozen control config and subsequently altered final-test crop origins.
+    # Outputs: Inspection initially matches; repeat freeze and changed parent artifacts are rejected.
     def test_output_and_all_parent_artifact_pins_are_immutable(self):
         lock = exp.freeze(self.f.c, self.f.content)
         self.assertEqual(set(lock['code_sha256']), set(self.f.code_files))
@@ -301,6 +325,9 @@ class BudgetExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Pinned parent artifact'):
             exp.inspect_lock(self.f.c, self.f.content)
 
+    # Purpose: Reject parent lock or locator changes after control freezing.
+    # Inputs: Frozen control followed by modified parent lock or locator checkpoint.
+    # Outputs: Inspection raises ValueError for pinned parent artifacts.
     def test_parent_checkpoint_and_parent_lock_changes_after_freeze_are_rejected(self):
         exp.freeze(self.f.c, self.f.content)
         paths = [self.f.parent / 'experiment-lock.json', self.f.stage_folder() / 'locator/locator.keras']
@@ -312,6 +339,9 @@ class BudgetExperimentTests(unittest.TestCase):
                     exp.inspect_lock(self.f.c, self.f.content)
                 path.write_bytes(original)
 
+    # Purpose: Verify live sources, source snapshots, and input bytes are pinned.
+    # Inputs: Frozen control with altered source, snapshot, or INI bytes.
+    # Outputs: Each mutation raises ValueError during inspection.
     def test_live_and_snapshot_sources_and_input_bytes_are_pinned(self):
         exp.freeze(self.f.c, self.f.content)
         source = self.f.code / self.f.code_files[0]
@@ -328,6 +358,9 @@ class BudgetExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'input changed'):
             exp.inspect_lock(self.f.c, self.f.content + b'\n')
 
+    # Purpose: Enforce independent output and supported budget fields.
+    # Inputs: Parent/nested/ancestor outputs, interval 30, and an extra learning rate field.
+    # Outputs: Valid INI loads; unsafe outputs and unsupported or indivisible settings are rejected.
     def test_config_requires_separate_output_and_exact_budget_fields(self):
         path = self.f.root / 'control.ini'
         path.write_bytes(self.f.content)
@@ -343,6 +376,9 @@ class BudgetExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unsupported'):
             exp.load_config(path)
 
+    # Purpose: Verify inherited runtime limits and independently bound smoke evidence.
+    # Inputs: 200-epoch control and smoke with parent/new lock digests or untouched cache pages.
+    # Outputs: Runtime retains geometry; smoke needs the new lock and physical cache residency.
     def test_runtime_and_own_smoke_inherit_limits_but_use_new_lock(self):
         lock = exp.freeze(self.f.c, self.f.content)
         run_c, runtime = exp.runtime_settings(self.f.c, lock, lock['stages'][0], self.f.output / 'stage')
@@ -368,6 +404,9 @@ class BudgetExperimentTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             exp.require_smoke(self.f.c, lock)
 
+    # Purpose: Defer held-out input access until fixed-budget training completes.
+    # Inputs: Mocked classifier fit, held-out reader, scoring, and one failed proposal.
+    # Outputs: Fit precedes read and score; twelve predictions retain one failure without reserved evaluation.
     def test_final_inputs_are_opened_only_after_train_only_fit_and_failures_remain(self):
         import fakect_coa_budget_learning as budget_learning
         import fakect_coa_rotation_learning as learning
@@ -422,6 +461,9 @@ class BudgetExperimentTests(unittest.TestCase):
 
 
 class BudgetRuntimeInventoryTests(unittest.TestCase):
+    # Purpose: Verify the budget runtime pins all rotation implementation dependencies.
+    # Inputs: Budget and rotation CODE_FILES collections.
+    # Outputs: Rotation and budget modules/scripts appear once in the extended runtime dependency list.
     def test_new_runtime_extends_every_frozen_rotation_source(self):
         self.assertTrue(set(exp.rotation.CODE_FILES).issubset(exp.CODE_FILES))
         self.assertTrue({'src/fakect_coa_budget_experiment.py', 'src/fakect_coa_budget_learning.py',

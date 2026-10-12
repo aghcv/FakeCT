@@ -34,6 +34,9 @@ def fixture(protocols=("family-control",), seeds=(42,)):
 
 
 class RotationAggregationTests(unittest.TestCase):
+    # Purpose: Verify exact classification metrics use equal-family averaging.
+    # Inputs: Perfect three-family predictions repeated for seeds 42 and 43.
+    # Outputs: Six case/family rows yield AUROC and sensitivity 1 with three family units and exact BCE.
     def test_perfect_exact_metrics_and_equal_family_means(self):
         rows, manifest = fixture(seeds=(42, 43))
         result = aggregate_records(rows, manifest)
@@ -49,6 +52,9 @@ class RotationAggregationTests(unittest.TestCase):
         expected_bce = -(math.log(.9) + math.log(.8) + math.log(.8) + math.log(.9)) / 4
         self.assertAlmostEqual(summary["equal_family_metrics"]["bce"]["mean"], expected_bce)
 
+    # Purpose: Verify tied prediction scores receive half AUROC credit.
+    # Inputs: All fixture probabilities set to 0.5.
+    # Outputs: AUROC and balanced accuracy are 0.5; sensitivity is 1 and specificity is 0.
     def test_tied_scores_have_exact_half_credit(self):
         rows, manifest = fixture()
         for row in rows:
@@ -60,6 +66,9 @@ class RotationAggregationTests(unittest.TestCase):
         self.assertEqual(metrics["specificity"], 0.)
         self.assertEqual(metrics["balanced_accuracy"], .5)
 
+    # Purpose: Avoid counting correlated seed repeats as independent families.
+    # Inputs: Two-seed predictions with family C probabilities inverted.
+    # Outputs: Mean AUROC is 2/3 with three units and no confidence interval.
     def test_correlated_seed_repeats_do_not_increase_family_units(self):
         rows, manifest = fixture(seeds=(42, 43))
         for row in rows:
@@ -71,6 +80,9 @@ class RotationAggregationTests(unittest.TestCase):
         self.assertEqual(summary["units"], 3)
         self.assertIsNone(summary["confidence_interval"])
 
+    # Purpose: Reject corrupted predictions and incomplete evaluation panels.
+    # Inputs: Duplicate/missing rows, NaN scores, wrong case/family/split, or label 2.
+    # Outputs: Aggregation raises ValueError for every malformed panel.
     def test_prediction_corruption_and_incomplete_panels_are_rejected(self):
         rows, manifest = fixture()
         failures = [rows + rows[:1], rows[1:], [dict(rows[0], probability=float("nan"))] + rows[1:],
@@ -82,6 +94,9 @@ class RotationAggregationTests(unittest.TestCase):
             with self.subTest(first=corrupted[0]), self.assertRaises(ValueError):
                 aggregate_records(corrupted, manifest)
 
+    # Purpose: Reject training, reserved-case, and shared-family leakage.
+    # Inputs: Manifest with evaluation case in training/reservation or reused family mapping.
+    # Outputs: Manifest validation raises ValueError.
     def test_train_case_family_and_reserved_leakage_are_rejected(self):
         _, manifest = fixture()
         changed = copy.deepcopy(manifest)
@@ -97,6 +112,9 @@ class RotationAggregationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_manifest(changed)
 
+    # Purpose: Allow entirely pending folds without using validation performance.
+    # Inputs: One complete fold and a validation receipt, then a leaking receipt.
+    # Outputs: Report is partial with four measured samples and no receipt performance; leakage is rejected.
     def test_whole_pending_folds_allowed_but_validation_receipts_excluded(self):
         rows, manifest = fixture()
         receipt = dict(protocol="family-control", fold_id="outer-A", seed=42,
@@ -110,6 +128,9 @@ class RotationAggregationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             aggregate_records(rows, manifest, validation_receipts=[bad])
 
+    # Purpose: Verify paired protocol comparisons require matching panels and targets.
+    # Inputs: Two protocols/two seeds, altered right scores, missing panel, or changed severity target.
+    # Outputs: AUROC delta is -0.25 over 24 pairs; panel and target mismatches raise ValueError.
     def test_paired_controls_require_identical_panels_and_targets(self):
         rows, manifest = fixture(protocols=("left", "right"), seeds=(42, 43))
         for row in rows:
@@ -128,6 +149,9 @@ class RotationAggregationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             aggregate_records(changed, manifest)
 
+    # Purpose: Verify pending reports contain no fabricated figures.
+    # Inputs: Empty measured records and a planned fold manifest.
+    # Outputs: Pending report has no PNGs or performance figures; replacing its output is rejected.
     def test_pending_report_contains_no_invented_performance_figures(self):
         _, manifest = fixture()
         with tempfile.TemporaryDirectory() as directory:
@@ -140,6 +164,9 @@ class RotationAggregationTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 write_rotation_report(out, [], manifest)
 
+    # Purpose: Retain locator failures in the measured performance denominator.
+    # Inputs: Twelve predictions with one failed proposal and consistent failure flag.
+    # Outputs: All twelve count, one failure is reported, coverage is 11/12; inconsistent flags are rejected.
     def test_locator_failures_remain_in_the_exact_performance_panel(self):
         rows, manifest = fixture()
         for row in rows:
@@ -155,6 +182,9 @@ class RotationAggregationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             aggregate_records(rows, manifest)
 
+    # Purpose: Verify design adaptation excludes selection and baseline rows from performance.
+    # Inputs: 45-stage rotation design, inner receipts, and one failed inner stage.
+    # Outputs: Manifest has 25 final folds; receipts add no predictions and failures block report status.
     def test_design_adapter_excludes_inner_selection_and_locator_baselines(self):
         import fakect_coa_rotation_design as design
         from test_coa_rotation_design import fixture as design_fixture
@@ -183,6 +213,9 @@ class RotationAggregationTests(unittest.TestCase):
         self.assertEqual(result["status"], "blocked_by_failed_stage")
         self.assertEqual(len(result["failed_stages"]), 1)
 
+    # Purpose: Reject reassignment of a frozen sample within the same family.
+    # Inputs: Valid final fold predictions with one sample changed to its sibling case.
+    # Outputs: Aggregation raises ValueError for frozen target identity.
     def test_known_sample_cannot_be_assigned_to_another_case_in_same_family(self):
         import fakect_coa_rotation_design as design
         from test_coa_rotation_design import fixture as design_fixture
@@ -203,6 +236,9 @@ class RotationAggregationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "frozen sample target"):
             aggregate_records(rows, manifest)
 
+    # Purpose: Verify measured exports preserve failure rows and artifact provenance.
+    # Inputs: Twelve fixture predictions including one pipeline failure.
+    # Outputs: Three PDF/SVG/PNG figures and twelve CSV rows retain failures and matching artifact hashes.
     def test_measured_export_retains_failure_rows_and_exact_source_fingerprints(self):
         rows, manifest = fixture()
         rows[0].update(locator_coverage_passed=False, pipeline_failure=True)

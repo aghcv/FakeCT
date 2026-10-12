@@ -45,6 +45,9 @@ class MorphologyTests(unittest.TestCase):
         arrays['candidates'] = arrays['tissue'] == 5
         arrays['selected'] = arrays['candidates'] & arrays['roi']
 
+    # Purpose: Verify dilation distances use anisotropic physical paths.
+    # Inputs: Single target voxel, spacing [1,2,3], and distance 2.1 mm.
+    # Outputs: I/J growth is accepted, K/diagonal growth excluded, with six added voxels totaling 36 mm3.
     def test_anisotropic_weighted_path_distance_not_isotropic_iterations(self):
         arrays, resolved, config = self.fixture((1, 2, 3), distance=2.1)
         result = apply_morphology(arrays, resolved, config)
@@ -56,6 +59,9 @@ class MorphologyTests(unittest.TestCase):
         self.assertEqual(result['summary']['counts']['added'], 6)
         self.assertEqual(result['summary']['volume_mm3']['added'], 36)
 
+    # Purpose: Verify bone barriers and unknown labels block growth.
+    # Inputs: Target beside a bone plane and unknown label 999 with 4 mm dilation.
+    # Outputs: Blocked proposals remain unchanged and proposed additions equal accepted plus blocked counts.
     def test_barrier_blocks_accepted_growth_and_unknown_labels_are_preserved(self):
         arrays, resolved, config = self.fixture(distance=4)
         arrays['act'][15, 15, 15] = 20
@@ -72,6 +78,9 @@ class MorphologyTests(unittest.TestCase):
         self.assertEqual(result['summary']['counts']['proposed_added'],
                          result['summary']['counts']['added'] + result['summary']['counts']['blocked'])
 
+    # Purpose: Verify morphology preserves signed sources and untouched scalar values.
+    # Inputs: 2 mm dilation with snapshots of every input array.
+    # Outputs: Inputs/outside ROI stay intact; added labels are -7 and copy source attenuation/transitions.
     def test_original_signed_arrays_outside_roi_and_source_attenuation_are_unchanged(self):
         arrays, resolved, config = self.fixture(distance=2)
         snapshots = {name: value.copy() for name, value in arrays.items()}
@@ -87,6 +96,9 @@ class MorphologyTests(unittest.TestCase):
         self.assertEqual(result['summary']['transitions'],
                          [{'original_id': 20, 'new_id': -7, 'count': int(result['added_mask'].sum())}])
 
+    # Purpose: Verify dilation donor ties resolve deterministically.
+    # Inputs: Equidistant donor IDs 8/-7, then two donors with ID -7.
+    # Outputs: Lower signed ID wins first; equal IDs choose the earlier source position reproducibly.
     def test_dilation_ties_use_signed_original_id_then_original_source_position(self):
         arrays, resolved, config = self.fixture()
         arrays['act'][15, 15, 15] = 20
@@ -103,6 +115,9 @@ class MorphologyTests(unittest.TestCase):
         np.testing.assert_array_equal(first['edited_labels'], second['edited_labels'])
         np.testing.assert_array_equal(first['attenuation_proxy_per_pixel'], second['attenuation_proxy_per_pixel'])
 
+    # Purpose: Verify erosion uses full target context beyond the ROI.
+    # Inputs: Long target cylinder crossing a spherical ROI boundary.
+    # Outputs: Artificial ROI cut faces remain targets, real side erosion occurs, and outside labels stay intact.
     def test_erosion_uses_full_candidate_context_not_artificial_roi_cut_faces(self):
         arrays, resolved, config = self.fixture(operation='erosion')
         k, j, i = np.indices(arrays['act'].shape)
@@ -117,6 +132,9 @@ class MorphologyTests(unittest.TestCase):
         self.assertTrue(np.any(result['removed_mask']))
         np.testing.assert_array_equal(result['edited_labels'][~arrays['roi']], arrays['act'][~arrays['roi']])
 
+    # Purpose: Verify unresolved erosion preserves targets or fails by policy.
+    # Inputs: Isolated target enclosed by bone, with preserve then error recipient policy.
+    # Outputs: Preserve reports one unresolved voxel and no changes; error mode raises ValueError.
     def test_erosion_recipient_barrier_preserve_and_error_modes(self):
         arrays, resolved, config = self.fixture(operation='erosion')
         arrays['act'][14:17, 14:17, 14:17] = 30
@@ -131,6 +149,9 @@ class MorphologyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no eligible recipient'):
             apply_morphology(arrays, resolved, config)
 
+    # Purpose: Verify erosion recipient ties and physical search radius.
+    # Inputs: Equidistant soft-tissue IDs 21/20, then radius reduced to 0.5 mm.
+    # Outputs: ID 20 supplies its scalar on a tie; the smaller radius leaves the target unresolved.
     def test_erosion_recipient_ties_and_search_radius(self):
         arrays, resolved, config = self.fixture(operation='erosion')
         arrays['act'][14:17, 14:17, 14:17] = 30
@@ -144,6 +165,9 @@ class MorphologyTests(unittest.TestCase):
         result = apply_morphology(arrays, resolved, config)
         self.assertTrue(result['unresolved_mask'][15, 15, 15])
 
+    # Purpose: Verify thick erosion shells account for assigned and unresolved releases.
+    # Inputs: 4 mm target sphere, 3 mm erosion, and 1 mm reassignment radius.
+    # Outputs: Removed/unresolved are positive, partition requested removal, and only assigned releases change.
     def test_thick_release_shell_requested_equals_assigned_plus_unresolved(self):
         arrays, resolved, config = self.fixture(operation='erosion', distance=3)
         target = sphere_mask(arrays['act'].shape, (0, 0, 0), (15, 15, 15), (1, 1, 1), 4)
@@ -158,6 +182,9 @@ class MorphologyTests(unittest.TestCase):
         self.assertEqual(counts['before'] - counts['after'], counts['removed'])
         self.assertFalse(np.any(result['unresolved_mask'] & result['changed_mask']))
 
+    # Purpose: Verify empty recipient policies and invalid tissue selections.
+    # Inputs: Both operations with empty allowlist, then unknown/target/nonexistent recipient names.
+    # Outputs: Empty policy preserves labels; invalid donors or unknown target tissue raise ValueError.
     def test_empty_allowlist_means_no_change_and_unknown_target_or_donor_is_rejected(self):
         for operation in ('erosion', 'dilation'):
             arrays, resolved, config = self.fixture(operation=operation)
@@ -174,6 +201,9 @@ class MorphologyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_edit_geometry(resolved, config)
 
+    # Purpose: Require explicit background permission and preserve unmapped labels.
+    # Inputs: Background ID 0 and unmapped ID 123456 beside a target.
+    # Outputs: Both initially block growth; background allowlist admits only ID 0.
     def test_background_requires_explicit_allowlist_and_unmapped_id_stays_unknown(self):
         arrays, resolved, config = self.fixture()
         arrays['act'][15, 15, 14] = 0
@@ -187,6 +217,9 @@ class MorphologyTests(unittest.TestCase):
         self.assertTrue(result['added_mask'][15, 15, 14])
         self.assertEqual(result['edited_labels'][15, 15, 16], 123456)
 
+    # Purpose: Verify identity editing accepts empty targets and enabled editing requires distance.
+    # Inputs: None operation on empty target, dilation on empty target, and zero-distance dilation.
+    # Outputs: Identity preserves arrays; enabled empty/zero-distance edits raise ValueError.
     def test_none_identity_accepts_empty_target_and_enabled_zero_distance_is_rejected(self):
         arrays, resolved, config = self.fixture(operation='none')
         arrays['act'][15, 15, 15] = 20
@@ -209,6 +242,9 @@ class MorphologyTests(unittest.TestCase):
         np.testing.assert_array_equal(result['edited_labels'], arrays['act'])
         self.assertFalse(np.any(result['changed_mask']))
 
+    # Purpose: Verify Gaussian tube strength has zero endpoints and a center peak.
+    # Inputs: 2 mm tube profile from K=8 to 22, then narrowed shape window.
+    # Outputs: Strength peaks at 2 mm, is symmetric, and permits center growth while excluding endpoints.
     def test_spatial_gaussian_tube_profile_has_zero_ends_and_center_peak(self):
         arrays, resolved, config = self.fixture(distance=2)
         resolved.update(roi_kind='tube', roi_nodes_ijk=((15, 15, 8), (15, 15, 15), (15, 15, 22)),
@@ -233,6 +269,9 @@ class MorphologyTests(unittest.TestCase):
         self.assertEqual(strength[11, 15, 15], 0)
         self.assertAlmostEqual(strength[15, 15, 15], 2)
 
+    # Purpose: Verify Gaussian axis extent and deterministic tube-segment ties.
+    # Inputs: I-axis Gaussian sphere and a doubled-back tube with window [0,0.75].
+    # Outputs: Axis endpoints are zero, center is 2 mm, and tied tube projection uses the first segment.
     def test_gaussian_axis_extent_and_nearest_tube_segment_ties(self):
         arrays, resolved, config = self.fixture(distance=2)
         config['edit'].update(profile='gaussian', profile_axis='i')
@@ -249,6 +288,9 @@ class MorphologyTests(unittest.TestCase):
         self.assertEqual(strength[15, 10, 10], 0)
         self.assertGreater(strength[15, 10, 15], 0)
 
+    # Purpose: Reject insufficient halo and nonintegral labels before editing.
+    # Inputs: ROI moved near crop edge, then selected label changed to 1.25.
+    # Outputs: Geometry/operation raises ValueError for halo or integral-label violations.
     def test_halo_geometry_and_invalid_labels_fail_before_editing(self):
         arrays, resolved, config = self.fixture()
         resolved['roi_nodes_ijk'] = ((6, 15, 15),)
@@ -259,6 +301,9 @@ class MorphologyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'integral'):
             apply_morphology(arrays, resolved, config)
 
+    # Purpose: Verify actual crop bounds and tube profile prerequisites.
+    # Inputs: High crop bound 32 for a 31-cell array, then tube axis on a sphere.
+    # Outputs: Shape mismatch fails; uniform axis is allowed but Gaussian tube profiling is rejected.
     def test_actual_crop_bounds_and_profile_axis_contract(self):
         arrays, resolved, config = self.fixture()
         resolved['crop_high_ijk_exclusive'] = (32, 31, 31)
@@ -271,6 +316,9 @@ class MorphologyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'requires a tube ROI'):
             validate_edit_geometry(resolved, config)
 
+    # Purpose: Distinguish expandable crop halo from unavailable source context.
+    # Inputs: 2 mm edit, 3 mm reassignment, bounded crops, then ROI near source edge.
+    # Outputs: Error explains the 6 mm requirement; expanded crop succeeds and impossible source halo fails.
     def test_halo_error_distinguishes_expandable_crop_from_source_boundary(self):
         _, resolved, config = self.fixture(distance=2)
         resolved.update(shape_kji=(50, 50, 50), crop_low_ijk=(5, 5, 5),
@@ -291,6 +339,9 @@ class MorphologyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'beyond the source volume.*cannot supply it'):
             validate_edit_geometry(resolved, config)
 
+    # Purpose: Verify cropped and full-volume execution agree with adequate halo.
+    # Inputs: Erosion/dilation of the same target on full and 21-cube cropped grids.
+    # Outputs: All output arrays and counts/transitions/volumes/components match within the crop.
     def test_crop_and_full_execution_are_identical_with_valid_physical_halo(self):
         region = (slice(5, 26),) * 3
         for operation in ('erosion', 'dilation'):
@@ -313,6 +364,9 @@ class MorphologyTests(unittest.TestCase):
                 for name in ('counts', 'transitions', 'volume_mm3', 'components_before', 'components_after'):
                     self.assertEqual(part['summary'][name], full['summary'][name])
 
+    # Purpose: Verify accepted edits grow monotonically with requested distance.
+    # Inputs: Fixed cylinder, ROI/policy, both operations/profiles, and distances 0.5/1/2 mm.
+    # Outputs: Changed masks never lose accepted voxels; counts increase from zero.
     def test_accepted_changes_are_monotone_for_fixed_roi_profile_and_policy(self):
         for operation in ('erosion', 'dilation'):
             for profile in ('uniform', 'gaussian'):

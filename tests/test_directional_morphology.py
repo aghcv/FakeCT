@@ -35,6 +35,9 @@ class DirectionalMorphologyTests(unittest.TestCase):
         test_morphology.MorphologyTests().refresh(arrays, resolved)
         return arrays, resolved, config
 
+    # Purpose: Verify curvature inner and outer fields select opposite radial sides.
+    # Inputs: Circular tube fixture with inner and outer 180-degree sectors.
+    # Outputs: Expected inward/outward weights, disjoint support and opposite direction cosines.
     def test_circle_inner_and_outer_point_to_opposite_known_radial_sides(self):
         arrays, resolved, config = self.fixture()
         outer = direction_weight_field(arrays['act'].shape, resolved, config, arrays['roi'])
@@ -50,6 +53,9 @@ class DirectionalMorphologyTests(unittest.TestCase):
         np.testing.assert_array_equal(inner['direction_reliable_mask'], outer['direction_reliable_mask'])
         np.testing.assert_allclose(inner['direction_cosine'], -outer['direction_cosine'])
 
+    # Purpose: Verify narrower sectors shrink support with raised-cosine taper.
+    # Inputs: Same circular tube with 180-degree and 60-degree angular widths.
+    # Outputs: 45-degree offset excluded by narrow sector; narrow weights bounded by wide weights.
     def test_narrower_sector_has_smaller_support_and_raised_cosine_taper(self):
         arrays, resolved, config = self.fixture()
         wide = direction_weight_field(arrays['act'].shape, resolved, config, arrays['roi'])
@@ -66,6 +72,9 @@ class DirectionalMorphologyTests(unittest.TestCase):
         self.assertTrue(np.all(narrow['direction_weight'] <= wide['direction_weight'] + 1e-12))
         self.assertTrue(np.all(narrow['direction_weight'][~arrays['roi']] == 0))
 
+    # Purpose: Verify straight parents skip edits requiring an anatomical inner side.
+    # Inputs: Straight tube fixture with directional growth requested.
+    # Outputs: No reliable direction or supported voxels; labels and attenuation unchanged.
     def test_straight_parent_skips_directional_edit_instead_of_inventing_an_inner_side(self):
         arrays, resolved, config = self.fixture(straight=True)
         field = direction_weight_field(arrays['act'].shape, resolved, config, arrays['roi'])
@@ -78,6 +87,9 @@ class DirectionalMorphologyTests(unittest.TestCase):
         np.testing.assert_array_equal(result['edited_labels'], arrays['act'])
         np.testing.assert_array_equal(result['attenuation_proxy_per_pixel'], arrays['atn'])
 
+    # Purpose: Verify two-node subranges inherit the original curved parent frame.
+    # Inputs: Curved tube range containing nodes 10-11 and the equivalent parent arc region.
+    # Outputs: Positive support with identical direction fields and original parent node count.
     def test_two_node_subrange_uses_the_original_curved_parent_frame(self):
         arrays, resolved, config = self.fixture()
         parent = resolved['roi_nodes_ijk']
@@ -95,6 +107,9 @@ class DirectionalMorphologyTests(unittest.TestCase):
             np.testing.assert_array_equal(actual[key], expected[key])
         self.assertEqual(actual['summary']['frame_metadata']['input_node_count'], len(parent))
 
+    # Purpose: Verify native edits occur only on the requested supported side.
+    # Inputs: Inner/outer dilation and erosion on the circular target fixture.
+    # Outputs: Correct side changed, opposite side preserved and strength equals distance times weight.
     def test_actual_dilation_and_erosion_change_only_the_requested_supported_side(self):
         for operation in ('dilation', 'erosion'):
             for direction in ('inner', 'outer'):
@@ -116,6 +131,9 @@ class DirectionalMorphologyTests(unittest.TestCase):
                     np.testing.assert_array_equal(result['attenuation_proxy_per_pixel'][~supported], arrays['atn'][~supported])
                     np.testing.assert_allclose(result['strength_mm'], 1.5 * result['direction_weight'])
 
+    # Purpose: Verify angular distance budgets precede tissue stiffness resistance.
+    # Inputs: Outward edit with default stiffness 0.25 and protected bone/skin stiffness.
+    # Outputs: Strength 1.5 times direction weight, effective strength scaled by resistance and no unsupported edits.
     def test_angular_budget_is_multiplied_before_tissue_resistance(self):
         arrays, resolved, config = self.fixture()
         config['reassignment'] = {'mode': 'stiffness', 'allowed_tissues': (), 'max_distance_mm': 1.,
@@ -127,6 +145,9 @@ class DirectionalMorphologyTests(unittest.TestCase):
                                    1.5 * result['direction_weight'] * (1 - result['stiffness_field']))
         self.assertFalse(np.any(result['changed_mask'] & (result['direction_weight'] == 0)))
 
+    # Purpose: Verify directional execution is deterministic and preserves inputs.
+    # Inputs: Repeated edits of copied arrays, resolved geometry and configuration.
+    # Outputs: Original arrays/configuration unchanged and repeated labels, attenuation and summaries identical.
     def test_directional_execution_preserves_config_geometry_and_original_arrays(self):
         arrays, resolved, config = self.fixture()
         saved_arrays = {key: value.copy() for key, value in arrays.items()}
@@ -141,6 +162,9 @@ class DirectionalMorphologyTests(unittest.TestCase):
         np.testing.assert_array_equal(first['edited_labels'], second['edited_labels'])
         np.testing.assert_array_equal(first['attenuation_proxy_per_pixel'], second['attenuation_proxy_per_pixel'])
 
+    # Purpose: Verify absent direction and explicit all retain bilateral editing.
+    # Inputs: Circular fixture without direction/width/centerline, then direction all.
+    # Outputs: Both radial sides edited and identical summaries, labels, attenuation and strength.
     def test_missing_direction_and_explicit_all_keep_ordinary_bilateral_edit(self):
         arrays, resolved, config = self.fixture()
         config['edit'].pop('direction')
@@ -155,6 +179,9 @@ class DirectionalMorphologyTests(unittest.TestCase):
         for key in ('edited_labels', 'attenuation_proxy_per_pixel', 'strength_mm', 'changed_mask'):
             np.testing.assert_array_equal(legacy[key], explicit[key])
 
+    # Purpose: Reject invalid programmatic angular widths.
+    # Inputs: Widths zero, negative, above 180 degrees, NaN or infinity.
+    # Outputs: ValueError identifies angular_width_deg for every invalid width.
     def test_programmatic_directional_width_rejects_beyond_halfplane_and_nonfinite_inputs(self):
         _, resolved, config = self.fixture()
         for value in (0, -1, 180.01, float('nan'), float('inf')):

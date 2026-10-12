@@ -41,6 +41,9 @@ class PairedMetadataTests(unittest.TestCase):
         self.lock = fixture_contract(self.root)
         self.rows = exp.select_diagnostic(self.c, self.lock)
 
+    # Purpose: Verify sibling pairing preserves case/split identity and class order.
+    # Inputs: Reversed four-sibling diagnostic list and complete 40-row development panel.
+    # Outputs: Two ordered diagnostic pairs and twenty same-case/split panel pairs.
     def test_pairs_keep_case_identity_and_negative_positive_order(self):
         pairs = learning.pair_rows(list(reversed(self.rows)))
         self.assertEqual(len(pairs), 2)
@@ -59,6 +62,9 @@ class PairedMetadataTests(unittest.TestCase):
         self.assertTrue(all(a['case_id'] == b['case_id'] and a['split'] == b['split']
                             for a, b in panel_pairs))
 
+    # Purpose: Verify pairs cannot mix partitions, roles, classes, or companion edits.
+    # Inputs: Test/mixed splits, missing/duplicate records, wrong class, and altered companion distance.
+    # Outputs: ValueError for every invalid or confounded sibling panel.
     def test_invalid_or_confounded_pairs_are_rejected(self):
         for mutation in ('test', 'mixed_split', 'missing', 'duplicate', 'class', 'companions'):
             with self.subTest(mutation=mutation):
@@ -78,6 +84,9 @@ class PairedMetadataTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     learning.pair_rows(rows)
 
+    # Purpose: Verify paired predictors contain only ordered negative and positive images.
+    # Inputs: Two MiniVolume siblings with 4/16 removals and identical two-origin proposals.
+    # Outputs: Float32 2x32x32x32x2 channels matching each single input and only two samples accessed.
     def test_paired_inputs_use_only_two_image_samples_in_order(self):
         runtime = deepcopy(self.lock['parent_config'])
         runtime['input.detail']['spacing_ijk_mm'] = [1., 1., 1.]
@@ -99,6 +108,9 @@ class PairedMetadataTests(unittest.TestCase):
             self.assertTrue(any(np.any(value[0, ..., 0] != value[1, ..., 0]) for value in values.values()))
         self.assertEqual(set(MiniVolume.accessed), {negative['sample_id'], positive['sample_id']})
 
+    # Purpose: Verify paired-fit smoke records require batch size two.
+    # Inputs: Valid pinned smoke then missing batch_size or batch_size 1.
+    # Outputs: Valid batch-two smoke accepted and ValueError for absent/wrong batch size.
     def test_batch_one_smoke_cannot_authorize_paired_training(self):
         out = Path(self.c['experiment']['output_directory'])
         out.mkdir()
@@ -136,6 +148,9 @@ class PairedTensorFlowIntegrationTests(unittest.TestCase):
         MiniVolume.accessed = []
         MiniVolume.returned_mask_value = None
 
+    # Purpose: Verify real TensorFlow paired diagnostics train balanced batches with independent inference.
+    # Inputs: Two epochs on two sibling pairs using saved locator and observed optimizer steps.
+    # Outputs: Four [0,1] updates, unchanged locator, checkpoint parity, and predictions independent of the mate.
     def test_two_epoch_diagnostic_uses_four_balanced_updates_and_frozen_locator(self):
         from test_multiscale_v3_integration import config as parent_config
         import fakect_multiscale_experiment_v3 as geometry

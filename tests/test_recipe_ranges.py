@@ -31,6 +31,9 @@ class RecipeRangeTests(unittest.TestCase):
         test_recipe.RecipeTests().refresh(arrays, resolved)
         return arrays, resolved, config
 
+    # Purpose: Verify interval edits exclude standalone rounded tube caps beyond the selected range.
+    # Inputs: Uniform dilation/erosion over path 30 to 75 percent.
+    # Outputs: Changes confined to k=12 through 19 and unchanged labels/signals outside interval mask.
     def test_uniform_dilation_and_erosion_cannot_leak_past_range_round_caps(self):
         for operation in ('dilation', 'erosion'):
             with self.subTest(operation=operation):
@@ -58,6 +61,9 @@ class RecipeRangeTests(unittest.TestCase):
                 np.testing.assert_array_equal(result['edited_labels'][~mask], arrays['act'][~mask])
                 np.testing.assert_array_equal(result['attenuation_proxy_per_pixel'][~mask], arrays['atn'][~mask])
 
+    # Purpose: Verify disjoint subranges of one tube can use overlap-error policy.
+    # Inputs: Main path edits at 10 to 40 and 60 to 90 percent.
+    # Outputs: Two active passes, disjoint masks, zero effective overlap, and separate coverage records.
     def test_disjoint_ranges_share_main_under_overlap_error(self):
         arrays, resolved, config = self.fixture()
         config['edits']['grow']['path_percent'] = (10., 40.)
@@ -72,6 +78,9 @@ class RecipeRangeTests(unittest.TestCase):
         self.assertEqual(result['summary']['roi_overlaps'][0]['effective_overlap_voxels'], 0)
         self.assertEqual(set(result['summary']['roi_coverage']), {'edit:grow', 'edit:later'})
 
+    # Purpose: Verify overlapping ranges obey error or sequential state semantics.
+    # Inputs: Growth 10 to 60 percent and shrink 30 to 75 percent.
+    # Outputs: No callback under error; sequential edits inherit channels/targets and matching state digests.
     def test_overlapping_ranges_reject_early_or_chain_full_state_sequentially(self):
         arrays, resolved, config = self.fixture()
         config['edits']['grow']['path_percent'] = (10., 60.)
@@ -94,6 +103,9 @@ class RecipeRangeTests(unittest.TestCase):
         self.assertEqual(result['summary']['steps'][0]['labels_after_sha256'],
                          result['summary']['steps'][1]['labels_before_sha256'])
 
+    # Purpose: Verify point intervals resolve by physical arc length rather than node count.
+    # Inputs: Bent path with 1/2/3 mm spacing, point range 2..3, and percentage range 10..40.
+    # Outputs: Same 2 to 8 mm subpath, masks, edited labels/signals, and strength fields.
     def test_point_and_percent_intervals_agree_for_uneven_anisotropic_bent_path(self):
         # Three physical segments are 2, 6 and 12 mm despite native lengths
         # 2, 3 and 4. Controls 2..3 therefore mean 10..40%, not 1/3..2/3.
@@ -116,6 +128,9 @@ class RecipeRangeTests(unittest.TestCase):
         for name in ('edited_labels', 'attenuation_proxy_per_pixel', 'changed_mask', 'strength_mm'):
             np.testing.assert_array_equal(first[name], second[name])
 
+    # Purpose: Verify Gaussian strength is centered and tapered within the selected interval.
+    # Inputs: 2 mm growth over path 25 to 50 percent compared with full-path growth.
+    # Outputs: Local peak at k=13, zero local endpoints, and full-path peak at k=15.
     def test_gaussian_peak_and_taper_are_local_to_selected_interval(self):
         arrays, resolved, config = self.fixture()
         config['edits']['grow'].update(profile='gaussian', profile_axis='tube', distance_mm=2.,
@@ -134,6 +149,9 @@ class RecipeRangeTests(unittest.TestCase):
         self.assertLess(whole['strength_mm'][13, 15, 15], 2.)
         self.assertGreater(whole['strength_mm'][11, 15, 15], 0.)
 
+    # Purpose: Verify whole-main edits preserve legacy named-ROI behavior.
+    # Inputs: Uniform/Gaussian main tube edits compared with equivalent named whole ROI.
+    # Outputs: Identical masks, labels, attenuation, and strength fields.
     def test_main_without_range_matches_legacy_whole_named_roi(self):
         for profile in ('uniform', 'gaussian'):
             with self.subTest(profile=profile):
@@ -149,6 +167,9 @@ class RecipeRangeTests(unittest.TestCase):
                 for name in ('edited_labels', 'attenuation_proxy_per_pixel', 'strength_mm'):
                     np.testing.assert_array_equal(first[name], second[name])
 
+    # Purpose: Verify named subranges inherit their parent path and outer clipping.
+    # Inputs: Short k=9..17 tube edited over 25..75 percent with one outer-ROI voxel excluded.
+    # Outputs: k=11..15 subpath, radius/parent bounds respected, and excluded voxel preserved.
     def test_named_parent_subrange_uses_its_own_path_and_main_boundary(self):
         arrays, resolved, config = self.fixture()
         config['rois']['short'] = {'shape': 'tube', 'center_ijk': ((15., 15., 9.), (15., 15., 17.)),
@@ -171,6 +192,9 @@ class RecipeRangeTests(unittest.TestCase):
         self.assertLessEqual(changed[:, 0].max(), 15)
         self.assertEqual(result['edited_labels'][14, 15, 15], arrays['act'][14, 15, 15])
 
+    # Purpose: Verify range planning/execution remains immutable and deterministic.
+    # Inputs: Point range 2..3 with snapshotted config, resolved geometry, and arrays.
+    # Outputs: Unchanged inputs and identical repeated summaries/channels/strength.
     def test_range_resolution_and_execution_preserve_config_geometry_and_source_arrays(self):
         arrays, resolved, config = self.fixture()
         config['edits']['grow']['point_range'] = (2, 3)

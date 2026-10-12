@@ -69,6 +69,9 @@ class CohortBatchTests(unittest.TestCase):
                            threading.Event(), self.root)
         return call
 
+    # Purpose: Verify verified complete batch outputs are reused.
+    # Inputs: Existing anatomy artifact and matching complete preflight inventory.
+    # Outputs: No native commands; case complete and both stages marked reused.
     def test_existing_complete_outputs_are_verified_then_reused(self):
         self.anatomy()
         self.preflight()
@@ -78,6 +81,9 @@ class CohortBatchTests(unittest.TestCase):
         self.assertEqual(self.state['260602']['anatomy']['state'], 'reused')
         self.assertEqual(self.state['260602']['preflight']['state'], 'reused')
 
+    # Purpose: Verify missing batch stages run once and resume without repetition.
+    # Inputs: Missing anatomy/preflight artifacts created by mocked stage execution.
+    # Outputs: Exactly anatomy then preflight commands; second run executes no commands.
     def test_missing_steps_execute_once_and_then_resume(self):
         seen = []
         def execute(command, *args):
@@ -93,6 +99,9 @@ class CohortBatchTests(unittest.TestCase):
         self.assertEqual(self.state['260602']['state'], 'complete')
         self.run_case(AssertionError('resume repeated a command')).assert_not_called()
 
+    # Purpose: Preserve incomplete anatomy outputs instead of retrying.
+    # Inputs: Existing anatomy revision with an INCOMPLETE sentinel.
+    # Outputs: Case failed, no execution and sentinel bytes preserved.
     def test_incomplete_anatomy_never_skipped_or_replaced(self):
         self.anatomy()
         sentinel = self.config['selection']['anatomy_file'].parent / 'INCOMPLETE'
@@ -102,6 +111,9 @@ class CohortBatchTests(unittest.TestCase):
         self.assertIn('INCOMPLETE', self.state['260602']['error'])
         self.assertEqual(sentinel.read_text(), 'leave untouched')
 
+    # Purpose: Reject stale or incomplete preflight outputs without rerunning.
+    # Inputs: Old fingerprint, then INCOMPLETE marker and a matching verification fingerprint.
+    # Outputs: No commands for unsafe outputs; matching complete preflight remains verifiable.
     def test_stale_incomplete_and_failed_preflights_never_rerun(self):
         self.anatomy()
         folder = self.preflight(fingerprint='old')
@@ -115,6 +127,9 @@ class CohortBatchTests(unittest.TestCase):
             info = batch.verify_preflight(folder, self.config, self.resolved)
         self.assertTrue(info['ready'])
 
+    # Purpose: Keep matching failed preflight evidence available for review.
+    # Inputs: Matching preflight with one failed variant and readiness false.
+    # Outputs: No retry; case and preflight failed with failed-variant count retained.
     def test_matching_failed_preflight_stays_reviewable(self):
         self.anatomy()
         self.preflight(ready=False)
@@ -123,6 +138,9 @@ class CohortBatchTests(unittest.TestCase):
         self.assertEqual(self.state['260602']['preflight']['failed_variants'], 1)
         self.assertEqual(self.state['260602']['preflight']['state'], 'failed')
 
+    # Purpose: Reject corrupted preflight artifacts and unsafe inventory paths.
+    # Inputs: Changed source-crop JSON, then corrected checksum with ../outside inventory entry.
+    # Outputs: ValueError identifies changed artifact or unsafe inventory.
     def test_corrupted_artifact_and_unsafe_inventory_are_rejected(self):
         folder = self.preflight()
         (folder / 'source-crop.json').write_text('{"changed": true}')
@@ -136,6 +154,9 @@ class CohortBatchTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unsafe'):
             batch.verify_preflight(folder, self.config, self.resolved)
 
+    # Purpose: Stop before preflight when input changes during anatomy execution.
+    # Inputs: Mock anatomy command creates output and rewrites the INI.
+    # Outputs: One command, failed case and changed-during-anatomy error.
     def test_changed_input_during_anatomy_stops_before_preflight(self):
         def execute(command, *args):
             self.anatomy()
@@ -150,6 +171,9 @@ class CohortBatchTests(unittest.TestCase):
         path.write_text(json.dumps({'schema_version': 'fakect.cohort-project/1', 'cases': rows}))
         return path
 
+    # Purpose: Verify project filtering, checksums and duplicate rejection.
+    # Inputs: Two-case project filtered to 260611, unknown selector and duplicate case rows.
+    # Outputs: Resolved selected path and project checksum; unknown and duplicate cases rejected.
     def test_project_case_selection_and_duplicate_rejection(self):
         path = self.project([self.row, {'case_id': '260611', 'config': 'other.ini'}])
         _, rows, checksum = batch.load_project(path, self.root, ['260611'])
@@ -161,6 +185,9 @@ class CohortBatchTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'duplicate'):
             batch.load_project(path, self.root)
 
+    # Purpose: Verify one invalid batch case does not prevent another case finishing.
+    # Inputs: Two-worker project with valid anatomy for one case and a missing INI for the other.
+    # Outputs: One complete and one failed case, compact matching status JSON and no prepare/freeze.
     def test_one_invalid_case_does_not_stop_other_cases_and_status_is_small(self):
         path = self.project([self.row, {'case_id': '260611', 'config': 'missing.ini'}])
         self.anatomy()
@@ -180,6 +207,9 @@ class CohortBatchTests(unittest.TestCase):
         self.assertFalse(result['dataset_prepared'])
         self.assertFalse(result['input_frozen'])
 
+    # Purpose: Reject shared output directories before native execution.
+    # Inputs: Two cases loading configuration with the same output paths.
+    # Outputs: ValueError reports shared output and execute is never called.
     def test_shared_output_folder_rejected_before_any_native_execution(self):
         path = self.project([self.row, {'case_id': '260611', 'config': 'other.ini'}])
         with patch.object(batch, 'load_study_config', return_value=self.config), \

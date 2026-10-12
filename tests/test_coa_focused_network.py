@@ -16,6 +16,9 @@ import fakect_coa_focused_network as network
 
 
 class FocusedGeometryTests(unittest.TestCase):
+    # Purpose: Verify production encoder preserves useful spatial resolution.
+    # Inputs: Input geometry [216,192,192].
+    # Outputs: Stride is 4, feature grid is [54,48,48], and six-bin windows are [9,8,8].
     def test_production_features_retain_stride_four_and_ordered_spatial_grid(self):
         geometry = network.feature_geometry([216, 192, 192])
         self.assertEqual(geometry['encoder_stride'], 4)
@@ -23,6 +26,9 @@ class FocusedGeometryTests(unittest.TestCase):
         self.assertEqual(geometry['spatial_bin_shape_kji'], [6, 6, 6])
         self.assertEqual(geometry['spatial_bin_window_kji'], [9, 8, 8])
 
+    # Purpose: Reject unsupported geometry and resource settings before TensorFlow.
+    # Inputs: Malformed/oversized shapes, invalid proposal counts, filters, and seed.
+    # Outputs: Geometry or classifier construction raises ValueError.
     def test_invalid_geometry_and_resource_parameters_rejected_before_tensorflow(self):
         for shape in ((7, 8, 8), (12, 9, 12), (True, 16, 16), (512, 512, 512)):
             with self.subTest(shape=shape), self.assertRaises(ValueError):
@@ -57,6 +63,9 @@ class FocusedTensorFlowTests(unittest.TestCase):
             image[:, 6:10, 6:10, 6:10, 0] = .8
         return {'detail_0': image, 'detail_1': self.image()}
 
+    # Purpose: Verify focused model input channels, heads, and downsampling.
+    # Inputs: 16-cube TensorFlow classifier with two detail blocks.
+    # Outputs: Only detail inputs and two heads exist; encoder has two stride-2 layers and no LayerNormalization.
     def test_inputs_are_only_attenuation_validity_detail_blocks(self):
         self.assertEqual(set(self.model.input), {'detail_0', 'detail_1'})
         self.assertEqual(set(self.model.output), {'coa_logit', 'local_volume_loss'})
@@ -68,6 +77,9 @@ class FocusedTensorFlowTests(unittest.TestCase):
                    and layer.strides != (1, 1, 1)]
         self.assertEqual([layer.strides for layer in strided], [(2, 2, 2), (2, 2, 2)])
 
+    # Purpose: Verify a sparse detail signal influences all features and logits.
+    # Inputs: A 4-cube attenuation increase from 0.2 to 0.8 in one detail input.
+    # Outputs: Each feature stage and logit changes; the signal region has nonzero input gradients.
     def test_sparse_signal_changes_fine_features_evidence_and_prediction(self):
         probe = network.feature_probe(self.model)
         a = probe(self.inputs(), training=False)
@@ -91,6 +103,9 @@ class FocusedTensorFlowTests(unittest.TestCase):
         gradient = tape.gradient(scalar, image).numpy()
         self.assertGreater(float(np.abs(gradient[:, 6:10, 6:10, 6:10, 0]).max()), 1e-8)
 
+    # Purpose: Verify invalid padding cannot affect predictions or gradients.
+    # Inputs: First four slices invalid with attenuation replaced by 10000.
+    # Outputs: Outputs stay identical, padding gradients/attention are zero, and training stays finite.
     def test_invalid_padding_attenuation_has_no_effect_or_gradient(self):
         image = self.image()
         image[:, :4, :, :, 1] = 0.
@@ -116,6 +131,9 @@ class FocusedTensorFlowTests(unittest.TestCase):
         result = steps.train({'detail_0': altered, 'detail_1': image}, targets)
         self.assertTrue(all(np.isfinite(float(value)) for value in result.values()))
 
+    # Purpose: Verify spatial pooling ignores invalid values and empty bins.
+    # Inputs: Features -2 with invalid values 1000000, then fully invalid detail images.
+    # Outputs: Invalid bins, attention, and pooled features are zero; all model outputs stay finite.
     def test_masked_spatial_bins_ignore_large_invalid_values_and_empty_bins(self):
         components = network._components()
         layer = components['SpatialBins']((4, 4, 4), bins=2)
@@ -134,6 +152,9 @@ class FocusedTensorFlowTests(unittest.TestCase):
         np.testing.assert_array_equal(np.asarray(probe['detail_0_attention']), 0.)
         np.testing.assert_array_equal(np.asarray(probe['detail_0_pooled']), 0.)
 
+    # Purpose: Verify sparse classifier learning, stable traces, and checkpoint parity.
+    # Inputs: Two sparse-signal fixtures trained for 60 updates at learning rate 0.003.
+    # Outputs: BCE falls below 60%, probabilities separate, traces stay single, and reload predictions match.
     def test_real_sparse_training_stable_traces_and_safe_reload(self):
         steps = network.make_steps(self.model, self.shape, learning_rate=.003)
         fixtures = [(self.inputs(), {'coa_logit': np.array([[0]], np.float32),
@@ -174,6 +195,9 @@ class FocusedTensorFlowTests(unittest.TestCase):
             restored_probe = network.feature_probe(restored)
             self.assertIn('detail_0_spatial_grid', restored_probe.output)
 
+    # Purpose: Reject extra inputs and unsupported inference batch sizes.
+    # Inputs: Overview added to detail inputs, then detail batch size 2.
+    # Outputs: Fixed prediction signature raises TypeError or ValueError.
     def test_training_signature_rejects_extra_overview_and_wrong_batch(self):
         steps = network.make_steps(self.model, self.shape)
         values = self.inputs()

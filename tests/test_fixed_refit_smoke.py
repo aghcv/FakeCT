@@ -12,6 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class FixedRefitTensorFlowSmokeTest(unittest.TestCase):
+    # Purpose: Verify fixed-epoch CPU fitting avoids held-out payloads and reloads safely.
+    # Inputs: Frozen one-epoch TensorFlow experiment with no validation and deleted outer-test NPZ files.
+    # Outputs: Subprocess succeeds; training-only reads, finite predictions and matching checkpoint metadata.
     @unittest.skipUnless(importlib.util.find_spec('tensorflow'), 'TensorFlow is absent; fixed-refit CPU smoke skipped')
     def test_frozen_fixed_epoch_fit_ignores_outer_test_and_reloads(self):
         code = r'''

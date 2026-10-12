@@ -37,6 +37,9 @@ def digest(path):
 
 
 class CTDeltaFeaturesTest(unittest.TestCase):
+    # Purpose: Verify baseline CT differences are exactly zero and geometry is immutable.
+    # Inputs: Uniform baseline attenuation and its prepared eight-feature descriptor.
+    # Outputs: Features are zero, coverage is complete, near-baseline is true, and cached arrays are read-only.
     def test_same_baseline_is_exact_zero_and_arrays_are_readonly(self):
         inputs = fixture()
         case = descriptor(*inputs)
@@ -47,6 +50,9 @@ class CTDeltaFeaturesTest(unittest.TestCase):
         self.assertFalse(case.baseline_image_cm_inverse.flags.writeable)
         self.assertFalse(case.bin_index.flags.writeable)
 
+    # Purpose: Verify physical CT integrals are independent of voxel resolution.
+    # Inputs: 1 mm and 0.5 mm fixtures with uniform attenuation increase 0.02.
+    # Outputs: Features and changed physical volume match while fine-grid voxel counts increase eightfold.
     def test_physical_voxel_volume_makes_integral_resolution_independent(self):
         coarse, fine = fixture(1.), fixture(.5)
         fc, sc = extract_array(descriptor(*coarse), coarse[0] + .02)
@@ -55,6 +61,9 @@ class CTDeltaFeaturesTest(unittest.TestCase):
         self.assertEqual(sc['ct_changed_volume_mm3'], sf['ct_changed_volume_mm3'])
         self.assertEqual(sc['native_ct_changed_voxels'] * 8, sf['native_ct_changed_voxels'])
 
+    # Purpose: Verify descriptor normalization removes phantom physical scale.
+    # Inputs: Identical voxel signals with physical scale factors 1 and 2.
+    # Outputs: Features and normalized changed volume match; physical changed volume increases eightfold.
     def test_normalization_removes_phantom_physical_scale(self):
         small, large = fixture(physical_scale=1), fixture(physical_scale=2)
         fs, ss = extract_array(descriptor(*small), small[0] + .02)
@@ -63,12 +72,18 @@ class CTDeltaFeaturesTest(unittest.TestCase):
         self.assertAlmostEqual(ss['normalized_ct_changed_volume'], sl['normalized_ct_changed_volume'])
         self.assertAlmostEqual(sl['ct_changed_volume_mm3'], 8 * ss['ct_changed_volume_mm3'])
 
+    # Purpose: Verify relative attenuation normalizes global signal amplitude.
+    # Inputs: Baselines 0.2 and 0.4 each multiplied by 1.2.
+    # Outputs: Extracted feature vectors match within numeric tolerance.
     def test_relative_attenuation_removes_global_signal_scale(self):
         first, second = fixture(attenuation=.2), fixture(attenuation=.4)
         f1, _ = extract_array(descriptor(*first), first[0] * 1.2)
         f2, _ = extract_array(descriptor(*second), second[0] * 1.2)
         np.testing.assert_allclose(f1, f2, rtol=1e-6, atol=1e-10)
 
+    # Purpose: Keep positive and negative CT changes in separate channels.
+    # Inputs: Half the volume increased by 0.02 and half decreased by 0.02.
+    # Outputs: Both feature channels stay positive with equal normalized energy and matching feature names.
     def test_signed_channels_do_not_cancel(self):
         inputs = fixture()
         case = descriptor(*inputs)
@@ -82,6 +97,9 @@ class CTDeltaFeaturesTest(unittest.TestCase):
                                summary['normalized_negative_ct_energy'])
         self.assertEqual(len(feature_names(case)), len(features))
 
+    # Purpose: Distinguish equal CT burdens at different longitudinal positions.
+    # Inputs: Equal attenuation changes in proximal and distal five-slice slabs.
+    # Outputs: Counts and total energy match but features differ in arc bins 0 and 3.
     def test_equal_extents_at_different_arc_positions_remain_distinguishable(self):
         inputs = fixture()
         case = descriptor(*inputs)
@@ -96,6 +114,9 @@ class CTDeltaFeaturesTest(unittest.TestCase):
         self.assertGreater(fp[0], 0)
         self.assertGreater(fd[3], 0)
 
+    # Purpose: Restrict descriptors to the fixed thoracic crop and report coverage.
+    # Inputs: Uniform CT change with a selection limited to half the volume.
+    # Outputs: Voxel and energy coverage are 0.5 and excluded arc bins are zero.
     def test_fixed_thoracic_crop_excludes_context_and_reports_coverage(self):
         inputs = list(fixture())
         inputs[4] = dict(inputs[4], geometry={'crop_low_ijk': [0, 0, 0],
@@ -106,6 +127,9 @@ class CTDeltaFeaturesTest(unittest.TestCase):
         self.assertAlmostEqual(summary['ct_delta_energy_coverage_fraction'], .5)
         self.assertEqual(np.sum(features[2:4]), 0)
 
+    # Purpose: Verify CT noise tolerance and finite-value validation.
+    # Inputs: Baseline changed by 1e-7, then one NaN voxel.
+    # Outputs: Noise produces zero features and near-baseline true; NaN raises ValueError.
     def test_noise_tolerance_and_nonfinite_validation(self):
         inputs = fixture()
         case = descriptor(*inputs)
@@ -117,6 +141,9 @@ class CTDeltaFeaturesTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'finite'):
             extract_array(case, bad)
 
+    # Purpose: Verify native unit conversion and prevent edit metadata leakage.
+    # Inputs: Hashed source/variant NPZs with per-pixel baseline and deliberately misleading edit metadata.
+    # Outputs: Baseline converts correctly, metadata changes leave features equal, and bad variant hashes fail.
     def test_native_unit_conversion_checksums_and_edit_metadata_cannot_leak(self):
         image, target, geometry, config, selection = fixture()
         with tempfile.TemporaryDirectory() as folder:
@@ -146,6 +173,9 @@ class CTDeltaFeaturesTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'checksum'):
                 extract_variant(case, changed_row)
 
+    # Purpose: Reject mismatched pair geometry and invalid reference radius.
+    # Inputs: Disagreeing ROI centerline and a zero median reference radius.
+    # Outputs: Descriptor preparation raises ValueError for disagreement or nonpositive radius.
     def test_rejects_wrong_pair_geometry_and_missing_reference(self):
         inputs = list(fixture())
         inputs[3] = {'roi': {'center_ijk': [[1, 1, 1], [1, 1, 19]]}}

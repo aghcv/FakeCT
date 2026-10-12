@@ -60,6 +60,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
         config['sweeps'] = {'grow': {'distance_mm': (0., 1.)}, 'shrink': {'distance_mm': (0., 1.)}}
         return config, resolved
 
+    # Purpose: Verify study dispatch reuses recipe/model contracts without source reads.
+    # Inputs: Typed recipe-study parser with selection lineage, model/train settings, and two sweeps.
+    # Outputs: Loaders agree, paths resolve, parser stays intact, source IDs stay empty, and sweep endpoints normalize.
     def test_loader_dispatch_reuses_recipe_and_model_contract_without_ids_or_source_reads(self):
         parser = self.parser()
         snapshot = {section: dict(parser[section]) for section in parser.sections()}
@@ -86,6 +89,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
         self.assertEqual(config['sweeps'], {'ascending_expand': {'distance_mm': (0., 1., 2.)},
                                            'descending_narrow': {'distance_mm': (0., .5, 1.)}})
 
+    # Purpose: Verify inclusive decimal and integer sweep ranges preserve endpoints.
+    # Inputs: Ascending/descending decimal ranges, singleton/list floats, and integer iteration ranges.
+    # Outputs: Exact endpoint tuples and numeric types match expected values.
     def test_exact_inclusive_decimal_and_integer_ranges_preserve_endpoints(self):
         for parameter, value, expected in (
                 ('distance_mm', '.1:.3:.1', (.1, .2, .3)),
@@ -102,6 +108,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
                 self.assertEqual(actual, expected)
                 self.assertTrue(all(type(item) is (int if parameter == 'iterations' else float) for item in actual))
 
+    # Purpose: Reject malformed, nonfinite, duplicate, and oversized sweeps.
+    # Inputs: Bad lists/ranges, invalid distances/shapes/iterations, and excessive range expansion.
+    # Outputs: Study parsing raises ValueError for every invalid sweep.
     def test_sweeps_reject_malformed_nonfinite_duplicate_and_unbounded_values(self):
         invalid = {'distance_mm': ('', '1,', '1,,2', '1,1.0', '-.1', '50.1', 'nan', 'inf', 'true',
                                     '0:1:.3', '0:1:0', '0:1:-.5', '0:1', '0:1:.5:2', '0:1:.5,2',
@@ -115,6 +124,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
                     parser['sweep.ascending_expand'] = {parameter: value}
                     self.load(parser)
 
+    # Purpose: Enforce strict required study fields and referenced sweep sections.
+    # Inputs: Legacy/typo keys, missing train/model fields, invalid/empty sweeps, or DEFAULT values.
+    # Outputs: Parsing rejects unknown/missing fields and requires at least one nonempty valid sweep.
     def test_required_sections_references_typos_and_legacy_keys_are_strict(self):
         for section, key, value in (('train', 'target_source_ids', '2922'), ('train', 'operations', 'erosion'),
                                    ('train', 'distances_mm', '1,2'), ('train', 'shape_ks', '6'),
@@ -148,6 +160,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'DEFAULT'):
             self.load(parser)
 
+    # Purpose: Validate lineage scope, training bounds, paths, and shared model rules.
+    # Inputs: Invalid stages/scopes/booleans/limits/splits/paths/model settings or ignored shape sweep.
+    # Outputs: Parsing raises ValueError and requires roi_role selection.
     def test_selection_scope_training_bounds_and_shared_model_rules(self):
         invalid = [('train', 'stage', 'train'), ('train', 'target_scope', 'all_arteries'),
                    ('train', 'include_baseline', 'True'), ('train', 'max_variants', '0'),
@@ -174,6 +189,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'uniform profile ignores shape_k'):
             self.load(parser)
 
+    # Purpose: Verify Cartesian recipe variants are independent and disable zero-distance guards.
+    # Inputs: Three-by-three sweep plus baseline and guarded diagnostic erosion settings.
+    # Outputs: Ten complete variants preserve config; disabled steps omit guards and run configs are independent.
     def test_cartesian_recipes_are_complete_independent_and_zero_distance_disables_guards(self):
         parser = self.parser()
         parser['edit.descending_narrow'].update(min_volume_ratio='.75', preserve_connectivity='true',
@@ -215,6 +233,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
         self.assertEqual(combinations, {(a, b) for a in (0., 1., 2.) for b in (0., .5, 1.)})
         self.assertEqual(config, snapshot)
 
+    # Purpose: Verify IDs and splits bind recipe semantics rather than display/training settings.
+    # Inputs: Reordered sweeps, changed stages/model/output, then changed selection/ROI/policy/guard.
+    # Outputs: Administrative changes preserve plans; recipe-semantic changes alter edited variant IDs.
     def test_ids_and_splits_ignore_sweep_order_stages_outputs_and_model_but_bind_recipe(self):
         config = self.load()
         planned = plan_recipe_variants(config)
@@ -242,6 +263,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
         guarded = plan_recipe_variants(changed)
         self.assertNotEqual(guarded[-1]['variant_id'], planned[-1]['variant_id'])
 
+    # Purpose: Enforce variant-product limits and sufficient holdouts before expansion.
+    # Inputs: Budgets below product size, oversized axes, too few variants, and malformed programmatic values.
+    # Outputs: Planning raises ValueError before product materialization and rejects insufficient splits.
     def test_bound_product_before_materialization_and_reject_insufficient_holdouts(self):
         config = self.load()
         config['train']['max_variants'] = 8
@@ -266,6 +290,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
             with self.subTest(key=key, values=values), self.assertRaises(ValueError):
                 plan_recipe_variants(config)
 
+    # Purpose: Verify multiple axes on one edit multiply with other edit sweeps.
+    # Inputs: Grow distance/shape/iteration axes and two shrink distances.
+    # Outputs: Sixteen combinations plus baseline retain every requested parameter combination.
     def test_multiple_axes_on_one_edit_multiply_with_other_edit_axes(self):
         parser = self.parser()
         parser['sweep.ascending_expand'] = {'distance_mm': '0,1', 'shape_k': '2,4', 'iterations': '1,2'}
@@ -284,6 +311,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
                          for distance in (0., 1.) for shape in (2., 4.)
                          for passes in (1, 2) for shrink in (.5, 1.)})
 
+    # Purpose: Verify metadata validation covers every recipe variant without voxel reads.
+    # Inputs: Native recipe config, blocked memmap, then oversized distance and excessive iteration products.
+    # Outputs: Valid plans match; failures identify variant parameters and leave original config unchanged.
     def test_metadata_validation_checks_all_variants_and_names_failed_parameters(self):
         config, resolved = self.native_config()
         snapshot = deepcopy(config)
@@ -301,6 +331,9 @@ class RecipeStudyConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Variant recipe-.*parameters=.*total passes'):
             validate_recipe_study_plan(config, resolved)
 
+    # Purpose: Reject active diagnostic release while permitting disabled erosion.
+    # Inputs: Unassigned shrink step with positive distances, then only zero-distance sweep.
+    # Outputs: Active erosion fails training validation; disabled variants use none and omit assignment flag.
     def test_training_plan_rejects_active_diagnostic_release_but_allows_disabled_step(self):
         config, resolved = self.native_config()
         config['edits']['shrink']['assign_surrounding_tissue'] = False

@@ -111,6 +111,9 @@ class PretrainedAdapterTests(unittest.TestCase):
         if hasattr(self,'row'):
             self.row['variant_npz_sha256'] = sha(self.variant_npz)
 
+    # Purpose: Verify attenuation-to-HU calibration and input preservation.
+    # Inputs: Attenuation values zero, water, half-water and double-water; zero water calibration.
+    # Outputs: HU -1000, 0, -500, 1000 with unchanged inputs; invalid calibration rejected.
     def test_known_hu_values_and_input_is_not_modified(self):
         mu = np.asarray([0.,self.water,.5*self.water,2*self.water],dtype=np.float32)
         old = mu.copy()
@@ -119,6 +122,9 @@ class PretrainedAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'positive'):
             attenuation_to_hu(mu,0)
 
+    # Purpose: Verify thorax cropping keeps full XY, native spacing and RAS offsets.
+    # Inputs: Anisotropic 7x8x9 fixture with slab selection and context 2 or 0 mm.
+    # Outputs: Expected crop bounds, native spacing and correctly translated half-voxel RAS affine.
     def test_full_xy_crop_native_spacing_and_half_voxel_ras_offset(self):
         plan = plan_thorax_crop(self.row,self.selection,self.evidence,context_mm=2)
         self.assertEqual(plan['shape_kji'],[6,8,9])
@@ -131,6 +137,9 @@ class PretrainedAdapterTests(unittest.TestCase):
         direct = crop_ras_affine(self.evidence,[2,3,1])
         np.testing.assert_allclose(direct[:3,3],[2.,.6,3.],atol=1e-6)
 
+    # Purpose: Verify core transfer excludes branches and allows lineage growth beyond old bounds.
+    # Inputs: Core/branch labels, one removed core voxel and one lineage-owned addition outside atlas XY crop.
+    # Outputs: Three target/baseline voxels, two changes, branch excluded and correct longitudinal domain.
     def test_core_transfer_excludes_branches_and_allows_growth_outside_old_xy_crop(self):
         provider = ThoracicCoreProvider(self.row,self.selection,self.evidence)
         masks = provider.read_block([0,0,0],self.shape)
@@ -144,12 +153,18 @@ class PretrainedAdapterTests(unittest.TestCase):
         self.assertTrue(masks['domain'][1:5].all())
         self.assertFalse(masks['domain'][5:].any())
 
+    # Purpose: Reject new core voxels without verified original-core ancestry.
+    # Inputs: Added voxel origin redirected to original soft tissue.
+    # Outputs: ValueError identifies invalid ancestry.
     def test_new_core_requires_verified_original_core_ancestry(self):
         self.origins[2,1,0] = 0  # Original soft tissue.
         self.write_variant()
         with self.assertRaisesRegex(ValueError,'ancestry'):
             ThoracicCoreProvider(self.row,self.selection,self.evidence)
 
+    # Purpose: Reject frozen anchor labels that disagree with the atlas core.
+    # Inputs: Selected original core voxel relabeled as soft tissue with updated checksum.
+    # Outputs: ValueError reports anchor/core mismatch.
     def test_frozen_original_anchor_labels_must_match_atlas_core(self):
         with np.load(self.source_npz) as source:
             original = source['original_labels'].copy()
@@ -160,6 +175,9 @@ class PretrainedAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'do not match'):
             ThoracicCoreProvider(self.row,self.selection,self.evidence)
 
+    # Purpose: Verify disconnected original anchor islands remain excluded.
+    # Inputs: Same-ID island added outside atlas core with self-referencing ancestry.
+    # Outputs: Island absent from target/changed masks and outside-core anchor count recorded.
     def test_disconnected_original_anchor_islands_remain_excluded(self):
         with np.load(self.source_npz) as source:
             original = source['original_labels'].copy()
@@ -176,6 +194,9 @@ class PretrainedAdapterTests(unittest.TestCase):
         self.assertEqual(result['changed'][0,0,0],0)
         self.assertGreater(provider.metadata['original_anchor_voxels_outside_selected_core_in_edit_crop'],0)
 
+    # Purpose: Verify unchanged baselines produce identical target and reference masks.
+    # Inputs: Baseline row restored to original labels/image with zero net changes.
+    # Outputs: Target equals baseline and changed voxel count zero.
     def test_unchanged_baseline_has_no_target_changes(self):
         self.row['baseline'] = True
         with np.load(self.source_npz) as data:
@@ -192,6 +213,9 @@ class PretrainedAdapterTests(unittest.TestCase):
         np.testing.assert_array_equal(masks['target'],masks['baseline'])
         self.assertEqual(masks['changed'].sum(),0)
 
+    # Purpose: Verify streamed NIfTI preserves HU units, orientation and native overlays.
+    # Inputs: Two-slice streaming export of image plus target/baseline/domain/changed masks.
+    # Outputs: Correct HU/affines/header units, bounded reads, exact mask counts and no partial files.
     def test_streamed_nifti_storage_units_orientation_and_native_edit_overlay(self):
         image_path = self.root/'pilot.nii.gz'
         mask_paths = {k:self.root/(k+'.nii.gz') for k in ['target','baseline','domain','changed']}
@@ -220,6 +244,9 @@ class PretrainedAdapterTests(unittest.TestCase):
             self.assertEqual(int(mask.sum()),result['statistics']['mask_voxel_counts'][key])
         self.assertFalse(list(self.root.glob('*.partial')))
 
+    # Purpose: Verify small mask NIfTI exports preserve dimensions and crop offsets.
+    # Inputs: 2x3x4 binary mask at crop origin 2,3,1.
+    # Outputs: Exact mask, expected RAS landmark, correct shape and overwrite rejection.
     def test_small_mask_export_keeps_ijk_header_and_crop_offset(self):
         mask = np.zeros((2,3,4),np.uint8);mask[1,2,3] = 1
         path = self.root/'small.nii'
@@ -231,6 +258,9 @@ class PretrainedAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'overwrite'):
             export_mask_nifti(mask,path,origin_ijk=[2,3,1],evidence=self.evidence)
 
+    # Purpose: Reject unsupported units, calibration evidence, case identity or crop budget.
+    # Inputs: Wrong attenuation units, different case, max_voxels one and bad conversion scale.
+    # Outputs: ValueError identifies each incompatible export prerequisite.
     def test_units_evidence_case_and_budget_fail_closed(self):
         bad = copy.deepcopy(self.row);bad['source_atn_units'] = 'cm^-1'
         with self.assertRaisesRegex(ValueError,'per-pixel'):

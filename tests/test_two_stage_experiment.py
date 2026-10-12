@@ -51,12 +51,18 @@ class TwoStageExperimentTests(unittest.TestCase):
         self.ini.write_text(content)
         return load_config(self.ini, repo_root=self.root)
 
+    # Purpose: Parse commented INI inputs with independent segmentation/reconstruction settings.
+    # Inputs: Two-stage CoA INI template loaded under a temporary repository root.
+    # Outputs: 8/2/2 case split, distinct stage loss weights and expected physical spacing.
     def test_comment_friendly_ini_and_separate_models(self):
         self.assertEqual(self.config['split']['case_counts'], [8, 2, 2])
         self.assertEqual(self.config['stage1']['change_weight'], 1.)
         self.assertEqual(self.config['stage2']['change_weight'], 5.)
         self.assertEqual(self.config['stage1']['target_spacing_mm'], [.6]*3)
 
+    # Purpose: Reject unsupported or invalid two-stage model configuration.
+    # Inputs: INI with excessive batch/patch sizes, invalid filters/spacing or an unknown architecture key.
+    # Outputs: ValueError for every malformed setting.
     def test_unknown_ini_option_and_bad_model_parameters_fail(self):
         for find, replacement in [('batch_size = 1 ', 'batch_size = 17 '),
                                   ('base_filters = 4 ', 'base_filters = 1 '),
@@ -66,12 +72,18 @@ class TwoStageExperimentTests(unittest.TestCase):
             with self.subTest(find=find), self.assertRaises(ValueError):
                 self.write_ini(self.raw.decode().replace(find, replacement))
 
+    # Purpose: Require both model stages to use the same physical grid.
+    # Inputs: INI whose reconstruction stage overrides spacing to disagree with segmentation.
+    # Outputs: A same-physical-grid ValueError.
     def test_stage_grids_cannot_disagree(self):
         content = self.raw.decode().replace('[model.reconstruction]',
                     '[model.reconstruction]\ntarget_spacing_mm = 1,1,1')
         with self.assertRaisesRegex(ValueError, 'same physical grid'):
             self.write_ini(content)
 
+    # Purpose: Assign complete source families consistently for both model stages.
+    # Inputs: Metadata for 24 siblings from 12 cases in six provisional families.
+    # Outputs: Stable 16/4/4 sample split, one partition per family and correct resampled grid metadata.
     def test_family_assignment_is_shared_deterministic_and_complete(self):
         first, second = plan(self.config), plan(self.config)
         self.assertEqual(first['design'], second['design'])
@@ -85,6 +97,9 @@ class TwoStageExperimentTests(unittest.TestCase):
         self.assertEqual(first['scope'], 'engineering')
         self.assertEqual(first['model_grids']['case-0-0']['model_shape_kji'], [20, 27, 34])
 
+    # Purpose: Prevent identical baseline anatomy from leaking into heldout partitions.
+    # Inputs: Planned train/test families edited to share a before-mask checksum.
+    # Outputs: Identical-baseline ValueError during planning.
     def test_identical_baseline_cannot_cross_partitions(self):
         assigned = plan(self.config)['samples']
         train = next(row for row in assigned if row['split'] == 'train')
@@ -95,6 +110,9 @@ class TwoStageExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Identical baseline'):
             plan(self.config)
 
+    # Purpose: Reject infeasible physical resampling at metadata planning time.
+    # Inputs: Both stage spacings reduced to 0.001 mm on the native crop.
+    # Outputs: Voxel-crop-limit error before any model fit.
     def test_oversized_resampled_grid_rejected_before_training(self):
         config = deepcopy(self.config)
         config['model']['target_spacing_mm'] = [.001]*3
@@ -102,12 +120,18 @@ class TwoStageExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'voxel crop limit'):
             plan(config)
 
+    # Purpose: Report the preparation stage when training data is unavailable.
+    # Inputs: Valid experiment configuration with its dataset manifest removed.
+    # Outputs: ready=False and next_stage=prepare.
     def test_missing_prepared_data_reports_not_ready(self):
         (self.directory/'dataset-manifest.json').unlink()
         result = plan(self.config)
         self.assertFalse(result['ready'])
         self.assertEqual(result['next_stage'], 'prepare')
 
+    # Purpose: Reuse prepared data only under the original project/export contract.
+    # Inputs: Prepared metadata with changed change-mask export option or different project bytes.
+    # Outputs: Original preparation accepted; option and project mismatches rejected.
     def test_existing_data_is_bound_to_project_and_export_option(self):
         self.assertEqual(prepare(self.config)['family_status'], 'provisional')
         config = deepcopy(self.config)
@@ -118,6 +142,9 @@ class TwoStageExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Requested project'):
             plan(self.config)
 
+    # Purpose: Freeze reproducible experiment bindings without fitting a model.
+    # Inputs: Two-stage configuration, exact INI bytes and mocked prepared metadata.
+    # Outputs: Verified lock with implementation hashes, no model output and repeat-freeze rejection.
     def test_lock_preserves_data_source_and_code_bindings(self):
         result = freeze(self.config, self.raw)
         inspected = inspect_lock(self.config, self.raw)
@@ -127,6 +154,9 @@ class TwoStageExperimentTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             freeze(self.config, self.raw)
 
+    # Purpose: Reject reuse of locks after configuration or implementation changes.
+    # Inputs: Frozen experiment with altered stage-one epochs or mocked changed code hashes.
+    # Outputs: INI-difference and implementation-change errors.
     def test_changed_config_or_implementation_requires_new_run(self):
         freeze(self.config, self.raw)
         config = deepcopy(self.config)
@@ -137,6 +167,9 @@ class TwoStageExperimentTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'implementation changed'):
                 inspect_lock(self.config, self.raw)
 
+    # Purpose: Verify prepared metadata and lock bytes before experiment reuse.
+    # Inputs: Frozen run with modified dataset manifest, then rewritten experiment-lock JSON.
+    # Outputs: Manifest-change and lock-checksum errors.
     def test_changed_manifest_or_lock_cannot_be_silently_reused(self):
         freeze(self.config, self.raw)
         path = self.directory/'dataset-manifest.json'
@@ -194,6 +227,9 @@ class TwoStageExperimentTests(unittest.TestCase):
         self.write_signed_json(output/'evaluation.json', result)
         return output, result
 
+    # Purpose: Reuse validated completed training artifacts without refitting.
+    # Inputs: Frozen experiment with signed model/history fixtures and fit_stage mocked.
+    # Outputs: Reused model result, no backend fit call and unchanged artifact hashes.
     def test_completed_fit_is_reused_without_tensorflow_or_payload_reads(self):
         lock = freeze(self.config, self.raw)
         directory, metadata = self.completed_model(lock)
@@ -205,6 +241,9 @@ class TwoStageExperimentTests(unittest.TestCase):
         self.assertEqual(result['model_sha256'], metadata['model_sha256'])
         self.assertEqual(original, {path: sha256(path) for path in directory.iterdir()})
 
+    # Purpose: Reject modified completed training artifacts.
+    # Inputs: Signed model fixture with appended weight, metadata or history bytes.
+    # Outputs: Each fit-reuse attempt raises a validation or filesystem error.
     def test_completed_fit_rejects_changed_weights_metadata_or_history(self):
         lock = freeze(self.config, self.raw)
         directory, metadata = self.completed_model(lock)
@@ -217,6 +256,9 @@ class TwoStageExperimentTests(unittest.TestCase):
                     fit(self.config, self.raw, 1)
                 path.write_bytes(original)
 
+    # Purpose: Preserve incomplete model output instead of silently restarting a fit.
+    # Inputs: Frozen experiment with only a partial training history in model1.
+    # Outputs: FileExistsError and unchanged partial history.
     def test_partial_fit_is_preserved_and_not_restarted(self):
         freeze(self.config, self.raw)
         directory = Path(self.config['experiment']['output_directory'])/'model1'
@@ -226,6 +268,9 @@ class TwoStageExperimentTests(unittest.TestCase):
             fit(self.config, self.raw, 1)
         self.assertEqual(partial.read_text(), '[{"epoch":1}]')
 
+    # Purpose: Reuse completed evaluation without regenerating predictions.
+    # Inputs: Signed stage-two evaluation fixture with evaluate_stage mocked.
+    # Outputs: Saved results returned exactly, no evaluation call and unchanged artifact hashes.
     def test_completed_evaluation_reuses_exact_predictions_and_scores(self):
         lock = freeze(self.config, self.raw)
         output, result = self.completed_evaluation(lock, 2)
@@ -236,6 +281,9 @@ class TwoStageExperimentTests(unittest.TestCase):
         self.assertEqual(result, reused)
         self.assertEqual(original, {path: sha256(path) for path in output.iterdir()})
 
+    # Purpose: Reject tampered prediction bytes or reported scores.
+    # Inputs: Completed evaluation with appended prediction bytes or edited summary Dice.
+    # Outputs: Prediction-checksum and evaluation-checksum errors.
     def test_completed_evaluation_rejects_changed_prediction_or_numeric_scores(self):
         lock = freeze(self.config, self.raw)
         output, result = self.completed_evaluation(lock)
@@ -250,6 +298,9 @@ class TwoStageExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'checksum'):
             _evaluate_one(self.config, lock, 1, output.parent)
 
+    # Purpose: Validate evaluation geometry and heldout-sample membership beyond checksums.
+    # Inputs: Resigned evaluation metadata with wrong spacing, sample count or missing record.
+    # Outputs: ValueError for every grid/count/partition mismatch.
     def test_completed_evaluation_rejects_wrong_grid_counts_and_partition(self):
         lock = freeze(self.config, self.raw)
         output, result = self.completed_evaluation(lock)
@@ -260,6 +311,9 @@ class TwoStageExperimentTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 _evaluate_one(self.config, lock, 1, output.parent)
 
+    # Purpose: Preserve partial prediction output when evaluation cannot publish safely.
+    # Inputs: Frozen model and populated evaluation folder containing one partial prediction.
+    # Outputs: FileExistsError and byte-identical partial prediction.
     def test_partial_evaluation_does_not_overwrite_completed_predictions(self):
         lock = freeze(self.config, self.raw)
         root, metadata = self.completed_model(lock)

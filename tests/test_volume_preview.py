@@ -12,6 +12,9 @@ from fakect_volume_preview import occupancy_grid, render_volume_preview, _surfac
 
 
 class VolumePreviewTests(unittest.TestCase):
+    # Purpose: Retain thin foreground during display pooling with correct physical axes.
+    # Inputs: 5x4x7 mask with one edge voxel, stride 2, nonzero crop origin and anisotropic spacing.
+    # Outputs: One occupied pooled cell at the correct physical coordinate; input mask unchanged.
     def test_max_pool_preserves_thin_label_and_axis_coordinates(self):
         mask = np.zeros((5, 4, 7), dtype=bool)
         mask[4, 3, 6] = True
@@ -28,6 +31,9 @@ class VolumePreviewTests(unittest.TestCase):
         self.assertEqual((x.ravel()[at], y.ravel()[at], z.ravel()[at]), (16, 45, 102))
         np.testing.assert_array_equal(mask, original)
 
+    # Purpose: Preserve physical crop bounds when pooling partial edge blocks.
+    # Inputs: Full 5x4x7 mask with stride 2 and anisotropic crop geometry.
+    # Outputs: Nonempty mesh whose minimum and maximum coordinates match native crop boundaries.
     def test_surface_preserves_crop_edges_for_partial_blocks(self):
         mask = np.ones((5, 4, 7), dtype=bool)
         origin, spacing = np.array((10, 20, 30)), np.array((1, 2, 3))
@@ -39,6 +45,9 @@ class VolumePreviewTests(unittest.TestCase):
         np.testing.assert_allclose(vertices.max(axis=0), bounds[:, 1])
         self.assertGreater(len(faces), 0)
 
+    # Purpose: Publish an offline volume preview with consistent provenance.
+    # Inputs: Signed artery labels, bone context, native geometry and a fresh output directory.
+    # Outputs: Self-contained HTML, PNG and matching metadata; sources unchanged and overwrite rejected.
     def test_standalone_artifacts_and_provenance(self):
         source = np.zeros((6, 8, 10), dtype=np.float32)
         source[1:5, 2:6, 3:7] = -123
@@ -76,6 +85,9 @@ class VolumePreviewTests(unittest.TestCase):
         np.testing.assert_array_equal(source, before[0])
         np.testing.assert_array_equal(tissues, before[1])
 
+    # Purpose: Keep ROI relocation usable when no target is selected.
+    # Inputs: Bone-only crop, empty selection and zero target/context opacity.
+    # Outputs: Empty-target warnings, transparent traces and an editable ROI in saved previews.
     def test_absent_selection_and_zero_opacity_still_render_roi_for_relocation(self):
         source = np.full((5, 5, 5), 42, dtype=np.int32)
         tissues = np.full(source.shape, 2, dtype=np.uint8)
@@ -100,6 +112,9 @@ class VolumePreviewTests(unittest.TestCase):
             self.assertIn('Selected: absent from crop', html)
             self.assertTrue(Path(result['png_path']).stat().st_size > 10_000)
 
+    # Purpose: Render a tube selector using native masks and physical controls.
+    # Inputs: Two nearby arteries, tube mask, ordered controls/radii and anisotropic spacing.
+    # Outputs: Only target artery selected; exact ROI bounds/controls retained and source arrays unchanged.
     def test_tube_overlay_uses_native_mask_and_physical_control_points(self):
         source = np.zeros((7, 8, 9), dtype=np.int32)
         source[:, 3, 4] = 123
@@ -138,6 +153,9 @@ class VolumePreviewTests(unittest.TestCase):
         np.testing.assert_array_equal(source, before[0])
         np.testing.assert_array_equal(roi, before[1])
 
+    # Purpose: Reject invalid native tube-overlay inputs.
+    # Inputs: Missing/downsampled/nonboolean masks, duplicate or incomplete controls and invalid radii.
+    # Outputs: ValueError for each invalid mask or control specification.
     def test_tube_rejects_missing_or_sampled_mask_and_bad_nodes(self):
         source = np.zeros((5, 5, 5), dtype=np.int32)
         kwargs = dict(crop_origin_ijk=(0, 0, 0), spacing_ijk_mm=(1, 1, 1),
@@ -155,6 +173,9 @@ class VolumePreviewTests(unittest.TestCase):
                     render_volume_preview(source, source, {'categories': [], 'records': []},
                                           source == 1, output_dir=temporary, **(kwargs | override))
 
+    # Purpose: Display tube controls even when no native voxel center lies inside.
+    # Inputs: Empty 4-cube mask with a 0.1-mm-radius tube between voxel centers.
+    # Outputs: Zero mesh/ROI voxels with a warning; ordered centerline remains in offline HTML.
     def test_subvoxel_tube_with_empty_native_mask_retains_centerline(self):
         source = np.zeros((4, 4, 4), dtype=np.int32)
         with tempfile.TemporaryDirectory() as temporary:

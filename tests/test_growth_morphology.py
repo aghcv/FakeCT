@@ -32,6 +32,9 @@ class GrowthMorphologyTests(unittest.TestCase):
                 'candidates': np.isin(result['edited_labels'], resolved['source_ids']),
                 'selected': result['target_mask_after']}
 
+    # Purpose: Verify repeated growth preserves ownership beyond the selection ROI.
+    # Inputs: Tiny selection sphere, larger edit region and two sequential 1 mm growth passes.
+    # Outputs: Growth exits ROI, additions map to current selected seeds and original arrays remain unchanged.
     def test_repeated_growth_exits_selection_roi_and_maps_each_addition_to_current_seed(self):
         arrays, resolved, config = self.fixture()
         original = {key: value.copy() for key, value in arrays.items()}
@@ -57,6 +60,9 @@ class GrowthMorphologyTests(unittest.TestCase):
         for name, value in original.items():
             np.testing.assert_array_equal(arrays[name], value)
 
+    # Purpose: Verify unselected same-ID targets cannot seed or bridge growth.
+    # Inputs: Selected target at i=12 with unselected same-ID targets at i=14 and 20.
+    # Outputs: Only reachable i=13 added, one contact reported and unselected labels/attenuation preserved.
     def test_same_id_neighbors_never_seed_or_bridge_growth_but_contact_is_reported(self):
         arrays, resolved, config = self.fixture(distance=6.)
         arrays['act'].fill(20)
@@ -79,6 +85,9 @@ class GrowthMorphologyTests(unittest.TestCase):
         np.testing.assert_array_equal(result['attenuation_proxy_per_pixel'][untouched], arrays['atn'][untouched])
         self.assertFalse(result['target_mask_after'][untouched].any())
 
+    # Purpose: Verify erosion uses full vessel boundaries outside the selection ROI.
+    # Inputs: Tracked cylindrical target in a bounded edit plane with a tiny selector.
+    # Outputs: Central interior preserved, edge eroded outside ROI and unselected targets unchanged.
     def test_erosion_uses_full_vessel_boundaries_and_removes_tracked_voxels_outside_roi(self):
         arrays, resolved, config = self.fixture(operation='erosion')
         _, j, i = np.indices(arrays['act'].shape)
@@ -96,6 +105,9 @@ class GrowthMorphologyTests(unittest.TestCase):
         self.assertFalse(result['changed_mask'][unselected].any())
         np.testing.assert_array_equal(result['edited_labels'][unselected], arrays['act'][unselected])
 
+    # Purpose: Verify directional stiffness constrains newly reachable growth support.
+    # Inputs: Curved target with narrow selector, outward 2.1 mm growth and rigid bone at i=24.
+    # Outputs: Growth beyond selector on supported side; bone and opposite side preserved with resisted strength.
     def test_direction_and_stiffness_apply_to_new_support_beyond_original_tube(self):
         arrays, resolved, config = test_directional_morphology.DirectionalMorphologyTests().fixture()
         arrays['edit_region'] = arrays['roi'].copy()
@@ -122,6 +134,9 @@ class GrowthMorphologyTests(unittest.TestCase):
         np.testing.assert_allclose(result['effective_strength_mm'], result['strength_mm'] * (1 - result['stiffness_field']))
         self.assertEqual(result['summary']['direction']['roi_voxels'], int(arrays['edit_region'].sum()))
 
+    # Purpose: Reject malformed growth domains and incomplete target candidates.
+    # Inputs: Missing/wrong edit masks, invalid selected subset, incomplete candidates and small voxel budget.
+    # Outputs: ValueError identifies domain, subset, candidate or morphology-budget violation.
     def test_malformed_domains_selection_and_incomplete_candidates_are_rejected(self):
         arrays, resolved, config = self.fixture()
         for value in (None, np.ones((2, 2, 2), dtype=bool), arrays['edit_region'].astype(np.uint8)):
@@ -142,6 +157,9 @@ class GrowthMorphologyTests(unittest.TestCase):
         with patch('fakect_morphology.MAX_MORPHOLOGY_VOXELS', 100), self.assertRaisesRegex(ValueError, 'limited'):
             apply_morphology(arrays, resolved, config)
 
+    # Purpose: Reject growth ownership assigned to an unselected seed.
+    # Inputs: Mock owned-path map chooses an unselected same-ID target voxel.
+    # Outputs: RuntimeError requires input-state selected target seeds.
     def test_lineage_guard_rejects_an_unselected_winning_seed(self):
         arrays, resolved, config = self.fixture()
         arrays['act'][15, 15, 20] = -7
@@ -152,6 +170,9 @@ class GrowthMorphologyTests(unittest.TestCase):
                 self.assertRaisesRegex(RuntimeError, 'input-state selected target seeds'):
             apply_morphology(arrays, resolved, config)
 
+    # Purpose: Verify inherited growth reach enlarges required halo and validates context.
+    # Inputs: Ordinary edit, 3 mm inherited reach, excessive reach and invalid reach values.
+    # Outputs: Required halo increases by 3 mm; missing context and invalid growth_reach_mm rejected.
     def test_growth_reach_adds_to_halo_and_rejects_invalid_or_missing_context(self):
         _, resolved, config = self.fixture(distance=2.)
         ordinary = validate_edit_geometry(resolved, config)
@@ -165,6 +186,9 @@ class GrowthMorphologyTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, 'growth_reach_mm'):
                 validate_edit_geometry({**resolved, 'growth_reach_mm': value}, config)
 
+    # Purpose: Verify boundary mode stays equivalent and no-op selection edits preserve state.
+    # Inputs: Legacy and explicit boundary modes, then selection-mode operation none.
+    # Outputs: Boundary outputs identical; no-op has no changes and seed provenance remains empty.
     def test_boundary_mode_is_unchanged_and_none_keeps_selection_provenance_empty(self):
         arrays, resolved, config = test_morphology.MorphologyTests().fixture()
         arrays['edit_region'] = np.ones_like(arrays['roi'])  # Ignored by legacy boundary mode.

@@ -39,6 +39,9 @@ class DiagnosticErosionTests(unittest.TestCase):
                 'candidates': np.isin(result['edited_labels'], (-7, 8)),
                 'selected': result['target_mask_after']}
 
+    # Purpose: Verify default erosion still performs normal surrounding-tissue assignment.
+    # Inputs: Recipient-barrier fixture with flag omitted then explicitly true.
+    # Outputs: Identical outputs, one unresolved voxel, no removal, and no release diagnostics.
     def test_default_and_explicit_true_keep_original_assignment_and_output(self):
         arrays, resolved, config = self.fixture()
         implicit = apply_morphology(arrays, resolved, config)
@@ -54,6 +57,9 @@ class DiagnosticErosionTests(unittest.TestCase):
         self.assertNotIn('released_mask', implicit)
         self.assertNotIn('release_assignment', implicit['summary'])
 
+    # Purpose: Verify geometry-only erosion marks releases without inventing scalar values.
+    # Inputs: Recipient-barrier fixture with assignment false and unresolved policy error.
+    # Outputs: One released diagnostic label/tissue, unchanged attenuation/inputs, and no unresolved recipient.
     def test_diagnostic_bypasses_recipient_barrier_preserves_attenuation_and_inputs(self):
         arrays, resolved, config = self.fixture()
         config['edit']['assign_surrounding_tissue'] = False
@@ -90,6 +96,9 @@ class DiagnosticErosionTests(unittest.TestCase):
         self.assertEqual(resolved, saved_resolved)
         self.assertEqual(config, saved_config)
 
+    # Purpose: Verify diagnostic release still respects target stiffness.
+    # Inputs: Geometry-only erosion with artery stiffness raised to 0.2.
+    # Outputs: One requested release suppressed, zero removed voxels, and empty released mask.
     def test_target_stiffness_still_suppresses_release(self):
         arrays, resolved, config = self.fixture()
         config['edit']['assign_surrounding_tissue'] = False
@@ -102,6 +111,9 @@ class DiagnosticErosionTests(unittest.TestCase):
         self.assertEqual(counts['removed'], 0)
         self.assertFalse(result['released_mask'].any())
 
+    # Purpose: Verify serial diagnostic releases distinguish new from accumulated markers.
+    # Inputs: 3-cubed target eroded twice then operation none.
+    # Outputs: 26 then 1 newly released, 27 cumulative, disjoint new masks, and unchanged attenuation.
     def test_repeated_releases_keep_distinct_new_and_cumulative_masks(self):
         arrays, resolved, config = self.fixture(cube=True)
         config['edit']['assign_surrounding_tissue'] = False
@@ -123,6 +135,9 @@ class DiagnosticErosionTests(unittest.TestCase):
         self.assertEqual(third['summary']['counts']['released'], 27)
         np.testing.assert_array_equal(third['edited_labels'], second['edited_labels'])
 
+    # Purpose: Verify released markers cannot supply or receive normal tissue assignments.
+    # Inputs: Released cube state under dilation/erosion and three reassignment policies.
+    # Outputs: No changed/new-release voxels, cumulative markers preserved, and blocked/unresolved counts.
     def test_incoming_markers_are_never_dilation_donors_or_erosion_recipients(self):
         arrays, resolved, config = self.fixture(cube=True)
         config['edit']['assign_surrounding_tissue'] = False
@@ -147,6 +162,9 @@ class DiagnosticErosionTests(unittest.TestCase):
                     else:
                         self.assertEqual(result['summary']['counts']['blocked'], 6)
 
+    # Purpose: Verify geometry-only release respects directional Gaussian and ROI constraints.
+    # Inputs: Inner erosion with tube-axis Gaussian profile and assignment disabled.
+    # Outputs: Positive reliable in-ROI removals, zero unresolved, and unchanged attenuation.
     def test_gaussian_direction_and_roi_still_bound_diagnostic_release(self):
         arrays, resolved, config = test_directional_morphology.DirectionalMorphologyTests().fixture(
             direction='inner', operation='erosion')
@@ -163,6 +181,9 @@ class DiagnosticErosionTests(unittest.TestCase):
         np.testing.assert_array_equal(removed, result['proposed_removed_mask'])
         np.testing.assert_array_equal(result['attenuation_proxy_per_pixel'], arrays['atn'])
 
+    # Purpose: Verify diagnostic erosion follows tracked growth within its edit region.
+    # Inputs: Cylindrical target with single-slice edit region and geometry-only erosion.
+    # Outputs: Boundary released, center retained, outside-selection growth removed, and untracked voxels preserved.
     def test_selection_role_releases_tracked_growth_without_erosion_at_roi_cuts(self):
         arrays, resolved, config = test_growth_morphology.GrowthMorphologyTests().fixture(operation='erosion')
         _, j, i = np.indices(arrays['act'].shape)
@@ -181,6 +202,9 @@ class DiagnosticErosionTests(unittest.TestCase):
         self.assertTrue(np.all(result['target_seed_index'] == -1))
         np.testing.assert_array_equal(result['attenuation_proxy_per_pixel'], arrays['atn'])
 
+    # Purpose: Verify diagnostic assignment flags are strict and erosion-only.
+    # Inputs: String/None/integer flags and dilation with assignment false.
+    # Outputs: ValueError for invalid booleans and unsupported diagnostic dilation.
     def test_invalid_flag_and_dilation_are_rejected_before_execution(self):
         arrays, resolved, config = self.fixture()
         for value in ('false', None, 0, 1):

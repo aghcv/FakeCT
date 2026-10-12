@@ -116,6 +116,9 @@ class ModelEvaluationTests(unittest.TestCase):
         return [json.loads(path.read_text()) for path in
                 sorted(Path(self.config['experiment']['output_directory']).glob('folds/*/seed-*/evaluation.json'))]
 
+    # Purpose: Verify holdout evaluation writes reports and resumes without redoing work.
+    # Inputs: Frozen synthetic holdout with mocked fitting and foreground prediction.
+    # Outputs: One fit and prediction produce correct macro Dice; repeat runs resume and source hashes stay intact.
     def test_holdout_writes_report_and_resumes_completed_fit_and_test(self):
         original = {sample['_path']: model_fixture.digest(sample['_path'])
                     for manifest in self.fixture.manifests.values() for sample in manifest['samples']}
@@ -136,6 +139,9 @@ class ModelEvaluationTests(unittest.TestCase):
         self.assertEqual(len(self.prediction_models), 1)
         self.assertEqual(original, {path: model_fixture.digest(path) for path in original})
 
+    # Purpose: Verify repeated leave-one-family-out folds retain membership and family weights.
+    # Inputs: Three-family leave-one-out design with seeds 7 and 11.
+    # Outputs: Six fits/results use stable family panels and equal-family macro averaging.
     def test_leave_one_family_out_repeats_keep_test_membership_and_family_weight(self):
         self.enable_loo(seeds=(7, 11))
         frozen = self.freeze_and_fit()
@@ -158,6 +164,9 @@ class ModelEvaluationTests(unittest.TestCase):
         self.assertAlmostEqual(summary['macro_average']['dice'],
                                statistics.mean(statistics.mean(rows) for rows in by_family.values()))
 
+    # Purpose: Verify nested evaluation refits at the inner selected epoch.
+    # Inputs: Four-family nested leave-one-out plan and mocked inner best epochs.
+    # Outputs: Twelve inner fits plus four fresh refits use median epoch 2; tests evaluate only outer models.
     def test_nested_folds_refit_all_development_families_at_inner_median_epoch(self):
         self.enable_loo(nested=True)
         frozen = self.freeze_and_fit()
@@ -180,6 +189,9 @@ class ModelEvaluationTests(unittest.TestCase):
         fit_evaluation(self.config, self.raw)
         self.assertEqual(len(self.fits), 16)
 
+    # Purpose: Reject inner selected epochs exceeding their training budgets.
+    # Inputs: Completed nested fit with best_epoch greater than settings.epochs.
+    # Outputs: Evaluation raises ValueError before loading any predictor or releasing results.
     def test_nested_epoch_metadata_outside_budget_is_rejected_before_testing(self):
         self.enable_loo(nested=True)
         self.freeze_and_fit()
@@ -193,6 +205,9 @@ class ModelEvaluationTests(unittest.TestCase):
         self.assertEqual(self.prediction_models, [])
         self.assertEqual(self.results(), [])
 
+    # Purpose: Verify explicit evaluation design supersedes legacy split fractions.
+    # Inputs: Holdout config with legacy validation 0.05/test 0.9 fractions.
+    # Outputs: Planning is ready with one fit and creates no output directory.
     def test_evaluation_design_does_not_inherit_legacy_fraction_failure(self):
         self.config['split'].update(validation_fraction=.05, test_fraction=.9)
         planned = plan_evaluation(self.config)
@@ -200,6 +215,9 @@ class ModelEvaluationTests(unittest.TestCase):
         self.assertEqual(planned['fit_count'], 1)
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    # Purpose: Verify changed parent INI bytes stop fitting.
+    # Inputs: Frozen holdout with changed caller input or changed saved input.ini.
+    # Outputs: Fit raises ValueError before any model training.
     def test_parent_ini_changes_fail_before_fitting_or_evaluating(self):
         freeze_evaluation(self.config, self.raw)
         with self.assertRaisesRegex(ValueError, 'INI differs'):
@@ -210,6 +228,9 @@ class ModelEvaluationTests(unittest.TestCase):
             fit_evaluation(self.config, self.raw)
         self.assertEqual(self.fits, [])
 
+    # Purpose: Reject cached evaluation after model or metadata provenance changes.
+    # Inputs: Completed evaluation with altered metadata, then weights and refreshed model hash.
+    # Outputs: Summary/evaluation raises ValueError without invoking another predictor.
     def test_cached_results_reject_changed_model_or_metadata_provenance(self):
         self.freeze_and_fit()
         evaluate_folds(self.config, self.raw)
@@ -231,6 +252,9 @@ class ModelEvaluationTests(unittest.TestCase):
             evaluate_folds(self.config, self.raw)
         self.assertEqual(len(self.prediction_models), 1)
 
+    # Purpose: Require all outer models before releasing any held-out result.
+    # Inputs: Completed leave-one-out fitting with the last outer model removed.
+    # Outputs: Evaluation raises FileNotFoundError with no predictors loaded or results released.
     def test_missing_outer_model_prevents_any_test_result_release(self):
         self.enable_loo()
         self.freeze_and_fit()
@@ -242,6 +266,9 @@ class ModelEvaluationTests(unittest.TestCase):
         self.assertEqual(self.prediction_models, [])
         self.assertEqual(self.results(), [])
 
+    # Purpose: Reject resumed fold locks tied to foreign parent snapshots.
+    # Inputs: Valid resealed fold lock containing another input.ini snapshot.
+    # Outputs: Fit raises ValueError for differing fold lock and does not retrain.
     def test_resumed_fold_rejects_foreign_parent_snapshot(self):
         self.freeze_and_fit()
         path = self.fits[0]['path']
@@ -255,6 +282,9 @@ class ModelEvaluationTests(unittest.TestCase):
             fit_evaluation(self.config, self.raw)
         self.assertEqual(len(self.fits), 1)
 
+    # Purpose: Require nested inner locks to share the frozen parent input.
+    # Inputs: Inner fold resealed against different parent input bytes.
+    # Outputs: Evaluation rejects the changed assignment before prediction.
     def test_nested_inner_lock_must_reference_the_same_parent_input(self):
         self.enable_loo(nested=True)
         self.freeze_and_fit()

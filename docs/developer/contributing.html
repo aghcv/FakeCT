@@ -56,6 +56,13 @@ def mask_volume_mm3(mask, spacing_ijk_mm):
 <p>The <a href="api.html">API reference</a> is generated from source syntax without importing modules or activating optional backends. Regenerate it after changing signatures or docstrings:</p>
 <pre><code>python scripts/dev/build_api_docs.py</code></pre>
 
+<h3 id="test-headers">Brief headers for tests</h3>
+<p>Place three comment lines above each test's decorators and definition. State the purpose, the actual fixture inputs, and the expected output or invariant checked by assertions. Inputs can be generated arrays, an INI, mocked dependencies or malformed values. Outputs can be a mask, a file, an exception or preservation of source data; most test functions themselves return no value.</p>
+<pre><code># Purpose: Verify dilation preserves neighboring vessels and protected labels.
+# Inputs: Generated CT-like crop, target selector and stiffness-controlled edit recipe.
+# Outputs: Growth retains donor lineage; neighboring arteries, bone and skin stay unchanged.</code></pre>
+<p>Keep these headers brief and specific to the test. Retain details in the fixture setup and assertions; avoid descriptions such as “tests the function” or “passes successfully.” Use the same format for integration, optional backend and browser tests.</p>
+
 <h2 id="geometry">3. Preserve numerical and label semantics</h2>
 <table><thead><tr><th>Contract</th><th>Required behavior</th></tr></thead><tbody>
 <tr><td>Index and array order</td><td>INI centers and geometry vectors use <code>i,j,k</code>; volume arrays use <code>k,j,i</code>. Convert deliberately, including crop origins and anisotropic spacing.</td></tr>
@@ -88,5 +95,5 @@ MPLBACKEND=Agg python -m pytest</code></pre>
 <li>Regenerate API documentation, verify relative links and review <code>git diff</code> and <code>git status</code> for accidental data, checkpoint or historical-evidence changes.</li>
 <li>Describe the resulting behavior, input/output contract, exact checks and optional skips in the change description. Keep algorithmic changes separate from unrelated formatting.</li>
 </ol>
-<footer><p class="muted">Local, offline documentation · Updated 2026-10-11.</p></footer>
+<footer><p class="muted">Local, offline documentation · Updated 2026-10-12.</p></footer>
 </main></body></html>

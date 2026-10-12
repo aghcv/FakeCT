@@ -60,6 +60,9 @@ class SurfaceInventoryTests(unittest.TestCase):
     def contract(self, evidence=None):
         return surfaces._coordinate_contract(self.config, self.resolved, evidence or self.fixture_evidence, self.provenance)
 
+    # Purpose: Verify RAW names join catalog IDs without guessing identity by order.
+    # Inputs: Repeated arteries blocks and signed_label block with catalog IDs 5, 6, and -8.
+    # Outputs: Ambiguous IDs retained, signed ID joined, dependencies hashed, and no unsupported spatial claim.
     def test_exact_name_join_keeps_all_signed_candidate_ids_without_ordinal_guess(self):
         path = self.case / '260602_1_heart.raw'
         path.write_text('arteries\n0 0 5 1 0 5 0 1 5\narteries\n0 0 6 1 0 6 0 1 6\n'
@@ -78,12 +81,18 @@ class SurfaceInventoryTests(unittest.TestCase):
         self.assertEqual(dependencies['dxcat2_linux_64bit']['mtime_ns'], self.generator.stat().st_mtime_ns)
         json.dumps(result, allow_nan=False)
 
+    # Purpose: Verify coordinate evidence requires the pinned generator content.
+    # Inputs: Matching fixture generator, original evidence mismatch, then deleted generator.
+    # Outputs: Validated matching contract and explicit mismatch/unavailable reasons.
     def test_contract_requires_content_matching_generator(self):
         self.assertEqual(self.contract()['status'], 'bounded_contract_validated')
         self.assertIn('generator_content_mismatch', self.contract(self.evidence)['reasons'])
         self.generator.unlink()
         self.assertIn('generator_content_unavailable', self.contract()['reasons'])
 
+    # Purpose: Verify spatial contracts stay within their pinned scope.
+    # Inputs: Frame 2, unknown case, startslice 0, and inconsistent voxel spacing.
+    # Outputs: Explicit scope/geometry reasons and absent grid origin for unsupported startslice.
     def test_unsupported_frame_case_startslice_and_geometry_have_no_spatial_claim(self):
         self.config['input']['frame'] = 2
         self.assertIn('frame_outside_pinned_scope', self.contract()['reasons'])
@@ -96,6 +105,9 @@ class SurfaceInventoryTests(unittest.TestCase):
         self.resolved['spacing_ijk_mm'] = [2, 1, 1]
         self.assertIn('parameter_geometry_disagrees_with_resolved_volume', self.contract()['reasons'])
 
+    # Purpose: Verify surface screening uses voxel-center bounds as broad-phase evidence.
+    # Inputs: Validated 10-cubed grid and triangles inside then outside the ROI envelope.
+    # Outputs: Correct origin/envelope, overlap-only status, and no independent registration claim.
     def test_voxel_center_offset_and_broad_phase_only(self):
         contract = self.contract()
         self.assertEqual(contract['grid_boundary_origin_mm'], [-5, -5, 0])
@@ -109,6 +121,9 @@ class SurfaceInventoryTests(unittest.TestCase):
         _, records = surfaces._scan_file(path, 'heart', {}, contract)
         self.assertFalse(records[0]['bounds_overlap_roi_envelope'])
 
+    # Purpose: Verify malformed RAW geometry cannot be mistaken for anatomy names.
+    # Inputs: Short, nonnumeric, nonfinite, extra-token, and unnamed triangle rows.
+    # Outputs: ValueError for every malformed or unlabelled geometry case.
     def test_invalid_geometry_is_rejected_instead_of_creating_names(self):
         path = self.case / '260602_1_heart.raw'
         for bad in ('0 0 5 1 0 5 0 1', '0 0 5 1 invalid 5 0 1 5',
@@ -122,6 +137,9 @@ class SurfaceInventoryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             surfaces._scan_file(path, 'heart', {}, {'status': 'unavailable'})
 
+    # Purpose: Verify centerline extraction is restricted by artery identity and budget.
+    # Inputs: Tube triangles in arterial/nonvascular blocks and a three-triangle cap.
+    # Outputs: Verified arterial centerline and explicit nonvascular/budget rejection reasons.
     def test_arterial_blocks_only_retain_bounded_centerline_geometry(self):
         path = self.case / '260602_1_heart.raw'
         rows = '\n'.join(' '.join(map(str, row)) for row in tube_triangles().reshape(-1, 9))
@@ -133,6 +151,9 @@ class SurfaceInventoryTests(unittest.TestCase):
             _, records = surfaces._scan_file(path, 'heart', {}, self.contract(), {'arteries'})
         self.assertEqual(records[0]['centerline']['reason'], 'surface_exceeds_bounded_centerline_budget')
 
+    # Purpose: Verify inventories require every expected RAW group.
+    # Inputs: Fixture with vessels RAW file deleted.
+    # Outputs: FileNotFoundError instead of an incomplete inventory.
     def test_missing_raw_file_fails_instead_of_claiming_complete_inventory(self):
         (self.case / '260602_1_vessels.raw').unlink()
         with self.assertRaises(FileNotFoundError):
@@ -140,6 +161,9 @@ class SurfaceInventoryTests(unittest.TestCase):
 
 
 class StructuredCenterlineTests(unittest.TestCase):
+    # Purpose: Verify structured tube centerlines survive shuffled triangle ordering.
+    # Inputs: Four unit-radius rings and two poles shuffled with seed 42.
+    # Outputs: Verified two-pole topology, four rings, two boundary cycles, and z centers 0 through 5.
     def test_closed_two_pole_rings_recover_centroids_independent_of_row_order(self):
         triangles = tube_triangles()
         np.random.default_rng(42).shuffle(triangles)
@@ -151,6 +175,9 @@ class StructuredCenterlineTests(unittest.TestCase):
         self.assertTrue(np.allclose(result['ring_max_radii_mm'], 1))
         self.assertTrue(np.allclose(np.array(result['centerline_raw_mm'])[:, 2], np.arange(6)))
 
+    # Purpose: Verify ambiguous triangle topology yields no centerline.
+    # Inputs: Tube with missing face, duplicate face, or disconnected translated copy.
+    # Outputs: Unavailable centerline status for all malformed soups.
     def test_open_duplicate_and_disconnected_soups_never_invent_centerlines(self):
         triangles = tube_triangles()
         for altered in (triangles[:-1], np.concatenate((triangles, triangles[:1])),
@@ -158,6 +185,9 @@ class StructuredCenterlineTests(unittest.TestCase):
             with self.subTest(triangles=len(altered)):
                 self.assertEqual(extract_centerline(altered)['status'], 'unavailable')
 
+    # Purpose: Verify radial extent contributes to centerline-envelope screening.
+    # Inputs: Unit-radius tube and ROI envelope near x=1, then x=2 to 3, then invalid contract.
+    # Outputs: Overlap true, false, and unknown respectively.
     def test_radius_screen_retains_surface_when_centerline_is_outside_roi(self):
         centerline = extract_centerline(tube_triangles())
         contract = {'status': 'bounded_contract_validated',

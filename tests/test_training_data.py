@@ -19,6 +19,9 @@ from fakect_training_data import (plan_variants, prepare_training_dataset,
 
 
 class TrainingDataTests(unittest.TestCase):
+    # Purpose: Reject diagnostic release markers in training sources.
+    # Inputs: Signed-label phantom containing RELEASED_LABEL_ID in its native activity file.
+    # Outputs: ValueError before the dataset directory is created.
     def test_source_diagnostic_markers_rejected_before_creating_dataset(self):
         from fakect_released import RELEASED_LABEL_ID
         source = self.root/'001/001_act_1.bin'
@@ -91,6 +94,9 @@ class TrainingDataTests(unittest.TestCase):
                       'epochs': 1, 'batch_size': 2, 'learning_rate': .001, 'seed': 42}}
         self.resolved = resolve_preview(self.config)
 
+    # Purpose: Verify deterministic, bounded Cartesian variant planning.
+    # Inputs: Baseline plus erosion/dilation distances, reordered settings and invalid planning options.
+    # Outputs: Seven stable variants, whole-variant splits and rejection of invalid options without export.
     def test_cartesian_plan_is_stable_bounded_and_whole_variant_split(self):
         planned = plan_variants(self.config)
         self.assertEqual(len(planned), 7)
@@ -113,6 +119,9 @@ class TrainingDataTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 plan_variants(config)
 
+    # Purpose: Bind enabled erosion safeguards to variant identity.
+    # Inputs: Mixed-operation plan with disabled, enabled and modified backoff policies.
+    # Outputs: Only guarded erosion IDs change; defaults normalize and configuration stays unchanged.
     def test_enabled_guard_policy_binds_erosion_variant_identity_and_preserves_legacy_ids(self):
         legacy = plan_variants(self.config)
         disabled = deepcopy(self.config)
@@ -143,6 +152,9 @@ class TrainingDataTests(unittest.TestCase):
             self.assertEqual(first['variant_id'] == second['variant_id'], first['operation'] != 'erosion')
         self.assertFalse(config['train']['dataset_directory'].exists())
 
+    # Purpose: Restrict safeguards to erosion in mixed-operation dataset preparation.
+    # Inputs: Signed-label phantom, dilation/erosion sweep and a 100% guard-scope retention floor.
+    # Outputs: Erosion preserves baseline, dilation grows, guard metadata matches and sources stay unchanged.
     def test_mixed_training_applies_guards_only_to_erosion_and_records_accepted_outputs(self):
         config = deepcopy(self.config)
         config['edit'].update(min_volume_ratio=1., preserve_connectivity=True)
@@ -177,6 +189,9 @@ class TrainingDataTests(unittest.TestCase):
         for name, path in self.resolved['source_files'].items():
             self.assertEqual(path.read_bytes(), source_bytes[name])
 
+    # Purpose: Verify paired export preserves source identity and complete target extent.
+    # Inputs: 31-cube signed-label phantom with target -7, neighboring artery 8 and a spherical edit ROI.
+    # Outputs: Seven verified image/mask pairs, full target extent, immutable sources and overwrite rejection.
     def test_prepared_pairs_preserve_signed_source_and_full_target_outside_roi(self):
         source_bytes = {name: path.read_bytes() for name, path in self.resolved['source_files'].items()}
         result = prepare_training_dataset(self.config, self.resolved)
@@ -205,6 +220,9 @@ class TrainingDataTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             prepare_training_dataset(self.config, self.resolved)
 
+    # Purpose: Verify each sibling is edited independently from the original source.
+    # Inputs: Prepared variants and direct morphology results from the same native crop.
+    # Outputs: Exported labels, masks and attenuation match direct edits; original arrays stay unchanged.
     def test_every_variant_starts_from_original_and_proxy_agrees_with_edit(self):
         prepare_training_dataset(self.config, self.resolved)
         manifest = validate_dataset(self.config, self.resolved)
@@ -223,6 +241,9 @@ class TrainingDataTests(unittest.TestCase):
         for name, array in arrays.items():
             np.testing.assert_array_equal(array, original[name])
 
+    # Purpose: Keep baseline-equivalent geometry out of independent holdout splits.
+    # Inputs: Subvoxel erosion/dilation sweep yielding seven unchanged target masks.
+    # Outputs: All samples retained in one training geometry group with a warning against fitting.
     def test_noop_variants_remain_recorded_but_duplicate_geometry_never_crosses_splits(self):
         config = deepcopy(self.config)
         config['train']['distances_mm'] = (.1, .2, .3)
@@ -238,6 +259,9 @@ class TrainingDataTests(unittest.TestCase):
         for sample in manifest['samples']:
             self.assertEqual(group_splits.setdefault(sample['geometry_group'], sample['split']), sample['split'])
 
+    # Purpose: Separate dataset identity from model and display settings.
+    # Inputs: Configuration edits to stages, destinations, epochs, display, distances, target IDs and catalog.
+    # Outputs: Model/display changes retain fingerprint; data changes alter it or reject a changed catalog.
     def test_fingerprint_binds_data_but_allows_model_and_stage_comparisons(self):
         initial = dataset_fingerprint(self.config, self.resolved)
         config = deepcopy(self.config)
@@ -258,6 +282,9 @@ class TrainingDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'catalog changed'):
             dataset_fingerprint(self.config, self.resolved)
 
+    # Purpose: Reject reuse of mismatched or tampered prepared data.
+    # Inputs: Completed dataset with a changed ROI radius or appended sample payload bytes.
+    # Outputs: Fingerprint or artifact validation raises ValueError.
     def test_existing_artifacts_and_source_changes_are_detected_before_reuse(self):
         prepare_training_dataset(self.config, self.resolved)
         changed = deepcopy(self.config)
@@ -271,6 +298,9 @@ class TrainingDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'artifact'):
             validate_dataset(self.config, self.resolved)
 
+    # Purpose: Bind prepared data to source content and geometry metadata.
+    # Inputs: Completed dataset followed by native-label and parameter-file edits.
+    # Outputs: Fingerprints change and the earlier dataset fails validation.
     def test_changed_source_stat_and_audit_metadata_invalidate_frozen_data(self):
         prepare_training_dataset(self.config, self.resolved)
         before = dataset_fingerprint(self.config, self.resolved)
@@ -284,6 +314,9 @@ class TrainingDataTests(unittest.TestCase):
         Path(self.resolved['case']['par_path']).write_text('changed geometry parameters')
         self.assertNotEqual(dataset_fingerprint(self.config, self.resolved), before)
 
+    # Purpose: Reject altered manifests and geometry leakage across splits.
+    # Inputs: Manifest with appended bytes or a baseline-equivalent sample reassigned to test.
+    # Outputs: Checksum and geometry-crossing errors despite a recomputed manifest digest.
     def test_manifest_tampering_and_duplicate_geometry_splits_are_rejected(self):
         prepare_training_dataset(self.config, self.resolved)
         directory = self.config['train']['dataset_directory']
@@ -302,6 +335,9 @@ class TrainingDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'geometry crosses'):
             validate_dataset(self.config, self.resolved)
 
+    # Purpose: Validate target-label membership and edit scope before export.
+    # Inputs: Empty, duplicate, unknown, nonarterial or Boolean target IDs and an overbroad edit selector.
+    # Outputs: ValueError for each invalid target/scope and no dataset directory.
     def test_explicit_anatomical_target_and_edit_scope_are_required(self):
         for targets in ((), (-7, -7), (1234,), (20,), (0,), (True,)):
             config = deepcopy(self.config)
@@ -314,6 +350,9 @@ class TrainingDataTests(unittest.TestCase):
             prepare_training_dataset(self.config, resolved)
         self.assertFalse(self.config['train']['dataset_directory'].exists())
 
+    # Purpose: Validate the complete parameter sweep without reading voxel crops.
+    # Inputs: Valid plan, incompatible target and excessive planned distance; crop reads mocked to fail.
+    # Outputs: Valid variants returned; target/halo errors raised and no dataset output created.
     def test_metadata_plan_checks_all_edit_strengths_and_targets_without_crop_reads(self):
         with patch('fakect_training_data.prepare_crop', side_effect=AssertionError('must not read voxels')):
             self.assertEqual(validate_study_plan(self.config, self.resolved), plan_variants(self.config))
@@ -329,6 +368,9 @@ class TrainingDataTests(unittest.TestCase):
                 validate_study_plan(bad_halo, self.resolved)
         self.assertFalse(self.config['train']['dataset_directory'].exists())
 
+    # Purpose: Preserve exact input bytes and include them in dataset integrity checks.
+    # Inputs: INI bytes with BOM/CRLF/comments, then modified snapshot bytes and a string-valued input.
+    # Outputs: Exact snapshot/hash retained; changed snapshot and nonbyte input rejected.
     def test_exact_input_snapshot_is_optional_and_bound_to_artifact_inventory(self):
         input_bytes = b'\xef\xbb\xbf# Exact original comments\r\n[study]\r\nname = tiny-study\r\n'
         prepare_training_dataset(self.config, self.resolved, input_bytes=input_bytes)
@@ -345,6 +387,9 @@ class TrainingDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'input_bytes'):
             prepare_training_dataset(self.config, self.resolved, input_bytes='text is not exact bytes')
 
+    # Purpose: Mark interrupted preparation as unusable for publication.
+    # Inputs: Native fixture with morphology execution mocked to raise ValueError.
+    # Outputs: INCOMPLETE remains, no dataset manifest exists and validation rejects the revision.
     def test_failed_variant_leaves_incomplete_dataset_without_publishable_manifest(self):
         with patch('fakect_training_data.apply_morphology', side_effect=ValueError('synthetic failure')):
             with self.assertRaisesRegex(ValueError, 'synthetic failure'):

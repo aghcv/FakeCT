@@ -18,12 +18,18 @@ class ConfigTests(unittest.TestCase):
             path.write_text(text)
             return exp.load_config(path)
 
+    # Purpose: Reject model settings outside supported training bounds.
+    # Inputs: Change weight 65, Dice weight 11, or inference overlap 96.
+    # Outputs: Configuration raises ValueError before GPU work.
     def test_model_loss_bounds_fail_before_gpu(self):
         for old,new in [('change_weight = 8','change_weight = 65'),('dice_weight = 1','dice_weight = 11'),
                         ('inference_overlap = 24','inference_overlap = 96')]:
             with self.subTest(new=new),self.assertRaises(ValueError):
                 self.load(old,new)
 
+    # Purpose: Verify the fixed training and family checkpoint policy.
+    # Inputs: Archived focused-change INI and an unsupported family replacement.
+    # Outputs: Defaults specify 64 epochs, 96-cube patches, five families; the replacement raises ValueError.
     def test_checkpoint_policy_is_fixed_and_inputs_simple(self):
         c=exp.load_config(exp.ROOT/'archive/research/configs/models/aorta-focused-change.ini')
         self.assertEqual(c['training']['epochs'],64)
@@ -81,6 +87,9 @@ def focus_masks(reader,index):
 
 
 class EvaluationTests(unittest.TestCase):
+    # Purpose: Verify overlapping predictions are scored once and persisted.
+    # Inputs: Two overlapping 4-cube proposals, fake reader/model, and perfect added/removed logits.
+    # Outputs: Each change class has one true positive and Dice 1; saved labels are 6x4x4 with float16 probabilities.
     def test_overlap_is_scored_once_and_probabilities_saved(self):
         row={'sample_id':'p:v','case_id':'p','anatomy_family':'family','baseline':False}
         proposal={'origins_kji':[[0,0,0],[2,0,0]],'coverage_passed':True,'added_coverage':1.,'removed_coverage':1.}
@@ -99,6 +108,9 @@ class EvaluationTests(unittest.TestCase):
                 self.assertEqual(arrays['added_probability'].dtype,np.float16)
                 np.testing.assert_array_equal(arrays['predicted'],arrays['labels'])
 
+    # Purpose: Require baseline controls and both change classes for validation.
+    # Inputs: Perfect edited prediction and a baseline with change fractions 0.02 then 0.
+    # Outputs: Gate rejects absent/noisy controls and accepts the clean baseline.
     def test_gate_requires_controls_and_both_change_classes(self):
         from fakect_change_report import change_metrics
         labels=FakeReader.labels

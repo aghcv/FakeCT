@@ -67,6 +67,9 @@ class HeldOutEvaluationTests(unittest.TestCase):
         with patch('fakect_evaluation_metrics.load_segmentation', return_value=(IdentityPredictor(), self.metadata)):
             return evaluate_segmentation_model(self.model_dir, self.path, **kwargs)
 
+    # Purpose: Verify evaluation loads only held-out payloads and excludes padding.
+    # Inputs: Identity predictor, 2x3x5 test data, and deleted train/validation payloads.
+    # Outputs: Only test.npz loads; metrics count 3 positives and 27 negatives with Dice 1 and provenance hashes.
     def test_only_test_payload_loaded_and_padding_excluded(self):
         for split in ('train', 'validation'):
             (self.root / f'{split}.npz').unlink()
@@ -83,6 +86,9 @@ class HeldOutEvaluationTests(unittest.TestCase):
         self.assertEqual(result['source_manifest_sha256'], digest(self.path))
         self.assertEqual(result['model_metadata_sha256'], digest(self.model_dir / 'model-metadata.json'))
 
+    # Purpose: Require the model to match the exact source manifest.
+    # Inputs: Model metadata with wrong manifest digest or path.
+    # Outputs: Evaluation raises ValueError for source manifest mismatch.
     def test_model_must_match_exact_source_manifest(self):
         for name, value in (('source_manifest_sha256', '0' * 64), ('source_manifest', str(self.root / 'other.json'))):
             with self.subTest(name=name):
@@ -91,6 +97,9 @@ class HeldOutEvaluationTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'source manifest'):
                         evaluate_segmentation_model(self.model_dir, self.path)
 
+    # Purpose: Verify payload-file and decoded-array hashes independently.
+    # Inputs: Test image modified, then manifest file digest refreshed.
+    # Outputs: Evaluation first rejects file hash, then rejects image_sha256 mismatch.
     def test_file_hash_and_array_hash_are_independently_verified(self):
         path = self.root / 'test.npz'
         with np.load(path) as archive:
@@ -104,6 +113,9 @@ class HeldOutEvaluationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'image_sha256 disagrees'):
             self.run_evaluation()
 
+    # Purpose: Reject invalid evaluation array dtype, values, and shape.
+    # Inputs: Float64/NaN/truncated images or float/nonbinary masks with refreshed file hashes.
+    # Outputs: Evaluation raises ValueError naming required float32 or uint8 data.
     def test_invalid_dtype_binary_mask_and_shape_are_rejected(self):
         path = self.root / 'test.npz'
         original = path.read_bytes()
@@ -123,6 +135,9 @@ class HeldOutEvaluationTests(unittest.TestCase):
                     self.run_evaluation()
         path.write_bytes(original)
 
+    # Purpose: Verify evaluation applies frozen model-grid resampling.
+    # Inputs: Native 2x3x5 data mapped to 4x6x10, then a mismatched frozen shape.
+    # Outputs: One resample produces 240 valid voxels; inconsistent frozen geometry raises ValueError.
     def test_model_time_resampling_uses_frozen_geometry(self):
         inspected = inspect_manifest(self.path)
         sample = inspected['samples'][-1]
@@ -139,6 +154,9 @@ class HeldOutEvaluationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'frozen experiment geometry'):
                 self.run_evaluation()
 
+    # Purpose: Reject invalid probabilities and artifacts changed during evaluation.
+    # Inputs: Wrong-shaped, NaN, or out-of-range predictions and a predictor mutating the manifest.
+    # Outputs: Evaluation rejects invalid probabilities and concurrent manifest changes.
     def test_invalid_predictions_and_changed_artifacts_fail(self):
         for values in (np.zeros((3, 4)), np.full((3, 5), np.nan), np.full((3, 5), 1.1)):
             with self.subTest(shape=values.shape), \
@@ -152,6 +170,9 @@ class HeldOutEvaluationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'changed during'):
                 self.run_evaluation()
 
+    # Purpose: Validate thresholds and source-volume limits before payload loading.
+    # Inputs: Boolean/invalid/nonfinite thresholds and source shape [256,256,257].
+    # Outputs: Evaluation raises ValueError and oversized volumes never reach np.load.
     def test_threshold_and_volume_limit_checked_before_loading(self):
         for value in (True, 0, 1, -1, float('nan'), float('inf'), 'invalid'):
             with self.subTest(threshold=value), self.assertRaisesRegex(ValueError, 'threshold'):
@@ -184,6 +205,9 @@ class FamilySummaryTests(unittest.TestCase):
                            'samples': [result_row('b1-0', 'B1', 'B', first)]})
         return result
 
+    # Purpose: Verify summary weighting gives equal weight to cases and families.
+    # Inputs: Unequal sibling counts in two families across seeds 11 and 29.
+    # Outputs: Macro Dice is 0.5, seed means are 0.75/0.25, and reversed input gives the same summary.
     def test_equal_case_and_family_weights_not_sibling_or_voxel_pooling(self):
         summary = summarize_evaluations(self.evaluations())
         self.assertEqual(summary['macro_average']['dice'], .5)
@@ -196,6 +220,9 @@ class FamilySummaryTests(unittest.TestCase):
         reversed_input = list(reversed(self.evaluations()))
         self.assertEqual(summarize_evaluations(reversed_input), summary)
 
+    # Purpose: Reject duplicate folds and repeated out-of-fold predictions.
+    # Inputs: Repeated fold/seed entry or a sample copied into another fold.
+    # Outputs: Summary raises ValueError for either duplicate identity.
     def test_duplicate_fold_or_out_of_fold_predictions_rejected(self):
         evaluations = self.evaluations()
         with self.assertRaisesRegex(ValueError, 'Duplicate fold_id/seed'):
@@ -204,6 +231,9 @@ class FamilySummaryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Duplicate out-of-fold'):
             summarize_evaluations(evaluations)
 
+    # Purpose: Require matching seeds, memberships, and case/family identities.
+    # Inputs: Missing seed evaluation, missing variant, changed case, or reassigned family.
+    # Outputs: Summary rejects inconsistent repeat membership and identity.
     def test_incomplete_seeds_or_changed_membership_cannot_be_averaged(self):
         with self.assertRaisesRegex(ValueError, 'same seeds'):
             summarize_evaluations(self.evaluations()[:-1])
@@ -220,6 +250,9 @@ class FamilySummaryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'case cannot belong'):
             summarize_evaluations(evaluations)
 
+    # Purpose: Reject malformed metrics, confusion counts, and mixed thresholds.
+    # Inputs: Nonfinite/out-of-range/bool metrics, invalid counts, inconsistent Dice, or threshold 0.6.
+    # Outputs: Summary raises ValueError for every inconsistent evaluation.
     def test_invalid_metrics_and_counts_cannot_be_summarized(self):
         for key, value in (('dice', float('nan')), ('iou', float('inf')), ('recall', -.1),
                            ('precision', True), ('true_positive', 1.5), ('false_positive', -1),
@@ -234,6 +267,9 @@ class FamilySummaryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'different prediction thresholds'):
             summarize_evaluations(evaluations)
 
+    # Purpose: Verify explicit finite metrics for empty targets.
+    # Inputs: Empty perfect target/prediction, then one false-positive voxel.
+    # Outputs: All perfect empty metrics are 1; false-positive empty recall is 0.
     def test_empty_masks_have_explicit_finite_policy(self):
         row = result_row('empty', 'case', 'family')
         row.update(true_positive=0, true_negative=10)

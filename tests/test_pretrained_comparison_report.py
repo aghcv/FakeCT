@@ -30,6 +30,9 @@ class PretrainedComparisonTests(unittest.TestCase):
                     change_kind="mixed" if removed and added else "removal_only",
                     predictions={arm: metric(value) for arm in ARMS})
 
+    # Purpose: Verify burden summaries balance cases rather than sibling counts.
+    # Inputs: Nine zero-score siblings in case A and one perfect sibling in case B.
+    # Outputs: Ten siblings across two cases yield mean 0.5.
     def test_case_balancing_does_not_let_sibling_count_dominate(self):
         rows = [self.record("A:" + str(i), "A", 0.) for i in range(9)] + [self.record("B:0", "B", 1.)]
         result = burden_bins(rows, "removed_voxels")[0]
@@ -37,10 +40,16 @@ class PretrainedComparisonTests(unittest.TestCase):
         self.assertEqual(result["cases"], 2)
         self.assertEqual(result["means"]["siblings"], .5)
 
+    # Purpose: Verify burden summaries give equal weight to families.
+    # Inputs: Two zero-score cases in one family and one perfect case in another.
+    # Outputs: Mean pretrained score is 0.5.
     def test_family_balancing_is_explicit_and_independent_of_case_count(self):
         rows = [self.record("A", "A", 0., "same"), self.record("B", "B", 0., "same"), self.record("C", "C", 1., "other")]
         self.assertEqual(burden_bins(rows, "removed_voxels")[0]["means"]["pretrained"], .5)
 
+    # Purpose: Preserve pending comparison arms without inventing zero scores.
+    # Inputs: One completed sample with the siblings arm pending.
+    # Outputs: Comparison is partial with zero paired samples and no burden bin.
     def test_pending_arm_not_zero_score_or_completed_comparison(self):
         row = self.record("A", "A", .9)
         row["predictions"]["siblings"] = dict(status="pending")
@@ -49,6 +58,9 @@ class PretrainedComparisonTests(unittest.TestCase):
         self.assertEqual(state["paired_samples"], 0)
         self.assertEqual(burden_bins([row], "removed_voxels"), [])
 
+    # Purpose: Verify mixed changes contribute to both burden graphs and exclude controls.
+    # Inputs: One mixed sibling with 100 removals/25 additions and a baseline control.
+    # Outputs: Both graphs count one sibling and one mixed sibling.
     def test_mixed_native_counts_appear_in_both_graphs_and_controls_excluded(self):
         row = self.record("A", "A", .8, removed=100, added=25)
         control = self.record("A:baseline", "A", .9, removed=0); control["baseline"] = True
@@ -57,6 +69,9 @@ class PretrainedComparisonTests(unittest.TestCase):
             self.assertEqual(result["siblings"], 1)
             self.assertEqual(result["mixed_siblings"], 1)
 
+    # Purpose: Verify prespecified examples ignore prediction performance.
+    # Inputs: Baseline plus removal/addition burden panels with subsequently replaced scores.
+    # Outputs: Example IDs stay identical, include the baseline, and total three.
     def test_prespecified_examples_do_not_depend_on_prediction_scores(self):
         rows = [dict(self.record("A:original", "A", .8, removed=0), baseline=True)]
         rows += [self.record("B:" + str(i), "B", i / 10., removed=i * 100) for i in range(1, 5)]
@@ -92,6 +107,9 @@ class PretrainedComparisonNiftiTests(unittest.TestCase):
                 prediction_nifti_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
         return row
 
+    # Purpose: Verify native comparison report uses identical current CT across arms.
+    # Inputs: Hashed native NIfTI fixture with one addition/eight removals and three prediction arms.
+    # Outputs: Complete report preserves exact counts/origin, exports figures/viewer, and pins output hashes.
     def test_complete_native_report_same_ct_columns_and_exact_counts(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); row = self.fixture(root)
@@ -126,6 +144,9 @@ class PretrainedComparisonNiftiTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 report.write_report(dict(samples=[row]), root / "review")
 
+    # Purpose: Reject false native counts and mismatched prediction affines before output.
+    # Inputs: Added count changed to 99, then prediction affine shifted by 1 mm.
+    # Outputs: Both report calls raise ValueError and create no output directories.
     def test_wrong_affine_and_false_core_counts_fail_without_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); row = self.fixture(root)
@@ -138,6 +159,9 @@ class PretrainedComparisonNiftiTests(unittest.TestCase):
             with self.assertRaises(ValueError): report.write_report(dict(samples=[row]), root / "affine-review")
             self.assertFalse((root / "counts-review").exists()); self.assertFalse((root / "affine-review").exists())
 
+    # Purpose: Verify partial native reports retain missing arms as pending.
+    # Inputs: Native sample with baseline-only and siblings predictions pending.
+    # Outputs: Partial report has no paired metrics or burden curves and clearly marks pending arms.
     def test_partial_native_report_keeps_missing_arms_pending(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); row = self.fixture(root)

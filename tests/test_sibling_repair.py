@@ -46,6 +46,9 @@ class BackoffTests(unittest.TestCase):
             return {'result_mask':current,'target_origin_index':origins}
         return run
 
+    # Purpose: Verify selective repair reduces only the first failing erosion distance.
+    # Inputs: Mock recipe disconnecting coa above 0.5 mm with unrelated growth/arch settings.
+    # Outputs: Accepted coa 0.375 after two reductions, preserved other settings/config, and connected final mask.
     def test_only_first_failing_erosion_changes_and_other_guard_settings_survive(self):
         original=deepcopy(self.config)
         with patch.object(repair,'apply_recipe',self.runner('coa',.5)):
@@ -61,6 +64,9 @@ class BackoffTests(unittest.TestCase):
         self.assertTrue(audit['attempts'][-1]['accepted'])
         self.assertTrue(np.array_equal(result['result_mask'],self.before))
 
+    # Purpose: Verify arch backoff leaves coa unchanged and respects finite retry bounds.
+    # Inputs: Arch failure above 0.75 mm then always-failing arch with one retry allowed.
+    # Outputs: Accepted arch 0.5, unchanged coa, and RepairFailure with two audited attempts on exhaustion.
     def test_arch_repair_does_not_reduce_coa_and_has_finite_failure(self):
         with patch.object(repair,'apply_recipe',self.runner('arch',.75)):
             _,accepted,audit=repair.repair_recipe(self.arrays,{},self.config)
@@ -74,6 +80,9 @@ class BackoffTests(unittest.TestCase):
         self.assertEqual(len(failure.exception.audit['attempts']),2)
         self.assertEqual(failure.exception.audit['distance_reductions'],{'arch':1})
 
+    # Purpose: Verify selective erosion repair refuses growth failures.
+    # Inputs: Mock disconnection during grow step.
+    # Outputs: Non-erosion RepairFailure after one attempt and no distance reductions.
     def test_dilation_failure_is_not_silently_changed_or_allowed(self):
         with patch.object(repair,'apply_recipe',self.runner('grow',0)):
             with self.assertRaisesRegex(repair.RepairFailure,'non-erosion') as failure:
@@ -116,6 +125,9 @@ class RepairReleaseTests(unittest.TestCase):
         (self.case_path.parent/'INCOMPLETE').touch()
         return sid
 
+    # Purpose: Verify frozen repair reuses good siblings and releases a new repaired identity.
+    # Inputs: Nine-sibling panel with one recorded disconnect failure and eight verified good siblings.
+    # Outputs: Eight reused/one repaired, complete ten-sample population, preserved parent, and overwrite refusal.
     def test_frozen_repair_reuses_good_data_and_exports_new_accepted_identity(self):
         requested_sid=self.make_incomplete_diagnostic()
         old_receipt_hash=sha256(self.case_path)
@@ -150,6 +162,9 @@ class RepairReleaseTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             repair.collect(self.c,lock)
 
+    # Purpose: Verify repairs require a known native failure and verified reusable payloads.
+    # Inputs: Failed record changed to unassigned attenuation then good variant bytes altered.
+    # Outputs: ValueError for unsupported failure reason and changed good payload.
     def test_unknown_native_failures_or_mutated_good_bytes_are_not_reused(self):
         self.make_incomplete_diagnostic()
         d=repair._read_parent_case(self.case_path)

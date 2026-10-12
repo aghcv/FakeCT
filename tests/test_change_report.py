@@ -14,6 +14,9 @@ import fakect_change_report as report
 
 
 class ChangeMetricsTests(unittest.TestCase):
+    # Purpose: Verify change counts and physical volume exclude invalid padding.
+    # Inputs: 2-cube truth and prediction with one invalid false addition and spacing 0.5, 1, 2.
+    # Outputs: Seven valid voxels, correct class counts, added Dice 2/3 and removed false-positive volume 1.
     def test_counts_and_physical_volume_exclude_padding(self):
         labels = np.zeros((2, 2, 2), np.uint8)
         labels.flat[0] = 1; labels.flat[1] = 2
@@ -29,6 +32,9 @@ class ChangeMetricsTests(unittest.TestCase):
         self.assertEqual(metrics["classes"]["removed"]["false_positive_mm3"], 1.)
         self.assertFalse(metrics["no_op_control"])
 
+    # Purpose: Verify absent target classes report undefined overlap and control errors.
+    # Inputs: Unchanged 2-cube target with one predicted removal and spacing 2, 3, 4.
+    # Outputs: No added/removed Dice; control flagged with one false voxel and 24 mm3 false change.
     def test_absent_classes_have_no_overlap_score(self):
         labels = np.zeros((2, 2, 2), np.uint8)
         predicted = labels.copy(); predicted.flat[0] = 2
@@ -39,12 +45,18 @@ class ChangeMetricsTests(unittest.TestCase):
         self.assertEqual(metrics["no_op_false_positive_voxels"], 1)
         self.assertEqual(metrics["no_op_false_positive_mm3"], 24.)
 
+    # Purpose: Verify entirely invalid crops cannot count as successful controls.
+    # Inputs: Zero truth, prediction and validity arrays.
+    # Outputs: Control flag false and unchanged Dice undefined.
     def test_all_invalid_crop_does_not_become_a_successful_control(self):
         zeros = np.zeros((2, 2, 2), np.uint8)
         metrics = report.change_metrics(zeros, zeros, zeros, [1., 1., 1.])
         self.assertFalse(metrics["no_op_control"])
         self.assertIsNone(metrics["classes"]["unchanged"]["dice"])
 
+    # Purpose: Reject malformed class grids and physical spacing.
+    # Inputs: Zero or NaN spacing, wrong spacing length, class 3 and mismatched prediction shape.
+    # Outputs: ValueError rejects every grid or spacing violation.
     def test_invalid_grids_and_spacing_rejected(self):
         zeros = np.zeros((2, 2, 2), np.uint8)
         for spacing in ([0, 1, 1], [1, 1], [float("nan"), 1, 1]):
@@ -55,6 +67,9 @@ class ChangeMetricsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             report.change_metrics(zeros, zeros[:, :, :1], zeros, [1, 1, 1])
 
+    # Purpose: Verify empty controls cannot inflate nonempty overlap summaries.
+    # Inputs: Perfect unchanged control and completely missed added voxel in another family.
+    # Outputs: Added family Dice zero, one empty-target record and one no-op control.
     def test_empty_controls_do_not_inflate_nonempty_overlap(self):
         zeros = np.zeros((2, 2, 2), np.uint8)
         changed = zeros.copy(); changed.flat[0] = 1
@@ -67,6 +82,9 @@ class ChangeMetricsTests(unittest.TestCase):
         self.assertEqual(summary["classes"]["added"]["empty_target_records"], 1)
         self.assertEqual(summary["no_op_controls"]["records"], 1)
 
+    # Purpose: Verify multiple focus crops count as one scenario.
+    # Inputs: Two proposal indices for one sample, followed by a duplicated proposal row.
+    # Outputs: One scenario, two proposals and one case; duplicate proposal rejected.
     def test_focus_crops_are_not_counted_as_distinct_scenarios(self):
         zeros = np.zeros((2, 2, 2), np.uint8)
         metric = report.change_metrics(zeros, zeros, np.ones_like(zeros), [1, 1, 1])
@@ -78,6 +96,9 @@ class ChangeMetricsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unique"):
             report.summarize([rows[0], rows[0]])
 
+    # Purpose: Verify family summaries weight cases equally despite sample imbalance.
+    # Inputs: Five perfect samples from case a and one missed sample from case b.
+    # Outputs: Sample Dice 5/6 and equally weighted family Dice 0.5.
     def test_family_mean_gives_cases_equal_weight(self):
         labels = np.zeros((2, 2, 2), np.uint8); labels.flat[0] = 1
         valid = np.ones_like(labels)
@@ -106,6 +127,9 @@ class ChangeReportTests(unittest.TestCase):
     def _write(self):
         (self.root / "results.json").write_text(json.dumps(self.results))
 
+    # Purpose: Verify report text escaping and immutable results with learning plots.
+    # Inputs: Completed single-sample results, unsafe text and two-epoch history.
+    # Outputs: Escaped identifiers and warnings, learning plot file and unchanged JSON artifacts.
     def test_report_escapes_text_preserves_results_and_plots_history(self):
         history = dict(epochs=[dict(epoch=1, loss=.8, dice_loss=.6), dict(epoch=2, loss=.5, dice_loss=.3)])
         (self.root / "history.json").write_text(json.dumps(history))
@@ -120,6 +144,9 @@ class ChangeReportTests(unittest.TestCase):
         self.assertEqual(original, (self.root / "results.json").read_bytes())
         self.assertEqual(history, json.loads((self.root / "history.json").read_text()))
 
+    # Purpose: Verify saved scenes expose true and predicted net-change layers.
+    # Inputs: 3-cube NPZ containing one true and predicted addition.
+    # Outputs: One added voxel in both layers, no removals and six scene layers.
     def test_exact_scene_reuses_true_and_predicted_layers(self):
         path = self.root / "prediction.npz"
         np.savez_compressed(path, before=self.zeros, after=self.after, labels=self.after,
@@ -132,6 +159,9 @@ class ChangeReportTests(unittest.TestCase):
         self.assertEqual(len(scene["modes"][0]["layers"]), 6)
         self.assertIn("focus 0", scene["sample_id"])
 
+    # Purpose: Reject escaped prediction paths and incorrect payload checksums.
+    # Inputs: Relative traversal, absolute path and local payload with wrong then correct SHA-256.
+    # Outputs: Unsafe paths and checksum rejected; verified local prediction path returned.
     def test_saved_prediction_must_remain_inside_run_and_match_hash(self):
         for value in ("../outside.npz", "/tmp/prediction.npz"):
             with self.assertRaises(ValueError):
@@ -142,6 +172,9 @@ class ChangeReportTests(unittest.TestCase):
         sha = hashlib.sha256(path.read_bytes()).hexdigest()
         self.assertEqual(report._prediction_path(self.root, dict(self.row, prediction_npz=path.name, prediction_sha256=sha)), path)
 
+    # Purpose: Reject scene truth inconsistent with before/after masks.
+    # Inputs: NPZ with unchanged before/after masks but an added truth label.
+    # Outputs: ValueError reports disagreeing net truth.
     def test_scene_rejects_inconsistent_net_truth(self):
         path = self.root / "prediction.npz"
         np.savez_compressed(path, before=self.zeros, after=self.zeros, labels=self.after,
@@ -149,6 +182,9 @@ class ChangeReportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "disagree"):
             report._scene(path, self.row)
 
+    # Purpose: Verify complete reports publish a local viewer without modifying predictions.
+    # Inputs: Hashed prediction NPZ referenced by completed results.
+    # Outputs: One-scene viewer, expected opacity presets, report link and identical prediction checksum.
     def test_complete_report_writes_local_viewer_without_changing_prediction(self):
         path = self.root / "prediction.npz"
         np.savez_compressed(path, before=self.zeros, after=self.after, labels=self.after,

@@ -15,10 +15,16 @@ import fakect_multiscale_network as network
 
 
 class NetworkContractTests(unittest.TestCase):
+    # Purpose: Verify plain multiscale-network imports remain TensorFlow lazy.
+    # Inputs: Fresh Python subprocess importing fakect_multiscale_network.
+    # Outputs: Import succeeds with tensorflow absent from loaded modules.
     def test_plain_import_does_not_import_tensorflow(self):
         code = "import sys; sys.path.insert(0, 'src'); import fakect_multiscale_network; assert 'tensorflow' not in sys.modules"
         subprocess.run([sys.executable, '-c', code], cwd=ROOT, check=True, capture_output=True)
 
+    # Purpose: Verify TensorFlow helper leaves device configuration to the runner.
+    # Inputs: Mock tensorflow module supplied through sys.modules.
+    # Outputs: Same module returned without device enumeration or memory/logical-device changes.
     def test_tensorflow_helper_leaves_device_configuration_to_runner(self):
         fake_tf = Mock()
         with patch.dict(sys.modules, {'tensorflow': fake_tf}):
@@ -27,11 +33,17 @@ class NetworkContractTests(unittest.TestCase):
         fake_tf.config.experimental.set_memory_growth.assert_not_called()
         fake_tf.config.set_logical_device_configuration.assert_not_called()
 
+    # Purpose: Verify feature-grid centers match same-padding arithmetic.
+    # Inputs: 160x96x96, odd 17-cube and unpooled 8-cube shapes.
+    # Outputs: Expected feature shapes, center offsets and strides 16 or 1.
     def test_feature_centers_follow_actual_same_padding(self):
         self.assertEqual(network.feature_grid((160, 96, 96)), ((10, 6, 6), (15., 15., 15.), 16))
         self.assertEqual(network.feature_grid((17, 17, 17)), ((2, 2, 2), (0., 0., 0.), 16))
         self.assertEqual(network.feature_grid((8, 8, 8), levels=0), ((8, 8, 8), (0., 0., 0.), 1))
 
+    # Purpose: Reject invalid locator geometry before TensorFlow use.
+    # Inputs: Undersized, malformed, fractional or oversized shapes and base_filters 1.
+    # Outputs: ValueError rejects each graph construction request.
     def test_invalid_shapes_fail_before_tensorflow(self):
         for shape in ((2, 8, 8), (8, 8), (8.5, 8, 8), (512, 512, 512)):
             with self.subTest(shape=shape), self.assertRaises(ValueError):
@@ -58,6 +70,9 @@ class TensorFlowNetworkTests(unittest.TestCase):
         result[..., 0] = rng.uniform(0, 1, result.shape[:-1])
         return result
 
+    # Purpose: Verify bounded boxes and disjoint-target loss have corrective gradients.
+    # Inputs: Extreme raw box parameters and disjoint predicted/truth boxes.
+    # Outputs: Positive extents inside FOV, finite loss, corrective center gradients and zero exact-match loss.
     def test_parameterized_boxes_are_bounded_and_disjoint_loss_has_gradient(self):
         tf = self.tf
         BoundedBox, _, _ = network._components()
@@ -75,6 +90,9 @@ class TensorFlowNetworkTests(unittest.TestCase):
         self.assertTrue(np.all(gradient[0, :3] > 0))
         np.testing.assert_allclose(network.locator_loss(truth, truth).numpy(), 0, atol=1e-6)
 
+    # Purpose: Verify aligned trilinear feature samples follow physical coordinates.
+    # Inputs: 8-cube linear feature field, central box and an outside-FOV box.
+    # Outputs: Analytic samples and box gradients 216,432,648; finite feature gradients and outside samples zero.
     def test_aligned_trilinear_samples_match_physical_linear_field(self):
         tf = self.tf
         _, Sample, _ = network._components()
@@ -94,6 +112,9 @@ class TensorFlowNetworkTests(unittest.TestCase):
         outside = layer([features, tf.constant([[[-2., -2., -2., .1, .1, .1]]])])
         np.testing.assert_array_equal(outside.numpy(), 0)
 
+    # Purpose: Verify locator training updates predictions and safely reloads compiled state.
+    # Inputs: 16-cube seeded image, known target box and one training batch.
+    # Outputs: Finite learning, changed predictions, matching reload and further training succeeds.
     def test_locator_training_and_compiled_safe_reload(self):
         model = network.compile_locator(network.build_locator((16, 16, 16), base_filters=2))
         image = self.images()
@@ -110,6 +131,9 @@ class TensorFlowNetworkTests(unittest.TestCase):
             np.testing.assert_allclose(network.predict_boxes(loaded, image), after, atol=1e-6)
             self.assertTrue(np.isfinite(loaded.train_on_batch({'overview': image}, truth)))
 
+    # Purpose: Verify classifier trains shared fine features while freezing locator features.
+    # Inputs: Locator encoder reused by classifier with two fine proposals and class/severity targets.
+    # Outputs: Overview weights unchanged, fine weights update, bounded severity and matching safe reload.
     def test_classifier_reuses_frozen_encoder_and_shared_fine_encoder(self):
         tf = self.tf
         locator = network.build_locator((16, 16, 16), base_filters=2)
@@ -146,6 +170,9 @@ class TensorFlowNetworkTests(unittest.TestCase):
             self.assertFalse(loaded.get_layer('overview_encoder').trainable)
             self.assertTrue(all(np.isfinite(value) for value in loaded.train_on_batch(data, targets)))
 
+    # Purpose: Verify wrong saturated logits retain corrective BCE gradients.
+    # Inputs: Logits -1000 and 1000 with opposite binary labels.
+    # Outputs: Finite loss and gradients -0.5 and 0.5.
     def test_wrong_saturated_classifier_logits_retain_corrective_gradients(self):
         tf = self.tf
         logits = tf.Variable([[-1000.], [1000.]])

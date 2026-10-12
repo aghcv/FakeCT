@@ -63,6 +63,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
                 fraction[out] = part.size / np.prod(factors)
         return result, fraction
 
+    # Purpose: Verify streamed overview composition matches full anisotropic averaging.
+    # Inputs: Odd 7x8x9 source, crossing overlay and chunk budget 19.
+    # Outputs: Exact image/validity, physical spacing/extent/centroids and bounded source/overlay chunks.
     def test_streamed_overlay_matches_full_composition_anisotropic_odd_grid(self):
         result = self.overview()
         expected, fraction = self.full_reference((4, 3, 4))
@@ -82,6 +85,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
         self.assertEqual(result['stats']['overlay_voxels_read'], self.overlay.size)
         self.assertFalse(result['stats']['base_cache_hit'])
 
+    # Purpose: Verify partial edge cells retain intensity and empty padding remains zero.
+    # Inputs: Constant native/overlay intensity and 4x3x12 overview.
+    # Outputs: Occupied values 0.3125, fractional edge validity, zero padding and occupied shape 4x3x9.
     def test_partial_edge_cells_are_not_diluted_and_padding_is_zero(self):
         np.full(self.shape, .025, '<f4').tofile(self.source)
         stat = self.source.stat()
@@ -97,6 +103,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
         self.assertTrue(np.all(result['valid'][..., 9:] == 0))
         self.assertEqual(result['occupied_shape_kji'], [4, 3, 9])
 
+    # Purpose: Verify overview averaging includes unedited voxels across crop boundaries.
+    # Inputs: Overlay crossing all three coarse-cell start faces and partial terminal cells.
+    # Outputs: Selected coarse intensities match independent full-composition averages.
     def test_crop_boundary_filter_support_includes_unedited_voxels(self):
         result = self.overview()
         # Coarse (0,0,0) crosses every crop start face: only one of its
@@ -107,6 +116,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
         # (3,2,2) is also simultaneously partial in k,j and crossed by the edit.
         self.assertAlmostEqual(float(result['image'][3, 2, 2]), float(expected[3, 2, 2]), places=7)
 
+    # Purpose: Verify chunk size and overlay memory order cannot change composition.
+    # Inputs: One-voxel chunks followed by Fortran overlay with chunk budget 37.
+    # Outputs: Matching images/cache key, base-cache reuse and only overlay source rereads.
     def test_different_chunk_sizes_and_fortran_overlay_agree(self):
         first = self.overview(max_chunk_voxels=1)
         self.assertEqual(first['stats']['peak_source_chunk_voxels'], 1)
@@ -118,6 +130,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
         self.assertTrue(second['stats']['base_cache_hit'])
         self.assertEqual(second['stats']['source_voxels_read'], self.overlay.size)
 
+    # Purpose: Verify siblings share the base cache while keeping distinct compositions.
+    # Inputs: Second overlay increased by 0.9 and distinct sample identity.
+    # Outputs: Same base key, different composition key, one base cache and original composition recoverable.
     def test_base_cache_is_shared_but_composition_changes_with_overlay(self):
         original = self.overview()
         second_variant = self.root / 'variant2.npz'
@@ -136,6 +151,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
         third = self.overview()
         np.testing.assert_array_equal(third['image'], original['image'])
 
+    # Purpose: Verify grid and native source identities invalidate base caches.
+    # Inputs: Changed overview dimensions, then source mtime and updated metadata.
+    # Outputs: Distinct grid/source keys; stale source rejected and fresh cache rebuilt.
     def test_grid_and_source_identity_invalidate_cache(self):
         first = self.overview()
         grid = self.overview(shape_kji=(3, 3, 3))
@@ -148,6 +166,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
         self.assertNotEqual(first['cache_key'], fresh['cache_key'])
         self.assertFalse(fresh['stats']['base_cache_hit'])
 
+    # Purpose: Reject corrupted overview caches instead of silently rebuilding.
+    # Inputs: One bit changed in cached base-sums.npy.
+    # Outputs: Checksum-changed ValueError on reuse.
     def test_corrupt_cache_fails_instead_of_silently_rebuilding(self):
         result = self.overview()
         path = Path(result['cache_directory']) / 'base-sums.npy'
@@ -157,6 +178,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'checksum changed'):
             self.overview()
 
+    # Purpose: Reject geometry and budget violations before mapping or cache creation.
+    # Inputs: Invalid crop bounds, shape types, dtype, units, overview/chunk budgets and hash flag.
+    # Outputs: ValueError before memmap use and cache directory remains absent.
     def test_invalid_geometry_and_budgets_fail_before_mapping_or_cache_creation(self):
         bad_rows = []
         for key, value in [('edit_crop_origin_ijk', [-1, 0, 0]),
@@ -176,6 +200,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
                     self.overview(**options)
         self.assertFalse(self.cache.exists())
 
+    # Purpose: Reject incompatible overlay array headers before mapping.
+    # Inputs: Variant image with shape 3x4x5 differing from declared crop.
+    # Outputs: Shape/type ValueError before mapping and no cache directory.
     def test_array_header_rejected_before_loading_or_mapping(self):
         np.savez_compressed(self.variant, image=np.ones((3, 4, 5), np.float32))
         self.row['variant_npz_sha256'] = digest(self.variant)
@@ -184,6 +211,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
                 self.overview()
         self.assertFalse(self.cache.exists())
 
+    # Purpose: Reject checksum mismatches and source changes during streaming reads.
+    # Inputs: Wrong variant/source hashes, then source mtime changed during first chunk read.
+    # Outputs: Explicit checksum/stat errors and no completed cache directory.
     def test_checksums_and_changes_during_read_are_rejected(self):
         self.row['variant_npz_sha256'] = '0' * 64
         with self.assertRaisesRegex(ValueError, 'Variant checksum'):
@@ -211,6 +241,9 @@ class MultiscaleVolumeTests(unittest.TestCase):
                 self.overview()
         self.assertFalse(self.cache.exists())
 
+    # Purpose: Reject nonfinite edited attenuation without target-mask dependencies.
+    # Inputs: NaN overlay with valid payload checksum and no mask path.
+    # Outputs: ValueError reports nonfinite attenuation.
     def test_nonfinite_edit_fails_without_loading_target_masks(self):
         self.overlay[0, 0, 0] = np.nan
         np.savez_compressed(self.variant, image=self.overlay)

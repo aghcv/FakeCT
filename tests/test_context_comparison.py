@@ -36,6 +36,9 @@ class ComparisonTests(unittest.TestCase):
             side_effect=lambda *a, **kw: copy.deepcopy(self.planned)).start()
         self.addCleanup(patch.stopall)
 
+    # Purpose: Verify comparison arms use equal update budgets and correct TRAIN membership.
+    # Inputs: Eight TRAIN cases with sixteen siblings each plus held-out panels.
+    # Outputs: 8 versus 128 training samples, 10240 updates per arm, and scheduled validation epochs.
     def test_matched_budget_and_training_membership(self):
         result = comparison.plan(self.config)
         self.assertEqual(len(result['arms']['baseline_only']['training_samples']), 8)
@@ -47,6 +50,9 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(self.reader.call_args.args[0]['experiment']['mode'], 'cohort')
         self.assertNotIn('mode', self.config['experiment'])
 
+    # Purpose: Verify comparison configs reject unsupported settings and uneven case budgets.
+    # Inputs: Unknown key, predictions, random/clinical modes, ignored sampling knobs, and 127 updates.
+    # Outputs: ValueError for every invalid config and indivisible update budget.
     def test_invalid_or_ignored_inputs_rejected(self):
         for before, after in (
             ('updates_per_epoch = 512', 'unknown = 512'),
@@ -65,12 +71,18 @@ class ComparisonTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'divisible'):
             comparison.plan(self.config)
 
+    # Purpose: Verify invalid context grids stop freezing before creating output.
+    # Inputs: Mock plan with ready false and bad-target-grid error.
+    # Outputs: ValueError carrying grid failure and absent experiment directory.
     def test_grid_failure_prevents_output_creation(self):
         self.planned.update(ready=False, errors=['bad target grid'])
         with self.assertRaisesRegex(ValueError, 'bad target grid'):
             comparison.freeze(self.config, self.path.read_bytes())
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    # Purpose: Verify comparison locks pin config, implementation, and dataset bytes.
+    # Inputs: Frozen tiny source/manifest then changed INI, source, or manifest.
+    # Outputs: Stable valid lock, repeat-freeze refusal, and ValueError for every pinned-byte change.
     def test_lock_detects_source_data_and_input_mutation_and_refuses_overwrite(self):
         fake_source = self.root/'src'/'example.py'
         fake_source.parent.mkdir()

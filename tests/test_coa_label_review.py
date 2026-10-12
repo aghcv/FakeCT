@@ -48,6 +48,9 @@ def baseline():
 
 
 class CoALabelTests(unittest.TestCase):
+    # Purpose: Verify the CoA threshold includes equality and uses achieved local loss.
+    # Inputs: Safeguarded edits removing 19 or 20 of 100 target voxels.
+    # Outputs: 19 percent negative, 20 percent positive and accepted distance recorded as 1.5 mm.
     def test_threshold_is_inclusive_and_uses_achieved_local_loss(self):
         below = coa.classify_sample(sample(19), configuration())
         exact = coa.classify_sample(sample(20), configuration())
@@ -58,6 +61,9 @@ class CoALabelTests(unittest.TestCase):
         self.assertEqual(exact[coa.SCORE_NAME], .2)
         self.assertEqual(exact["accepted_distance_mm"], 1.5)
 
+    # Purpose: Verify original baselines use an explicit non-CoA assumption.
+    # Inputs: Baseline-equivalent reference without an applied erosion safeguard.
+    # Outputs: Negative reference label, no applied edit and no local denominator.
     def test_original_baseline_is_explicit_assumption_without_local_denominator(self):
         result = coa.classify_sample(baseline(), configuration())
         self.assertFalse(result["coa_benchmark_positive"])
@@ -65,12 +71,18 @@ class CoALabelTests(unittest.TestCase):
         self.assertEqual(result["class_description"], "reference_non_coa_assumed")
         self.assertIsNone(result["baseline_target_voxels"])
 
+    # Purpose: Verify the threshold review band includes both endpoints.
+    # Inputs: Removal fractions 0.18, 0.20, 0.22 and outside values 0.17, 0.23.
+    # Outputs: Endpoint and midpoint edits flagged for review; outside values unflagged.
     def test_review_band_includes_both_endpoints(self):
         for removed in (18, 20, 22):
             self.assertTrue(coa.classify_sample(sample(removed), configuration())["review_near_threshold"])
         for removed in (17, 23):
             self.assertFalse(coa.classify_sample(sample(removed), configuration())["review_near_threshold"])
 
+    # Purpose: Verify invalid safeguard evidence yields unknown labels.
+    # Inputs: Missing or contradictory guards, counts, attempts, iterations, steps or baseline flags.
+    # Outputs: Benchmark class and score None with recorded errors for every malformed outcome.
     def test_invalid_outcomes_are_unknown_never_negative(self):
         mutations = [
             lambda s: s["step_outcomes"][0].update(erosion_safeguard=None),
@@ -92,6 +104,9 @@ class CoALabelTests(unittest.TestCase):
             self.assertIsNone(result[coa.SCORE_NAME])
             self.assertTrue(result["errors"])
 
+    # Purpose: Verify summaries distinguish original references from edited negatives.
+    # Inputs: Baseline plus edits removing 15, 20 and 35 target voxels.
+    # Outputs: Two positives, two negatives, separate reference/edit counts and sensitivity totals 3, 2, 1.
     def test_summary_keeps_references_separate_from_below_threshold_edits(self):
         rows = [coa.classify_sample(row, configuration()) for row in [baseline(), sample(15), sample(20), sample(35)]]
         summary = coa.summarize(rows, configuration())
@@ -101,6 +116,9 @@ class CoALabelTests(unittest.TestCase):
         self.assertEqual(summary["original_reference"], 1)
         self.assertEqual([r["benchmark_positive"] for r in summary["threshold_sensitivity"]], [3, 2, 1])
 
+    # Purpose: Verify draft sidecar publication preserves provenance and rejects tampering.
+    # Inputs: Hashed source and parent manifests, baseline/edit rows and a draft label configuration.
+    # Outputs: Matching planned summary, immutable source, HTML artifact, overwrite and parent-hash rejection.
     def test_provenance_export_immutable_and_tampering_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

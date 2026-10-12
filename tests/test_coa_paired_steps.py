@@ -14,11 +14,17 @@ import fakect_coa_paired_steps as paired
 
 
 class PairedContractTests(unittest.TestCase):
+    # Purpose: Verify paired training reuses the established classifier graph.
+    # Inputs: Focused and paired build, load, and feature-probe functions.
+    # Outputs: Each paired export is the identical original function.
     def test_graph_build_load_and_probe_are_the_original_functions(self):
         self.assertIs(paired.build_classifier, focused.build_classifier)
         self.assertIs(paired.load_model, focused.load_model)
         self.assertIs(paired.feature_probe, focused.feature_probe)
 
+    # Purpose: Require the exact paired microbatch size.
+    # Inputs: Batch sizes 1,3,True,2.0 with no model.
+    # Outputs: Step creation raises ValueError before TensorFlow.
     def test_microbatch_configuration_rejected_before_tensorflow(self):
         for batch in (1, 3, True, 2.):
             with self.subTest(batch=batch), self.assertRaises(ValueError):
@@ -56,6 +62,9 @@ class PairedTensorFlowTests(unittest.TestCase):
         return {'coa_logit': np.array([[0.], [1.]], np.float32),
                 'local_volume_loss': np.full((2, 1), .5, np.float32)}
 
+    # Purpose: Verify opposing sibling gradients cancel before clipping.
+    # Inputs: Zero-logit toy model, identical background inputs, opposite binary labels.
+    # Outputs: Large individual gradients sum to zero; one optimizer step leaves every weight unchanged.
     def test_large_opposing_background_gradients_cancel_before_clipping(self):
         model = self.toy_model()
         inputs, targets = self.toy_inputs(), self.targets()
@@ -80,6 +89,9 @@ class PairedTensorFlowTests(unittest.TestCase):
             np.testing.assert_array_equal(old, np.asarray(variable))
         self.assertEqual(int(np.asarray(steps.optimizer.iterations)), 1)
 
+    # Purpose: Preserve a tiny sibling signal in the combined gradient.
+    # Inputs: Toy pair differing by 0.01 attenuation with opposite labels.
+    # Outputs: Gradient norm matches direct differentiation between 0.003 and 0.004; positive logit increases.
     def test_combined_gradient_retains_tiny_sibling_signal(self):
         model = self.toy_model()
         inputs, targets = self.toy_inputs(difference=.01), self.targets()
@@ -98,6 +110,9 @@ class PairedTensorFlowTests(unittest.TestCase):
         self.assertGreater(float(output[1, 0] - output[0, 0]), 0.)
         self.assertEqual(int(np.asarray(steps.optimizer.iterations)), 1)
 
+    # Purpose: Verify paired sparse learning and safe checkpoint reload.
+    # Inputs: 16-cube sibling pair trained for 60 alternating-order updates.
+    # Outputs: BCE falls below 60%, class probabilities separate, traces stay single, and reload outputs match.
     def test_real_paired_sparse_learning_reload_parity_and_one_trace(self):
         shape = (16, 16, 16)
         model = paired.build_classifier(shape, base_filters=2, seed=42)
@@ -139,6 +154,9 @@ class PairedTensorFlowTests(unittest.TestCase):
             maps = paired.feature_probe(restored)(values, training=False)
             self.assertEqual(tuple(maps['detail_0_down4'].shape), (2, 4, 4, 4, 1))
 
+    # Purpose: Enforce the fixed paired input signature.
+    # Inputs: Single-row detail inputs and an extra overview input.
+    # Outputs: Prediction raises TypeError or ValueError.
     def test_wrong_batch_and_extra_input_are_rejected_by_fixed_signature(self):
         steps = paired.make_steps(self.toy_model(), (8, 8, 8))
         values = {key: value[:1] for key, value in self.toy_inputs().items()}
@@ -149,6 +167,9 @@ class PairedTensorFlowTests(unittest.TestCase):
         with self.assertRaises((TypeError, ValueError)):
             steps.predict(values)
 
+    # Purpose: Reject unbalanced or nonbinary sibling labels without updating.
+    # Inputs: Toy pairs labeled [0,0], [1,1], or [0.5,0.5].
+    # Outputs: InvalidArgumentError leaves optimizer iterations zero and model weights unchanged.
     def test_unbalanced_or_nonbinary_targets_fail_without_update(self):
         model = self.toy_model()
         steps = paired.make_steps(model, (8, 8, 8))

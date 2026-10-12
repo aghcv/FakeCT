@@ -37,6 +37,9 @@ class PreviewConfigurationTests(unittest.TestCase):
         self.path.write_text(text)
         return load_preview_config(self.path, repo_root=self.root)
 
+    # Purpose: Verify example parsing normalizes types and repository-relative paths.
+    # Inputs: Sphere-preview example copied to two different INI directories with a fixed repository root.
+    # Outputs: Expected typed settings and paths, identical moved config and no output directory.
     def test_example_normalizes_types_and_repository_relative_paths(self):
         result = self.load()
         self.assertEqual(result["study"]["schema_version"], "fakect.preview/1")
@@ -61,6 +64,9 @@ class PreviewConfigurationTests(unittest.TestCase):
         moved.write_text(self.template)
         self.assertEqual(load_preview_config(moved, repo_root=self.root), result)
 
+    # Purpose: Verify blank selections and signed IDs preserve explicit semantics.
+    # Inputs: Empty ID/context lists, explicit slice/review flag, leading-zero case and int32 boundary IDs.
+    # Outputs: Empty tuples, parsed coordinates/boolean, preserved case text and signed ID tuple.
     def test_blank_selections_explicit_sections_and_signed_identity(self):
         result = self.load(source_ids="", context_tissues="", slice_ijk="404, 362, 1583",
                            coordinate_reviewed="true", case_id="000040")
@@ -72,6 +78,9 @@ class PreviewConfigurationTests(unittest.TestCase):
         result = self.load(source_ids="-2147483648, -1185, 1185, 2147483647")
         self.assertEqual(result["selection"]["source_ids"], (-2147483648, -1185, 1185, 2147483647))
 
+    # Purpose: Verify optional original-ID filters default to empty in preview and edit schemas.
+    # Inputs: Sphere, tube and edit templates with omitted or blank source_ids, then a misspelled key.
+    # Outputs: Omitted and blank configs match; source_id typo rejected as unknown.
     def test_original_id_filter_can_be_omitted_for_preview_and_edit(self):
         templates = (self.template, self.tube_template,
                      (ROOT / "configs/examples/xcat-edit.ini").read_text())
@@ -84,6 +93,9 @@ class PreviewConfigurationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "unknown"):
                     self.load(omitted.replace("[selection]", "[selection]\nsource_id = 7"))
 
+    # Purpose: Reject unknown settings, duplicate sections/keys and unsupported schema versions.
+    # Inputs: Unused keys, extra/default/typo sections, duplicate name, wrong-case key or schema 2 in v1.
+    # Outputs: ValueError rejects every malformed preview contract.
     def test_rejects_unused_settings_sections_duplicates_and_schema_versions(self):
         malformed = [self.template.replace("[study]", "[study]\nunused = 4"),
                      self.template + "\n[morphology]\nscale = 1.2\n",
@@ -97,6 +109,9 @@ class PreviewConfigurationTests(unittest.TestCase):
             with self.subTest(text=text[:80]), self.assertRaises(ValueError):
                 self.load(text)
 
+    # Purpose: Reject invalid coordinates, numerical bounds and noncanonical booleans.
+    # Inputs: Malformed coordinates, nonfinite/range errors, invalid integers and yes/True review values.
+    # Outputs: ValueError for invalid settings; opacity endpoints zero and one accepted.
     def test_rejects_bad_coordinates_numbers_and_booleans(self):
         invalid = [("center_ijk", "1, 2"), ("center_ijk", "-1, 2, 3"),
                    ("center_ijk", "1.5, 2, 3"), ("slice_ijk", "ROi"),
@@ -113,6 +128,9 @@ class PreviewConfigurationTests(unittest.TestCase):
         self.assertEqual(result["preview"]["overlay_opacity"], 0)
         self.assertEqual(result["preview"]["volume_opacity"], 1)
 
+    # Purpose: Reject invalid identities and ambiguous selection lists.
+    # Inputs: Int32 overflow, duplicate/malformed IDs, bad tissue lists and unsafe case/study names.
+    # Outputs: ValueError rejects every invalid identity or selection.
     def test_rejects_invalid_ids_names_and_ambiguous_lists(self):
         invalid = [("source_ids", "2147483648"), ("source_ids", "-2147483649"),
                    ("source_ids", "1185,1185"), ("source_ids", "1185,,1186"),
@@ -124,6 +142,9 @@ class PreviewConfigurationTests(unittest.TestCase):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 self.load(**{key: value})
 
+    # Purpose: Verify literal paths support spaces, tilde and percent characters safely.
+    # Inputs: Spaced catalog path, ~/xcat and percent output path; shell-like or multiline alternatives.
+    # Outputs: Resolved literal paths; empty, variable/substitution and multiline paths rejected.
     def test_paths_allow_spaces_and_tilde_without_shell_or_interpolation(self):
         result = self.load(catalog="outputs/my atlas/labels.json # NOTE: inline comment",
                            root="~/xcat", directory="outputs/100% complete")
@@ -136,6 +157,9 @@ class PreviewConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "one line"):
             self.load(self.template.replace("root = /home/aghorban/slurm/xcat", "root = data\n    extra"))
 
+    # Purpose: Verify every sphere-preview parameter links to an existing numbered note.
+    # Inputs: Checked-in sphere-preview template assignments and NOTE definitions.
+    # Outputs: All 20 assignments carry a valid numbered note reference.
     def test_each_parameter_links_to_a_numbered_note(self):
         notes = set(re.findall(r"^# NOTE ([0-9]+) --", self.template, re.MULTILINE))
         assignments = [line for line in self.template.splitlines()
@@ -146,6 +170,9 @@ class PreviewConfigurationTests(unittest.TestCase):
             self.assertIsNotNone(match, line)
             self.assertIn(match.group(1), notes)
 
+    # Purpose: Verify tube examples retain node order, radii and tissue-only selection.
+    # Inputs: Fixed three-node tube template and fractional two-node alternative.
+    # Outputs: Schema 2 tube geometry preserved, blank IDs and all 21 parameters linked to notes.
     def test_tube_example_preserves_order_radii_and_tissue_only_selection(self):
         text = self.tube_template
         result = self.load(text)
@@ -166,6 +193,9 @@ class PreviewConfigurationTests(unittest.TestCase):
             self.assertIsNotNone(match, line)
             self.assertIn(match.group(1), notes)
 
+    # Purpose: Verify schema 2 spheres accept fractional centers with explicit shape.
+    # Inputs: Sphere preview upgraded to schema 2, then downgraded or shape removed.
+    # Outputs: Fractional center parsed; legacy explicit-shape and missing-shape cases rejected.
     def test_v2_sphere_accepts_fractional_center_but_legacy_schema_rejects_shape(self):
         text = self.template.replace("fakect.preview/1", "fakect.preview/2")
         text = text.replace("[roi]\n", "[roi]\nshape = sphere\n")
@@ -177,6 +207,9 @@ class PreviewConfigurationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.load(text.replace("shape = sphere\n", ""))
 
+    # Purpose: Reject inconsistent or ambiguous tube geometry.
+    # Inputs: Unsupported shape, missing/duplicate/malformed nodes, invalid radii or insufficient crop width.
+    # Outputs: ValueError rejects every invalid tube geometry family.
     def test_tube_rejects_inconsistent_or_ambiguous_geometry(self):
         text = self.tube_template
         invalid = [("shape", "cylinder"), ("center_ijk", "1,2,3"),
@@ -193,6 +226,9 @@ class PreviewConfigurationTests(unittest.TestCase):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 self.load(text, **{key: value})
 
+    # Purpose: Verify edit examples parse bounded morphology and reassignment.
+    # Inputs: Checked-in erosion example and its numbered parameter notes.
+    # Outputs: Expected edit profile/distance, tissue allowlist/reach and all 30 parameters annotated.
     def test_edit_example_parses_bounded_morphology_and_reassignment(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         result = self.load(text)
@@ -212,6 +248,9 @@ class PreviewConfigurationTests(unittest.TestCase):
             self.assertIsNotNone(match, line)
             self.assertIn(match.group(1), notes)
 
+    # Purpose: Verify no-op edits, sphere axes and uniform profiles parse explicitly.
+    # Inputs: None with zero distance, sphere dilation on i/j/k and uniform profile with unused tube axis.
+    # Outputs: Zero/no-op settings, fractional centers, axes and explicit unresolved/window values preserved.
     def test_edit_none_uniform_sphere_and_axis_choices(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         result = self.load(text, operation="none", distance_mm="0", allowed_tissues="")
@@ -228,6 +267,9 @@ class PreviewConfigurationTests(unittest.TestCase):
                            profile="uniform", profile_axis="tube", shape_window="0,1")
         self.assertEqual(result["edit"]["shape_window"], (0., 1.))
 
+    # Purpose: Verify optional surrounding assignment adds strict booleans without legacy defaults.
+    # Inputs: Edit template without option, then true/false and explicit true on other operations.
+    # Outputs: Legacy key absent; explicit bool typed correctly and all other settings preserved.
     def test_optional_erosion_surrounding_assignment_retains_strict_boolean_without_legacy_default(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         legacy = self.load(text)
@@ -243,6 +285,9 @@ class PreviewConfigurationTests(unittest.TestCase):
             with self.subTest(operation=operation):
                 self.assertIs(self.load(explicit_true, operation=operation)["edit"]["assign_surrounding_tissue"], True)
 
+    # Purpose: Reject invalid surrounding-assignment values and placements.
+    # Inputs: Noncanonical/multiline booleans, false with nonerosion, wrong sections/typo or missing operation.
+    # Outputs: ValueError identifies strict boolean, operation dependency or unknown/missing key.
     def test_surrounding_assignment_rejects_non_boolean_values_and_false_outside_erosion(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         for value in ("", "False", "TRUE", "0", "1", "yes", "no", "nan", "false,true", "false\n    true"):
@@ -260,6 +305,9 @@ class PreviewConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing.*operation"):
             self.load(re.sub(r"^operation = .*\n", "", explicit, flags=re.MULTILINE))
 
+    # Purpose: Verify optional erosion safeguards retain explicit types and legacy defaults.
+    # Inputs: Valid retention/connectivity/backoff/step values individually and combined.
+    # Outputs: Typed values preserved; removing each optional field restores the legacy configuration.
     def test_optional_erosion_safeguards_keep_legacy_values_and_explicit_types(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         legacy = self.load(text)
@@ -284,6 +332,9 @@ class PreviewConfigurationTests(unittest.TestCase):
             "min_volume_ratio": 0., "preserve_connectivity": False, "backoff_factor": .5,
             "max_backoff_steps": 8, "assign_surrounding_tissue": False})
 
+    # Purpose: Reject invalid safeguard values and nonerosion or misplaced options.
+    # Inputs: Out-of-range/nonfinite retention/backoff, noncanonical boolean/count and wrong operation/section.
+    # Outputs: ValueError identifies safeguard field bounds, erosion requirement or unknown key.
     def test_erosion_safeguards_reject_invalid_numbers_booleans_and_other_operations(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         invalid = {"min_volume_ratio": ("-.01", "1.01", "nan", "inf", "-inf", "true", "", "1,0"),
@@ -305,6 +356,9 @@ class PreviewConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown.*min_volume_ratios"):
             self.load(text.replace("[edit]", "[edit]\nmin_volume_ratios = .5"))
 
+    # Purpose: Reject invalid edit profiles, distances and unsafe implicit reassignment defaults.
+    # Inputs: Malformed operation/profile/window/tissues/reach/unresolved fields and missing sections/settings.
+    # Outputs: ValueError for every invalid edit contract, including tube-profile geometry mismatch.
     def test_edit_rejects_invalid_parameters_and_unsafe_implicit_defaults(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         invalid = [("operation", "stenosis"), ("operation", "Erosion"), ("distance_mm", "0"),
@@ -336,6 +390,9 @@ class PreviewConfigurationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.load(re.sub(r"^max_distance_mm = .*\n", "", text, flags=re.MULTILINE))
 
+    # Purpose: Verify preview schemas reject edit-only sections.
+    # Inputs: Edit INI relabeled as preview and extra edit/reassignment sections on legacy preview.
+    # Outputs: Invalid combinations rejected; valid sphere/tube previews contain no edit settings.
     def test_preview_schemas_cannot_silently_accept_edit_settings(self):
         text = (ROOT / "configs/examples/xcat-edit.ini").read_text()
         with self.assertRaises(ValueError):

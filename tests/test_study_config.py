@@ -64,6 +64,9 @@ class StudyConfigTests(unittest.TestCase):
         self.input.write_text(self.text if text is None else text)
         return load_study_config(self.input, repo_root=self.root)
 
+    # Purpose: Verify typed study settings reuse ROI and model contracts without writing outputs.
+    # Inputs: External study INI derived from the edit example with train/model settings.
+    # Outputs: Signed targets, sweeps, tube geometry, paths, patch/clip settings load and root stays empty.
     def test_typed_study_keeps_shared_roi_and_model_contract(self):
         config = self.load()
         self.assertEqual(config['study']['schema_version'], 'fakect.study/1')
@@ -82,6 +85,9 @@ class StudyConfigTests(unittest.TestCase):
         # Parsing never creates or reads the referenced crop/dataset/model outputs.
         self.assertEqual(list(self.root.iterdir()), [])
 
+    # Purpose: Verify explicit stages leave the variant plan unchanged.
+    # Inputs: Study stages preview, plan, prepare, and fit.
+    # Outputs: All stages parse and yield the same nine variants with a training baseline.
     def test_all_explicit_stages_parse_and_do_not_change_variant_plan(self):
         reference = None
         for stage in ('preview', 'plan', 'prepare', 'fit'):
@@ -98,6 +104,9 @@ class StudyConfigTests(unittest.TestCase):
                     self.assertEqual(plan, reference)
         self.assertEqual(list(self.root.iterdir()), [])
 
+    # Purpose: Verify edit selection does not redefine training ground truth.
+    # Inputs: Blank versus omitted selection source IDs with training targets -1185/1185.
+    # Outputs: Configs agree with empty edit selection and unchanged explicit training target IDs.
     def test_optional_edit_selection_does_not_redefine_training_ground_truth(self):
         blank = self.load(change(self.text, 'selection', 'source_ids', ''))
         omitted = self.load(change(self.text, 'selection', 'source_ids', None))
@@ -105,6 +114,9 @@ class StudyConfigTests(unittest.TestCase):
         self.assertEqual(omitted['selection']['source_ids'], ())
         self.assertEqual(omitted['train']['target_source_ids'], (-1185, 1185))
 
+    # Purpose: Reject invalid study stages, targets, sweeps, and bounds.
+    # Inputs: Bad stages/IDs/operations/distances/shapes/booleans/limits/seeds/family names.
+    # Outputs: Each malformed train field raises ValueError.
     def test_stage_target_and_list_validation(self):
         for key, value in (
             ('stage', 'train'), ('stage', 'FIT'), ('target_source_ids', ''),
@@ -121,6 +133,9 @@ class StudyConfigTests(unittest.TestCase):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 self.load(change(self.text, 'train', key, value))
 
+    # Purpose: Require explicit scenario splits and attenuation image contracts.
+    # Inputs: Patient holdout, HU method, zero/invalid/nonfinite split fractions.
+    # Outputs: Study loading raises ValueError for every unsupported contract.
     def test_split_fractions_and_image_contract_are_explicit(self):
         for key, value in (
             ('split_mode', 'patient_holdout'), ('image_method', 'HU'),
@@ -131,6 +146,9 @@ class StudyConfigTests(unittest.TestCase):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 self.load(change(self.text, 'train', key, value))
 
+    # Purpose: Reject ignored shape sweeps for uniform profiles.
+    # Inputs: Uniform edit with multiple shape_k values, then singleton shape 10.
+    # Outputs: Multiple shapes fail; singleton loads and produces five variants.
     def test_uniform_profile_rejects_ignored_shape_parameter_sweep(self):
         text = change(self.text, 'edit', 'profile', 'uniform')
         with self.assertRaisesRegex(ValueError, 'uniform profile ignores shape_k'):
@@ -139,6 +157,9 @@ class StudyConfigTests(unittest.TestCase):
         self.assertEqual(config['train']['shape_ks'], (10.,))
         self.assertEqual(len(plan_variants(config)), 5)
 
+    # Purpose: Reject unsupported model settings before training.
+    # Inputs: Invalid architecture/axis/normalization/patch/clip/epoch/batch/rate/seed settings.
+    # Outputs: Study loading raises ValueError for every malformed model configuration.
     def test_model_bounds_and_unsupported_architecture_fail_before_any_training(self):
         for key, value in (
             ('architecture', 'unet3d'), ('slice_axis', 'i'), ('normalization', 'per_image'),
@@ -152,6 +173,9 @@ class StudyConfigTests(unittest.TestCase):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 self.load(change(self.text, 'model', key, value))
 
+    # Purpose: Require study clipping bounds to be representable in float32.
+    # Inputs: Overflowing, underflowing, rounded-equal, or excessive-span clip intervals.
+    # Outputs: Study loading raises ValueError naming float32.
     def test_clipping_bounds_must_be_representable_in_float32(self):
         for lower, upper in (('1e308', '1.1e308'), ('-1e308', '1e308'), ('0', '1e-300'),
                              ('1', '1.00000001'), ('-3e38', '3e38')):
@@ -160,6 +184,9 @@ class StudyConfigTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'float32'):
                     self.load(text)
 
+    # Purpose: Reject unknown, missing, capitalized, or duplicate fields.
+    # Inputs: Extra/miscased keys, absent required settings, wrong ROI key, and duplicate sections/keys.
+    # Outputs: Strict study loading raises ValueError.
     def test_unknown_missing_capitalized_and_duplicate_fields_are_rejected(self):
         invalid = (
             change(self.text, 'train', 'unknown_setting', 'x'),
@@ -175,6 +202,9 @@ class StudyConfigTests(unittest.TestCase):
             with self.subTest(tail=text[-150:]), self.assertRaises(ValueError):
                 self.load(text)
 
+    # Purpose: Reject implicit defaults, multiline values, and path expansion syntax.
+    # Inputs: DEFAULT epochs, continued stage/patch values, $HOME dataset path, or blank model path.
+    # Outputs: Study loading raises ValueError for each ambiguous input.
     def test_defaults_multiline_and_environment_path_expansion_are_rejected(self):
         invalid = (
             '[DEFAULT]\nepochs=1\n' + self.text,
@@ -187,6 +217,9 @@ class StudyConfigTests(unittest.TestCase):
             with self.subTest(tail=text[-150:]), self.assertRaises(ValueError):
                 self.load(text)
 
+    # Purpose: Keep study schema dispatch distinct from preview/edit loaders.
+    # Inputs: Study content passed to preview loader and legacy edit passed to study loader.
+    # Outputs: Both incompatible loaders raise ValueError for schema_version.
     def test_study_schema_does_not_leak_into_preview_or_edit_parser(self):
         self.load()
         with self.assertRaisesRegex(ValueError, 'schema_version'):
@@ -195,6 +228,9 @@ class StudyConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'schema_version'):
             self.load(old)
 
+    # Purpose: Verify existing preview/edit examples remain compatible.
+    # Inputs: Three public examples plus synthesized preview/1 sphere without explicit shape.
+    # Outputs: Examples load expected schemas and no training settings; legacy sphere geometry defaults correctly.
     def test_existing_preview_and_edit_inputs_remain_backward_compatible(self):
         for name in ('xcat-roi.ini', 'xcat-roi-tube.ini', 'xcat-edit.ini'):
             with self.subTest(name=name):
@@ -218,6 +254,9 @@ class StudyConfigTests(unittest.TestCase):
         self.assertEqual(legacy['roi']['shape'], 'sphere')
         self.assertEqual(legacy['roi']['center_ijk'], (404, 363, 1584))
 
+    # Purpose: Enforce variant limits and sufficient train/held-out membership.
+    # Inputs: max_variants 2, then one erosion variant without baseline.
+    # Outputs: Planning raises ValueError for excessive variants or insufficient split size.
     def test_plan_enforces_variant_limit_and_available_split_sizes(self):
         config = self.load(change(self.text, 'train', 'max_variants', '2'))
         with self.assertRaisesRegex(ValueError, 'exceeds'):

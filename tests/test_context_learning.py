@@ -67,6 +67,9 @@ class ContextLearningTests(unittest.TestCase):
                      anatomy_family=f'{part}:family', split=part)
                 for part in ('train', 'validation', 'test')]
 
+    # Purpose: Verify typed context settings load from ConfigParser.
+    # Inputs: 128x96x96 patch, 1/1/2 mm spacing, false flips, three epochs, and blank diagnostic ID.
+    # Outputs: Parsed numeric vectors, boolean false, epoch integer, and blank diagnostic selector.
     def test_configparser_types_and_larger_physical_default_context(self):
         parser = configparser.ConfigParser()
         parser.read_string('[model]\npatch_size_kji=128,96,96\ntarget_spacing_mm=1,1,2\n'
@@ -78,6 +81,9 @@ class ContextLearningTests(unittest.TestCase):
         self.assertEqual(settings['epochs'], 3)
         self.assertEqual(settings['diagnostic_sample_id'], '')
 
+    # Purpose: Verify GPU allocator audits handle unsupported devices.
+    # Inputs: CPU plus two GPUs, second GPU memory query raising ValueError.
+    # Outputs: Only GPUs queried, byte counts retained, and unavailable reason recorded.
     def test_gpu_memory_snapshot_records_bytes_and_tolerates_unsupported_devices(self):
         devices = [SimpleNamespace(name='/device:CPU:0', device_type='CPU'),
                    SimpleNamespace(name='/device:GPU:0', device_type='GPU'),
@@ -97,6 +103,9 @@ class ContextLearningTests(unittest.TestCase):
         self.assertEqual(values[1]['status'], 'unavailable')
         self.assertIn('Allocator', values[1]['reason'])
 
+    # Purpose: Verify context models expose one predictor and one output.
+    # Inputs: Single input/output model and duplicate input/output variants.
+    # Outputs: Single tensors returned and ValueError for multiple tensors.
     def test_model_boundary_requires_single_image_and_probability_tensor(self):
         image, probability = object(), object()
         model = SimpleNamespace(inputs=[image], outputs=[probability])
@@ -105,6 +114,9 @@ class ContextLearningTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'exactly one'):
                 learning._single_io(SimpleNamespace(inputs=inputs, outputs=outputs))
 
+    # Purpose: Verify prediction validation distinguishes tensor, numeric, and probability failures.
+    # Inputs: Wrong shapes, NaN probability, infinite logits, and probabilities outside [0,1].
+    # Outputs: Specific ValueError messages for every invalid prediction pair.
     def test_prediction_guard_distinguishes_structure_numeric_and_range_errors(self):
         image = np.zeros((1, 2, 2, 2, 1), np.float32)
         cases = [(image[None], image, 'shape mismatch'),
@@ -117,6 +129,9 @@ class ContextLearningTests(unittest.TestCase):
             with self.subTest(error=error), self.assertRaisesRegex(ValueError, error):
                 learning._predict_pair(lambda *args, **kwargs: (probability, logits), image)
 
+    # Purpose: Verify model settings enforce supported architecture and sampling contracts.
+    # Inputs: Invalid depth/batch/spacing/patch/budgets/rates/ranges/booleans and unknown fields.
+    # Outputs: ValueError for every unsupported or malformed setting.
     def test_invalid_or_unsupported_settings_fail(self):
         cases = [dict(depth=5), dict(batch_size=2), dict(threshold=1),
                  dict(target_spacing_mm='1,nan,1'), dict(target_spacing_mm='1,0,1'),
@@ -129,6 +144,9 @@ class ContextLearningTests(unittest.TestCase):
             with self.subTest(model=model), self.assertRaises(ValueError):
                 learning.settings_for({'model': model})
 
+    # Purpose: Verify inference tiles cover irregular volume edges exactly once.
+    # Inputs: 13x7x19 volume tiled with 8-cubed blocks.
+    # Outputs: All voxels counted once, tile count agrees, and edge origin 8/0/16 included.
     def test_nonoverlapping_tiles_cover_each_voxel_once_including_edges(self):
         shape, patch_size = (13, 7, 19), (8, 8, 8)
         coverage = np.zeros(shape, np.uint8)
@@ -139,6 +157,9 @@ class ContextLearningTests(unittest.TestCase):
         np.testing.assert_array_equal(coverage, 1)
         self.assertIn((8, 0, 16), origins)
 
+    # Purpose: Verify sampling mixes target-centered and uniform physical context reproducibly.
+    # Inputs: 100-cubed shape, 16-cubed patch, center point, four draws, and seed 12.
+    # Outputs: Identical offsets, exactly two foreground-containing patches, and distant uniform context.
     def test_sampling_is_reproducible_and_keeps_foreground_and_uniform_context(self):
         points = np.asarray([[50, 50, 50]], np.int64)
         args = ((100, 100, 100), (16, 16, 16), points, 4)
@@ -149,11 +170,17 @@ class ContextLearningTests(unittest.TestCase):
         self.assertEqual(sum(includes), 2)
         self.assertTrue(any(max(origin) > 50 for origin in a))
 
+    # Purpose: Verify foreground sampling rejects missing or invalid target coordinates.
+    # Inputs: Empty points, out-of-bounds integer point, and floating-point point array.
+    # Outputs: ValueError for each invalid target geometry.
     def test_sampling_requires_target_and_valid_geometry(self):
         for points in (np.empty((0, 3), int), np.asarray([[100, 1, 1]]), np.asarray([[1., 1., 1.]])):
             with self.assertRaises(ValueError):
                 learning.sample_origins((10, 10, 10), (8, 8, 8), points, 4, np.random.default_rng(1))
 
+    # Purpose: Verify invalid padding contributes neither metrics nor training loss.
+    # Inputs: Two correct valid predictions plus two incorrect padded predictions.
+    # Outputs: Dice 1, zero false positives, two valid voxels, and same loss as valid-only data.
     def test_padding_does_not_contribute_counts_or_loss(self):
         truth = np.asarray([1, 0, 1, 0])
         probability = np.asarray([.9, .1, 0., 1.])
@@ -166,6 +193,9 @@ class ContextLearningTests(unittest.TestCase):
         b = learning.loss_from_totals(learning.loss_totals(truth[:2], probability[:2], valid[:2]))
         self.assertAlmostEqual(a, b)
 
+    # Purpose: Verify loss aggregation uses global sufficient statistics.
+    # Inputs: Eight truth/probability values split into unequal target/background tiles.
+    # Outputs: Summed totals match whole loss and differ from the mean tile loss.
     def test_loss_totals_are_additive_and_global_dice_is_not_mean_tile_dice(self):
         truth = np.asarray([1, 1, 1, 0, 0, 0, 0, 0])
         probability = np.asarray([.8, .7, .4, .2, .3, .6, .9, .1])
@@ -178,6 +208,9 @@ class ContextLearningTests(unittest.TestCase):
         self.assertNotAlmostEqual(learning.loss_from_totals(whole),
             (learning.loss_from_totals(first)+learning.loss_from_totals(second))/2)
 
+    # Purpose: Verify logit BCE preserves extreme error magnitude and ignores padding.
+    # Inputs: Wrong logits -1000/+1000 plus padded third value and NaN variant.
+    # Outputs: BCE sum 2000, uncapped loss above 1000, and finite-logit validation.
     def test_stable_logit_score_does_not_cap_extreme_wrong_predictions(self):
         truth, probability, valid = np.asarray([1, 0, 1]), np.asarray([0., 1., 0.]), np.asarray([1, 1, 0])
         totals = learning.loss_totals(truth, probability, valid, logits=np.asarray([-1000., 1000., -1000.]))
@@ -188,6 +221,9 @@ class ContextLearningTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'finite logits'):
             learning.loss_totals(truth, probability, valid, logits=np.asarray([0., 0., np.nan]))
 
+    # Purpose: Verify paired augmentation aligns image, mask, and validity.
+    # Inputs: 8-cubed mask/image with invalid slab, seed 3, and unit intensity scaling.
+    # Outputs: Aligned predictors/targets, contiguous buffers, and 1x8x8x8x1 shape.
     def test_paired_augmentation_retains_alignment_and_excludes_padding(self):
         settings = self.settings(intensity_scale_range=[1., 1.])
         mask = np.zeros((8, 8, 8), np.uint8)
@@ -201,6 +237,9 @@ class ContextLearningTests(unittest.TestCase):
         self.assertTrue(v.flags.c_contiguous)
         self.assertEqual(x.shape, (1, 8, 8, 8, 1))
 
+    # Purpose: Verify complete-volume inference detects distant false positives.
+    # Inputs: FakeVolume with extra positive signal at the far edge and identity predictor.
+    # Outputs: 27 true positives, one false positive, eight unique tiles, and all native voxels scored.
     def test_full_volume_score_finds_false_positive_outside_target_region(self):
         volume = FakeVolume()
         volume.image[8, 10, 9] = .5
@@ -212,6 +251,9 @@ class ContextLearningTests(unittest.TestCase):
         self.assertEqual(result['tiles'], 8)
         self.assertEqual(len(set(volume.origins)), 8)
 
+    # Purpose: Verify whole-volume scoring requires nonempty targets.
+    # Inputs: FakeVolume with zeroed target mask and identity predictor.
+    # Outputs: ValueError identifying an empty target.
     def test_full_volume_score_rejects_empty_target(self):
         volume = FakeVolume()
         volume.mask[:] = 0
@@ -219,6 +261,9 @@ class ContextLearningTests(unittest.TestCase):
                 self.assertRaisesRegex(ValueError, 'target is empty'):
             learning.score_volume(IdentityModel(), volume, self.settings())
 
+    # Purpose: Verify metadata validation rejects cross-partition case/family identities.
+    # Inputs: Three split rows with validation case or family copied from TRAIN.
+    # Outputs: ValueError for leakage and three rows accepted for the disjoint fixture.
     def test_family_and_case_split_leakage_rejected_without_loading_data(self):
         for key in ('case_id', 'anatomy_family'):
             rows = self.rows()
@@ -227,6 +272,9 @@ class ContextLearningTests(unittest.TestCase):
                 learning.inspect_rows({'samples': rows})
         self.assertEqual(len(learning.inspect_rows({'samples': self.rows()})), 3)
 
+    # Purpose: Verify diagnostics open and close only the selected TRAIN volume.
+    # Inputs: Three split rows and mock FakeVolume factory.
+    # Outputs: One TRAIN access, closed reader, nonempty target, and TRAIN diagnostic metadata.
     def test_diagnostic_selection_opens_only_training_sample(self):
         settings = self.settings()
         loaded, volume = [], FakeVolume()
@@ -241,12 +289,18 @@ class ContextLearningTests(unittest.TestCase):
         self.assertTrue(arrays[1].any())
         self.assertEqual(info['split'], 'train')
 
+    # Purpose: Verify explicit diagnostic selectors cannot request test data.
+    # Inputs: Diagnostic sample ID test:sample and mocked volume loader.
+    # Outputs: ValueError for nontraining selection before any loader invocation.
     def test_diagnostic_cannot_request_heldout_sample(self):
         with patch.object(learning, '_volume') as loader:
             with self.assertRaisesRegex(ValueError, 'training partition'):
                 learning._diagnostic_selection(self.rows(), self.settings(diagnostic_sample_id='test:sample'))
             loader.assert_not_called()
 
+    # Purpose: Verify family summaries avoid weighting by sibling count.
+    # Inputs: Nine perfect siblings in family one and one failed sample in family two.
+    # Outputs: Sample Dice 0.9 and equal-family Dice 0.5.
     def test_family_summary_does_not_weight_families_by_sibling_count(self):
         def record(case, family, dice):
             return dict(case_id=case, anatomy_family=family,
@@ -256,6 +310,9 @@ class ContextLearningTests(unittest.TestCase):
         self.assertAlmostEqual(result['sample_macro']['dice'], .9)
         self.assertAlmostEqual(result['family_macro']['dice'], .5)
 
+    # Purpose: Verify mocked diagnostic orchestration preserves TRAIN-only provenance.
+    # Inputs: Two-epoch identity model, fake TensorFlow/Keras, and one sample per split.
+    # Outputs: TRAIN-only fit/evaluation, saved prediction, and rejection of scope/history provenance drift.
     def test_diagnostic_fit_and_evaluation_preserve_train_only_scope(self):
         # Exercise the orchestration without TensorFlow; real tensor-gradient
         # smoke is opt-in below and is also run in the cluster environment.
@@ -310,6 +367,9 @@ class ContextLearningTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'provenance'):
                 learning.load_model(directory, config, lock, diagnostic=True)
 
+    # Purpose: Verify opt-in TensorFlow loss agrees with NumPy and survives checkpoint reload.
+    # Inputs: 8-cubed FakeVolume patch and real context model/training step.
+    # Outputs: Five-place loss agreement, correct model shape, and equal saved/reloaded predictions.
     @unittest.skipUnless(os.environ.get('FAKECT_TEST_TENSORFLOW') == '1', 'Opt-in TensorFlow runtime smoke')
     def test_real_tensorflow_training_step_matches_numpy_loss_and_saves(self):
         settings = self.settings()
@@ -338,6 +398,9 @@ class ContextLearningTests(unittest.TestCase):
             self.assertEqual(reloaded_logits.shape, (8, 8, 8))
             np.testing.assert_allclose(reloaded_probability, learning._predict(loaded, x))
 
+    # Purpose: Verify opt-in logit loss retains gradients for saturated incorrect predictions.
+    # Inputs: Wrong logits of magnitude 40/1000 with two valid and two padded entries.
+    # Outputs: Corrective gradients -0.5/+0.5 on valid entries, zero padding gradients, and finite loss.
     @unittest.skipUnless(os.environ.get('FAKECT_TEST_TENSORFLOW') == '1', 'Opt-in TensorFlow runtime smoke')
     def test_saturated_wrong_logits_keep_corrective_gradients_and_ignore_padding(self):
         tf = learning._tensorflow()
@@ -353,6 +416,9 @@ class ContextLearningTests(unittest.TestCase):
             np.testing.assert_allclose(tape.gradient(corrected, logits).numpy(), [-.5, .5, 0., 0.], atol=1e-6)
             self.assertTrue(np.isfinite(float(corrected)))
 
+    # Purpose: Verify opt-in training updates a saturated negative output head.
+    # Inputs: Real model with zero head kernel, bias -40, and positive FakeVolume target.
+    # Outputs: Finite loss and head bias increases above -40.
     @unittest.skipUnless(os.environ.get('FAKECT_TEST_TENSORFLOW') == '1', 'Opt-in TensorFlow runtime smoke')
     def test_actual_training_step_recovers_gradient_from_saturated_head(self):
         settings = self.settings()
@@ -371,6 +437,9 @@ class ContextLearningTests(unittest.TestCase):
         self.assertTrue(np.isfinite(loss))
         self.assertGreater(float(head.bias.numpy()[0]), -40.)
 
+    # Purpose: Verify opt-in real diagnostic fitting reloads into consistent evaluation.
+    # Inputs: One epoch/step with FakeVolume and real TensorFlow model.
+    # Outputs: Complete fit/evaluation, no INCOMPLETE marker, TRAIN-only access, and matching diagnostic Dice.
     @unittest.skipUnless(os.environ.get('FAKECT_TEST_TENSORFLOW') == '1', 'Opt-in TensorFlow runtime smoke')
     def test_real_fit_then_reload_and_evaluate_diagnostic_end_to_end(self):
         settings = self.settings(epochs=1, diagnostic_steps_per_epoch=1)

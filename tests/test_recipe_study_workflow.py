@@ -38,6 +38,9 @@ class RecipeStudyWorkflowTests(unittest.TestCase):
                            preflight_directory=str(f.root/'preflight'), stage='plan')
         f.write_input()
 
+    # Purpose: Verify recipe validation checks the full grid without native execution.
+    # Inputs: Growth 0-2 and shrink 0/1 sweeps with recipe/crop/training calls mocked to fail.
+    # Outputs: Seven variants, no native reads/simulations/output and absent preflight directory.
     def test_validate_only_checks_all_combinations_without_native_execution(self):
         with patch('fakect_recipe.apply_recipe', side_effect=AssertionError('metadata only')), \
                 patch('fakect_roi.prepare_crop', side_effect=AssertionError('metadata only')), \
@@ -49,6 +52,9 @@ class RecipeStudyWorkflowTests(unittest.TestCase):
         self.assertFalse(result['outputs_written'])
         self.assertFalse((self.fixture.root/'preflight').exists())
 
+    # Purpose: Verify recipe plans freeze named sweeps and ROI lineage targets.
+    # Inputs: Recipe study with blank source IDs and growth/shrink sweeps.
+    # Outputs: Seven-variant plan, selected-lineage scope, saved step/sweep definitions and identical INI.
     def test_plan_freezes_named_sweeps_and_roi_target_without_requiring_ids(self):
         self.fixture.run_stage('plan')
         plan = json.loads((self.fixture.output/'plan.json').read_text())
@@ -59,6 +65,9 @@ class RecipeStudyWorkflowTests(unittest.TestCase):
         self.assertNotIn('target_source_ids', plan)
         self.assertEqual((self.fixture.output/'input.ini').read_bytes(), self.fixture.path.read_bytes())
 
+    # Purpose: Verify native recipe preflight and preparation export readable pairs without fitting.
+    # Inputs: Synthetic recipe study passed through preflight and prepare with fitter mocked to fail.
+    # Outputs: Seven samples, metadata-only preflight, grouped splits, typed arrays, readable batches and unchanged INI.
     def test_native_preflight_and_prepare_export_tf_readable_pairs_without_fitting(self):
         original = self.fixture.path.read_bytes()
         with patch('fakect_segmentation.train_segmentation', side_effect=AssertionError('no fit')):
@@ -90,6 +99,9 @@ class RecipeStudyWorkflowTests(unittest.TestCase):
         self.assertEqual(self.fixture.path.read_bytes(), original)
         self.assertFalse(self.fixture.model.exists())
 
+    # Purpose: Verify recipe preview routes its plan to the existing renderer.
+    # Inputs: Recipe study preview stage and mocked preview_roi renderer.
+    # Outputs: Renderer receipt returned with seven-variant lineage plan and recipe-training source provenance.
     def test_recipe_preview_passes_plan_to_existing_renderer(self):
         with patch('preview_roi.run', return_value={'preview': True}) as renderer:
             result, _ = self.fixture.run_stage('preview')

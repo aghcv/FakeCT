@@ -98,11 +98,17 @@ class CohortRegistryTests(unittest.TestCase):
         manifest['artifacts_sha256'][manifest['samples'][0]['path']] = checksum
         save_manifest(self.dataset.parent, manifest)
 
+    # Purpose: Verify prepared datasets remain usable without historical generator dependencies.
+    # Inputs: Self-contained 3x4x5 dataset pointing to unavailable source/code paths.
+    # Outputs: Verified sample geometry and resolved stored variant path.
     def test_frozen_dataset_survives_source_and_code_unavailability(self):
         result = registry.verify_prepared_manifest(self.dataset)
         self.assertEqual(result['samples'][0]['shape_kji'], [3, 4, 5])
         self.assertEqual(Path(result['samples'][0]['_path']).parent.name, 'variants')
 
+    # Purpose: Verify absent revisions and missing published artifacts raise distinct errors.
+    # Inputs: Unknown registry revision then registered object with deleted manifest.
+    # Outputs: FileNotFoundError without creating registry, then ValueError for unsafe/missing artifact.
     def test_missing_registry_revision_is_distinct_from_corrupt_published_data(self):
         with self.assertRaises(FileNotFoundError):
             registry.load_registry_entry(self.registry, 'not-yet-prepared')
@@ -112,6 +118,9 @@ class CohortRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing or unsafe artifact'):
             registry.load_registry_entry(self.registry, 'case-v1')
 
+    # Purpose: Verify native float labels must contain integer-valued identities.
+    # Inputs: Source labels converted to float32 then one label changed to 0.5.
+    # Outputs: Integer-valued float source accepted and fractional source labels rejected.
     def test_native_xcat_integer_valued_float_source_labels_are_preserved(self):
         path = self.dataset.parent/'source.npz'
         with np.load(path) as saved:
@@ -126,11 +135,17 @@ class CohortRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Source labels'):
             registry.verify_prepared_manifest(self.dataset)
 
+    # Purpose: Verify historical ID semantics and unassigned split datasets remain supported.
+    # Inputs: Prepared fixtures with lineage disabled or unassigned split.
+    # Outputs: One sample verified in each supported legacy mode.
     def test_legacy_original_id_and_unassigned_datasets_supported(self):
         for index, options in enumerate(({'lineage': False}, {'unassigned': True})):
             path = fixture_dataset(self.root/f'other{index}', **options)
             self.assertEqual(registry.verify_prepared_manifest(path)['sample_count'], 1)
 
+    # Purpose: Verify registration deduplicates bytes and preserves immutable snapshots.
+    # Inputs: Repeated registration, reviewed alias, and deleted original dataset directory.
+    # Outputs: One object, stable registration timestamp, exact INI snapshot, and two loadable entries.
     def test_registration_copies_once_preserves_snapshots_and_is_idempotent(self):
         first = registry.register_dataset(self.registry, self.dataset, 'coa-260602-v1', 'family-a')
         saved = Path(first['manifest_path'])
@@ -147,6 +162,9 @@ class CohortRegistryTests(unittest.TestCase):
         self.assertEqual(registry.load_registry_entry(self.registry, 'coa-260602-v1')['sample_count'], 1)
         self.assertEqual(len(registry.list_registry_entries(self.registry)), 2)
 
+    # Purpose: Verify published revisions cannot replace their content or family policy.
+    # Inputs: Existing revision re-registered with new family, verification flag, or manifest bytes.
+    # Outputs: ValueError for each incompatible registration and unchanged receipt bytes.
     def test_registration_never_replaces_existing_policy_or_bytes(self):
         first = registry.register_dataset(self.registry, self.dataset, 'case-v1', 'family-a')
         receipt = Path(first['registry_entry_path']).read_bytes()
@@ -159,6 +177,9 @@ class CohortRegistryTests(unittest.TestCase):
             registry.register_dataset(self.registry, self.dataset, 'case-v1', 'family-a')
         self.assertEqual(Path(first['registry_entry_path']).read_bytes(), receipt)
 
+    # Purpose: Verify registration failures leave no partial publication.
+    # Inputs: Copy mock raising OSError on its third artifact.
+    # Outputs: Propagated disk failure with empty objects/entries/staging and removed registration lock.
     def test_copy_failure_cleans_staging_and_publishes_nothing(self):
         original = registry.shutil.copyfile
         count = [0]
@@ -175,6 +196,9 @@ class CohortRegistryTests(unittest.TestCase):
         self.assertFalse(list((self.registry/'.staging').iterdir()))
         self.assertFalse((self.registry/'.register.lock').exists())
 
+    # Purpose: Verify registry inspection checks completion and artifact integrity.
+    # Inputs: Appended manifest bytes, INCOMPLETE marker, and tampered variant NPZ.
+    # Outputs: ValueError for manifest digest, completion marker, and artifact digest violations.
     def test_manifest_checksum_incomplete_and_payload_tampering_rejected(self):
         original = self.dataset.read_bytes()
         self.dataset.write_bytes(original+b' ')
@@ -191,6 +215,9 @@ class CohortRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'artifact checksum'):
             registry.verify_prepared_manifest(self.dataset)
 
+    # Purpose: Verify prepared datasets reject ambiguous IDs and unsafe artifact locations.
+    # Inputs: Duplicate sample, parent-relative artifact path, and symlinked variant.
+    # Outputs: ValueError identifying duplicate, unsafe path, and symlink.
     def test_duplicate_ids_unsafe_paths_and_symlinks_rejected(self):
         original = self.dataset.read_bytes()
         self.mutate_manifest(lambda m: (m['samples'].append(deepcopy(m['samples'][0])), m.update(sample_count=2)))
@@ -209,6 +236,9 @@ class CohortRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Symlink'):
             registry.verify_prepared_manifest(self.dataset)
 
+    # Purpose: Verify dataset/sample metadata use the declared storage contract.
+    # Inputs: HU image units, ROI-clipped semantics, invalid split mode, and sample-unit drift.
+    # Outputs: ValueError for unsupported manifest contract and inconsistent sample metadata.
     def test_units_mask_semantics_and_geometry_metadata_rejected(self):
         original = json.loads(self.dataset.read_text())
         for key, value in (('image_units', 'HU'), ('target_semantics', 'ROI clipped'), ('split_mode', 'anything')):
@@ -221,11 +251,17 @@ class CohortRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'metadata disagrees'):
             registry.verify_prepared_manifest(self.dataset)
 
+    # Purpose: Verify rehashed archives still undergo mask semantic validation.
+    # Inputs: Variant mask containing value 2 with updated archive/manifest hashes.
+    # Outputs: ValueError identifying a nonbinary mask.
     def test_full_verification_enforces_array_contracts_even_if_archive_rehashed(self):
         self.rewrite_payload(lambda arrays: arrays['mask'].__setitem__((0, 0, 0), 2))
         with self.assertRaisesRegex(ValueError, 'binary'):
             registry.verify_prepared_manifest(self.dataset)
 
+    # Purpose: Verify metadata-only inspection avoids reading image payloads.
+    # Inputs: NPZ loaders/hashers mocked to reject payload access.
+    # Outputs: One sample verified without loading or hashing NPZ data.
     def test_metadata_mode_never_opens_npz_arrays_or_hashes_npz_bytes(self):
         original_hash = registry._hash
         def protected_hash(path):
@@ -237,6 +273,9 @@ class CohortRegistryTests(unittest.TestCase):
             result = registry.verify_prepared_manifest(self.dataset, verify_payloads=False)
         self.assertEqual(result['sample_count'], 1)
 
+    # Purpose: Verify registry reads detect receipt and stored snapshot tampering.
+    # Inputs: Changed family_verified flag then changed registered input.ini.
+    # Outputs: ValueError for entry checksum and stored artifact checksum mismatch.
     def test_receipt_tamper_and_object_tamper_detected(self):
         result = registry.register_dataset(self.registry, self.dataset, 'case-v1', 'family-a')
         path = Path(result['registry_entry_path'])

@@ -65,6 +65,9 @@ class PretrainedTargetTests(unittest.TestCase):
         return dict(self.baseline, baseline=False, sample_id='fixture:' + name,
                     variant_npz=str(path), variant_npz_sha256=sha(path))
 
+    # Purpose: Verify common target box retains connected branch continuations.
+    # Inputs: Native aorta/core plus connected systemic/coronary branches.
+    # Outputs: Target has nine voxels, six branches/five continuation cells, no changes, and exact source IDs.
     def test_common_box_preserves_connections_without_radial_branch_cut(self):
         template = self.template()
         masks = template.baseline_provider.read_block([0,0,0], self.f.shape)
@@ -77,11 +80,17 @@ class PretrainedTargetTests(unittest.TestCase):
         self.assertEqual(int(masks['changed'].sum()), 0)
         self.assertEqual(template.metadata['selected_source_ids'], [1547,2912,2922])
 
+    # Purpose: Exclude pulmonary-mediated paths and disconnected same-ID islands.
+    # Inputs: Native fixture with pulmonary connector and isolated aorta/systemic labels.
+    # Outputs: All disconnected or pulmonary-connected points stay outside the target.
     def test_pulmonary_cannot_carry_path_and_same_id_islands_stay_excluded(self):
         masks = self.template().baseline_provider.read_block([0,0,0], self.f.shape)
         for point in ((3,3,3), (3,4,3), (2,5,6), (3,5,6)):
             self.assertEqual(masks['target'][point], 0)
 
+    # Purpose: Verify sibling growth and release follow selected branch ancestry.
+    # Inputs: One branch voxel released and one new branch voxel with valid origin index.
+    # Outputs: Target gains/loses one branch cell, retains continuation, and preserves the three-cell aorta core.
     def test_sibling_branch_growth_and_release_use_selected_component_ancestry(self):
         template = self.template(); labels = self.original.copy()
         labels[2,1,3] = 100  # Release native branch(i4,j2,k3).
@@ -101,6 +110,9 @@ class PretrainedTargetTests(unittest.TestCase):
         self.assertEqual(extent['current_target_voxels'], 9)
         self.assertEqual(int(provider.core_provider.read_block([0,0,0], self.f.shape)['target'].sum()), 3)
 
+    # Purpose: Reject promotion of growth originating from disconnected generic-ID islands.
+    # Inputs: New systemic-label voxel with ancestry in an excluded native island.
+    # Outputs: New voxel is not selected and changed target count stays zero.
     def test_growth_from_disconnected_generic_id_island_not_promoted(self):
         template = self.template(); labels = self.original.copy()
         labels[2,3,3] = 1547
@@ -110,6 +122,9 @@ class PretrainedTargetTests(unittest.TestCase):
         self.assertEqual(provider.read_block([0,0,0], self.f.shape)['target'][3,4,4], 0)
         self.assertEqual(template.extent(self.variant(labels, origins, 'again'))['changed_voxels'], 0)
 
+    # Purpose: Reject missing or non-target ancestry for branch growth.
+    # Inputs: New branch voxel with absent ancestry or origin index zero.
+    # Outputs: Provider construction raises ValueError for invalid ancestry.
     def test_invalid_growth_ancestry_rejected(self):
         labels = self.original.copy(); labels[2,2,4] = 1547
         with self.assertRaisesRegex(ValueError, 'ancestry'):
@@ -118,6 +133,9 @@ class PretrainedTargetTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'ancestry'):
             self.template().provider(self.variant(labels, origins, 'soft'))
 
+    # Purpose: Verify domain caps apply consistently without radial ROI clipping.
+    # Inputs: Common native box shortened to [7,8,8].
+    # Outputs: Domain excludes capped slabs/columns while preserving in-box branch continuation.
     def test_domain_and_box_caps_apply_to_all_masks_without_roi_clipping(self):
         self.grid['native_shape_kji'] = [7,8,8]
         provider = self.template().baseline_provider
@@ -129,6 +147,9 @@ class PretrainedTargetTests(unittest.TestCase):
         self.assertEqual(masks['target'][3,2,8], 0)
         self.assertEqual(int(masks['domain'].sum()), 4*8*8)
 
+    # Purpose: Require sibling case geometry and selection identity to match.
+    # Inputs: Different case ID, crop origin, or selection manifest hash.
+    # Outputs: Provider raises ValueError for case geometry mismatch.
     def test_sibling_source_case_geometry_mismatch_rejected(self):
         template = self.template()
         for key, value in (('case_id', 'different'), ('edit_crop_origin_ijk', [2,1,1]),
@@ -137,12 +158,18 @@ class PretrainedTargetTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'case geometry'):
                 template.provider(row)
 
+    # Purpose: Verify explicit proximal branch mode preserves the old union.
+    # Inputs: Branch-inclusive template constructed with branch_extent proximal.
+    # Outputs: Target has four voxels, no continuation voxels, and excludes distal branch cells.
     def test_proximal_alternative_preserves_old_union_explicitly(self):
         template = self.template(branch_extent='proximal')
         self.assertEqual(template.counts['target_voxels'], 4)
         self.assertEqual(template.counts['branch_continuation_voxels'], 0)
         self.assertEqual(template.baseline_provider.read_block([0,0,0], self.f.shape)['target'][3,2,5], 0)
 
+    # Purpose: Verify annotation cache reload avoids rereading native ACT.
+    # Inputs: Saved annotation cache and a native read mock that must not run.
+    # Outputs: Reload matches targets/counts/extents; requesting proximal semantics rejects dependencies.
     def test_cache_reload_is_identical_without_native_act_reread(self):
         cache = self.f.root / 'annotation'; original = self.template(annotation_directory=cache)
         self.assertTrue(original.annotation_manifest_path.is_file())
@@ -154,6 +181,9 @@ class PretrainedTargetTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'dependencies'):
             self.template(annotation_directory=cache, branch_extent='proximal')
 
+    # Purpose: Reject incomplete or altered annotation caches.
+    # Inputs: INCOMPLETE marker, then bytes appended to annotation.npz.
+    # Outputs: Cache loading raises ValueError for incompleteness or changed artifacts.
     def test_tampered_or_incomplete_cache_rejected(self):
         cache = self.f.root / 'annotation'; self.template(annotation_directory=cache)
         (cache / 'INCOMPLETE').touch()
@@ -164,6 +194,9 @@ class PretrainedTargetTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'changed'):
             self.template(annotation_directory=cache)
 
+    # Purpose: Require original ACT and frozen source labels to agree.
+    # Inputs: Source NPZ label changed with its digest refreshed.
+    # Outputs: Template construction raises ValueError for ACT label disagreement.
     def test_original_act_and_frozen_edit_labels_must_agree(self):
         original = self.original.copy(); original[2,1,3] = 100
         np.savez_compressed(self.f.source_npz, original_labels=original,
@@ -172,18 +205,27 @@ class PretrainedTargetTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'ACT.*labels disagree'):
             self.template()
 
+    # Purpose: Verify bounded ACT reads preserve connectivity across slab boundaries.
+    # Inputs: Native fixture with MAX_CROP_VOXELS reduced to 144.
+    # Outputs: Four slab reads still recover all nine target voxels.
     def test_native_reads_are_bounded_and_connectivity_crosses_read_slabs(self):
         with patch('fakect_pretrained_targets.MAX_CROP_VOXELS', 144):
             template = self.template()
         self.assertEqual(template.counts['target_voxels'], 9)
         self.assertEqual(len(template.native_read['slab_reads']), 4)
 
+    # Purpose: Reject cached annotations prepared for a different common box.
+    # Inputs: Annotation cache followed by native shape changed to [7,8,8].
+    # Outputs: Cache loading raises ValueError for dependency mismatch.
     def test_annotation_cache_rejects_changed_common_box(self):
         cache = self.f.root / 'annotation'; self.template(annotation_directory=cache)
         self.grid['native_shape_kji'] = [7,8,8]
         with self.assertRaisesRegex(ValueError, 'dependencies'):
             self.template(annotation_directory=cache)
 
+    # Purpose: Verify native ACT stat changes invalidate annotation caches.
+    # Inputs: Saved annotation cache followed by appended ACT bytes.
+    # Outputs: Cache loading raises ValueError for source size/stat change.
     def test_native_act_stat_change_invalidates_cached_annotation(self):
         cache = self.f.root / 'annotation'; self.template(annotation_directory=cache)
         with self.act.open('ab') as stream: stream.write(b'changed')
@@ -205,6 +247,9 @@ class PretrainedTargetTests(unittest.TestCase):
         self.baseline.update(source_act=record, source_npz_sha256=sha(self.f.source_npz),
             variant_npz_sha256=sha(self.f.variant_npz), selection_manifest_sha256=sha(self.f.selection_path))
 
+    # Purpose: Preserve negative nonarterial IDs without absolute-value mapping.
+    # Inputs: Native label -1547 without a corresponding arterial catalog entry.
+    # Outputs: Negative cell is excluded, target stays nine voxels, and negative activity count is one.
     def test_signed_nonarterial_ids_are_preserved_without_absolute_value(self):
         labels = self.native_labels.astype(np.float32)
         labels[3,3,3] = -1547.0  # Adjacent to core: no abs() conversion.
@@ -215,6 +260,9 @@ class PretrainedTargetTests(unittest.TestCase):
         self.assertEqual(template.counts['target_voxels'], 9)
         self.assertEqual(template.native_read['activity_code_counts']['negative_activity_voxels'], 1)
 
+    # Purpose: Select signed arterial IDs only through exact catalog identity.
+    # Inputs: Catalog explicitly adding arterial ID -1547 and one matching native cell.
+    # Outputs: The cell is selected and metadata includes signed ID -1547.
     def test_signed_arterial_catalog_id_is_selected_by_its_exact_identity(self):
         catalog = json.loads(self.catalog.read_text())
         catalog['records'].append(dict(original_id=-1547,original_name='signed_systemic',
@@ -226,6 +274,9 @@ class PretrainedTargetTests(unittest.TestCase):
         self.assertEqual(template.baseline_provider.read_block([0,0,0],self.f.shape)['target'][3,3,3], 1)
         self.assertIn(-1547,template.metadata['selected_source_ids'])
 
+    # Purpose: Reject fractional and overflowing activity codes before integer casts.
+    # Inputs: Native values 1547.125, 2^31, and float32 maximum.
+    # Outputs: Template raises ValueError for nonintegral or out-of-int32 codes.
     def test_fractional_and_overflow_codes_fail_before_any_id_cast(self):
         for value, message in ((1547.125, 'integral signed'), (2.**31, 'signed int32'), (np.finfo(np.float32).max, 'signed int32')):
             labels = self.native_labels.astype(np.float32); labels[0,0,0] = value

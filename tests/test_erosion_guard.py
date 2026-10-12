@@ -39,6 +39,9 @@ class ErosionGuardTests(unittest.TestCase):
         for key, value in snapshot.items():
             np.testing.assert_array_equal(arrays[key], value, err_msg=key)
 
+    # Purpose: Verify local erosion volume floors ignore untouched parent volume.
+    # Inputs: Tube erosion with Gaussian subrange and minimum local retention 0.75.
+    # Outputs: Guard scope has 39 targets and accepted erosion retains at least 75% while reducing removals.
     def test_local_longitudinal_volume_floor_cannot_be_diluted_by_untouched_parent(self):
         arrays, resolved, config = self.fixture(distance=3.)
         nodes = ((15., 15., 10.), (15., 15., 20.))
@@ -69,6 +72,9 @@ class ErosionGuardTests(unittest.TestCase):
         np.testing.assert_array_equal(result['erosion_guard_scope_mask'], expected_scope)
         np.testing.assert_array_equal(result['erosion_guard_retained_mask'], retained)
 
+    # Purpose: Verify erosion reference includes the opposite angular side.
+    # Inputs: Inner directional erosion with minimum volume ratio 0.5.
+    # Outputs: Guard scope equals all selected targets and includes zero-direction-weight cells.
     def test_reference_includes_opposite_angular_side_not_just_editable_sector(self):
         arrays, resolved, config = test_directional_morphology.DirectionalMorphologyTests().fixture(
             direction='inner', operation='erosion')
@@ -78,6 +84,9 @@ class ErosionGuardTests(unittest.TestCase):
         np.testing.assert_array_equal(reference['scope_mask'], arrays['selected'])
         self.assertGreater(np.count_nonzero(reference['scope_mask'] & (directional['direction_weight'] == 0)), 0)
 
+    # Purpose: Permit disconnected components to shrink without splitting.
+    # Inputs: Two separate 3-cube targets and connectivity preservation enabled.
+    # Outputs: 1 mm erosion leaves one voxel per component and connectivity remains accepted.
     def test_preexisting_disconnected_components_can_each_shrink_without_splitting(self):
         arrays, resolved, config = self.fixture()
         arrays['act'].fill(20)
@@ -95,6 +104,9 @@ class ErosionGuardTests(unittest.TestCase):
         self.assertTrue(evaluation['connectivity_ok'])
         self.assertEqual([row['surviving_components'] for row in evaluation['component_details']], [1, 1])
 
+    # Purpose: Detect a split even when another component disappears.
+    # Inputs: Connected dumbbell plus isolated target; bridge and isolated voxel removed.
+    # Outputs: Equal total component counts cannot hide survivor counts [0,2]; guard rejects connectivity.
     def test_one_split_cannot_be_hidden_by_loss_of_another_component(self):
         arrays, resolved, config = self.fixture()
         arrays['act'].fill(20)
@@ -116,6 +128,9 @@ class ErosionGuardTests(unittest.TestCase):
         self.assertEqual(sorted(row['surviving_components'] for row in evaluation['component_details']), [0, 2])
         self.assertTrue(evaluation['reasons'])
 
+    # Purpose: Keep the original volume floor fixed across repeated erosion.
+    # Inputs: 343-voxel target with minimum ratio 0.15 and two passes.
+    # Outputs: First pass retains 125; second backs off to retain 125 rather than resetting to 27.
     def test_reference_volume_floor_stays_fixed_across_iterations(self):
         arrays, resolved, config = self.fixture()
         arrays['act'][12:19, 12:19, 12:19] = -7
@@ -136,6 +151,9 @@ class ErosionGuardTests(unittest.TestCase):
         self.assertEqual(int(incorrectly_reset['target_mask_after'].sum()), 27)
         self.assertLess(27 / 343, .15)
 
+    # Purpose: Verify exhausted erosion backoff returns a clean identity result.
+    # Inputs: 2 mm request, full retention/connectivity, and one 0.9 backoff step.
+    # Outputs: Accepted distance is zero; labels/scalars/inputs stay intact and no rejected release masks leak.
     def test_exhausted_backoff_returns_identity_without_rejected_diagnostic_or_scalar_leak(self):
         arrays, resolved, config = self.fixture(distance=2.)
         config['recipe'] = {'roi_role': 'selection'}
@@ -161,6 +179,9 @@ class ErosionGuardTests(unittest.TestCase):
         self.assertEqual(resolved, resolved_before)
         self.assertEqual(config, config_before)
 
+    # Purpose: Verify disabled safeguards match ordinary morphology exactly.
+    # Inputs: Erosion with zero volume floor and connectivity disabled.
+    # Outputs: No guard is created and every output array/key/summary matches ordinary erosion.
     def test_disabled_safeguards_preserve_exact_ordinary_result(self):
         arrays, resolved, config = self.fixture()
         ordinary = deepcopy(config)
@@ -176,6 +197,9 @@ class ErosionGuardTests(unittest.TestCase):
             if isinstance(value, np.ndarray):
                 np.testing.assert_array_equal(result[key], value)
 
+    # Purpose: Verify underflowing distance backoff safely preserves input.
+    # Inputs: 0.5 mm erosion with backoff factor 5e-324 and full retention.
+    # Outputs: Guard skips with accepted distance zero, unchanged labels, and no changed voxels.
     def test_underflowing_distance_reduction_safely_keeps_input(self):
         arrays, resolved, config = test_morphology.MorphologyTests().fixture(
             spacing=(.25, .25, .25), operation='erosion', distance=.5)
@@ -189,6 +213,9 @@ class ErosionGuardTests(unittest.TestCase):
         np.testing.assert_array_equal(result['edited_labels'], arrays['act'])
         self.assertFalse(result['changed_mask'].any())
 
+    # Purpose: Verify empty erosion references use vacuous connectivity.
+    # Inputs: No selected target and connectivity preservation enabled.
+    # Outputs: Reference has zero targets, retention ratio 1, accepted evaluation, and skipped unchanged erosion.
     def test_empty_reference_skips_erosion_with_vacuous_connectivity(self):
         arrays, resolved, config = self.fixture()
         arrays['act'].fill(20)
@@ -204,6 +231,9 @@ class ErosionGuardTests(unittest.TestCase):
         self.assertEqual(result['summary']['erosion_safeguard']['status'], 'skipped')
         self.assertFalse(result['changed_mask'].any())
 
+    # Purpose: Verify recipe iterations share one pre-step erosion reference.
+    # Inputs: Two shrink passes over a 343-voxel target with retention floor 0.15.
+    # Outputs: Both retain 125 targets, share guard scope, and mark 218 released voxels.
     def test_recipe_keeps_pre_step_reference_over_multiple_iterations(self):
         arrays, resolved, config = test_recipe.RecipeTests().fixture()
         arrays['act'][12:19, 12:19, 12:19] = -7
@@ -222,6 +252,9 @@ class ErosionGuardTests(unittest.TestCase):
         np.testing.assert_array_equal(events[0]['result']['erosion_guard_scope_mask'],
                                       events[1]['result']['erosion_guard_scope_mask'])
 
+    # Purpose: Verify rejected recipe trials preserve target ancestry.
+    # Inputs: Guarded 2 mm shrink with full retention and exhausted backoff.
+    # Outputs: Zero accepted distance leaves original target indices, masks, labels, and attenuation intact.
     def test_recipe_rejected_trials_cannot_erase_target_ancestry(self):
         arrays, resolved, config = test_recipe.RecipeTests().fixture()
         config['recipe'].update(steps=('shrink',), roi_role='selection')

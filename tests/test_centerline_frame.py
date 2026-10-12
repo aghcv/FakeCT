@@ -34,6 +34,9 @@ class CenterlineFrameTests(unittest.TestCase):
         np.testing.assert_allclose(np.cross(tangent, result['reference_normal']),
                                    result['reference_binormal'], atol=1e-10)
 
+    # Purpose: Verify circular frames recover inward normals and uniform arc sampling.
+    # Inputs: Radius-20 circle, 0.5 mm sample step and no smoothing.
+    # Outputs: Orthonormal frames, curvature 0.05, inward normals and unreliable endpoints.
     def test_circle_inner_normal_curvature_handedness_and_arc_spacing(self):
         result = self.frame()
         self.assert_orthonormal(result)
@@ -53,6 +56,9 @@ class CenterlineFrameTests(unittest.TestCase):
         np.testing.assert_allclose(differences, differences[0], atol=1e-12)
         self.assertAlmostEqual(result['metadata']['sampled_spline_length_mm'], 44., places=3)
 
+    # Purpose: Verify helical frames match analytic curvature and principal normals.
+    # Inputs: Radius-12 helix with pitch 3 and 121 control nodes.
+    # Outputs: Inward radial normals, expected helix curvature and more than 95 percent reliable samples.
     def test_helix_principal_normal_and_curvature(self):
         radius, pitch = 12., 3.
         angle = np.linspace(.1, 4 * np.pi, 121)
@@ -67,6 +73,9 @@ class CenterlineFrameTests(unittest.TestCase):
         np.testing.assert_allclose(result['curvature_per_mm'][keep], radius / (radius**2 + pitch**2), rtol=.015)
         self.assertGreater(keep.mean(), .95)
 
+    # Purpose: Verify reversing a path preserves inward direction.
+    # Inputs: Circular control nodes in forward and reverse order.
+    # Outputs: Positions and normals match; tangents and binormals reverse and fractions complement.
     def test_reversed_path_preserves_inner_direction_and_flips_tangent_binormal(self):
         nodes = self.circle()
         first, reverse = self.frame(nodes), self.frame(nodes[::-1])
@@ -77,6 +86,9 @@ class CenterlineFrameTests(unittest.TestCase):
         np.testing.assert_allclose(first['binormal'], -reverse['binormal'][::-1], atol=1e-8)
         np.testing.assert_allclose(first['parent_fraction'], 1 - reverse['parent_fraction'][::-1], atol=1e-10)
 
+    # Purpose: Verify straight paths have display frames without anatomical inner direction.
+    # Inputs: Straight four-node and two-node paths with 1 mm smoothing.
+    # Outputs: Finite constant transported normals, zero curvature and no reliable inner samples.
     def test_straight_and_two_node_paths_have_display_frames_without_inner_semantics(self):
         for nodes in (np.array(((1, 2, 3), (3, 4, 5), (9, 10, 11), (15, 16, 17))),
                       np.array(((1, 2, 3), (15, 16, 17)))):
@@ -89,6 +101,9 @@ class CenterlineFrameTests(unittest.TestCase):
                 np.testing.assert_allclose(result['normal'], result['reference_normal'], atol=1e-12)
                 np.testing.assert_allclose(result['normal'], np.broadcast_to(result['normal'][0], result['normal'].shape), atol=1e-12)
 
+    # Purpose: Verify spacing conversion retains physical geometry and distance parameterization.
+    # Inputs: Same circle in isotropic and anisotropic coordinates, plus uneven control spacing.
+    # Outputs: Matching frames and parent distances; node fractions follow physical arc length.
     def test_anisotropic_conversion_preserves_original_polyline_parameter_mapping(self):
         physical = self.circle()
         spacing = np.array((.7, 1.3, 2.5))
@@ -105,6 +120,9 @@ class CenterlineFrameTests(unittest.TestCase):
         np.testing.assert_allclose(result['metadata']['parent_node_fraction'], distances / distances[-1])
         self.assertNotAlmostEqual(result['metadata']['parent_node_fraction'][1], .25)
 
+    # Purpose: Verify inflections are marked while normals follow signed curvature.
+    # Inputs: Cubic planar path, 0.05 mm samples and 0.01 curvature threshold.
+    # Outputs: Inflection samples unreliable; reliable normals retain inward signs on both sides.
     def test_inflection_is_flagged_without_flipping_true_normals(self):
         x = np.linspace(-2., 2., 41)
         nodes = np.column_stack((10 + x, 10 + x**3, np.full(len(x), 10.)))
@@ -123,6 +141,9 @@ class CenterlineFrameTests(unittest.TestCase):
         self.assertTrue(np.all(result['normal'][left, 1] < 0))
         self.assertTrue(np.all(result['normal'][right, 1] > 0))
 
+    # Purpose: Verify smoothing measures displacement and preserves read-only inputs.
+    # Inputs: Noisy 25-node circle, fixed random seed and 0.25 mm RMS budget.
+    # Outputs: Measured residual metadata, bounded RMS, unchanged nodes and deterministic repeated frames.
     def test_rms_smoothing_budget_is_measured_and_inputs_are_preserved(self):
         nodes = self.circle(count=25)
         rng = np.random.default_rng(817)
@@ -143,6 +164,9 @@ class CenterlineFrameTests(unittest.TestCase):
                 np.testing.assert_array_equal(value, repeated[key])
         self.assertEqual(result['metadata'], repeated['metadata'])
 
+    # Purpose: Verify stationary turns retain finite display frames.
+    # Inputs: Out-and-back five-node path with 100 mm sample step.
+    # Outputs: Degenerate tangent marked, transported frame finite and no reliable inner samples.
     def test_stationary_turn_has_a_finite_display_frame_and_no_inner_semantics(self):
         nodes = ((1, 1, 1), (2, 1, 1), (3, 1, 1), (2, 1, 1), (1, 1, 1))
         result = self.frame(nodes, sample_step_mm=100)
@@ -151,6 +175,9 @@ class CenterlineFrameTests(unittest.TestCase):
         self.assertFalse(result['reliable'].any())
         self.assertEqual(result['normal_status'][1], 'transported_degenerate_tangent')
 
+    # Purpose: Reject invalid centerline geometry and excessive sampling settings.
+    # Inputs: Malformed, negative or nonfinite nodes, spacing, smoothing and sample limits.
+    # Outputs: Every invalid input family raises ValueError.
     def test_invalid_and_excessive_inputs_are_rejected(self):
         invalid = [dict(nodes=np.ones((1, 3))), dict(nodes=np.ones((513, 3))),
                    dict(nodes=np.ones((4, 2))), dict(nodes=np.ones((4, 3))),

@@ -36,6 +36,9 @@ class GrowthRecipeTests(unittest.TestCase):
         return {'shape': 'sphere', 'center_ijk': (float(i), 15., 15.), 'radius_mm': .4,
                 'coordinate_reviewed': True}
 
+    # Purpose: Verify repeated growth carries persistent original ancestry through offspring seeds.
+    # Inputs: Single-voxel spherical selector and two 1 mm growth iterations.
+    # Outputs: 25 targets, 24 outside-ROI additions, immediate offspring seed, and original-root lineage.
     def test_repeated_growth_uses_offspring_seeds_and_keeps_original_ancestor(self):
         arrays, resolved, config = self.fixture()
         config['edits']['grow']['iterations'] = 2
@@ -62,6 +65,9 @@ class GrowthRecipeTests(unittest.TestCase):
         self.assertFalse(np.any(result['changed_mask'] & ~result['edit_region_mask']))
         np.testing.assert_array_equal(result['selection_roi_mask'], arrays['roi'])
 
+    # Purpose: Verify later erosion follows earlier growth beyond the original selector.
+    # Inputs: Two growth iterations followed by one shrink using the same single-voxel ROI.
+    # Outputs: Off-ROI offspring removed, seven final targets, chained channels, and inherited growth budget.
     def test_later_overlapping_erosion_tracks_prior_growth_outside_original_roi(self):
         arrays, resolved, config = self.fixture()
         config['edits']['grow']['iterations'] = 2
@@ -82,6 +88,9 @@ class GrowthRecipeTests(unittest.TestCase):
         np.testing.assert_array_equal(shrink['before_arrays']['act'], events[1]['result']['edited_labels'])
         np.testing.assert_array_equal(shrink['before_arrays']['atn'], events[1]['result']['attenuation_proxy_per_pixel'])
 
+    # Purpose: Verify unrelated same-ID neighbors do not become growth donors.
+    # Inputs: Two 2 mm growth iterations near a same-ID voxel with distinct attenuation.
+    # Outputs: Neighbor label/signal preserved, no seed adoption or growth through it, and contact count recorded.
     def test_same_id_neighbor_is_preserved_and_never_adopted_as_a_growth_seed(self):
         arrays, resolved, config = self.fixture()
         arrays['act'][15, 15, 18] = -7
@@ -105,6 +114,9 @@ class GrowthRecipeTests(unittest.TestCase):
         self.assertGreater(sum(event['result']['summary']['counts']['unselected_target_contact_voxels']
                                for event in events), 0)
 
+    # Purpose: Verify selectors remain tied to their original ancestors.
+    # Inputs: Source selector grows into initially empty selector used by later edit.
+    # Outputs: Later selected mask empty, no later change, empty_target status, and 25 prior targets retained.
     def test_empty_original_selection_cannot_adopt_growth_that_later_enters_it(self):
         arrays, resolved, config = self.fixture()
         self.set_outer(arrays, resolved, config, 4.)
@@ -123,6 +135,9 @@ class GrowthRecipeTests(unittest.TestCase):
         self.assertEqual(result['summary']['steps'][-1]['original_selection_voxels'], 0)
         self.assertEqual(result['summary']['counts']['after'], 25)
 
+    # Purpose: Verify later selectors track only descendants of included original roots.
+    # Inputs: Two growing roots and later narrowing ROI that spatially overlaps both offspring families.
+    # Outputs: Right-root offspring selected, left-root lineage/signals preserved, and input arrays unchanged.
     def test_partial_original_selector_tracks_only_its_winning_root_offspring(self):
         arrays, resolved, config = self.fixture()
         arrays['act'].fill(20)
@@ -161,6 +176,9 @@ class GrowthRecipeTests(unittest.TestCase):
         for key, value in snapshots.items():
             np.testing.assert_array_equal(arrays[key], value)
 
+    # Purpose: Verify serial growth is deterministic and preserves input/pass snapshots.
+    # Inputs: Two growth iterations run twice with captured before-state arrays.
+    # Outputs: Equal summaries/channels/lineage and unchanged arrays/config/resolved/pass snapshots.
     def test_original_arrays_config_and_frozen_pass_states_are_immutable_and_deterministic(self):
         arrays, resolved, config = self.fixture()
         config['edits']['grow']['iterations'] = 2
@@ -184,6 +202,9 @@ class GrowthRecipeTests(unittest.TestCase):
         for key in ('edited_labels', 'attenuation_proxy_per_pixel', 'target_origin_index'):
             np.testing.assert_array_equal(first[key], second[key])
 
+    # Purpose: Verify halo validation accounts for cumulative inherited growth.
+    # Inputs: 6.6 mm crop margin with 2 mm growth then repeated/overlapping growth.
+    # Outputs: Initial pass fits and repeats/second growth fail with inherited-halo errors.
     def test_cumulative_halo_rejects_repeats_and_later_overlapping_growth_before_editing(self):
         _, resolved, config = self.fixture()
         resolved.update(crop_low_ijk=(8, 8, 8), crop_high_ijk_exclusive=(23, 23, 23))
@@ -198,6 +219,9 @@ class GrowthRecipeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'edit.again.*halo.*inherited growth'):
             validate_recipe(config, resolved)
 
+    # Purpose: Verify disjoint original selectors have independent halo budgets.
+    # Inputs: Left selector grows 4 mm total and distant right selector grows 1 mm.
+    # Outputs: Left halo 8 mm and right halo 5 mm with zero inherited growth.
     def test_disjoint_original_selectors_do_not_inherit_another_region_growth_halo(self):
         arrays, resolved, config = self.fixture()
         self.set_outer(arrays, resolved, config, 10.)
@@ -212,6 +236,9 @@ class GrowthRecipeTests(unittest.TestCase):
         # Right has only 6.6 mm context. Incorrectly inheriting left's 4 mm
         # would reject it even though their original selections are disjoint.
 
+    # Purpose: Verify overlap-error policy catches intersecting growth envelopes before execution.
+    # Inputs: Disjoint roots four voxels apart with 3 mm growth and overlap error.
+    # Outputs: ValueError for possible growth overlap and no step callback.
     def test_growth_envelope_overlap_errors_before_callback_for_disjoint_selectors(self):
         arrays, resolved, config = self.fixture()
         self.set_outer(arrays, resolved, config, 5.)

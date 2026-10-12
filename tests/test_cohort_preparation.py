@@ -42,6 +42,9 @@ class CohortPreparationTests(unittest.TestCase):
         fixture.input_bytes = b'[study]\nschema_version=fakect.recipe-cohort/1\n'
         return fixture
 
+    # Purpose: Verify cohort generation parsing excludes model and split settings.
+    # Inputs: Recipe-cohort parser with freeze fields and no model section.
+    # Outputs: Variants use unassigned split, model fields stay absent, and the parser remains unchanged.
     def test_clean_parser_has_no_model_or_user_split_contract(self):
         parser = self.parser()
         before = {key: dict(parser[key]) for key in parser.sections()}
@@ -52,6 +55,9 @@ class CohortPreparationTests(unittest.TestCase):
         self.assertEqual({row['split'] for row in plan_recipe_variants(config)}, {'unassigned'})
         self.assertEqual(before, {key: dict(parser[key]) for key in parser.sections()})
 
+    # Purpose: Reject training-only settings in generation configuration.
+    # Inputs: Model epochs, validation fraction, untyped review flag, or fit stage.
+    # Outputs: Parsing raises ValueError for every unsupported setting.
     def test_generation_input_rejects_model_settings_and_split_options(self):
         for section, key, value in [('model', 'epochs', '3'), ('train', 'validation_fraction', '.2'),
                                     ('train', 'parameters_reviewed', 'yes'), ('train', 'stage', 'fit')]:
@@ -62,6 +68,9 @@ class CohortPreparationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 parse_cohort_sections(parser)
 
+    # Purpose: Require a reviewed native freeze before cohort preparation.
+    # Inputs: Small recipe fixture, preflight, review flag, freeze, preparation, and registry publication.
+    # Outputs: Missing/unreviewed/repeated freezes fail; prepared and published samples remain unassigned.
     def test_prepare_requires_reviewed_matching_native_freeze(self):
         fixture = self.fixture()
         config, resolved, raw = fixture.config, fixture.resolved, fixture.input_bytes
@@ -93,6 +102,9 @@ class CohortPreparationTests(unittest.TestCase):
         self.assertEqual(published['manifest']['split_mode'], 'unassigned')
         self.assertFalse(published['family_verified'])
 
+    # Purpose: Reject reuse of a freeze after input or recipe changes.
+    # Inputs: Reviewed frozen fixture with changed INI bytes or grow distance.
+    # Outputs: Freeze validation raises ValueError for both mutations.
     def test_changed_ini_or_recipe_cannot_reuse_freeze(self):
         fixture = self.fixture()
         config, resolved, raw = fixture.config, fixture.resolved, fixture.input_bytes
@@ -106,6 +118,9 @@ class CohortPreparationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'changed'):
             validate_cohort_freeze(changed, resolved, raw)
 
+    # Purpose: Reject tampered preflight evidence before freezing.
+    # Inputs: Preflight JSON with added bytes after successful validation.
+    # Outputs: Freeze raises ValueError and creates no freeze directory.
     def test_tampered_preflight_cannot_be_frozen(self):
         fixture = self.fixture()
         config, resolved, raw = fixture.config, fixture.resolved, fixture.input_bytes

@@ -43,12 +43,18 @@ def fixture():
 
 
 class RotationDesignTests(unittest.TestCase):
+    # Purpose: Verify inventory preserves unknown infant ages and provisional ancestry.
+    # Inputs: Six age groups with male/female templates.
+    # Outputs: Infant ages stay None, adult ages are 50, and no family is marked verified.
     def test_inventory_does_not_invent_infant_age_or_confirm_ancestry(self):
         _, _, _, inventory, _ = fixture()
         self.assertEqual({r['age_years'] for r in inventory if r['age_bin'] == 'infant'}, {None})
         self.assertTrue(all(r['family_verified'] is False for r in inventory))
         self.assertEqual({r['age_years'] for r in inventory if r['age_bin'] == 'adult'}, {50})
 
+    # Purpose: Partition all case siblings beyond the selected image panel.
+    # Inputs: Six-age inventory and matched edited panel.
+    # Outputs: 45 stages preserve full sibling partitions, 60 samples, 10 baselines, and 32 reserved scenarios.
     def test_all_cases_and_siblings_are_partitioned_not_only_selected_images(self):
         _, _, _, inventory, panel = fixture()
         value = design.build_rotation_design(inventory, panel)
@@ -62,6 +68,9 @@ class RotationDesignTests(unittest.TestCase):
             self.assertEqual({stage['case_assignment'][case] for case in ('20', '21')}, {'excluded'})
             self.assertNotIn('20', stage['train_case_ids']+stage['validation_case_ids']+stage['final_test_case_ids'])
 
+    # Purpose: Distinguish inner model selection from fresh outer refits.
+    # Inputs: Rotation design for the matched six-age inventory.
+    # Outputs: 20 inner stages use 6/2/2 cases; five refits use 8/0/2 and permit final testing.
     def test_primary_inner_selection_and_fresh_refit_have_distinct_roles(self):
         _, _, _, inventory, panel = fixture()
         stages = design.build_rotation_design(inventory, panel)['stages']
@@ -77,6 +86,9 @@ class RotationDesignTests(unittest.TestCase):
             self.assertTrue(stage['final_test_evaluation_permitted'])
             self.assertEqual(stage['locator_policy'], 'fresh_training_on_train_case_ids_only')
 
+    # Purpose: Compare secondary protocols on identical target scenarios.
+    # Inputs: Same-age-other-sex and nearest-age-same-sex stages.
+    # Outputs: Both cover ten targets with identical test IDs and 8/1/1 case allocations.
     def test_secondary_protocols_predict_identical_target_scenarios(self):
         _, _, _, inventory, panel = fixture()
         stages = design.build_rotation_design(inventory, panel)['stages']
@@ -89,6 +101,9 @@ class RotationDesignTests(unittest.TestCase):
             self.assertEqual(tuple(len(a[case][k+'_case_ids']) for k in ('train','validation','final_test')), (8,1,1))
             self.assertEqual(a[case]['roles']['validation'], 'model_selection_validation')
 
+    # Purpose: Verify nearest known-age selection avoids reserved infants.
+    # Inputs: Known-age inventory including adult and childhood groups.
+    # Outputs: Cases 50,30,10 validate on 40,40,60 respectively; adult age difference is 35.
     def test_nearest_known_age_declares_younger_tie_and_avoids_reserved_infants(self):
         _, _, _, inventory, panel = fixture()
         stages = design.build_rotation_design(inventory, panel)['stages']
@@ -98,6 +113,9 @@ class RotationDesignTests(unittest.TestCase):
         self.assertEqual(nearest['10']['validation_case_ids'], ['60'])
         self.assertEqual(nearest['10']['validation_age_difference_years'], 35)
 
+    # Purpose: Verify balanced companion-matched pairs span positive severity.
+    # Inputs: Matched panel built from three companion groups and five severity levels.
+    # Outputs: Each case has six distinct samples, three positives, and matching companion/pair metadata.
     def test_pairs_are_distinct_companion_matched_balanced_and_span_positive_strength(self):
         _, _, _, _, panel = fixture()
         for case, ids in panel['sample_ids_by_case'].items():
@@ -112,6 +130,9 @@ class RotationDesignTests(unittest.TestCase):
             self.assertEqual(a['rotation_pair_id'], b['rotation_pair_id'])
             self.assertFalse(a['baseline']); self.assertFalse(b['baseline'])
 
+    # Purpose: Limit shared-age counterpart training to secondary protocols.
+    # Inputs: Nearest-age stage with counterpart case 51, then relabeled family_holdout.
+    # Outputs: Secondary stage declares unverified ancestry; primary family isolation rejects it.
     def test_shared_age_counterpart_training_is_declared_secondary_only(self):
         _, _, _, inventory, panel = fixture()
         stages = design.build_rotation_design(inventory, panel)['stages']
@@ -122,6 +143,9 @@ class RotationDesignTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'split a provisional'):
             design.assert_isolation(bad, inventory, panel)
 
+    # Purpose: Require complete sibling metadata for held-out partitions.
+    # Inputs: Rotation stage with one all_final_test_sample_id removed.
+    # Outputs: Isolation raises ValueError for sibling partition mismatch.
     def test_isolation_rejects_omitted_sibling_in_metadata_partition(self):
         _, _, _, inventory, panel = fixture()
         stage = design.build_rotation_design(inventory, panel)['stages'][0]
@@ -130,6 +154,9 @@ class RotationDesignTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'sibling partition'):
             design.assert_isolation(changed, inventory, panel)
 
+    # Purpose: Verify case-role lookup agrees with held-out case IDs.
+    # Inputs: Final-test case reassigned to train in case_assignment.
+    # Outputs: Isolation raises ValueError for role lookup tampering.
     def test_isolation_rejects_case_role_lookup_tampering(self):
         _, _, _, inventory, panel = fixture()
         stage = deepcopy(design.build_rotation_design(inventory, panel)['stages'][0])
@@ -137,6 +164,9 @@ class RotationDesignTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'role lookup'):
             design.assert_isolation(stage, inventory, panel)
 
+    # Purpose: Reject invalid achieved-loss labels and source family mismatches.
+    # Inputs: Negative severity relabeled positive or sample family changed to unrelated.
+    # Outputs: Matched-panel selection rejects either inconsistency.
     def test_annotations_and_source_identity_fail_closed(self):
         _, rows, labels, inventory, _ = fixture()
         altered = deepcopy(labels)
@@ -148,6 +178,9 @@ class RotationDesignTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'family mismatch'):
             design.select_matched_panel(altered, labels, inventory)
 
+    # Purpose: Verify reserved infant policy and deterministic multi-seed design.
+    # Inputs: Partial infant reservation and reversed inventory/seed order.
+    # Outputs: Partial reservation is rejected; seeds 42/43 produce identical 90-stage designs.
     def test_reserved_policy_rejects_release_and_design_is_deterministic(self):
         _, _, _, inventory, panel = fixture()
         with self.assertRaisesRegex(ValueError, 'entire infant pair'):
@@ -157,6 +190,9 @@ class RotationDesignTests(unittest.TestCase):
         self.assertEqual(expected['stages'], actual['stages'])
         self.assertEqual(len(expected['stages']), 90)
 
+    # Purpose: Verify typed rotation defaults and strict unknown-field handling.
+    # Inputs: Archived rotation INI, then seeds replaced by unknown_input.
+    # Outputs: Defaults load seed 42, 120 locator epochs, rate 0.001, and GPU requirement; unknown field fails.
     def test_config_is_clean_typed_and_rejects_unknown_fields(self):
         path = ROOT/'archive/research/configs/models/coa-rotating-evaluation.ini'
         c = design.load_config(path)
@@ -170,6 +206,9 @@ class RotationDesignTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Unsupported'):
                 design.load_config(changed)
 
+    # Purpose: Verify historical cohort metadata freezes with known isolation.
+    # Inputs: Installed production metadata and archived rotation INI redirected to a temporary output.
+    # Outputs: 45 stages include 31 eligible runs; inspection matches and altered frozen INI bytes are rejected.
     @unittest.skipUnless((ROOT/'outputs/datasets/coa/context-aorta-r1/dataset-manifest.json').exists(),
                          'Production frozen cohort metadata is not installed')
     def test_production_metadata_freeze_and_known_reference_isolation(self):

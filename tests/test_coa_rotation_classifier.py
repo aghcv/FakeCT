@@ -72,6 +72,9 @@ class TinyFineInputs:
 
 
 class RotationClassifierIsolationTests(unittest.TestCase):
+    # Purpose: Verify fold classifier fitting rejects outer-test data before loading images.
+    # Inputs: Tiny TRAIN/validation fixture with one row changed to final_test.
+    # Outputs: ValueError naming final-test isolation and no reader construction.
     def test_fitting_rejects_outer_test_before_any_image_reader(self):
         with tempfile.TemporaryDirectory() as directory:
             runtime = config(directory)
@@ -84,6 +87,9 @@ class RotationClassifierIsolationTests(unittest.TestCase):
                                             {'training': {'cache_limit_mb': 1}}, epochs=2)
                 forbidden.assert_not_called()
 
+    # Purpose: Verify stage readers require exact allowed sample/split identities.
+    # Inputs: Final-test allowlist with reserved sample ID or changed TRAIN split.
+    # Outputs: ValueError before reading either unlisted identity.
     def test_heldout_reader_requires_exact_stage_allowlist_before_payloads(self):
         runtime = config('/tmp/not-written')
         allowed = [{**fixture_rows()[0], 'split': 'final_test'}]
@@ -96,6 +102,9 @@ class RotationClassifierIsolationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'outside'):
             reader.classifier(invalid, {})
 
+    # Purpose: Verify fold classifier pairs preserve balance and matched companions.
+    # Inputs: Valid sibling pair then changed class, companion distance, case, or split.
+    # Outputs: One valid pair and ValueError for every confounded pair.
     def test_unbalanced_or_unmatched_companions_are_rejected(self):
         rows = fixture_rows()[:2]
         self.assertEqual(len(learning.matched_pairs(rows)), 1)
@@ -160,6 +169,9 @@ class RotationClassifierTensorFlowTests(unittest.TestCase):
                                              epochs=2, fixed_budget=fixed_budget)
         return result, output, rows, initial, updates
 
+    # Purpose: Verify real inner-fold classifiers train fresh balanced batches and reload chosen checkpoints.
+    # Inputs: Two epochs with twelve TRAIN and six validation synthetic images.
+    # Outputs: Twelve updates, fresh digest, eighteen cache loads, validation-BCE selection, and reload parity.
     def test_inner_classifier_fresh_balanced_updates_and_validation_checkpoint_reload(self):
         with tempfile.TemporaryDirectory() as directory:
             result, output, rows, initial, updates = self.fit_fixture(directory, fixed_budget=False)
@@ -180,6 +192,9 @@ class RotationClassifierTensorFlowTests(unittest.TestCase):
             expected_train = {row['sample_id'] for row in rows if row['split'] == 'train'}
             self.assertEqual({sample for pair in history['epochs'][0]['training_pair_order'] for sample in pair}, expected_train)
 
+    # Purpose: Verify real outer-refit classifiers select the final fixed-budget epoch.
+    # Inputs: Two epochs on twelve TRAIN-only synthetic images.
+    # Outputs: Epoch 2 selected, twelve updates/loads, no validation, and checkpoint parity.
     def test_fixed_budget_classifier_saves_final_epoch_without_validation(self):
         with tempfile.TemporaryDirectory() as directory:
             result, output, rows, initial, updates = self.fit_fixture(directory, fixed_budget=True)

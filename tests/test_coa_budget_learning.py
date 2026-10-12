@@ -23,6 +23,9 @@ from test_multiscale_v3_integration import config
 
 
 class BudgetInputTests(unittest.TestCase):
+    # Purpose: Reject invalid fixed budgets before fitting or image access.
+    # Inputs: Zero, negative, boolean or float epochs/intervals and incompatible checkpoint intervals.
+    # Outputs: ValueError for every budget; fitter and reader never called.
     def test_invalid_budgets_rejected_before_fitter_or_reader(self):
         rows = [row for row in fixture_rows() if row['split'] == 'train']
         invalid = [(0, 1), (-1, 1), (True, 1), (2.0, 1), (2, 0),
@@ -36,6 +39,9 @@ class BudgetInputTests(unittest.TestCase):
             fitter.assert_not_called()
             reader.assert_not_called()
 
+    # Purpose: Reject initialization mismatches before opening image payloads.
+    # Inputs: Mock classifier fingerprint a repeated 64 times versus expected b repeated 64 times.
+    # Outputs: Initialization ValueError before reader use and original builder restored.
     def test_initialization_mismatch_rejected_before_image_access(self):
         import fakect_coa_paired_steps as network
         original = network.build_classifier
@@ -57,6 +63,9 @@ class BudgetInputTests(unittest.TestCase):
             reader.assert_not_called()
         self.assertIs(network.build_classifier, original)
 
+    # Purpose: Reject held-out roles and nonfixed classifier budgets.
+    # Inputs: Training rows mutated to validation, final_test or reserved_test; fixed_budget false.
+    # Outputs: ValueError before fitter or reader invocation.
     def test_validation_and_test_roles_rejected_before_fitter_or_reader(self):
         rows = [row for row in fixture_rows() if row['split'] == 'train']
         with patch.object(learning, 'fit_classifier') as fitter, \
@@ -73,6 +82,9 @@ class BudgetInputTests(unittest.TestCase):
             fitter.assert_not_called()
             reader.assert_not_called()
 
+    # Purpose: Verify builder patches restore after fitter failure.
+    # Inputs: Valid two-epoch budget and fitter raising a fixture RuntimeError.
+    # Outputs: RuntimeError propagates and original classifier builder restored.
     def test_builder_patch_restored_on_fitter_failure(self):
         import fakect_coa_paired_steps as network
         original = network.build_classifier
@@ -92,6 +104,9 @@ class BudgetTensorFlowParityTests(unittest.TestCase):
         cls.network = network
         cls.tf = network.focused._tensorflow()
 
+    # Purpose: Verify the real fitter checks initialization before its first payload.
+    # Inputs: 16-cube synthetic runtime and mismatching all-zero expected weight checksum.
+    # Outputs: Initialization rejected, no samples accessed and no initialization JSON written.
     def test_actual_fitter_checks_initialization_before_first_payload(self):
         self.tf.keras.backend.clear_session()
         TinyFineInputs.accessed = []
@@ -151,6 +166,9 @@ class BudgetTensorFlowParityTests(unittest.TestCase):
         self.assertEqual(set(TinyFineInputs.accessed), {row['sample_id'] for row in rows})
         return receipt, updates
 
+    # Purpose: Verify archive instrumentation preserves full training and optimizer parity.
+    # Inputs: Raw and wrapped two-epoch fits with identical seeded synthetic inputs.
+    # Outputs: Same 12 updates, initial weights, histories and final predictions; verified milestone checkpoints.
     def test_archive_wrapper_preserves_initialization_training_and_optimizer(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

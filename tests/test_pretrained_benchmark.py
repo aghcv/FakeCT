@@ -23,6 +23,9 @@ class PanelTests(unittest.TestCase):
                       mask_counts=dict(added=2000, removed=2000))]
         return dict(complete=True, samples=rows)
 
+    # Purpose: Verify benchmark panels select achieved pure edits deterministically.
+    # Inputs: Baseline, eight narrowing siblings, one enlargement, and one mixed edit.
+    # Outputs: Baseline/n2/n8/enlarged panel with unique IDs, stable ordering, and unchanged input.
     def test_original_and_achieved_pure_edits_selected_before_inference(self):
         source = self.panel()
         original = copy.deepcopy(source)
@@ -35,15 +38,24 @@ class PanelTests(unittest.TestCase):
         self.assertEqual([r['sample_id'] for r in module.select_panel(source, ['case'])],
                          [r['sample_id'] for r in result])
 
+    # Purpose: Verify benchmark development selection excludes reserved infant anatomy.
+    # Inputs: Panel requested for case 260612.
+    # Outputs: ValueError identifying reserved infant data.
     def test_reserved_infant_cannot_enter_development_panel(self):
         with self.assertRaisesRegex(ValueError, 'reserved infant'):
             module.select_panel(self.panel(), ['260612'])
 
+    # Purpose: Verify benchmark panels require a complete frozen population.
+    # Inputs: Fixture population with complete flag false.
+    # Outputs: ValueError requiring complete frozen data.
     def test_incomplete_population_cannot_enter(self):
         source = self.panel(); source['complete'] = False
         with self.assertRaisesRegex(ValueError, 'complete frozen'):
             module.select_panel(source, ['case'])
 
+    # Purpose: Verify panel selection requires the prescribed pure-edit classes.
+    # Inputs: Population missing enlargement but retaining a large mixed edit.
+    # Outputs: ValueError for insufficient pure-edit scenarios.
     def test_missing_pure_edit_does_not_substitute_mixed_edit(self):
         source = self.panel()
         source['samples'] = [r for r in source['samples'] if r['sample_id'] != 'case:enlarged']

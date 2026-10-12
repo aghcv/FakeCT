@@ -30,6 +30,9 @@ class SamplingSummaryTests(unittest.TestCase):
             whole_focus_training_records=[record('whole-a', 1), record('whole-b', 2)],
             gate=dict(passed=True), classifier_started=False, held_out_evaluated=False)
 
+    # Purpose: Verify fixed-patch learning metrics remain separate from complete-focus scores.
+    # Inputs: Missed initial targets, perfect final targets, and unchanged baseline controls.
+    # Outputs: Patch Dice rises 0 to 1, whole-focus Dice stays 0, and supervised TRAIN scope recorded.
     def test_initial_and_final_same_targets_control_does_not_inflate_overlap(self):
         summary = report.summarize(self.document())
         for cls in ('added', 'removed'):
@@ -39,6 +42,9 @@ class SamplingSummaryTests(unittest.TestCase):
         self.assertFalse(summary['held_out_evaluated'])
         self.assertIn('supervised', summary['scope'])
 
+    # Purpose: Verify initial/final diagnostic comparisons require stable supervision.
+    # Inputs: Changed case, mode, tile geometry, or final target count.
+    # Outputs: ValueError for identity, geometry, and target-count drift.
     def test_changed_patch_identity_and_targets_rejected(self):
         for field, value in [('case_id', 'new-case'), ('mode', 'removed'), ('tile', {'offset_kji': [1, 0, 0]})]:
             document = self.document()
@@ -50,6 +56,9 @@ class SamplingSummaryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'target counts'):
             report.summarize(document)
 
+    # Purpose: Verify fixed diagnostics require unique matched measurements.
+    # Inputs: Duplicated final row and removed initial row.
+    # Outputs: ValueError for nonunique IDs and unmatched fixed-patch panels.
     def test_duplicate_and_missing_patch_measurements_rejected(self):
         document = self.document()
         document['final_patch_records'].append(document['final_patch_records'][0])
@@ -91,6 +100,9 @@ class SamplingReportTests(unittest.TestCase):
                 row.update(prediction_npz=path.name, prediction_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
         self._write()
 
+    # Purpose: Verify diagnostic reports escape labels and preserve source artifacts.
+    # Inputs: Saved TRAIN results/history with sample ID containing angle brackets.
+    # Outputs: Escaped HTML, unchanged inputs, PNG/PDF/SVG figure, and verified output hashes.
     def test_saved_report_preserves_inputs_escapes_text_and_exports_figure(self):
         original = (self.directory / 'results.json').read_bytes()
         history = (self.directory / 'history.json').read_bytes()
@@ -108,6 +120,9 @@ class SamplingReportTests(unittest.TestCase):
         for relative, expected in provenance['outputs_sha256'].items():
             self.assertEqual(expected, hashlib.sha256((self.directory / relative).read_bytes()).hexdigest())
 
+    # Purpose: Verify missing results produce an explicit pending learning report.
+    # Inputs: Deleted results JSON and TRAIN case roster a/b.
+    # Outputs: Pending status, absent gate, classifier false, and visible unevaluated-gate explanation.
     def test_pending_report_never_implies_passing_or_starts_classifier(self):
         (self.directory / 'results.json').unlink()
         result = report.write_report(self.config, {'stages': [{'train_case_ids': ['a', 'b']}]})
@@ -119,6 +134,9 @@ class SamplingReportTests(unittest.TestCase):
         self.assertIn('No learning gate has been evaluated', text)
         self.assertIn('a, b', text)
 
+    # Purpose: Verify saved patch predictions populate the interactive TRAIN viewer.
+    # Inputs: Initial/final prediction archives for added, removed, and control patches.
+    # Outputs: Three scenarios, standard opacity presets, and viewer link in the report.
     def test_true_and_final_predicted_changes_use_existing_interactive_viewer(self):
         self._archives()
         result = report.write_report(self.config, {})
@@ -127,6 +145,9 @@ class SamplingReportTests(unittest.TestCase):
         self.assertEqual(manifest['opacity_presets'], [.15, .45, .8])
         self.assertIn('TRAIN patch viewer', (self.directory / 'report.html').read_text())
 
+    # Purpose: Verify saved supervision is compared spatially rather than by counts alone.
+    # Inputs: Final added target shifted one voxel with its checksum updated.
+    # Outputs: ValueError reporting changed supervision.
     def test_exact_saved_truth_change_rejected_even_if_class_counts_match(self):
         self._archives()
         row = self.document['final_patch_records'][0]
@@ -141,6 +162,9 @@ class SamplingReportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'supervision changed'):
             report.write_report(self.config, {})
 
+    # Purpose: Verify report prediction archives stay inside the run and match digests.
+    # Inputs: Parent/absolute prediction paths and an incorrect archive SHA256.
+    # Outputs: ValueError for path escape and checksum mismatch.
     def test_prediction_cannot_escape_run_or_change_checksum(self):
         for value in ('../outside.npz', '/tmp/outside.npz'):
             self.document['final_patch_records'][0]['prediction_npz'] = value
@@ -153,6 +177,9 @@ class SamplingReportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'checksum'):
             report.write_report(self.config, {})
 
+    # Purpose: Verify reports require the pinned TRAIN-only experiment scope.
+    # Inputs: Changed lock digest and held_out_evaluated/classifier_started flags set true.
+    # Outputs: ValueError for lock drift and forbidden TRAIN-only scope changes.
     def test_source_lock_and_train_only_scope_are_enforced(self):
         (self.directory / 'experiment-lock.json').write_text('{}')
         self.document['source_lock_sha256'] = '0' * 64

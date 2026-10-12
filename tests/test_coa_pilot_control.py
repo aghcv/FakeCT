@@ -106,6 +106,9 @@ class ControlContractTests(unittest.TestCase):
         self.addCleanup(self.stack.close)
         self.stack.enter_context(patch.object(exp, 'parent', self.fake_parent))
 
+    # Purpose: Enforce the declared single-factor pilot control configuration.
+    # Inputs: Valid control INI and altered epoch, learning-rate, or cache-limit settings.
+    # Outputs: Valid INI round-trips; every undeclared rate or budget change raises ValueError.
     def test_clean_ini_allows_only_declared_rate_and_budget(self):
         path = self.root/'control.ini'
         write_ini(path, self.c)
@@ -120,6 +123,9 @@ class ControlContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.load_config(path)
 
+    # Purpose: Allow completed reference evidence despite failed learning validation.
+    # Inputs: Completed 50-epoch reference with learning_check_failed and selected epoch 37.
+    # Outputs: Plan keeps samples, crops, model, cache, and initialization with rate changed to 0.0003.
     def test_completed_reference_retained_even_when_validation_or_learning_gate_fails(self):
         plan = exp.plan(self.c)
         self.assertEqual(plan['reference_summary']['status'], 'learning_check_failed')
@@ -133,6 +139,9 @@ class ControlContractTests(unittest.TestCase):
         self.assertEqual(plan['training_contract']['changed_factor'],
                          {'learning_rate': {'reference': .001, 'control': .0003}})
 
+    # Purpose: Reject changes to training factors beyond the control rate.
+    # Inputs: Altered epochs, seed, cache/host/GPU limits, or GPU requirement.
+    # Outputs: Planning raises ValueError for each changed factor.
     def test_every_other_training_factor_is_rejected(self):
         for key, value in (('epochs', 49), ('seed', 43), ('cache_limit_mb', 5000),
                            ('host_memory_limit_mb', 11000), ('gpu_memory_limit_mb', 11000),
@@ -143,6 +152,9 @@ class ControlContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.plan(changed)
 
+    # Purpose: Verify reference completion, checkpoint, crop, cache, and initialization evidence.
+    # Inputs: Incomplete budget, test access, locator changes, bad hashes, replay, or residency flags.
+    # Outputs: Planning rejects every invalid reference evidence mutation.
     def test_parent_completion_reload_crop_cache_and_initialization_failures_rejected(self):
         mutations = [('results', 'epochs_completed', 49), ('results', 'optimizer_steps', 799),
                      ('results', 'test_evaluated', True), ('results', 'locator_unchanged', False),
@@ -163,6 +175,9 @@ class ControlContractTests(unittest.TestCase):
                 finally:
                     exp.write_json(path, self.documents[key])
 
+    # Purpose: Require full balanced history and validation-based checkpoint selection.
+    # Inputs: Missing epoch, wrong selection BCE, reserved sample order, or incorrect prediction labels.
+    # Outputs: Planning raises ValueError for each altered history.
     def test_complete_history_must_preserve_validation_selection_and_balanced_updates(self):
         reference = Path(self.c['reference']['experiment_directory'])
         path = reference/exp.REFERENCE_FILES['history']
@@ -184,6 +199,9 @@ class ControlContractTests(unittest.TestCase):
                 finally:
                     exp.write_json(path, self.documents['history'])
 
+    # Purpose: Verify control locks pin source and completed reference evidence.
+    # Inputs: Frozen control followed by source/snapshot/history/checkpoint or parent contract mutations.
+    # Outputs: Initial inspection matches; dependency, panel, crop, model, and geometry changes are rejected.
     def test_lock_pins_new_sources_and_completed_reference_evidence(self):
         source_names = ('src/inherited_runtime.py', 'src/control_runtime.py')
         for name in source_names:
@@ -224,6 +242,9 @@ class ControlContractTests(unittest.TestCase):
                 finally:
                     self.fake_parent.inspect_lock.return_value = deepcopy(self.reference_lock)
 
+    # Purpose: Verify the control numerical learner matches the reference implementation.
+    # Inputs: Parsed pilot/control source with experiment imports normalized and report functions removed.
+    # Outputs: Remaining executable ASTs are identical.
     def test_numerical_learner_is_identical_except_report_and_experiment_binding(self):
         original = (ROOT/'src/fakect_coa_pilot_learning.py').read_text()
         control = (ROOT/'src/fakect_coa_pilot_control_learning.py').read_text()
@@ -235,12 +256,18 @@ class ControlContractTests(unittest.TestCase):
                 isinstance(node, ast.FunctionDef) and node.name == 'write_report')]
         self.assertEqual(ast.dump(trees[0]), ast.dump(trees[1]))
 
+    # Purpose: Verify the control report states its single changed training factor.
+    # Inputs: Generated control report HTML.
+    # Outputs: Report describes Adam rate 0.001 to 0.0003 and the matching 50-epoch budget.
     def test_control_report_explains_the_single_factor(self):
         path = Path(learning.write_report(self.root/'report-fixture'))
         document = path.read_text()
         self.assertIn('Only Adam learning rate changes from 0.001 to 0.0003', document)
         self.assertIn('the 50-epoch budget match the completed', document)
 
+    # Purpose: Verify Slurm runs smoke and fit through the existing control CLI.
+    # Inputs: Control GPU submission script.
+    # Outputs: Exactly two crun commands target the real CLI with smoke then fit stages.
     def test_slurm_uses_existing_control_cli_in_separate_smoke_then_fit_processes(self):
         script = (ROOT/'scripts/research/slurm/fakect_coa_pilot_control_gpu.sh').read_text()
         commands = [line for line in script.splitlines() if line.startswith('crun ')]
@@ -252,10 +279,16 @@ class ControlContractTests(unittest.TestCase):
             self.assertTrue((ROOT/target).is_file())
             self.assertIn('--stage '+stage, command)
 
+    # Purpose: Reject diagnostic mode before loading control payloads.
+    # Inputs: Control fit invoked with diagnostic=True and an empty lock.
+    # Outputs: Fit raises ValueError.
     def test_diagnostic_mode_is_rejected_without_payload_reads(self):
         with self.assertRaises(ValueError):
             learning.fit(self.c, {}, diagnostic=True)
 
+    # Purpose: Require production smoke with a resident cache, GPU, and new lock.
+    # Inputs: Valid 40-sample smoke plus altered lock, batch, gradient, cache, memory, and trace evidence.
+    # Outputs: Valid evidence loads; each incomplete or inconsistent smoke raises ValueError.
     def test_full_size_smoke_requires_full_cache_in_own_lock_and_gpu(self):
         lock = exp.plan(self.c)
         output = Path(self.c['experiment']['output_directory'])
@@ -317,6 +350,9 @@ class ControlTensorFlowTests(unittest.TestCase):
         MiniVolume.accessed = []
         MiniVolume.returned_mask_value = None
 
+    # Purpose: Verify the lower-rate pilot reuses its locator and validation checkpoint.
+    # Inputs: Fresh TensorFlow control with 32 train/8 validation samples and one epoch at 0.0003.
+    # Outputs: Sixteen updates preserve locator hashes, load 40 inputs, keep one trace, and select validation BCE.
     def test_fresh_32_8_control_uses_lower_rate_and_validation_checkpoint(self):
         from test_multiscale_v3_integration import config as parent_config
         import fakect_multiscale_experiment_v3 as geometry

@@ -14,6 +14,9 @@ from preview_roi import run
 
 
 class EditWorkflowTests(unittest.TestCase):
+    # Purpose: Verify one INI command performs native erosion and exports audited before/after artifacts.
+    # Inputs: 45x35x35 artery/soft-tissue fixture, tube ROI, 1 mm erosion, and 2 mm recipient search.
+    # Outputs: Soft-tissue labels/signals assigned, native bytes preserved, and hashed NPZ/PNG/HTML artifacts.
     def test_same_command_exports_reassigned_labels_and_before_after_report(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

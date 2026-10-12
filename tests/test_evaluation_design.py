@@ -19,11 +19,17 @@ def datasets(sizes):
 
 
 class EvaluationParserTests(unittest.TestCase):
+    # Purpose: Verify explicit holdout settings include expected defaults.
+    # Inputs: Holdout strategy with case_counts 8,2,2.
+    # Outputs: Integer counts, seed 42, and threshold 0.5.
     def test_explicit_holdout_and_defaults(self):
         parsed = parse_evaluation({'strategy': 'holdout', 'case_counts': '8, 2, 2'})
         self.assertEqual(parsed, {'strategy': 'holdout', 'case_counts': [8, 2, 2],
                                   'seeds': [42], 'threshold': .5})
 
+    # Purpose: Verify leave-one-out modes accept repeated training seeds.
+    # Inputs: Leave-one-out seeds 42/1729/2026 and default nested mode.
+    # Outputs: One validation family, parsed seeds, and no holdout-only fields in nested settings.
     def test_leave_one_out_defaults_and_multiple_training_seeds(self):
         parsed = parse_evaluation({'strategy': 'leave_one_out', 'seeds': '42,1729,2026'})
         self.assertEqual(parsed['validation_families'], 1)
@@ -32,6 +38,9 @@ class EvaluationParserTests(unittest.TestCase):
         self.assertNotIn('case_counts', nested)
         self.assertNotIn('validation_families', nested)
 
+    # Purpose: Verify planning-project paths remain explicit valid text.
+    # Inputs: Valid cohort.ini path plus blank/multiline/carriage-return/NUL paths.
+    # Outputs: Valid path preserved and ValueError for every invalid path.
     def test_planning_project_is_explicit_nonblank_path(self):
         result = parse_evaluation({'strategy': 'leave_one_out', 'planning_project': 'configs/cohort.ini'})
         self.assertEqual(result['planning_project'], 'configs/cohort.ini')
@@ -39,6 +48,9 @@ class EvaluationParserTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 parse_evaluation({'strategy': 'leave_one_out', 'planning_project': value})
 
+    # Purpose: Verify evaluation parsing rejects ambiguous or conflicting protocol settings.
+    # Inputs: Missing/typo strategy, missing holdout counts, conflicting mode fields, and misspelled seed.
+    # Outputs: ValueError for every unsupported protocol declaration.
     def test_reject_misspellings_implicit_modes_and_conflicting_fields(self):
         cases = [{}, {'strategy': 'typo'}, {'strategy': 'holdout'},
                  {'strategy': 'leave_one_out', 'case_counts': '8,2,2'},
@@ -50,6 +62,9 @@ class EvaluationParserTests(unittest.TestCase):
             with self.subTest(case=case), self.assertRaises(ValueError):
                 parse_evaluation(case)
 
+    # Purpose: Verify count, seed, threshold, and validation-family bounds are strict.
+    # Inputs: Malformed/zero/huge counts, duplicate/invalid seeds, nonfinite/out-of-range thresholds.
+    # Outputs: ValueError for each invalid numeric evaluation setting.
     def test_reject_bad_counts_seeds_and_nonfinite_thresholds(self):
         for counts in ('8,2', '8,2,2,1', '8,0,2', '8,-2,2', '8,2.0,2', '8,2,', '2147483648,2,2'):
             with self.subTest(counts=counts), self.assertRaises(ValueError):
@@ -65,6 +80,9 @@ class EvaluationParserTests(unittest.TestCase):
             with self.subTest(validation_families=value), self.assertRaises(ValueError):
                 parse_evaluation({'strategy': 'leave_one_out', 'validation_families': value})
 
+    # Purpose: Verify evaluation parser requires single-line string values.
+    # Inputs: Multiline strategy/seeds, numeric threshold, and None settings.
+    # Outputs: ValueError for each malformed settings container/value.
     def test_reject_multiline_or_nonstring_values(self):
         for values in ({'strategy': 'leave_one_out\n'}, {'strategy': 'leave_one_out', 'seeds': '1\r2'},
                        {'strategy': 'leave_one_out', 'threshold': .5}, None):
@@ -88,6 +106,9 @@ class EvaluationDesignTests(unittest.TestCase):
         self.assertEqual(sum(fold['family_counts'].values()), design['counts']['families'])
         self.assertFalse(set(fold['test_families']) & set(fold['development_families']))
 
+    # Purpose: Verify holdout partitions preserve complete anatomy families.
+    # Inputs: Six two-case families with 8/2/2 holdout counts.
+    # Outputs: One fold with 4/1/1 families, exact case counts, and no inner folds.
     def test_holdout_assigns_exact_case_counts_and_complete_families(self):
         design = self.design('holdout')
         self.assertEqual(design['counts']['outer_folds'], 1)
@@ -97,6 +118,9 @@ class EvaluationDesignTests(unittest.TestCase):
         self.assertEqual(fold['family_counts'], {'train': 4, 'validation': 1, 'test': 1})
         self.assertEqual(fold['inner_folds'], [])
 
+    # Purpose: Verify exact holdout allocation handles unequal family sizes.
+    # Inputs: Four family-size/count combinations including single-case families.
+    # Outputs: Complete family assignments with requested case counts.
     def test_unequal_families_can_have_exact_case_partition(self):
         for sizes, counts in (((3, 2, 1, 1, 1), '4,2,2'), ((4, 3, 2, 1), '3,5,2'),
                               ((5, 2, 2, 1), '2,2,6'), ((1, 1, 1), '1,1,1')):
@@ -106,12 +130,18 @@ class EvaluationDesignTests(unittest.TestCase):
                 self.assert_complete_assignment(design, fold)
                 self.assertEqual(list(fold['case_counts'].values()), list(map(int, counts.split(','))))
 
+    # Purpose: Verify impossible counts fail without splitting families.
+    # Inputs: Three two-case families requested as 4/1/1 or 8/2/2.
+    # Outputs: ValueError identifying family-size infeasibility or insufficient distinct cases.
     def test_impossible_holdout_reports_family_sizes_instead_of_leaking(self):
         with self.assertRaisesRegex(ValueError, 'without splitting anatomy families.*Family sizes'):
             self.design('holdout', (2, 2, 2), case_counts='4,1,1')
         with self.assertRaisesRegex(ValueError, 'distinct cases'):
             self.design('holdout', (2, 2, 2), case_counts='8,2,2')
 
+    # Purpose: Verify exact family partitioning matches exhaustive feasibility.
+    # Inputs: All four-family size combinations from 1/2 and every positive count partition.
+    # Outputs: Exact requested counts for feasible partitions and rejection for infeasible partitions.
     def test_exact_partition_matches_exhaustive_small_reference(self):
         for sizes in itertools.product((1, 2), repeat=4):
             feasible = set()
@@ -132,6 +162,9 @@ class EvaluationDesignTests(unittest.TestCase):
                             with self.assertRaisesRegex(ValueError, 'without splitting anatomy families'):
                                 self.design('holdout', sizes, case_counts=','.join(map(str, counts)))
 
+    # Purpose: Verify split construction is stable independently of training repetitions.
+    # Inputs: Reversed roster, extra training seeds, and ten distinct split seeds.
+    # Outputs: Same folds for input/training-seed changes and differing assignments across split seeds.
     def test_design_stable_under_input_order_or_training_seed_changes(self):
         rows = datasets([2]*6)
         settings = parse_evaluation({'strategy': 'holdout', 'case_counts': '8,2,2'})
@@ -145,6 +178,9 @@ class EvaluationDesignTests(unittest.TestCase):
                            ['family_assignment'].items()) for seed in range(10)}
         self.assertGreater(len(different), 1)
 
+    # Purpose: Verify outer leave-one-out rotates every complete family once.
+    # Inputs: Six two-case families and alternate training-seed list.
+    # Outputs: Six complete 8/2/2 folds, each family tested once, and no inner folds.
     def test_leave_one_out_tests_each_family_once(self):
         design = self.design('leave_one_out')
         held_out = []
@@ -158,6 +194,9 @@ class EvaluationDesignTests(unittest.TestCase):
         alternate = self.design('leave_one_out', seeds='42,2026')
         self.assertEqual(design['folds'], alternate['folds'])
 
+    # Purpose: Verify validation-family budgets retain training anatomy.
+    # Inputs: Six families with two validation families then five.
+    # Outputs: 3/2/1 family counts for valid budget and rejection when no training family remains.
     def test_multiple_validation_families_leave_training_anatomy(self):
         design = self.design('leave_one_out', validation_families='2')
         for fold in design['folds']:
@@ -166,6 +205,9 @@ class EvaluationDesignTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no training family'):
             self.design('leave_one_out', validation_families='5')
 
+    # Purpose: Verify nested evaluation isolates outer tests and rotates inner validation.
+    # Inputs: Six two-case families with one or multiple training seeds.
+    # Outputs: Six outer 10/0/2 folds and thirty inner 8/2/2 folds with stable assignments.
     def test_nested_design_has_six_outer_thirty_inner_folds(self):
         design = self.design('nested_leave_one_out')
         self.assertEqual(design['counts'], {'cases': 12, 'families': 6, 'outer_folds': 6,
@@ -183,6 +225,9 @@ class EvaluationDesignTests(unittest.TestCase):
         repeated = self.design('nested_leave_one_out', seeds='10,11')
         self.assertEqual(design['folds'], repeated['folds'])
 
+    # Purpose: Verify repeated receipts neither duplicate cases nor mutate metadata.
+    # Inputs: Six-family rows plus duplicate receipts and extra frame/name metadata.
+    # Outputs: Same design as unique roster and unchanged rows/settings.
     def test_repeated_receipts_count_a_case_once_and_do_not_mutate_inputs(self):
         rows = datasets([2]*6)
         rows += [{**rows[0], 'name': 'another-receipt', 'frame': 2}, dict(rows[1])]
@@ -193,6 +238,9 @@ class EvaluationDesignTests(unittest.TestCase):
         self.assertEqual(rows, original_rows)
         self.assertEqual(settings, original_settings)
 
+    # Purpose: Verify normalized case identities cannot belong to multiple families.
+    # Inputs: Repeated case with changed family and integer/string ID 7 assigned differently.
+    # Outputs: ValueError for multiple anatomy-family assignments.
     def test_case_cannot_cross_families_including_legacy_integer_ids(self):
         rows = datasets([2]*6)
         rows += [{'case_id': rows[0]['case_id'], 'anatomy_family': 'new-family'}]
@@ -204,6 +252,9 @@ class EvaluationDesignTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'multiple anatomy families'):
             build_evaluation_design(rows, settings)
 
+    # Purpose: Verify evaluation requires enough identifiable independent families.
+    # Inputs: Too few families and rows missing/blank/multiline/boolean identity fields.
+    # Outputs: ValueError for insufficient families or invalid case/family identities.
     def test_insufficient_families_and_unidentified_data(self):
         for strategy, size in (('holdout', 2), ('leave_one_out', 2), ('nested_leave_one_out', 3)):
             with self.subTest(strategy=strategy), self.assertRaisesRegex(ValueError, 'independent anatomy families'):
@@ -215,6 +266,9 @@ class EvaluationDesignTests(unittest.TestCase):
             with self.subTest(row=row), self.assertRaises(ValueError):
                 build_evaluation_design([row], parse_evaluation({'strategy': 'leave_one_out'}))
 
+    # Purpose: Verify grouped planning obeys family and dynamic-programming budgets.
+    # Inputs: 129 single-case families and MAX_DP_STATES patched to 3.
+    # Outputs: ValueError for family-count cap and planning-state budget exhaustion.
     def test_planning_size_is_bounded(self):
         with self.assertRaisesRegex(ValueError, 'at most 128'):
             self.design('leave_one_out', [1]*129)
@@ -222,6 +276,9 @@ class EvaluationDesignTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'planning budget'):
                 self.design('holdout')
 
+    # Purpose: Verify design construction rechecks typed settings and split seeds.
+    # Inputs: Boolean/negative/duplicate/string seeds, NaN threshold, invalid family count, and bad split seed.
+    # Outputs: ValueError for every malformed typed setting.
     def test_typed_inputs_are_revalidated(self):
         settings = parse_evaluation({'strategy': 'leave_one_out'})
         for update in ({'seeds': [True]}, {'seeds': [-1]}, {'seeds': [1, 1]}, {'seeds': '42'},
@@ -232,6 +289,9 @@ class EvaluationDesignTests(unittest.TestCase):
             with self.subTest(seed=seed), self.assertRaises(ValueError):
                 build_evaluation_design(datasets([2]*6), settings, split_seed=seed)
 
+    # Purpose: Verify assignment validation enforces complete exclusive protocol partitions.
+    # Inputs: Valid three-family assignment then missing/unknown/empty split, shared case, or refit misuse.
+    # Outputs: Valid counts returned and ValueError for each incomplete or leaking assignment.
     def test_assignment_rejects_missing_families_unknown_splits_or_shared_cases(self):
         families = {'a': ['case-a'], 'b': ['case-b'], 'c': ['case-c']}
         assignment = {'a': 'train', 'b': 'validation', 'c': 'test'}

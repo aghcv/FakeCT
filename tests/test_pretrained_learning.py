@@ -17,6 +17,9 @@ except ImportError:
 
 
 class NormalizationTests(unittest.TestCase):
+    # Purpose: Verify foreground channel resolution uses exact vendor names.
+    # Inputs: Nineteen-label ontology, cardiac/aortic groups, and unsupported or absent names.
+    # Outputs: Aorta maps to channel 2, supported group maps exactly, and invalid names raise ValueError.
     def test_resolve_group_uses_exact_vendor_names(self):
         labels = {f'label_{i}': i for i in range(19)}
         for channel, name in zip((2, 4, 5, 6, 7, 8), learning.CARDIAC_AORTIC_NAMES):
@@ -33,6 +36,9 @@ class NormalizationTests(unittest.TestCase):
             learning.resolve_foreground_channels({f'label_{i}': i for i in range(19) if i != 2} | {'aorta':2},
                                                  ('aorta', 'brachiocephalic_trunk'))
 
+    # Purpose: Require valid foreground channels while preserving source ontology.
+    # Inputs: Empty/duplicate/background/out-of-range/noninteger channels and unsorted valid channels.
+    # Outputs: Invalid groups fail; valid channels sort and default extraction remains vendor aorta channel 2.
     def test_foreground_rejects_invalid_channels_and_keeps_source_ontology(self):
         for channels in [(), (2, 2), (0, 2), (19,), (-1,), (True, 2), (2.0,), None, '2']:
             with self.assertRaises(ValueError):
@@ -41,6 +47,9 @@ class NormalizationTests(unittest.TestCase):
         self.assertEqual(learning.foreground_metadata()['extraction'],
                          '19-way argmax == local aorta channel 2')
 
+    # Purpose: Verify CT normalization follows frozen int32 conversion and scaling.
+    # Inputs: HU values spanning clipping bounds and fractional values.
+    # Outputs: Result exactly matches clipped int32 normalization as float32 and preserves the input.
     def test_int32_after_resampling_then_original_ct_scaling(self):
         image = np.array([-1000., -101.9, -100.9, 0., 142.9, 813.9, 2000.], dtype=np.float32)
         original = image.copy()
@@ -51,6 +60,9 @@ class NormalizationTests(unittest.TestCase):
         np.testing.assert_array_equal(image, original)
         self.assertEqual(result.dtype, np.float32)
 
+    # Purpose: Reject altered normalization properties and invalid HU values.
+    # Inputs: Changed mean, NaN, infinity, and value 1e12.
+    # Outputs: Normalization raises ValueError for frozen properties or invalid numeric range.
     def test_reject_changed_normalization_nonfinite_and_overflow(self):
         changed = dict(learning.CT_PROPERTIES, mean=0)
         with self.assertRaisesRegex(ValueError, 'frozen'):
@@ -66,6 +78,9 @@ class LossTests(unittest.TestCase):
         torch.set_num_threads(2)
         torch.manual_seed(42)
 
+    # Purpose: Verify binary aorta logits preserve original softmax probability.
+    # Inputs: Random 19-channel logits and a highest aorta logit below majority probability.
+    # Outputs: Sigmoid equals channel-2 softmax; vendor argmax and binary 0.5 threshold can differ.
     def test_marginal_probability_exactly_preserves_original_aorta_head(self):
         z = torch.randn(2, 19, 4, 3, 5)
         q = learning.aorta_logit(z)
@@ -75,6 +90,9 @@ class LossTests(unittest.TestCase):
         self.assertEqual(int(equal.argmax(1)), 2)
         self.assertLess(float(learning.aorta_logit(equal).sigmoid()), .5)
 
+    # Purpose: Verify grouped logits sum selected foreground probabilities.
+    # Inputs: Six cardiac/aortic channels, default singleton, and selected-channel permutation.
+    # Outputs: Grouped sigmoid equals softmax sum; default and explicit channel 2 match exactly.
     def test_grouped_logit_equals_summed_foreground_softmax_and_default_is_identical(self):
         z = torch.randn(2, 19, 4, 3, 5)
         channels = (2, 4, 5, 6, 7, 8)
@@ -87,6 +105,9 @@ class LossTests(unittest.TestCase):
         torch.testing.assert_close(learning.aorta_logit(z[:, permutation], foreground_channels=channels),
                                    grouped, atol=1e-6, rtol=1e-6)
 
+    # Purpose: Verify grouped loss trains all foreground heads and ignores excluded voxels.
+    # Inputs: Zero 19-channel logits, positive truth, and one invalid voxel.
+    # Outputs: Selected heads receive negative gradients, background positive gradients, and ignored cell none.
     def test_grouped_loss_trains_all_selected_heads_and_preserves_ignore_mask(self):
         z = torch.zeros(1, 19, 2, 2, 2, requires_grad=True)
         truth = torch.ones(2, 2, 2); valid = torch.ones_like(truth); valid[0, 0, 0] = 0
@@ -97,6 +118,9 @@ class LossTests(unittest.TestCase):
         self.assertTrue(torch.all(z.grad[0, channels, 1, 1, 1] < 0))
         self.assertGreater(float(z.grad[0, 3, 1, 1, 1]), 0)  # Pulmonary vein remains complement.
 
+    # Purpose: Verify ignored voxels and nonforeground permutations leave loss invariant.
+    # Inputs: Random logits with invalid last slice, huge ignored values, and swapped nonforeground classes.
+    # Outputs: Ignored gradients are zero and all loss values match within tolerance.
     def test_ignored_voxels_have_no_loss_or_gradient_and_other_classes_are_marginalized(self):
         z = torch.randn(1, 19, 4, 4, 4, requires_grad=True)
         truth = torch.zeros(1, 1, 4, 4, 4); truth[:, :, :2] = 1
@@ -113,6 +137,9 @@ class LossTests(unittest.TestCase):
         third = learning.aorta_loss(z.detach()[:, permutation], truth, valid)
         torch.testing.assert_close(first['loss'], third['loss'], atol=1e-6, rtol=1e-6)
 
+    # Purpose: Verify coarse supervision excludes mixed annotation support.
+    # Inputs: Full/coarse logits with one invalid fine voxel and equal level weights.
+    # Outputs: Both levels train but the corresponding coarse cell has zero gradient.
     def test_coarse_supervision_ignores_entire_mixed_annotation_support(self):
         full = torch.randn(1, 19, 4, 4, 4, requires_grad=True)
         coarse = torch.randn(1, 19, 2, 2, 2, requires_grad=True)
@@ -124,6 +151,9 @@ class LossTests(unittest.TestCase):
         self.assertEqual(int(torch.count_nonzero(coarse.grad[:, :, 0, 0, 0])), 0)
         self.assertGreater(int(torch.count_nonzero(coarse.grad[:, :, 1, 1, 1])), 0)
 
+    # Purpose: Verify default deep supervision excludes the lowest-resolution head.
+    # Inputs: Full and coarse logits with fully valid positive truth.
+    # Outputs: Only one level is active and the coarse head has no gradient.
     def test_default_supervision_does_not_train_lowest_resolution_head(self):
         full = torch.randn(1, 19, 4, 4, 4, requires_grad=True)
         coarse = torch.randn(1, 19, 2, 2, 2, requires_grad=True)
@@ -132,6 +162,9 @@ class LossTests(unittest.TestCase):
         self.assertEqual(result['active_levels'], 1)
         self.assertIsNone(coarse.grad)
 
+    # Purpose: Reject invalid loss supervision contracts.
+    # Inputs: No annotated voxels, nonbinary truth, or negative level weights.
+    # Outputs: Loss raises ValueError for annotations, binary labels, or weights.
     def test_invalid_supervision_is_rejected(self):
         z = torch.zeros(1, 19, 4, 4, 4)
         with self.assertRaisesRegex(ValueError, 'annotated'):
@@ -183,6 +216,9 @@ class PretrainedModelTests(unittest.TestCase):
         self.original = self.root / 'original.pth'
         self.reference = small_official_checkpoint(self.original)
 
+    # Purpose: Verify official checkpoint loading preserves heads and resets optimizer state.
+    # Inputs: Small official PlainConvUNet checkpoint with 19 labels and old optimizer metadata.
+    # Outputs: All weights/biases match, optimizer is fresh at 0.0001, and metadata pins source checkpoint.
     def test_official_graph_load_preserves_all_output_heads_and_optimizer_is_fresh(self):
         loaded = learning.build_model(self.original)
         self.assertEqual(learning.weights_sha256(loaded), learning.weights_sha256(self.reference))
@@ -198,6 +234,9 @@ class PretrainedModelTests(unittest.TestCase):
         self.assertEqual(len(metadata['head_shapes']), 4)
         self.assertEqual(metadata['loaded_checkpoint_sha256'], learning.file_sha256(self.original))
 
+    # Purpose: Reject incomplete checkpoint weights or unsupported source spacing.
+    # Inputs: Missing decoder head weight or spacing changed from 1.5 to 3 mm.
+    # Outputs: Loading raises RuntimeError for missing key or ValueError for spacing.
     def test_missing_head_wrong_label_or_changed_spacing_cannot_load(self):
         saved = torch.load(self.original, weights_only=False)
         missing = copy.deepcopy(saved)
@@ -211,6 +250,9 @@ class PretrainedModelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '1.5-mm'):
             learning.build_model(path)
 
+    # Purpose: Verify real gradient updates and immutable checkpoint round-trips.
+    # Inputs: Official small model, one 8-cube training step, saved and restored weights.
+    # Outputs: Loss/gradient are finite, weights change, reload predictions match, and overwrite is rejected.
     def test_real_gradient_step_saved_reload_and_immutable_checkpoint(self):
         model = learning.build_model(self.original)
         initial = learning.weights_sha256(model)
@@ -236,6 +278,9 @@ class PretrainedModelTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             learning.save_checkpoint(self.root / 'trained.pth', model)
 
+    # Purpose: Verify grouped training preserves vendor labels in saved archives.
+    # Inputs: Six-channel foreground group, one gradient step, and grouped checkpoint reload.
+    # Outputs: Every selected head changes; source ontology and target definition persist with exact prediction parity.
     def test_grouped_gradient_archive_preserves_vendor_labels_and_reload_predictions(self):
         model = learning.build_model(self.original)
         channels = learning.resolve_foreground_channels(model._fakect_pretrained_metadata['dataset_json']['labels'],
@@ -267,6 +312,9 @@ class PretrainedModelTests(unittest.TestCase):
         np.testing.assert_array_equal(a['mask'], b['mask'])
         np.testing.assert_array_equal(a['probability'], b['probability'])
 
+    # Purpose: Verify grouped production smoke propagates foreground semantics through reload.
+    # Inputs: Small CPU checkpoint, six foreground channels, and two observed inference calls.
+    # Outputs: Smoke passes, both calls use the same channels, and receipt records the target group.
     def test_grouped_production_smoke_propagates_target_through_reload(self):
         channels = (2, 4, 5, 6, 7, 8)
         image = np.random.default_rng(8).normal(size=(8, 8, 8)).astype(np.float32)
@@ -286,6 +334,9 @@ class PretrainedModelTests(unittest.TestCase):
 
 @unittest.skipIf(torch is None, 'Requires isolated PyTorch/nnU-Net environment')
 class TilingTests(unittest.TestCase):
+    # Purpose: Verify tiled grouping follows every selected vendor argmax winner.
+    # Inputs: Analytic 19-head model and images cycling through all label values.
+    # Outputs: Mask matches selected channels, excludes other vessels, and probabilities equal grouped softmax.
     def test_grouped_tiling_includes_every_foreground_winner_and_excludes_other_vessels(self):
         torch.set_num_threads(2)
         model = torch.nn.Conv3d(1, 19, 1)
@@ -313,6 +364,9 @@ class TilingTests(unittest.TestCase):
         np.testing.assert_array_equal(default['probability'], explicit['probability'])
         self.assertEqual(actual['metadata']['foreground_channels'], list(channels))
 
+    # Purpose: Verify overlapping tiled inference supports padding and disk accumulators.
+    # Inputs: 5x7x13 image, 8-cube patches, analytic model, and tiny accumulator memory limit.
+    # Outputs: Mask/probabilities match argmax; disk-backed tiles clean up temporary files and restore model mode.
     def test_overlap_padding_disk_accumulation_and_original_argmax(self):
         torch.set_num_threads(2)
         model = torch.nn.Conv3d(1, 19, 1)
@@ -331,6 +385,9 @@ class TilingTests(unittest.TestCase):
         self.assertTrue(actual['metadata']['accumulator_disk_backed'])
         self.assertGreater(actual['metadata']['tiles'], 1)
 
+    # Purpose: Reject inference models with an incompatible output head.
+    # Inputs: Two-channel Conv3d model on an 8-cube image.
+    # Outputs: Tiled prediction raises ValueError requiring 19 channels.
     def test_inference_rejects_mismatched_head_count(self):
         model = torch.nn.Conv3d(1, 2, 1)
         with self.assertRaisesRegex(ValueError, '19-channel'):

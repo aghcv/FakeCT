@@ -79,6 +79,9 @@ class RecipeReportTests(unittest.TestCase):
                 'array_artifact': 'edit.npz'},
             'rerun_command': 'python3 scripts/preview_roi.py --config example.ini'}
 
+    # Purpose: Verify portable recipe reports separate net effects from summed pass activity.
+    # Inputs: Two-pass growth/shrink report with named ROI images, final figures and local HTML viewer.
+    # Outputs: All assets embedded, ordered passes, separate net/activity counts and stiffness/provenance details.
     def test_all_pass_final_and_named_assets_are_portable_and_accounted_separately(self):
         result = write_preview_report(self.output, self.report, '[recipe]\nsteps = expand, shrink\n')
         document = (self.output/'report.html').read_text()
@@ -105,6 +108,9 @@ class RecipeReportTests(unittest.TestCase):
         self.assertIn('<td>Original ID -77</td><td>0.1</td>', document)
         self.assertIn('Effective factors for original labels present in the crop', document)
 
+    # Purpose: Verify recipe names, warnings, paths and counts cannot inject markup.
+    # Inputs: Script/image payload inserted across report metadata and input text.
+    # Outputs: Payload escaped, only existing script/image counts and no injected onerror attributes.
     def test_user_names_warnings_paths_and_counts_cannot_inject_markup(self):
         payload = '<script>window.BAD=true</script><img src=x onerror=bad()>'
         recipe = self.report['recipe']
@@ -126,6 +132,9 @@ class RecipeReportTests(unittest.TestCase):
         self.assertNotIn(payload, document)
         self.assertIn('&lt;script&gt;window.BAD=true&lt;/script&gt;', document)
 
+    # Purpose: Verify compact ranges use human names and physical parent-path references.
+    # Inputs: Anisotropic three-node main tube with 30-75 percent named edit interval.
+    # Outputs: Human ROI labels, 10 mm parent length, 3-to-7.5 mm range and strict range semantics.
     def test_compact_range_uses_human_names_and_physical_main_point_reference(self):
         self.report['geometry'] = {'roi_kind': 'tube', 'nodes_ijk': [[0, 0, 0], [3, 0, 0], [3, 4, 0]],
                                    'radii_mm': [1, 2, 3], 'spacing_ijk_mm': [2, 1, 1]}
@@ -151,6 +160,9 @@ class RecipeReportTests(unittest.TestCase):
         self.assertIn('within that interval, not across the full base tube', document)
         self.assertIn('<td>Distance along base path (mm)</td><td>3 → 7.5</td>', document)
 
+    # Purpose: Verify range text is escaped and missing spacing stays explicitly unknown.
+    # Inputs: Unsafe range/display metadata and tube geometry lacking spacing.
+    # Outputs: Escaped text, no injected script and unrecorded length/distance shown explicitly.
     def test_range_metadata_is_escaped_and_missing_spacing_is_not_assumed(self):
         payload = '<script>window.BAD=true</script>'
         self.report['geometry'] = {'roi_kind': 'tube', 'nodes_ijk': [[0, 0, 0], [2, 3, 4]],
@@ -167,6 +179,9 @@ class RecipeReportTests(unittest.TestCase):
         self.assertIn('Total length: <strong>Not recorded mm</strong>', document)
         self.assertIn('<td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>Not recorded</td><td>Not recorded</td>', document)
 
+    # Purpose: Verify recipe overlays compare original and final states only once.
+    # Inputs: Final recipe surface-overlay metadata with local HTML and PNG assets.
+    # Outputs: One overlay section, both assets embedded and positioned before named ROI definitions.
     def test_recipe_overlay_compares_original_with_complete_recipe_once(self):
         (self.output/'edit-overlay.html').write_text('<html><body>shared registered scene</body></html>')
         (self.output/'edit-overlay.png').write_bytes(PNG)
@@ -179,6 +194,9 @@ class RecipeReportTests(unittest.TestCase):
         self.assertIn('edit-overlay.png', result['embedded_assets'])
         self.assertLess(document.index('id="surface-overlay"'), document.index('Named ROI definitions'))
 
+    # Purpose: Verify centerline assets embed once with per-pass direction and provenance.
+    # Inputs: Local frame/curvature images, HTML, artifact hash and inner/outer pass metadata.
+    # Outputs: One ordered frame section, embedded views, artifact reference, directions and escaped warnings.
     def test_centerline_views_embed_once_with_per_pass_direction_and_provenance(self):
         (self.output/'edit-overlay.html').write_text('<html><body>registered comparison</body></html>')
         directory = self.output/'centerline-01-main'
@@ -219,6 +237,9 @@ class RecipeReportTests(unittest.TestCase):
         self.assertNotIn(payload, document)
         self.assertEqual(sum(tag == 'script' for tag, _ in Tags(document).tags), 1)
 
+    # Purpose: Reject centerline viewers with external resources.
+    # Inputs: Local frame HTML containing an external script URL.
+    # Outputs: ValueError requires embedded resources and report.html is not written.
     def test_centerline_view_rejects_external_resources(self):
         directory = self.output/'centerline-01-main'
         directory.mkdir()
@@ -229,6 +250,9 @@ class RecipeReportTests(unittest.TestCase):
             write_preview_report(self.output, self.report, '[recipe]\nsteps = expand, shrink\n')
         self.assertFalse((self.output/'report.html').exists())
 
+    # Purpose: Verify selection-role reports explain offspring beyond fixed selectors.
+    # Inputs: Selection recipe with outside-ROI change/contact counts and percent range.
+    # Outputs: Growth summary, tracked-target totals and selection range semantics rendered accurately.
     def test_selection_role_report_counts_offspring_beyond_selector_and_explains_ranges(self):
         recipe = self.report['recipe']
         recipe['roi_role'] = 'selection'
@@ -262,6 +286,9 @@ class RecipeReportTests(unittest.TestCase):
 
 
 class RecipeFigureTests(unittest.TestCase):
+    # Purpose: Verify step figures focus on changes using the preceding pass state.
+    # Inputs: Single changed voxel, crop offset and iteration-2 event with mocked comparison renderer.
+    # Outputs: Correct global focus, before_is_source false, preserved event slice and pass-specific paths.
     def test_step_focus_is_in_changed_region_and_uses_preceding_state_semantics(self):
         roi = np.ones((5, 6, 7), dtype=bool)
         changed = np.zeros_like(roi)
@@ -282,6 +309,9 @@ class RecipeFigureTests(unittest.TestCase):
             self.assertEqual(result['comparison'], 'steps/01-grow-iteration-02/edit-comparison.png')
             self.assertTrue((Path(tmp)/result['artifact_directory']).is_dir())
 
+    # Purpose: Verify focus selection chooses an occupied voxel in disconnected regions.
+    # Inputs: Two separated foreground voxels with a nonzero crop origin.
+    # Outputs: Returned focus maps to an occupied voxel.
     def test_focus_remains_on_occupied_voxel_for_curved_or_disconnected_regions(self):
         mask = np.zeros((5, 5, 5), dtype=bool)
         mask[0, 1, 1] = mask[4, 3, 3] = True
@@ -289,6 +319,9 @@ class RecipeFigureTests(unittest.TestCase):
         local = np.asarray(focus)-[10, 20, 30]
         self.assertTrue(mask[tuple(local[::-1])])
 
+    # Purpose: Verify selection-role figure focus can follow offspring outside the selector.
+    # Inputs: Changed voxel outside ROI but inside permitted edit footprint.
+    # Outputs: Focus moves to the change, original selector preserved and growth semantics recorded.
     def test_selection_role_focus_can_follow_changes_outside_original_roi(self):
         roi = np.zeros((5, 6, 12), dtype=bool)
         roi[1:4, 1:4, 1:4] = True
@@ -310,6 +343,9 @@ class RecipeFigureTests(unittest.TestCase):
             np.testing.assert_array_equal(render.call_args.args[0]['edit_region'], footprint)
             self.assertFalse(roi[2, 2, 10])
 
+    # Purpose: Verify comparisons show offspring and distinguish tracked from selector area.
+    # Inputs: One-voxel target grown to 13 voxels beyond a fixed 64-voxel selector.
+    # Outputs: Tracked areas 1/13 versus ROI area 3, offspring visible, valid figures and unchanged input mask.
     def test_comparison_keeps_offspring_in_view_and_separates_tracked_from_roi_areas(self):
         from fakect_edit_preview import render_edit_comparison
         shape = (20, 24, 24)
@@ -352,6 +388,9 @@ class RecipeFigureTests(unittest.TestCase):
         np.testing.assert_array_equal(arrays['selected'], before)
         self.assertEqual(int(roi.sum()), 64)
 
+    # Purpose: Verify named-region figures count full targets and outer intersections.
+    # Inputs: Cylindrical candidate mask, outer slab and smaller named sphere.
+    # Outputs: Full target exceeds named count, exact intersection counts and three valid PNG figures.
     def test_named_regions_render_counts_for_full_target_and_outer_intersections(self):
         k, j, i = np.indices((12, 12, 12))
         target = ((i-5)**2+(j-5)**2 < 5)
@@ -372,6 +411,9 @@ class RecipeFigureTests(unittest.TestCase):
             for key in ('overview', 'closeups', 'surfaces'):
                 self.assertTrue((Path(tmp)/result[key]).read_bytes().startswith(b'\x89PNG\r\n'))
 
+    # Purpose: Verify tube figures export parent arc profiles and axial diagnostics.
+    # Inputs: Ranged tube growth adding six voxels with a 19 mm parent path.
+    # Outputs: Parent arc coordinates, retained interval, added volume 6 mm3 and profile/axial PNG plus data.
     def test_tube_step_exports_parent_arc_profile_and_keeps_axial_diagnostic(self):
         shape = (20, 12, 12)
         k, j, i = np.indices(shape)
@@ -410,6 +452,9 @@ class RecipeFigureTests(unittest.TestCase):
                 self.assertTrue((Path(tmp)/figures[key]).read_bytes().startswith(b'\x89PNG\r\n'))
             self.assertIn('center_percent', (Path(tmp)/figures['profile_data']).read_text())
 
+    # Purpose: Verify range rendering uses resolved definitions while preserving mask keys.
+    # Inputs: Mock resolved edit:expand tube definition and matching range mask.
+    # Outputs: Resolver called with config/geometry; name, display parent, metadata and counts preserved.
     def test_range_region_renderer_uses_resolved_definitions_and_preserves_mask_keys(self):
         k, j, i = np.indices((8, 8, 8))
         target = ((i-3)**2+(j-3)**2 < 4)

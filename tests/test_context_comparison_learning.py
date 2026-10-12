@@ -78,6 +78,9 @@ class ComparisonTests(unittest.TestCase):
                         spacing_ijk_mm=[1, 1, 1], source_atn={'path':case+'.bin'}))
         return dict(samples=rows)
 
+    # Purpose: Enforce strict comparison settings and exact sample balance.
+    # Inputs: Invalid update/cache/unknown/bool settings, indivisible budgets, or incompatible sibling shapes.
+    # Outputs: Settings or training-case validation raises ValueError.
     def test_strict_settings_and_exact_balancing(self):
         for settings in (dict(updates_per_epoch=0), dict(volume_cache_size=3),
                          dict(unknown=1), dict(validation_every_epochs=True)):
@@ -91,6 +94,9 @@ class ComparisonTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'incompatible'):
             comparison.training_cases(lock, dict(updates_per_epoch=8))
 
+    # Purpose: Reject missing baselines and family leakage before native input access.
+    # Inputs: Training case without one baseline or test family reusing a training family.
+    # Outputs: Training-case validation raises ValueError for either partition violation.
     def test_missing_baseline_and_family_leakage_rejected_before_io(self):
         lock = self.lock()
         lock['samples'][0]['baseline'] = False
@@ -101,6 +107,9 @@ class ComparisonTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'crosses partitions'):
             comparison.training_cases(lock, dict(updates_per_epoch=8))
 
+    # Purpose: Verify physical event schedules balance siblings deterministically.
+    # Inputs: Two training cases, two variants each, repeated epoch 0 and epoch 1.
+    # Outputs: Eight events repeat within an epoch, vary across epochs, and visit each variant twice.
     def test_schedule_equal_origins_seeds_and_balanced_variants(self):
         config = self.config()
         settings = learning.settings_for(config)
@@ -119,6 +128,9 @@ class ComparisonTests(unittest.TestCase):
         for event in first:
             self.assertEqual(event['baseline']['case_id'], event['sibling']['case_id'])
 
+    # Purpose: Verify volume cache eviction and exception cleanup.
+    # Inputs: Three volume requests through a two-entry LRU followed by RuntimeError.
+    # Outputs: Repeated access hits; eviction and context cleanup close all three volumes.
     def test_lru_bound_hit_and_exception_cleanup(self):
         made = []
         def create(row):
@@ -167,6 +179,9 @@ class ComparisonTests(unittest.TestCase):
                      'loss':.2, 'tiles':4} for row in rows]
         stack.enter_context(patch.object(comparison, '_score', side_effect=score))
 
+    # Purpose: Verify matched comparison arms isolate fitting and select validation checkpoints.
+    # Inputs: Mock runtime, three epochs, two arms, separate test evaluation, and altered selection evidence.
+    # Outputs: Both arms use 24 updates and matching physical events; tests load only during evaluation.
     def test_fit_matching_isolation_validation_selection_and_evaluation(self):
         observed = []
         with tempfile.TemporaryDirectory() as tmp, ExitStack() as stack:
@@ -203,6 +218,9 @@ class ComparisonTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'selection evidence'):
                 comparison.load_arm(config, lock, 'baseline_only', root/'baseline')
 
+    # Purpose: Verify nonfinite fitting preserves failure markers and closes volumes.
+    # Inputs: Mock training step returning NaN.
+    # Outputs: Fit raises ValueError, leaves INCOMPLETE, omits training.json, and closes native volumes.
     def test_failure_keeps_incomplete_and_closes_native_volumes(self):
         observed, volumes = [], []
         with tempfile.TemporaryDirectory() as tmp, ExitStack() as stack:
@@ -220,6 +238,9 @@ class ComparisonTests(unittest.TestCase):
             self.assertFalse((output/'training.json').exists())
             self.assertTrue(all(volume.closed for volume in volumes))
 
+    # Purpose: Verify initial-weight digest tracks numeric values.
+    # Inputs: Two identical toy models, then one weight changed to 7.
+    # Outputs: Equal weights share a digest and changed values produce a different digest.
     def test_initial_digest_tracks_values_and_shape_not_names(self):
         first, second = Model(), Model()
         self.assertEqual(comparison.weights_digest(first), comparison.weights_digest(second))

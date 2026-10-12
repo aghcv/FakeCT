@@ -53,6 +53,9 @@ class RecipeTrainingTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             return function(*args, **kwargs)
 
+    # Purpose: Verify recipe preflight executes every variant while preserving native inputs.
+    # Inputs: Baseline plus four growth distances with guarded shrink and exact input snapshot.
+    # Outputs: Five valid trials, duplicate report, saved audit CSV/HTML, no NPZ pairs, and unchanged sources.
     def test_preflight_runs_all_variants_without_exporting_pairs_or_mutating_sources(self):
         before = {key: hashlib.sha256(Path(value).read_bytes()).hexdigest()
                   for key, value in self.resolved['source_files'].items()}
@@ -82,6 +85,9 @@ class RecipeTrainingTests(unittest.TestCase):
                  for key, value in self.resolved['source_files'].items()}
         self.assertEqual(before, after)
 
+    # Purpose: Verify prepared recipe pairs use tracked lineage and work with patch consumers.
+    # Inputs: Five independently generated variants under selected-lineage scope.
+    # Outputs: Direct-recipe mask/label/signal/lineage parity, growth outside ROI, and no test patch loads.
     def test_prepare_uses_selected_lineage_and_is_compatible_with_patch_dataset(self):
         result = self.run_quiet(prepare_training_dataset, self.config, self.resolved, input_bytes=self.input_bytes)
         manifest = validate_dataset(self.config, self.resolved)
@@ -114,6 +120,9 @@ class RecipeTrainingTests(unittest.TestCase):
         self.assertEqual(batch[0].dtype, np.float32)
         self.assertFalse(set(row['variant_id'] for row in manifest['samples'] if row['split']=='test') & dataset.loaded_variants)
 
+    # Purpose: Verify achieved-mask grouping overrides provisional variant ordering/splits.
+    # Inputs: Normal sweep compared with reversed sweep whose planned rows all claim TRAIN.
+    # Outputs: Identical mask-to-split assignments/group counts and baseline-equivalent variants in TRAIN.
     def test_actual_geometry_grouping_is_independent_of_provisional_variant_splits(self):
         first = self.run_quiet(preflight_recipe_dataset, self.config, self.resolved)
         config = deepcopy(self.config)
@@ -132,6 +141,9 @@ class RecipeTrainingTests(unittest.TestCase):
                 if row['baseline_equivalent']:
                     self.assertEqual(row['split'],'train')
 
+    # Purpose: Verify native trial failures are audited while later variants continue.
+    # Inputs: Apply-recipe mock failing at distance 1 mm with HTML-like error text.
+    # Outputs: All five trials attempted, one failed, fit blocked, and error escaped in report.
     def test_preflight_records_failure_and_continues_to_later_variants(self):
         calls = []
         def trial(arrays, resolved, config):
@@ -150,6 +162,9 @@ class RecipeTrainingTests(unittest.TestCase):
         self.assertEqual(failures[0]['error_type'],'ValueError')
         self.assertIn('&lt;must be escaped&gt;',Path(result['report_path']).read_text())
 
+    # Purpose: Verify collapsed guarded sweeps cannot publish an unusable training split.
+    # Inputs: Shrink-only sweep with volume floor 1 and no backoff steps.
+    # Outputs: One unique geometry, empty validation, fit false, INCOMPLETE retained, and no final manifest.
     def test_collapsed_guarded_geometry_reports_empty_holdout_and_preparation_stays_incomplete(self):
         config=deepcopy(self.config)
         config['recipe']['steps']=('shrink',)
@@ -170,6 +185,9 @@ class RecipeTrainingTests(unittest.TestCase):
         self.assertTrue((directory/'preflight.json').exists())
         self.assertFalse((directory/'dataset-manifest.json').exists())
 
+    # Purpose: Verify unassigned diagnostic attenuation cannot enter training pairs.
+    # Inputs: Assignment-disabled erosion and source ACT containing released diagnostic marker.
+    # Outputs: Pre-I/O diagnostic rejection, released-source ValueError, and absent preflight output.
     def test_diagnostic_edits_rejected_before_native_io_and_unassigned_sources_before_output(self):
         config=deepcopy(self.config)
         config['edits']['shrink']['assign_surrounding_tissue']=False
@@ -185,6 +203,9 @@ class RecipeTrainingTests(unittest.TestCase):
             preflight_recipe_dataset(self.config,resolve_preview(self.config))
         self.assertFalse(self.config['train']['preflight_directory'].exists())
 
+    # Purpose: Verify dataset identity binds generation parameters while ignoring consumer/display settings.
+    # Inputs: Changed shrink iterations/distance/guard, growth sweep, then stage/paths/epochs/display stride.
+    # Outputs: Fingerprint changes for generation changes and stays equal for training/display changes.
     def test_fingerprint_binds_recipe_sweeps_and_guards_but_not_training_stage_or_display(self):
         expected=dataset_fingerprint(self.config,self.resolved)
         for key in ('iterations','distance_mm','min_volume_ratio'):

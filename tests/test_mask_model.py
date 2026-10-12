@@ -78,6 +78,9 @@ class MaskModelTests(unittest.TestCase):
         self.signed(directory/'evaluation.json', result)
         return directory, result
 
+    # Purpose: Verify mask-only planning omits learned segmentation and preserves family splits.
+    # Inputs: Six synthetic anatomy families with paired cases/variants and 0.6 mm target spacing.
+    # Outputs: Stage 2 only, splits 16/4/4, deterministic design, expected grids and no output directory.
     def test_ini_and_plan_have_no_learned_segmentation_stage(self):
         self.assertNotIn('stage1', self.config)
         result = plan(self.config)
@@ -93,6 +96,9 @@ class MaskModelTests(unittest.TestCase):
         self.assertTrue(all(len(parts) == 1 for parts in assignments.values()))
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    # Purpose: Reject invalid mask scope, unknown INI keys and model settings.
+    # Inputs: Wrong target scope, filter/batch bounds, NaN spacing and misspelled manifest key.
+    # Outputs: ValueError rejects each invalid mask-model configuration.
     def test_invalid_scope_unknown_keys_and_model_settings_rejected(self):
         for find, replacement in [('selected_lineage ', 'whole_thoracic '),
                                   ('base_filters = 4 ', 'base_filters = 1 '),
@@ -103,10 +109,16 @@ class MaskModelTests(unittest.TestCase):
                 self.ini.write_text(self.raw.decode().replace(find, replacement))
                 load_config(self.ini, repo_root=self.root)
 
+    # Purpose: Verify absent datasets prevent mask-model readiness.
+    # Inputs: Configured manifest deleted from the synthetic fixture.
+    # Outputs: Plan ready flag false.
     def test_missing_dataset_is_not_ready(self):
         self.path.unlink()
         self.assertFalse(plan(self.config)['ready'])
 
+    # Purpose: Reject shared reference anatomy across mask-model partitions.
+    # Inputs: Test-family before-mask hash changed to match a training family.
+    # Outputs: ValueError reports reference anatomy crossing splits.
     def test_shared_reference_leakage_is_rejected(self):
         samples = plan(self.config)['samples']
         train = next(r for r in samples if r['split'] == 'train')
@@ -117,12 +129,18 @@ class MaskModelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'reference anatomy crosses splits'):
             plan(self.config)
 
+    # Purpose: Reject oversized mask-model resampling grids.
+    # Inputs: Target spacing reduced to 0.001 mm in all axes.
+    # Outputs: ValueError reports voxel crop limit.
     def test_oversized_grid_is_rejected(self):
         config = deepcopy(self.config)
         config['model']['target_spacing_mm'] = [.001]*3
         with self.assertRaisesRegex(ValueError, 'voxel crop limit'):
             plan(config)
 
+    # Purpose: Verify mask-model freezing snapshots configuration, data and source.
+    # Inputs: Valid synthetic manifest and input bytes, then a modified source snapshot.
+    # Outputs: Lock reload matches freeze; repeat publication and snapshot checksum change rejected.
     def test_freeze_locks_config_data_and_source_snapshots(self):
         lock = freeze(self.config, self.raw)
         self.assertEqual(lock, inspect_lock(self.config, self.raw))
@@ -134,6 +152,9 @@ class MaskModelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'snapshot checksum'):
             inspect_lock(self.config, self.raw)
 
+    # Purpose: Reject frozen mask-model reuse after INI, dataset or implementation changes.
+    # Inputs: Frozen run with altered input bytes, mocked code hashes or changed manifest.
+    # Outputs: ValueError identifies INI, implementation or manifest mismatch.
     def test_changed_ini_dataset_or_code_fails_reuse(self):
         freeze(self.config, self.raw)
         with self.assertRaisesRegex(ValueError, 'INI differs'):
@@ -145,6 +166,9 @@ class MaskModelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'manifest changed'):
             inspect_lock(self.config, self.raw)
 
+    # Purpose: Verify mask-only fitting delegates exclusively to stage 2.
+    # Inputs: Frozen experiment and mocked fit_stage returning a trained receipt.
+    # Outputs: Backend receives stage 2 and model2 directory; receipt returned unchanged.
     def test_fit_delegates_only_to_stage_two(self):
         lock = freeze(self.config, self.raw)
         with patch('fakect_two_stage_learning.fit_stage', return_value={'trained': True}) as backend:
@@ -152,6 +176,9 @@ class MaskModelTests(unittest.TestCase):
         self.assertEqual(backend.call_args.args[:3], (self.config, lock, 2))
         self.assertEqual(backend.call_args.args[3].name, 'model2')
 
+    # Purpose: Verify completed mask fits reuse checked weights without refitting.
+    # Inputs: Completed signed model metadata, then tampered model bytes.
+    # Outputs: Reuse succeeds without backend fitting; checksum mismatch rejected.
     def test_completed_fit_reuses_checked_weights_without_tensorflow(self):
         lock = freeze(self.config, self.raw)
         directory, _ = self.completed_model(lock)
@@ -161,6 +188,9 @@ class MaskModelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'does not match'):
             fit(self.config, self.raw)
 
+    # Purpose: Reject automatic restart of partial mask fitting.
+    # Inputs: Frozen run with model2 directory containing only history JSON.
+    # Outputs: FileExistsError identifies partial model.
     def test_partial_fit_does_not_restart(self):
         freeze(self.config, self.raw)
         directory = Path(self.config['experiment']['output_directory'])/'model2'
@@ -169,6 +199,9 @@ class MaskModelTests(unittest.TestCase):
         with self.assertRaisesRegex(FileExistsError, 'Partial model'):
             fit(self.config, self.raw)
 
+    # Purpose: Verify mask-only evaluation bypasses stage 1 explicitly.
+    # Inputs: Frozen run with completed model2 and mocked evaluation backend.
+    # Outputs: Stage 2 called with no stage1 model; mask-model schema contains no stage1 result.
     def test_test_stage_explicitly_bypasses_model_one(self):
         lock = freeze(self.config, self.raw)
         self.completed_model(lock)
@@ -179,6 +212,9 @@ class MaskModelTests(unittest.TestCase):
         self.assertEqual(result['schema_version'], 'fakect.mask-model-results/1')
         self.assertNotIn('stage1', result)
 
+    # Purpose: Verify evaluation reuse checks every saved prediction checksum.
+    # Inputs: Completed signed stage-2 evaluation, then one tampered prediction payload.
+    # Outputs: Original evaluation reused without retest; prediction checksum mismatch rejected.
     def test_completed_evaluation_reuses_exact_prediction_checksums(self):
         lock = freeze(self.config, self.raw)
         _, metadata = self.completed_model(lock)
@@ -189,6 +225,9 @@ class MaskModelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'prediction checksum'):
             evaluate(self.config, self.raw)
 
+    # Purpose: Reject chained evaluations presented as mask-only results.
+    # Inputs: Resigned stage-2 evaluation with an unexpected stage1 model checksum.
+    # Outputs: ValueError reports mask-model or partition mismatch.
     def test_chained_evaluation_cannot_masquerade_as_mask_only(self):
         lock = freeze(self.config, self.raw)
         _, metadata = self.completed_model(lock)
@@ -198,6 +237,9 @@ class MaskModelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'mask model/partition'):
             evaluate(self.config, self.raw)
 
+    # Purpose: Reject missing required predictions and partial evaluations.
+    # Inputs: Signed evaluation missing a prediction_file field, then deleted evaluation metadata.
+    # Outputs: Missing-prediction ValueError and partial-evaluation FileExistsError.
     def test_missing_predictions_or_partial_evaluation_are_rejected(self):
         lock = freeze(self.config, self.raw)
         _, metadata = self.completed_model(lock)

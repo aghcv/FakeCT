@@ -48,6 +48,9 @@ class ReassignmentTests(unittest.TestCase):
         self.candidates = self.labels == 8
         self.policy = {'mode': 'permissive_except_bone_skin', 'allowed_tissues': ()}
 
+    # Purpose: Verify permissive reassignment protects fine bone/skin identities.
+    # Inputs: Signed catalog IDs covering bone, skin, vessels, unknown anatomy and unmapped 999.
+    # Outputs: Expected eligible/protected IDs, fine protection reasons and catalog provenance retained.
     def test_permissive_uses_fine_bone_skin_identity_and_allows_other_vessels(self):
         eligible, protected, metadata = reassignment_masks(self.labels, self.candidates, self.catalog, self.policy)
         self.assertEqual(set(self.labels[eligible]), {7, 9, 10, 11, 12})
@@ -59,12 +62,18 @@ class ReassignmentTests(unittest.TestCase):
         self.assertEqual(reasons[999], ['unmapped_original_id'])
         self.assertEqual(metadata['catalog_sources'], self.catalog['sources'])
 
+    # Purpose: Reject protected targets during metadata policy validation.
+    # Inputs: Background, fine bone/skin and unmapped IDs, then valid artery target 8.
+    # Outputs: Protected-target ValueError for invalid IDs; valid artery accepted.
     def test_metadata_rejects_protected_targets_even_when_no_voxels_read(self):
         for value in (0, 1, 2, -3, 4, 5, 6, 999):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, 'protected target ID'):
                 validate_reassignment_policy(self.catalog, self.policy, target_source_ids=(value,))
         validate_reassignment_policy(self.catalog, self.policy, target_source_ids=(8,))
 
+    # Purpose: Verify legacy tissue allowlists remain explicit.
+    # Inputs: Soft-tissue allowlist plus forbidden unknown or target-artery allowlists.
+    # Outputs: Skin-like soft IDs remain eligible; unknown and overlapping target groups rejected.
     def test_legacy_allowlist_remains_explicit_and_does_not_add_skin_exclusions(self):
         eligible, protected, metadata = reassignment_masks(self.labels, self.candidates, self.catalog,
                                                            {'allowed_tissues': ('soft_tissue',)})
@@ -76,6 +85,9 @@ class ReassignmentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'disjoint'):
             validate_reassignment_policy(self.catalog, {'allowed_tissues': ('artery',)}, target_tissue='artery')
 
+    # Purpose: Verify permissive policies require empty allowlists and preserve catalog data.
+    # Inputs: Permissive catalog call, then nonempty soft-tissue allowlist.
+    # Outputs: Catalog unchanged and incompatible allowlist rejected.
     def test_permissive_requires_blank_allowlist_and_does_not_mutate_catalog(self):
         original = deepcopy(self.catalog)
         reassignment_masks(self.labels, self.candidates, self.catalog, self.policy)
@@ -111,6 +123,9 @@ class ReassignmentTests(unittest.TestCase):
         arrays['candidates'] = arrays['act'] == 8
         arrays['selected'] = arrays['candidates'] & arrays['roi']
 
+    # Purpose: Verify stiffness uses fine anatomy with signed original-ID overrides.
+    # Inputs: Default 0.05, bone 1, skin 0.95 and explicit signed bone ID -3 override 0.2.
+    # Outputs: Expected field, protected unmapped ID and editable override with recorded basis.
     def test_stiffness_uses_semantic_skin_bone_and_editable_signed_id_override(self):
         policy = self.stiffness_policy(.05)
         field = stiffness_field(self.labels, self.catalog, policy)
@@ -127,6 +142,9 @@ class ReassignmentTests(unittest.TestCase):
         self.assertEqual(row['stiffness'], .2)
         self.assertEqual(row['stiffness_basis'], 'original_id_override')
 
+    # Purpose: Verify dilation distance budgets shrink as stiffness increases.
+    # Inputs: Same 2 mm edit with soft-tissue stiffness 0, 0.5, 0.95 and 1.
+    # Outputs: Added voxel counts 24, 6, 0, 0 and matching resistance field.
     def test_dilation_distance_budget_decreases_with_stiffness_and_one_is_rigid(self):
         arrays, resolved, config = self.morphology_fixture()
         sizes = []
@@ -137,6 +155,9 @@ class ReassignmentTests(unittest.TestCase):
             self.assertTrue(np.all(result['stiffness_field'][arrays['act'] == 12] == stiffness))
         self.assertEqual(sizes, [24, 6, 0, 0])
 
+    # Purpose: Verify zero resistance matches permissive reassignment.
+    # Inputs: Same eligible IDs under stiffness-zero and permissive dilation/erosion.
+    # Outputs: Identical edited labels and attenuation for both operations.
     def test_zero_resistance_matches_permissive_mode_for_same_eligible_id_set(self):
         arrays, resolved, config = self.morphology_fixture()
         for operation in ('dilation', 'erosion'):
@@ -148,6 +169,9 @@ class ReassignmentTests(unittest.TestCase):
             np.testing.assert_array_equal(weighted['edited_labels'], permissive['edited_labels'])
             np.testing.assert_array_equal(weighted['attenuation_proxy_per_pixel'], permissive['attenuation_proxy_per_pixel'])
 
+    # Purpose: Verify erosion separately scales target release and recipient reach.
+    # Inputs: Target stiffness 0.5, then stiff skin recipient and zero-stiffness skin override.
+    # Outputs: Release suppressed first, unresolved next and successful skin replacement after override.
     def test_erosion_scales_target_release_and_recipient_reach_separately(self):
         arrays, resolved, config = self.morphology_fixture('erosion', 1.)
         config['reassignment']['stiffness']['tissues']['artery'] = .5
@@ -166,6 +190,9 @@ class ReassignmentTests(unittest.TestCase):
         self.assertEqual(result['summary']['counts']['removed'], 1)
         self.assertEqual(result['edited_labels'][15, 15, 15], 1)
 
+    # Purpose: Verify farther soft recipients win when nearer stiff recipients exhaust reach.
+    # Inputs: Two seeds in a six-voxel line with a 4 mm initial penalty on the nearer seed.
+    # Outputs: Farther owner reaches voxels four and five at path costs 4 and 5 mm.
     def test_recipient_offsets_keep_farther_soft_owner_when_nearer_stiff_owner_cannot_reach(self):
         shape = (1, 1, 6)
         domain = np.ones(shape, dtype=bool)
@@ -181,6 +208,9 @@ class ReassignmentTests(unittest.TestCase):
         self.assertEqual(owners[0, 0, 5], 0)
         self.assertEqual(costs[0, 0, 5], 5.)
 
+    # Purpose: Verify repeated recipes preserve rigid/protected anatomy while borrowing eligible IDs.
+    # Inputs: Grow/shrink recipe with bone, skin, unmapped/background, artery and unknown pericardium neighbors.
+    # Outputs: Protected labels/attenuation unchanged across steps, eligible neighbors borrowed and inputs preserved.
     def test_repeated_recipe_preserves_rigid_bone_and_background_but_borrows_unknown_vessel_ids(self):
         arrays, resolved, config = self.morphology_fixture()
         arrays['act'][15, 15, 14] = -3  # Unknown coarse group, rigid bone anatomy.
@@ -207,6 +237,9 @@ class ReassignmentTests(unittest.TestCase):
             np.testing.assert_array_equal(arrays[name], original[name])
         self.assertIn('final_stiffness_field', result)
 
+    # Purpose: Reject invalid stiffness values and unmapped label overrides.
+    # Inputs: Negative, above-one, NaN/infinite defaults and override for uncatalogued ID 999.
+    # Outputs: ValueError requires finite stiffness and a catalogued signed original ID.
     def test_invalid_stiffness_and_unmapped_overrides_fail_metadata_validation(self):
         for value in (-.1, 1.01, float('nan'), float('inf')):
             policy = self.stiffness_policy()

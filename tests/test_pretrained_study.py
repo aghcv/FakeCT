@@ -11,6 +11,9 @@ import fakect_pretrained_study as study
 
 
 class StudyTests(unittest.TestCase):
+ # Purpose: Verify pretrained comparison schedules share balanced TRAIN case/patch draws.
+ # Inputs: Two-case cache, 64 updates, seed 42, foreground 0.75, and control 0.25.
+ # Outputs: Reproducible balanced TRAIN draws, baseline-only controls, sibling variation, and padded i offsets.
  def test_shared_case_patch_schedule_and_training_only_cases(self):
   c={'training':{'seed':42,'updates':64,'foreground_fraction':.75,'control_fraction':.25}}
   class Cache: pass
@@ -28,6 +31,9 @@ class StudyTests(unittest.TestCase):
   self.assertTrue(all(r['offset_kji'][2]==-16 for r in first))
   self.assertTrue(all(r['baseline_only'].endswith(':baseline') for r in first))
 
+ # Purpose: Verify sparse model caches restore exact edits and restrict supervision domains.
+ # Inputs: 2-cubed baseline, two float32 delta values, one excluded domain voxel, and changed delta file.
+ # Outputs: Exact edited values, preserved baseline, two targets, excluded loss voxel, and digest rejection.
  def test_sparse_new_values_are_exact_and_loss_domain_excludes_context(self):
   with tempfile.TemporaryDirectory() as temp:
    out=Path(temp);folder=out/'cases'/'one';folder.mkdir(parents=True)
@@ -50,12 +56,18 @@ class StudyTests(unittest.TestCase):
    delta.write_bytes(b'changed')
    with self.assertRaisesRegex(ValueError,'delta changed'):cache.volume('one:sibling')
 
+ # Purpose: Verify pretrained protocol fixes its reviewed model-grid resolution.
+ # Inputs: Finetune INI with spacing changed from 1.5 to 0.6 mm.
+ # Outputs: ValueError stating the protocol fixes 1.5 mm spacing.
  def test_unsupported_resolution_requires_new_protocol(self):
   source=Path(study.ROOT/'archive/research/configs/models/aorta-pretrained-finetune.ini').read_text()
   with tempfile.TemporaryDirectory() as temp:
    p=Path(temp)/'input.ini';p.write_text(source.replace('spacing_mm = 1.5','spacing_mm = 0.6'))
    with self.assertRaisesRegex(ValueError,'fixes 1.5'):study.load_config(p)
 
+ # Purpose: Verify branch finetuning uses named targets and a separate frozen reference.
+ # Inputs: Archived branches finetune configuration.
+ # Outputs: Connected-branch policy, common-box extent, named trunk, and absolute distinct reference output.
  def test_branch_policy_uses_named_foreground_and_frozen_reference(self):
   c=study.load_config(study.ROOT/'archive/research/configs/models/aorta-pretrained-finetune-branches.ini')
   self.assertEqual(c['target']['policy'],'thoracic_aorta_and_connected_branches')
@@ -64,6 +76,9 @@ class StudyTests(unittest.TestCase):
   self.assertTrue(Path(c['target']['reference_study']).is_absolute())
   self.assertNotEqual(c['experiment']['output_directory'],str(Path(c['target']['reference_study']).parent))
 
+ # Purpose: Verify core pretrained settings retain their historical aorta-only target.
+ # Inputs: Archived core finetune configuration without target section.
+ # Outputs: No target section and foreground label list containing only aorta.
  def test_legacy_core_policy_still_uses_only_aorta(self):
   c=study.load_config(study.ROOT/'archive/research/configs/models/aorta-pretrained-finetune.ini')
   self.assertNotIn('target',c)

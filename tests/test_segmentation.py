@@ -68,6 +68,9 @@ class SegmentationDataTests(unittest.TestCase):
     def rewrite(self, manifest):
         self.path.write_text(json.dumps(manifest))
 
+    # Purpose: Verify patch indexing retains every voxel including empty targets.
+    # Inputs: Four 3x5x7 variants, 4x4 patches, and one empty training mask.
+    # Outputs: Metadata loads no payloads; valid patches cover 105 voxels each with correct padding/foreground.
     def test_metadata_index_keeps_every_voxel_and_empty_foreground(self):
         dataset = PatchDataset(self.path, self.settings)
         self.assertEqual(dataset.loaded_variants, set())
@@ -93,6 +96,9 @@ class SegmentationDataTests(unittest.TestCase):
         self.assertEqual(totals, {'variant-0': 105, 'variant-1': 105})
         self.assertEqual(foreground, {'variant-0': 3, 'variant-1': 0})
 
+    # Purpose: Verify tiled inference shares fixed clipping normalization.
+    # Inputs: Identity predictor on a 5x7 attenuation ramp from -0.2 to 0.8.
+    # Outputs: Whole-slice prediction equals normalized input, saturates at 0/1, and preserves source values.
     def test_fixed_clip_is_shared_by_tiled_whole_slice_inference(self):
         class IdentityPredictor:
             def predict_on_batch(self, batch):
@@ -105,6 +111,9 @@ class SegmentationDataTests(unittest.TestCase):
         self.assertEqual(predicted.min(), 0)
         self.assertEqual(predicted.max(), 1)
 
+    # Purpose: Verify deterministic patch order and bounded volume caching.
+    # Inputs: Two training variants, repeated/different epochs, and an np.load spy.
+    # Outputs: Epoch orders are reproducible, group variants once, and load each training volume only once.
     def test_deterministic_epoch_order_and_single_volume_cache(self):
         dataset = PatchDataset(self.path, self.settings)
         self.assertEqual(dataset.ordered_patches('train', 2), dataset.ordered_patches('train', 2))
@@ -118,6 +127,9 @@ class SegmentationDataTests(unittest.TestCase):
         self.assertIsNotNone(dataset._cache)
         self.assertEqual(len(dataset._cache), 2)  # One image + its paired mask.
 
+    # Purpose: Protect held-out payloads from training access even when absent.
+    # Inputs: Deleted test NPZ with train/validation batching and explicit test access attempts.
+    # Outputs: Training succeeds without loading test ID; test indexing/batching raises ValueError.
     def test_test_payload_is_not_opened_even_when_absent(self):
         (self.directory / self.manifest['samples'][-1]['path']).unlink()
         dataset = PatchDataset(self.path, self.settings)
@@ -129,6 +141,9 @@ class SegmentationDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Test payloads'):
             dataset.batch([(3, 0, 0, 0)])
 
+    # Purpose: Prevent identical geometry or masks crossing scenario splits.
+    # Inputs: Validation sample reusing a training geometry group or mask hash.
+    # Outputs: Manifest inspection raises ValueError for multiple splits.
     def test_duplicate_geometry_or_mask_cannot_cross_splits(self):
         for key in ('geometry_group', 'mask_sha256'):
             with self.subTest(key=key):
@@ -138,6 +153,9 @@ class SegmentationDataTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'multiple splits'):
                     inspect_manifest(self.path)
 
+    # Purpose: Enforce scenario scope, shared anatomy, relative paths, and nonempty validation.
+    # Inputs: False patient holdout, foreign family, escaped/absolute paths, or removed validation split.
+    # Outputs: Manifest inspection rejects each invalid claim or path.
     def test_split_scope_and_paths_cannot_make_false_family_holdout_claim(self):
         for mutate, message in (
             (lambda m: m.update(split_mode='patient_holdout'), 'scenario_only'),
@@ -153,6 +171,9 @@ class SegmentationDataTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     inspect_manifest(self.path)
 
+    # Purpose: Verify changed payload files and nonbinary masks are rejected.
+    # Inputs: Appended NPZ bytes, then mask value 2 with refreshed hashes.
+    # Outputs: Batch loading rejects changed file hash and invalid uint8 binary mask.
     def test_changed_file_and_nonbinary_mask_are_rejected(self):
         sample = self.manifest['samples'][0]
         path = self.directory / sample['path']
@@ -170,6 +191,9 @@ class SegmentationDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'uint8'):
             dataset.batch(dataset.patches('train')[:1])
 
+    # Purpose: Validate model settings, finite images, and sigmoid predictions.
+    # Inputs: Invalid architecture settings/clip/seed/epochs, NaN image, and predictor returning batch+2.
+    # Outputs: Configuration, normalization, and inference raise ValueError.
     def test_model_settings_and_prediction_validation(self):
         for settings in ({'patch_size': [6, 8]}, {'slice_axis': 'i'}, {'clip_min': .5, 'clip_max': .5},
                          {'normalization': 'per_patient'}, {'seed': -1}, {'epochs': 0}):
@@ -183,6 +207,9 @@ class SegmentationDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'invalid sigmoid'):
             predict_axial_slice(BrokenPredictor(), np.zeros((5, 7)), self.settings)
 
+    # Purpose: Require clipping bounds to remain valid in float32.
+    # Inputs: Overflowing, underflowing, rounded-equal, and excessive-span clipping intervals.
+    # Outputs: Bounds validation, settings, and normalization all raise ValueError naming float32.
     def test_float32_clip_bounds_reject_overflow_underflow_and_rounded_equality(self):
         for lower, upper in ((1e308, 1.1e308), (-1e308, 1e308), (0, 1e-300),
                              (1., 1.00000001), (-3e38, 3e38)):
@@ -196,6 +223,9 @@ class SegmentationDataTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'float32'):
                         action()
 
+    # Purpose: Verify clipping safely saturates extreme values without numeric warnings.
+    # Inputs: Float64 values from -1e308 to 1e308 and a tiny valid 1e-30 clip span.
+    # Outputs: Normalized values stay finite and exact, emit no warnings, and tiny-span midpoint maps to 0.5.
     def test_fixed_clip_saturates_large_inputs_without_nonfinite_intermediates(self):
         values = np.asarray([-1e308, 0., .25, .5, 1e308], np.float64)
         with warnings.catch_warnings(record=True) as emitted:
@@ -209,6 +239,9 @@ class SegmentationDataTests(unittest.TestCase):
 
 
 class TensorFlowSmokeTest(unittest.TestCase):
+    # Purpose: Verify CPU training, reload, tiled inference, and masked losses.
+    # Inputs: Subprocess TensorFlow CPU fit for one epoch with deleted test data and padded loss probes.
+    # Outputs: Smoke exits zero, reload hashes match, predictions are finite, and padding/test data stay excluded.
     @unittest.skipUnless(importlib.util.find_spec('tensorflow'), 'TensorFlow is absent; preprocessing tests still run')
     def test_tiny_cpu_fit_reload_and_tiled_inference(self):
         with tempfile.TemporaryDirectory() as temp:

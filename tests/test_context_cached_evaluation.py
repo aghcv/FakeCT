@@ -95,6 +95,9 @@ class CachedEvaluationTests(unittest.TestCase):
                          np.mean([r['metrics']['dice'] for r in results]))
         return results
 
+    # Purpose: Verify unchanged siblings reuse tiles without hiding distant false positives.
+    # Inputs: Baseline and unchanged variant in a 13x15x17 source with distant foreground-like material.
+    # Outputs: Exact uncached metrics, zero sibling inference, 80 baseline tiles and full-FOV false positives.
     def test_unchanged_variant_reuses_every_tile_and_full_fov_false_positives(self):
         rows = [self.row('baseline'), self.row('unchanged')]
         records = self.assert_exact(rows)
@@ -103,6 +106,9 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertEqual(records[0]['metrics']['valid_voxels'], np.prod(self.shape))
         self.assertEqual(records[0]['tiles'], 80)
 
+    # Purpose: Verify dilation differences are compared in physical coordinates.
+    # Inputs: Growth beyond baseline mask boundary with shifted image and mask crops.
+    # Outputs: Exact uncached scores, proven difference box and both reused and recomputed tiles.
     def test_dilation_and_different_crop_origins_are_physically_compared(self):
         after = self.before.copy()
         after[7:10, 4:6, 4:6] = 1  # Crosses baseline compact mask boundary.
@@ -118,6 +124,9 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertGreater(reuse['inferred_tiles'], 0)
         self.assertEqual(reuse['proof']['native_target_difference_box_kji'], [[8, 4, 4], [10, 6, 6]])
 
+    # Purpose: Verify independent target and image changes invalidate their tiles.
+    # Inputs: Eroded target region and separate image change at native voxel 9,9,9.
+    # Outputs: Exact uncached scores and separate correct image/target difference boxes.
     def test_erosion_and_image_differences_both_invalidate_tiles(self):
         after = self.before.copy()
         after[3, 3:5, 3:5] = 0
@@ -129,6 +138,9 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertEqual(proof['native_image_difference_box_kji'], [[9, 9, 9], [10, 10, 10]])
         self.assertEqual(proof['native_target_difference_box_kji'], [[3, 3, 3], [4, 5, 5]])
 
+    # Purpose: Verify interpolation halos recompute adjacent affected tiles.
+    # Inputs: One changed image voxel and model spacing reduced to 0.5 mm.
+    # Outputs: Exact scores; neighboring halo tile affected while a distant tile remains reusable.
     def test_interpolation_halo_recomputes_adjacent_tile(self):
         image = self.native.copy()
         image[6, 6, 2] = .4
@@ -140,12 +152,18 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertTrue(cached._affected((12, 12, 0), [4, 4, 4], [.5, .5, .5], self.spacing, support))
         self.assertFalse(cached._affected((0, 0, 0), [4, 4, 4], [.5, .5, .5], self.spacing, support))
 
+    # Purpose: Verify shifted equivalent crops retain complete inference reuse.
+    # Inputs: Unchanged sibling with image and mask crops shifted to origin zero.
+    # Outputs: Exact uncached scores and zero newly inferred sibling tiles.
     def test_shifted_equivalent_crop_reuses_all_tiles(self):
         rows = [self.row('baseline'), self.row('shifted',
                 edit_box=((0, 0, 0), (10, 10, 10)), mask_box=((0, 0, 0), (10, 10, 10)))]
         result = self.assert_exact(rows)[1]
         self.assertEqual(result['evaluation_reuse']['inferred_tiles'], 0)
 
+    # Purpose: Verify floating-point boundary margins conservatively invalidate tiles.
+    # Inputs: Tile origin 84, scale 1.4 and difference support at 122 then 122.001.
+    # Outputs: Boundary contact recomputed; actual geometric separation remains unaffected.
     def test_affine_arithmetic_boundary_is_conservatively_recomputed(self):
         # For an aligned tile the two arrangements differ at native 122:
         # global endpoint=121.99999999999999; affine endpoint=122.0.
@@ -161,6 +179,9 @@ class CachedEvaluationTests(unittest.TestCase):
         support = (np.array([122.001]*3), np.array([124.]*3))
         self.assertFalse(cached._affected([84, 84, 84], [4, 4, 4], [1.4]*3, [1.]*3, support))
 
+    # Purpose: Verify different source identities prevent unsafe reuse.
+    # Inputs: Byte-identical native data copied to a distinct source path.
+    # Outputs: Full recomputation with zero reused tiles and exact uncached metrics.
     def test_source_identity_mismatch_falls_back_without_assuming_same_content(self):
         copied = self.root / 'different-source.bin'
         copied.write_bytes(self.source.read_bytes())
@@ -169,6 +190,9 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertEqual(reuse['proof']['status'], 'recompute_all')
         self.assertEqual(reuse['reused_tiles'], 0)
 
+    # Purpose: Verify differing native axis interpretations prevent cache reuse.
+    # Inputs: Sibling source shape changed from 13x15x17 to 15x13x17.
+    # Outputs: Full recomputation with zero reused tiles and exact uncached metrics.
     def test_source_geometry_mismatch_falls_back(self):
         rows = [self.row('baseline'), self.row('geometry')]
         # Same byte count but a different interpretation of the source axes.
@@ -177,6 +201,9 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertEqual(reuse['proof']['status'], 'recompute_all')
         self.assertEqual(reuse['reused_tiles'], 0)
 
+    # Purpose: Verify changed physical reference masks prevent cache reuse.
+    # Inputs: Sibling before mask with one target voxel removed.
+    # Outputs: Difference proof identifies mismatched before masks and no tiles reused.
     def test_changed_physical_before_ref_falls_back(self):
         before = self.before.copy()
         before[2, 2, 2] = 0
@@ -185,18 +212,27 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertEqual(reuse['proof']['reason'], 'Physical before masks differ')
         self.assertEqual(reuse['reused_tiles'], 0)
 
+    # Purpose: Verify comparison-budget exhaustion falls back to uncached inference.
+    # Inputs: Identical sibling pair with comparison voxel budget forced to one.
+    # Outputs: Exact uncached results and zero reused tiles.
     def test_budget_failure_falls_back(self):
         rows = [self.row('baseline'), self.row('same')]
         with patch.object(cached, 'MAX_COMPARISON_VOXELS', 1):
             result = self.assert_exact(rows)[1]
         self.assertEqual(result['evaluation_reuse']['reused_tiles'], 0)
 
+    # Purpose: Reject corrupt payloads instead of treating them as cache misses.
+    # Inputs: Sibling mask checksum replaced with an all-zero digest.
+    # Outputs: Checksum-changed ValueError during cached scoring.
     def test_corrupt_payload_raises_instead_of_falling_back(self):
         rows = [self.row('baseline'), self.row('bad')]
         rows[1]['mask_npz_sha256'] = '0' * 64
         with self.assertRaisesRegex(ValueError, 'Checksum changed'):
             cached.score_rows(NumpyNetwork(), rows, self.settings)
 
+    # Purpose: Verify each model and scoring call receives a fresh cache.
+    # Inputs: Identical rows evaluated by deterministic models with biases -2 and 2.
+    # Outputs: Same positive call counts and different metrics for different model predictions.
     def test_cache_is_fresh_for_each_model_and_call(self):
         rows = [self.row('baseline'), self.row('same')]
         first, second = NumpyNetwork(-2), NumpyNetwork(2)
@@ -206,6 +242,9 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertGreater(first.calls, 0)
         self.assertNotEqual(a[0]['metrics'], b[0]['metrics'])
 
+    # Purpose: Verify tile caches are isolated by case.
+    # Inputs: Baseline/sibling pairs for fixture and other cases.
+    # Outputs: Second case runs its own baseline inference and records its own baseline ID.
     def test_cases_never_share_cache(self):
         rows = [self.row('baseline'), self.row('same'), self.row('baseline', case='other'),
                 self.row('same', case='other')]
@@ -213,6 +252,9 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertEqual(results[0]['evaluation_reuse']['inferred_tiles'], results[2]['tiles'])
         self.assertEqual(results[2]['evaluation_reuse']['baseline_sample_id'], 'other:baseline')
 
+    # Purpose: Reject absent baselines and inconsistent data partitions.
+    # Inputs: Case without baseline, then baseline plus sibling assigned to test.
+    # Outputs: ValueError requires exactly one baseline and consistent partitions.
     def test_baseline_is_required_and_partition_consistent(self):
         row = self.row('no_baseline')
         with self.assertRaisesRegex(ValueError, 'exactly one baseline'):
@@ -222,6 +264,9 @@ class CachedEvaluationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'partitions'):
             cached.plan_rows([baseline, row], self.settings)
 
+    # Purpose: Verify inference planning predicts actual cache savings.
+    # Inputs: Baseline, unchanged sibling and sibling with one image voxel changed.
+    # Outputs: Planned total/inferred tile counts equal execution and reduction factor exceeds one.
     def test_loader_plan_matches_actual_inference_count(self):
         image = self.native.copy()
         image[4, 4, 4] = .4
@@ -232,6 +277,9 @@ class CachedEvaluationTests(unittest.TestCase):
         self.assertEqual(plan['total_tiles'], sum(r['tiles'] for r in records))
         self.assertGreater(plan['forward_pass_reduction_factor'], 1)
 
+    # Purpose: Verify anisotropic sampling and padding match uncached evaluation.
+    # Inputs: Baseline and changed image with target spacing 0.7, 1.3, 2.1 mm.
+    # Outputs: Every cached score equals the independently computed uncached score.
     def test_anisotropic_sampling_and_padding_match_uncached(self):
         image = self.native.copy()
         image[6, 5, 4] = .4

@@ -28,6 +28,9 @@ class DemoWorkflowTests(unittest.TestCase):
         self.output=Path(temporary.name)/'demo'
         self.project=initialize(self.output)
 
+    # Purpose: Verify generated demo cases obey native geometry and manual review contracts.
+    # Inputs: Three initialized cases with nine planned variants each.
+    # Outputs: Distinct selected masks, 0.26 attenuation, verified artifacts, and unreviewed flags.
     def test_demo_inputs_match_native_contract_and_keep_review_manual(self):
         self.assertEqual(len(self.project['cases']),3)
         geometries=[]
@@ -50,11 +53,17 @@ class DemoWorkflowTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256((self.output/relative).read_bytes()).hexdigest(),digest)
         self.assertFalse((self.output/'registry').exists())
 
+    # Purpose: Verify demo initialization preserves existing revisions.
+    # Inputs: Existing demo directory and saved project.json bytes.
+    # Outputs: FileExistsError and unchanged project snapshot.
     def test_existing_revision_is_never_overwritten(self):
         saved=(self.output/'project.json').read_bytes()
         with self.assertRaises(FileExistsError):initialize(self.output)
         self.assertEqual((self.output/'project.json').read_bytes(),saved)
 
+    # Purpose: Verify demo preflight metadata validation stays read-only.
+    # Inputs: Demo INI with read_crop mocked to forbid voxel reads.
+    # Outputs: Nine variants, no native simulations/output writes, and no preflight directory.
     def test_metadata_validation_does_not_read_voxels_or_mark_review(self):
         ini=self.project['cases'][0]['cohort_ini']
         with patch('fakect_roi.read_crop',side_effect=AssertionError('No voxel reads')):
@@ -64,6 +73,9 @@ class DemoWorkflowTests(unittest.TestCase):
         self.assertEqual(result['variant_count'],9)
         self.assertFalse((Path(ini).parent/'preflight-r1').exists())
 
+    # Purpose: Verify preview overrides cannot alter generation workflows.
+    # Inputs: roi-selection override passed to preflight/freeze/prepare/plan.
+    # Outputs: ValueError for every nonpreview stage and no prepared-pairs directory.
     def test_preview_override_cannot_leak_to_generation_stage(self):
         for stage in ('preflight','freeze','prepare','plan'):
             with self.subTest(stage=stage), self.assertRaisesRegex(ValueError,'only for the preview'):

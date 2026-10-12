@@ -36,6 +36,9 @@ class CohortRecipeTrialTests(unittest.TestCase):
         with patch.object(trial, 'load_study_config', return_value=self.fixture.config), redirect_stdout(io.StringIO()):
             return trial.run(self.path, self.output)
 
+    # Purpose: Verify only extreme recipe corners run with preserved native geometry.
+    # Inputs: Recipe cohort fixture sweeping growth 0.5-3 mm and native source hashes.
+    # Outputs: Two trials, consistent max NPZ, unchanged sources and no full-grid freeze eligibility.
     def test_only_two_corners_execute_and_max_payload_preserves_native_geometry(self):
         before = {name: hashlib.sha256(Path(path).read_bytes()).hexdigest()
                   for name, path in self.fixture.resolved['source_files'].items()}
@@ -63,6 +66,9 @@ class CohortRecipeTrialTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             self.run_trial()
 
+    # Purpose: Verify a singleton sweep executes only one corner.
+    # Inputs: Recipe cohort with only growth distance 1 mm.
+    # Outputs: One minimum-and-maximum trial and a saved max-trial NPZ.
     def test_single_corner_runs_once(self):
         self.fixture.config['sweeps']['grow']['distance_mm'] = (1.,)
         with patch.object(trial, 'apply_recipe', wraps=trial.apply_recipe) as apply:
@@ -71,6 +77,9 @@ class CohortRecipeTrialTests(unittest.TestCase):
         self.assertEqual(result['samples'][0]['extreme'], 'minimum_and_maximum')
         self.assertTrue((self.output / 'max-trial.npz').exists())
 
+    # Purpose: Verify failed corners retain diagnostics while the other corner runs.
+    # Inputs: Minimum-corner ValueError and successful maximum-corner execution.
+    # Outputs: Overall error, failed/ok trial rows, INCOMPLETE marker and maximum NPZ retained.
     def test_failed_corner_keeps_incomplete_diagnostics_and_attempts_other_corner(self):
         original = trial.apply_recipe
         def apply(arrays, resolved, config):

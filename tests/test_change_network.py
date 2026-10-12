@@ -18,6 +18,9 @@ import fakect_change_network as network
 
 
 class ChangeSettingsTests(unittest.TestCase):
+    # Purpose: Verify importing change-network helpers does not import TensorFlow.
+    # Inputs: Fresh Python subprocess importing fakect_change_network.
+    # Outputs: Subprocess succeeds with tensorflow absent from sys.modules.
     def test_import_remains_tensorflow_lazy(self):
         process = subprocess.run([sys.executable, '-c',
             'import sys; sys.path.insert(0, "src"); import fakect_change_network; '
@@ -25,6 +28,9 @@ class ChangeSettingsTests(unittest.TestCase):
             capture_output=True, check=False)
         self.assertEqual(process.returncode, 0, process.stderr)
 
+    # Purpose: Reject invalid graph geometry and loss settings before TensorFlow use.
+    # Inputs: Invalid patch shapes, filter counts, seed and CE or Dice weights.
+    # Outputs: Model construction or loss validation raises ValueError.
     def test_geometry_and_loss_settings_fail_before_tensorflow_import(self):
         for shape in ((4, 8, 8), (12, 16, 16), (True, 16, 16), (104, 104, 104)):
             with self.subTest(shape=shape), self.assertRaises(ValueError):
@@ -44,6 +50,9 @@ class ChangeLossTests(unittest.TestCase):
         import tensorflow as tf
         cls.tf = tf
 
+    # Purpose: Verify change loss distinguishes added from removed voxels.
+    # Inputs: Known labels 0, 1, 2 and logits favoring correct or swapped change classes.
+    # Outputs: Correct loss below 1e-5, swapped loss above 10 and correct valid/change counts.
     def test_known_three_class_targets_penalize_swapped_added_removed(self):
         y = np.array([[[[0, 1, 2]]]], np.int32)
         valid = np.ones_like(y, np.float32)
@@ -57,6 +66,9 @@ class ChangeLossTests(unittest.TestCase):
         self.assertAlmostEqual(float(good['changed_voxels']), 2.)
         self.assertAlmostEqual(float(good['valid_voxels']), 3.)
 
+    # Purpose: Verify weighted cross entropy divides by weighted valid mass.
+    # Inputs: Three labels with validity 1, 0.5, 0 and change weight 8.
+    # Outputs: Cross entropy equals the analytic weighted mean and matches total loss with Dice disabled.
     def test_weighted_ce_uses_weighted_valid_mass(self):
         y = np.array([[[[0, 1, 2]]]], np.int32)
         validity = np.array([[[[1., .5, 0.]]]], np.float32)
@@ -67,6 +79,9 @@ class ChangeLossTests(unittest.TestCase):
         self.assertAlmostEqual(float(result['cross_entropy']), (ce0 + 4. * ce1) / 5., places=6)
         self.assertAlmostEqual(float(result['loss']), float(result['cross_entropy']), places=6)
 
+    # Purpose: Verify padded NaNs and sentinel labels cannot affect loss gradients.
+    # Inputs: One valid added voxel and one invalid -1 voxel with poisoned logits.
+    # Outputs: Unchanged losses, finite gradients and zero gradient on padding.
     def test_padding_cannot_change_loss_or_gradients_even_with_nan_and_sentinel(self):
         tf = self.tf
         y = np.array([[[[1, -1]]]], np.int32)
@@ -86,6 +101,9 @@ class ChangeLossTests(unittest.TestCase):
         self.assertLess(float(gradient[0, 0, 0, 0, 1]), 0.)
         self.assertTrue(np.isfinite(gradient).all())
 
+    # Purpose: Verify unchanged controls penalize false change predictions.
+    # Inputs: All-zero class targets with background or foreground-favoring logits.
+    # Outputs: Correct predictions have near-zero Dice loss; false changes incur Dice and CE penalties.
     def test_unchanged_control_has_foreground_false_positive_penalty(self):
         y = np.zeros((1, 2, 2, 2), np.int32)
         valid = np.ones_like(y, np.float32)
@@ -99,6 +117,9 @@ class ChangeLossTests(unittest.TestCase):
         self.assertGreater(float(high['cross_entropy']), 11.)
         self.assertEqual(float(high['changed_voxels']), 0.)
 
+    # Purpose: Verify entirely invalid patches contribute no loss or gradients.
+    # Inputs: Sentinel -1 labels, zero validity and watched three-class logits.
+    # Outputs: All loss components and gradients are exactly zero.
     def test_invalid_only_patch_has_zero_loss_and_zero_gradient(self):
         tf = self.tf
         watched = tf.ones((1, 2, 2, 2, 3), tf.float32)
@@ -109,6 +130,9 @@ class ChangeLossTests(unittest.TestCase):
         self.assertTrue(all(float(v) == 0. for v in result.values()))
         np.testing.assert_array_equal(tape.gradient(result['loss'], watched).numpy(), 0.)
 
+    # Purpose: Reject invalid supervision dtypes, classes and validity ranges.
+    # Inputs: Float targets, class 3 or -1, out-of-range or NaN validity.
+    # Outputs: ValueError or TensorFlow InvalidArgumentError rejects each invalid input.
     def test_invalid_validity_classes_and_float_supervision_rejected(self):
         logits = np.zeros((1, 1, 1, 1, 3), np.float32)
         y = np.zeros((1, 1, 1, 1), np.int32)
@@ -146,6 +170,9 @@ class ChangeNetworkTests(unittest.TestCase):
             y[:, 9:13, 9:13, 9:13] = 2
         return x, y, x[..., 1].copy()
 
+    # Purpose: Verify the graph restores resolution and produces exclusive change classes.
+    # Inputs: 16-cube two-channel model and synthetic added/removed regions.
+    # Outputs: Three-class voxel output, three pooling stages and normalized exclusive probabilities.
     def test_graph_restores_voxel_resolution_and_exclusive_three_classes(self):
         self.assertEqual(self.model.input_shape, (None, 16, 16, 16, 2))
         self.assertEqual(self.model.output_shape, (None, 16, 16, 16, 3))
@@ -158,6 +185,9 @@ class ChangeNetworkTests(unittest.TestCase):
         classes = np.argmax(probabilities, -1)
         self.assertFalse(np.any((classes == 1) & (classes == 2)))
 
+    # Purpose: Verify invalid attenuation cannot affect predictions or gradients.
+    # Inputs: Synthetic patch with zero validity and NaN attenuation in its first four planes.
+    # Outputs: Predictions match clean input exactly and invalid attenuation gradients are zero.
     def test_invalid_attenuation_has_no_effect_and_no_gradient(self):
         x, _, _ = self.fixture()
         x[:, :4, ..., 1] = 0.
@@ -171,6 +201,9 @@ class ChangeNetworkTests(unittest.TestCase):
         gradient = tape.gradient(value, watched).numpy()
         np.testing.assert_array_equal(gradient[:, :4, ..., 0], 0.)
 
+    # Purpose: Verify real learning lowers sparse change loss and survives model reload.
+    # Inputs: 16-cube synthetic changes trained for 35 steps at learning rate 0.003.
+    # Outputs: Loss falls below 60 percent, class probabilities improve, stable traces and matching reload.
     def test_real_training_reduces_sparse_change_loss_and_safe_reload(self):
         steps = network.make_steps(self.model, learning_rate=.003)
         x, y, valid = self.fixture()
@@ -193,6 +226,9 @@ class ChangeNetworkTests(unittest.TestCase):
             restored = network.load_model(path)
             np.testing.assert_allclose(restored(x), steps.predict(x), rtol=1e-6, atol=1e-6)
 
+    # Purpose: Verify invalid-only training preserves existing Adam state.
+    # Inputs: Model trained once, then NaN attenuation with sentinel labels and zero validity.
+    # Outputs: Zero reported losses; weights, optimizer variables and iteration count remain unchanged.
     def test_invalid_only_training_is_noop_even_after_adam_momentum_exists(self):
         steps = network.make_steps(self.model)
         x, y, valid = self.fixture()
@@ -209,6 +245,9 @@ class ChangeNetworkTests(unittest.TestCase):
             np.testing.assert_array_equal(old, new.numpy())
         self.assertEqual(int(steps.optimizer.iterations.numpy()), 1)
 
+    # Purpose: Verify fixed batch signatures and matching supervision validity.
+    # Inputs: Repeated batch, float targets and validity disagreeing with the input channel.
+    # Outputs: Signature or dtype errors and TensorFlow validity rejection.
     def test_fixed_signature_and_supervision_validity_contract(self):
         steps = network.make_steps(self.model)
         x, y, valid = self.fixture()

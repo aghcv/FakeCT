@@ -76,6 +76,9 @@ class CohortStatusTests(unittest.TestCase):
     def collect(self):
         return cohort_status.collect_status(self.project, repo_root=self.root)
 
+    # Purpose: Verify absent reports do not imply review or publication.
+    # Inputs: Valid 16-variant cohort config with no generated reports.
+    # Outputs: All generation stages are missing, publication is absent, and ancestry stays unverified.
     def test_missing_reports_do_not_imply_review_or_preparation(self):
         row = self.collect()['cases'][0]
         self.assertTrue(row['config_valid'])
@@ -86,6 +89,9 @@ class CohortStatusTests(unittest.TestCase):
         self.assertEqual(row['published']['state'], 'not_published')
         self.assertNotIn('--family-verified', row['commands']['register'])
 
+    # Purpose: Verify input-byte edits mark completed reports stale.
+    # Inputs: Complete preview/preflight followed by an INI comment edit.
+    # Outputs: Both stages become stale while execution-valid evidence remains recorded.
     def test_completed_preview_and_preflight_become_stale_after_ini_comment_edit(self):
         self.preview()
         self.preflight()
@@ -99,6 +105,9 @@ class CohortStatusTests(unittest.TestCase):
         self.assertFalse(row['preview']['matches_current_input'])
         self.assertTrue(row['preflight']['execution_valid'])
 
+    # Purpose: Verify incomplete and altered previews cannot appear complete.
+    # Inputs: INCOMPLETE marker, modified report HTML, then missing report HTML.
+    # Outputs: Status becomes incomplete or invalid with a checksum error.
     def test_incomplete_and_tampered_reports_are_not_complete(self):
         folder = self.preview()
         (folder / 'INCOMPLETE').write_text('still running')
@@ -111,6 +120,9 @@ class CohortStatusTests(unittest.TestCase):
         (folder / 'report.html').unlink()
         self.assertEqual(self.collect()['cases'][0]['preview']['state'], 'invalid')
 
+    # Purpose: Verify status indexing avoids voxel reads and preserves sources.
+    # Inputs: Opaque preview payload, read-denying Path.open mock, and escaped project name.
+    # Outputs: No payload opens or source changes occur; HTML links encode spaces and escape script markup.
     def test_status_does_not_open_voxel_payloads_or_modify_case_sources(self):
         folder = self.preview()
         source = self.root / 'phantom.raw'
@@ -141,6 +153,9 @@ class CohortStatusTests(unittest.TestCase):
         self.assertNotIn('<script>alert(1)</script>', rendered)
         self.assertIn('&lt;script&gt;alert(1)&lt;/script&gt;', rendered)
 
+    # Purpose: Verify saved freeze status compares current bytes and preflight checksum.
+    # Inputs: Valid freeze, edited current INI, then altered saved preflight.
+    # Outputs: Freeze state progresses from complete to stale to invalid.
     def test_saved_freeze_is_checked_and_compared_with_current_bytes(self):
         folder = self.config['train']['freeze_directory']
         folder.mkdir(parents=True)
@@ -157,6 +172,9 @@ class CohortStatusTests(unittest.TestCase):
         (folder / 'preflight.json').write_text('{"changed": true}')
         self.assertEqual(self.collect()['cases'][0]['freeze']['state'], 'invalid')
 
+    # Purpose: Verify preparation/publication checks use metadata-only validation.
+    # Inputs: Mocked prepared manifest and registry snapshot with different input hash.
+    # Outputs: Calls disable payload verification; stale preparation and older published snapshot remain distinct.
     def test_prepared_and_registered_snapshots_use_metadata_verification_only(self):
         folder = self.config['train']['dataset_directory']
         folder.mkdir(parents=True)
@@ -180,6 +198,9 @@ class CohortStatusTests(unittest.TestCase):
         self.assertIn('--name coa-260602-r2', row['commands']['register'])
         self.assertNotIn('--family-verified', row['commands']['register'])
 
+    # Purpose: Prevent status index output from replacing immutable artifacts.
+    # Inputs: Output paths inside preview, registry, or prepared dataset.
+    # Outputs: Writing raises ValueError and leaves status.json absent.
     def test_index_cannot_replace_immutable_case_or_registry_artifacts(self):
         status = self.collect()
         for output in [self.config['output']['directory'], self.root / 'registry',

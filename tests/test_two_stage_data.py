@@ -59,6 +59,9 @@ class TwoStageDataTests(unittest.TestCase):
         path.write_text(json.dumps(document))
         (self.output/'dataset-manifest.sha256').write_text(registry._hash(path)+'\n')
 
+    # Purpose: Verify exact before/after reconstruction from net change masks.
+    # Inputs: Prepared baseline and edited sibling with one added and one removed voxel.
+    # Outputs: Two annotated samples, correct change counts and both Boolean reconstruction identities.
     def test_exact_masks_and_reconstruction_identity(self):
         result = self.prepare()
         self.assertEqual(result['sample_count'], 2)
@@ -78,23 +81,35 @@ class TwoStageDataTests(unittest.TestCase):
         self.assertFalse(np.any(removed & after))
         self.assertTrue(data.inspect_dataset(result['manifest_path'])['payloads_verified'])
 
+    # Purpose: Keep the upstream paired dataset immutable during annotation.
+    # Inputs: Prepared paired dataset with hashes captured for every original artifact.
+    # Outputs: All original artifact hashes unchanged after two-stage preparation.
     def test_prepared_dataset_bytes_are_not_modified(self):
         inventory = {p: registry._hash(p) for p in self.prepared.parent.rglob('*') if p.is_file()}
         self.prepare()
         self.assertEqual(inventory, {p: registry._hash(p) for p in inventory})
 
+    # Purpose: Support annotation without exporting additional change-mask arrays.
+    # Inputs: Prepared baseline/edit pair with write_changes=False.
+    # Outputs: No changes directory or sidecar fields; resulting manifest remains inspectable.
     def test_optional_change_sidecars(self):
         result = self.prepare(write_changes=False)
         self.assertFalse((self.output/'changes').exists())
         self.assertTrue(all('changes_npz' not in sample for sample in result['samples']))
         self.assertEqual(data.inspect_dataset(result['manifest_path'])['sample_count'], 2)
 
+    # Purpose: Keep metadata-only inspection independent of array decoding.
+    # Inputs: Completed two-stage dataset with np.load mocked to fail.
+    # Outputs: Inspection succeeds with payloads_verified=False.
     def test_metadata_only_never_opens_array_payloads(self):
         result = self.prepare()
         with patch.object(np, 'load', side_effect=AssertionError('NPZ touched')):
             inspected = data.inspect_dataset(result['manifest_path'], verify_payloads=False)
         self.assertFalse(inspected['payloads_verified'])
 
+    # Purpose: Prevent annotation from overwriting an existing dataset revision.
+    # Inputs: Completed two-stage output followed by a repeated preparation request.
+    # Outputs: FileExistsError and byte-identical original manifest.
     def test_existing_output_never_overwritten(self):
         result = self.prepare()
         original = Path(result['manifest_path']).read_bytes()
@@ -102,18 +117,27 @@ class TwoStageDataTests(unittest.TestCase):
             self.prepare()
         self.assertEqual(Path(result['manifest_path']).read_bytes(), original)
 
+    # Purpose: Reject unavailable source datasets before reserving a new output.
+    # Inputs: Project whose prepared dataset manifest has been deleted.
+    # Outputs: Missing-data error and no output directory.
     def test_missing_dataset_does_not_reserve_output(self):
         self.prepared.unlink()
         with self.assertRaises((ValueError, FileNotFoundError)):
             self.prepare()
         self.assertFalse(self.output.exists())
 
+    # Purpose: Reject interrupted two-stage dataset revisions.
+    # Inputs: Completed output marked INCOMPLETE.
+    # Outputs: Inspection raises a completeness error.
     def test_incomplete_output_rejected(self):
         result = self.prepare()
         (self.output/'INCOMPLETE').write_text('interrupted')
         with self.assertRaisesRegex(ValueError, 'complete'):
             data.inspect_dataset(result['manifest_path'])
 
+    # Purpose: Detect tampering with upstream variant arrays.
+    # Inputs: Prepared two-stage manifest whose native variant NPZ has appended bytes.
+    # Outputs: Checksum error during dataset inspection.
     def test_changed_native_payload_rejected(self):
         result = self.prepare()
         with Path(result['samples'][0]['variant_npz']).open('ab') as handle:
@@ -121,6 +145,9 @@ class TwoStageDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'checksum'):
             data.inspect_dataset(result['manifest_path'])
 
+    # Purpose: Validate both change-sidecar integrity and reconstruction semantics.
+    # Inputs: Removed-mask sidecar zeroed, then its hashes recomputed in the manifest.
+    # Outputs: Initial checksum error; updated hashes still fail net-change identity validation.
     def test_sidecar_hash_and_boolean_identity_both_checked(self):
         result = self.prepare()
         sample = result['samples'][1]
@@ -137,6 +164,9 @@ class TwoStageDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Saved net change masks'):
             data.inspect_dataset(result['manifest_path'])
 
+    # Purpose: Preserve independently unverified source-family status.
+    # Inputs: Manifest edited to claim family_verified=True with an updated checksum.
+    # Outputs: Metadata inspection rejects the invalid family-verification contract.
     def test_families_cannot_be_silently_marked_verified(self):
         result = self.prepare()
         result['family_verified'] = True
@@ -144,6 +174,9 @@ class TwoStageDataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'contract'):
             data.inspect_dataset(result['manifest_path'], verify_payloads=False)
 
+    # Purpose: Bind annotation rows to their pinned prepared-sample metadata.
+    # Inputs: Modified anatomy-family or variant path with recomputed manifest checksum.
+    # Outputs: Metadata inspection rejects both prepared-sample mismatches.
     def test_sample_paths_and_family_bound_to_prepared_metadata(self):
         result = self.prepare()
         for field, value in (('anatomy_family', 'other'), ('variant_npz', '/tmp/other.npz')):
@@ -153,6 +186,9 @@ class TwoStageDataTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'pinned prepared sample'):
                 data.inspect_dataset(result['manifest_path'], verify_payloads=False)
 
+    # Purpose: Require compatible binary grids for net change masks.
+    # Inputs: Before/after uint8 masks with differing 3D shapes.
+    # Outputs: Binary-grid contract ValueError.
     def test_binary_mask_shape_contract(self):
         with self.assertRaisesRegex(ValueError, 'binary'):
             data._changes(np.zeros((2, 2, 2), dtype=np.uint8), np.ones((2, 2, 3), dtype=np.uint8))

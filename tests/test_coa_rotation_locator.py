@@ -23,6 +23,9 @@ def originals():
 
 
 class RotationLocatorIsolationTests(unittest.TestCase):
+    # Purpose: Verify locator fitting rejects invalid original-only fold contracts before I/O.
+    # Inputs: Test/heldout/edited/duplicate/family-conflicting rows and incompatible refit/validation settings.
+    # Outputs: ValueError for each invalid fold and no volume reader invocation.
     def test_rejects_nonoriginal_evaluation_and_invalid_refit_before_reading(self):
         for mutation in ('test', 'heldout', 'edited', 'role', 'duplicate', 'family', 'refit_validation', 'selection_without_validation'):
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
@@ -48,6 +51,9 @@ class RotationLocatorIsolationTests(unittest.TestCase):
                                              epochs=1, fixed_budget=fixed)
                     forbidden.assert_not_called()
 
+    # Purpose: Verify exact source and reference identities cannot cross locator partitions.
+    # Inputs: TRAIN/validation originals sharing attenuation path or reference-mask identity.
+    # Outputs: ValueError identifying cross-partition identity leakage.
     def test_cross_partition_attenuation_and_duplicate_reference_rejected(self):
         for identity in ('source', 'mask'):
             with self.subTest(identity=identity):
@@ -61,6 +67,9 @@ class RotationLocatorIsolationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'crosses'):
                     rotation.validate_rows(rows)
 
+    # Purpose: Verify provisional family overlap does not relax exact identity guards.
+    # Inputs: Same-family partition rows, explicit overlap flag, shared source/mask, and string flag.
+    # Outputs: Flag permits family overlap while shared identities and nonboolean flag remain rejected.
     def test_secondary_overlap_requires_explicit_flag_and_retains_exact_identity_guards(self):
         rows = originals()
         rows[-1]['anatomy_family'] = rows[0]['anatomy_family']
@@ -84,6 +93,9 @@ class RotationLocatorIsolationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'boolean'):
             rotation.validate_rows(rows, allow_provisional_family_overlap='true')
 
+    # Purpose: Verify fixed refits accept TRAIN-only rows and validate epoch bounds before I/O.
+    # Inputs: One original TRAIN row and epochs True, 0, -1, 501, or 1.5.
+    # Outputs: No validation rows for valid refit and ValueError before image access for invalid budgets.
     def test_fixed_refit_accepts_train_only_and_epoch_budget_is_checked_before_reading(self):
         rows = originals()[:1]
         selected, train, validation = rotation.validate_rows(rows, fixed_budget=True)
@@ -135,6 +147,9 @@ class RotationLocatorTensorFlowTests(unittest.TestCase):
         self.assertEqual(load.call_count, 1)  # Reload only after fresh fitting.
         return result, build.call_args.kwargs['prior_box']
 
+    # Purpose: Verify real inner locators derive priors solely from TRAIN originals.
+    # Inputs: One TRAIN/one shifted-validation original and one TensorFlow epoch.
+    # Outputs: TRAIN-only prior, two updates, changed weights, selected checkpoint, and reload parity.
     def test_inner_locator_prior_uses_train_only_and_reloads_selected_predictions(self):
         with tempfile.TemporaryDirectory() as directory:
             rows = originals()
@@ -161,6 +176,9 @@ class RotationLocatorTensorFlowTests(unittest.TestCase):
                                    .5 * record['validation_identity_loss'] + .5 * record['validation_translation_loss'])
             self.assertEqual(set(MiniVolume.accessed), {row['sample_id'] for row in rows})
 
+    # Purpose: Verify real locator refits use the final epoch with TRAIN-only data.
+    # Inputs: Two epochs on one original TRAIN MiniVolume sample.
+    # Outputs: Epoch 2 selected, four updates, absent validation metrics, and reload parity.
     def test_fixed_budget_refit_saves_final_epoch_and_never_opens_validation(self):
         with tempfile.TemporaryDirectory() as directory:
             rows = originals()[:1]

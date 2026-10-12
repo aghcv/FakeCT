@@ -30,6 +30,9 @@ def select(labels, **kwargs):
 
 
 class PhantomAnatomyTests(unittest.TestCase):
+    # Purpose: Verify anatomy selection needs no supplied ROI.
+    # Inputs: Archived thoracic-aorta INI, then an added ROI section.
+    # Outputs: Normal config loads branch reach of three radii; supplied ROI raises ValueError.
     def test_no_roi_needed_and_unknown_roi_rejected(self):
         template = Path(__file__).resolve().parents[1] / 'archive/research/configs/anatomy/thoracic-aorta-260602.ini'
         config = load_config(template)
@@ -41,6 +44,9 @@ class PhantomAnatomyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'no supplied ROI'):
                 load_config(p)
 
+    # Purpose: Exclude pulmonary labels before connected-branch selection.
+    # Inputs: Aorta linked to a systemic branch only through pulmonary label 3.
+    # Outputs: Only six slab aorta voxels remain; pulmonary connector and downstream branch are excluded.
     def test_pulmonary_excluded_before_connectivity(self):
         labels = np.zeros((10, 10, 10), np.int32)
         labels[1:9, 5, 5] = 1
@@ -52,6 +58,9 @@ class PhantomAnatomyTests(unittest.TestCase):
         self.assertFalse(arrays['mask'][4, 5, 7])
         self.assertEqual(counts['excluded_arterial_voxels_in_slab'], 1)
 
+    # Purpose: Select connected structures rather than all cells sharing an ID.
+    # Inputs: Connected branches plus disconnected aorta/branch voxels with the same labels.
+    # Outputs: Two connected branch voxels remain and disconnected counts are reported separately.
     def test_connected_component_not_whole_original_id(self):
         labels = np.zeros((10, 10, 10), np.int32)
         labels[1:9, 5, 5] = 1
@@ -65,6 +74,9 @@ class PhantomAnatomyTests(unittest.TestCase):
         self.assertEqual(counts['disconnected_aorta_voxels'], 1)
         self.assertEqual(counts['disconnected_branch_voxels_in_reach'], 1)
 
+    # Purpose: Limit native aorta selection to the thoracic slab.
+    # Inputs: Full-height aorta label with z slab [2,7].
+    # Outputs: Only K indices 2-7 are selected and four outside-slab voxels are counted.
     def test_slab_excludes_abdominal_same_aorta_id(self):
         labels = np.zeros((10, 5, 5), np.int32)
         labels[:, 2, 2] = 1
@@ -72,6 +84,9 @@ class PhantomAnatomyTests(unittest.TestCase):
         np.testing.assert_array_equal(np.flatnonzero(arrays['mask'][:, 2, 2]), np.arange(2, 8))
         self.assertEqual(counts['aortic_voxels_outside_slab_in_crop'], 4)
 
+    # Purpose: Verify branch reach uses anisotropic spacing and voxel-center origin.
+    # Inputs: Origin [10,20,100], spacing [2,1,2], slab [104,108], and reach 3 mm.
+    # Outputs: Physical I/J limits and slab indices select exactly four branch voxels.
     def test_anisotropic_physical_distance_and_voxel_center_origin(self):
         labels = np.zeros((5, 8, 8), np.int32)
         labels[:, 3, 3] = 1
@@ -85,6 +100,9 @@ class PhantomAnatomyTests(unittest.TestCase):
         self.assertFalse(arrays['mask'][1, 3, 3])
         self.assertEqual(counts['branch_voxels'], 4)
 
+    # Purpose: Verify optional branches and lexical misclassification exclusion.
+    # Inputs: Aorta with a coronary-path gall_bladder_inner label and a systemic branch.
+    # Outputs: Misnamed structure is excluded and disabling branches yields an empty branch mask.
     def test_optional_branches_and_lexical_misclassification_guard(self):
         labels = np.zeros((10, 8, 8), np.int32)
         labels[:, 3, 3] = 1
@@ -95,6 +113,9 @@ class PhantomAnatomyTests(unittest.TestCase):
         arrays, _ = select(labels, include_branches=False)
         self.assertEqual(arrays['branch_mask'].sum(), 0)
 
+    # Purpose: Reject absent aorta and malformed native selection data.
+    # Inputs: All-background labels, fractional labels, or negative spacing.
+    # Outputs: Selection raises ValueError for missing anatomy or invalid geometry.
     def test_missing_aorta_and_malformed_inputs_fail(self):
         labels = np.zeros((10, 8, 8), np.int32)
         with self.assertRaisesRegex(ValueError, 'No native aortic'):
@@ -104,6 +125,9 @@ class PhantomAnatomyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             select(labels, spacing_ijk_mm=[1, -1, 1])
 
+    # Purpose: Verify landmark domains combine all surface parts and relative branch reach.
+    # Inputs: Split T12/T1 bounds, verified aorta radii [2,3,4], and reach factor 3.
+    # Outputs: Slab is [4,17], reach 9 mm, crop bounds include padding; missing T1 is rejected.
     def test_landmarks_union_all_surface_parts_and_relative_reach(self):
         def row(name, lo, hi, ids):
             return {'original_name': name, 'source_file': 'fixture.raw', 'local_surface_index': 0,
@@ -121,6 +145,9 @@ class PhantomAnatomyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'T1_vertebrae'):
             landmark_domain(records[:3], catalog(), settings)
 
+    # Purpose: Reject surface inventories with altered checksum sidecars.
+    # Inputs: Empty selection JSON and an incorrect .sha256 file.
+    # Outputs: Surface loading raises ValueError for checksum mismatch.
     def test_changed_surface_cache_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / 'selection.json'
@@ -129,6 +156,9 @@ class PhantomAnatomyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'checksum'):
                 _surfaces({'input': {'surface_inventory': p}}, {}, {})
 
+    # Purpose: Verify cached surfaces match coordinate registration and case identity.
+    # Inputs: Inventory with conflicting boundary origin, then a different case ID.
+    # Outputs: Loading rejects geometry disagreement and case/frame/schema mismatch.
     def test_cache_registration_and_case_mismatch_fail(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / 'inventory.json'
@@ -150,6 +180,9 @@ class PhantomAnatomyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'case/frame/schema mismatch'):
                 _surfaces(config, {}, contract)
 
+    # Purpose: Reject cached native surface metadata after source changes.
+    # Inputs: Inventory declaring byte count 1 for a longer RAW file.
+    # Outputs: Loading raises ValueError for changed cached surface source.
     def test_changed_cached_raw_file_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / 'inventory.json'

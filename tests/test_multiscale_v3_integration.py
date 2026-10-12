@@ -34,6 +34,9 @@ def config(directory):
 
 
 class V3GeometryAndPartitionTests(unittest.TestCase):
+    # Purpose: Verify physical detail margins round within the voxel budget.
+    # Inputs: Production v3 INI with 9.6 mm margins, then 20 mm margins.
+    # Outputs: Base [216,160,160] expands to [216,192,192]; oversized margins raise ValueError.
     def test_physical_margin_rounding_and_effective_budget(self):
         source = ROOT / 'archive/research/configs/models/coa-multiscale-pilot-v3.ini'
         c = exp.load_config(source)
@@ -49,6 +52,9 @@ class V3GeometryAndPartitionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '[Bb]udget|8,388,608|8388608'):
                 exp.load_config(modified)
 
+    # Purpose: Verify larger detail crops preserve predicted physical centers.
+    # Inputs: Fractional predicted box and anisotropic overview with old/new detail shapes.
+    # Outputs: Native and normalized centers stay equal while proposal extents increase.
     def test_larger_detail_retains_each_predicted_physical_center(self):
         c = exp.load_config(ROOT / 'archive/research/configs/models/coa-multiscale-pilot-v3.ini')
         old = deepcopy(c)
@@ -65,6 +71,9 @@ class V3GeometryAndPartitionTests(unittest.TestCase):
         np.testing.assert_array_equal(old_boxes[:, :3], new_boxes[:, :3])
         self.assertTrue(np.all(new_boxes[:, 4:] > old_boxes[:, 4:]))
 
+    # Purpose: Reject test partitions before preparation, fitting, or readers.
+    # Inputs: Fixture lock containing a test row with overview/volume/TensorFlow spies.
+    # Outputs: Both stages raise ValueError and all readers/configuration remain uncalled.
     def test_test_split_rejected_before_readers_in_prepare_and_fit(self):
         with tempfile.TemporaryDirectory() as directory:
             c, lock = config(directory), fixture_lock(directory)
@@ -126,6 +135,9 @@ class V3RobustnessTests(unittest.TestCase):
                 predictions, config('/tmp/unused-fakect-v3-test'))
         return result, target[0]
 
+    # Purpose: Verify translated image predictions recover original native coverage.
+    # Inputs: Image-centroid predictor audited on six fixed signed axis translations.
+    # Outputs: All response/dependence/coverage gates pass and recovered native boxes equal the target.
     def test_fixed_image_translations_inverse_map_to_native_coverage(self):
         result, target = self.audit(ImageCentroidPredictor)
         self.assertTrue(result['passed'])
@@ -144,6 +156,9 @@ class V3RobustnessTests(unittest.TestCase):
             self.assertEqual(probe['native_coverage']['target_coverage'], 1.)
             self.assertTrue(probe['coverage_passed'])
 
+    # Purpose: Reject native coverage failure despite valid image response.
+    # Inputs: Image-centroid predictor with coverage mocked to 0.8.
+    # Outputs: Response/dependence pass but native coverage and combined approval fail.
     def test_native_coverage_failure_rejects_otherwise_valid_image_response(self):
         with patch.object(exp, 'coverage', return_value=dict(
                 target_coverage=.8, before_coverage=.8, changed_coverage=None,
@@ -154,6 +169,9 @@ class V3RobustnessTests(unittest.TestCase):
         self.assertFalse(result['native_coverage_gate_passed'])
         self.assertFalse(result['passed'])
 
+    # Purpose: Reject validity-only shortcuts through blank-image dependence.
+    # Inputs: ValidityShortcutPredictor on real and blank translated inputs.
+    # Outputs: Translation response passes but equal real/blank errors fail image dependence.
     def test_validity_shortcut_fails_blank_dependence_despite_translation_response(self):
         result, _ = self.audit(ValidityShortcutPredictor)
         self.assertTrue(result['response_gate_passed'])
@@ -162,6 +180,9 @@ class V3RobustnessTests(unittest.TestCase):
         self.assertAlmostEqual(result['validation_real_mean_error_mm'],
                                result['validation_blank_mean_error_mm'])
 
+    # Purpose: Keep ineligible robustness probes at their predetermined displacement.
+    # Inputs: 16-cube input and target near the lower K boundary.
+    # Outputs: First probe remains K- at -0.04 and reports ineligible supervision.
     def test_fixed_probe_is_not_moved_to_rescue_ineligible_supervision(self):
         x = np.ones((1, 16, 16, 16, 2), np.float32)
         target = np.array([[.24, .5, .5, .2, .25, .25]], np.float32)
@@ -195,6 +216,9 @@ class V3RealTensorFlowIntegrationTests(unittest.TestCase):
         stack.enter_context(patch.object(learning, 'configure_tensorflow', return_value=(self.tf, self.network)))
         return stack
 
+    # Purpose: Verify v3 stage plumbing with explicit mocked robustness approval.
+    # Inputs: Small real TensorFlow fit, shifted validation fixture, and an approving audit mock.
+    # Outputs: Single traces, training-only priors, both checkpoints, reload parity, and no reserved reads are verified.
     def test_real_prepare_fit_reload_with_explicit_mocked_robustness_approval(self):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -230,6 +254,9 @@ class V3RealTensorFlowIntegrationTests(unittest.TestCase):
             self.assertNotIn('test:never_open', MiniVolume.accessed)
             self.assertTrue((out / 'report.html').is_file())
 
+    # Purpose: Stop classifier construction when robustness fails despite coverage.
+    # Inputs: Small real locator fit with failed robustness audit and classifier spy.
+    # Outputs: Coverage passes; fit stops at robustness gate with no classifier construction or artifact.
     def test_failed_robustness_blocks_classifier_after_successful_coverage(self):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)

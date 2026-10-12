@@ -21,6 +21,9 @@ class Links(HTMLParser):
 
 
 class DeveloperDocumentationTests(unittest.TestCase):
+    # Purpose: Verify offline developer guides have valid links and unique anchors.
+    # Inputs: Four developer HTML guides and their linked local files/resources.
+    # Outputs: IDs are unique, local targets/anchors exist, and resources require no network.
     def test_offline_guides_have_valid_local_links_and_anchors(self):
         for relative in ('docs/developer/index.html','docs/developer/testing.html',
                          'docs/developer/contributing.html','docs/developer/api.html'):
@@ -37,6 +40,9 @@ class DeveloperDocumentationTests(unittest.TestCase):
                     if url.fragment and target.suffix=='.html':
                         self.assertIn(url.fragment,Links(target.read_text()).ids,href)
 
+    # Purpose: Verify documented workflow help runs without an ML backend.
+    # Inputs: generate_demo, prepare_cohort, and model_experiment CLIs invoked with --help.
+    # Outputs: Each command exits zero and advertises its documented workflow option.
     def test_documented_workflow_clis_start_without_an_ml_backend(self):
         commands=(('generate_demo.py','--smoke-test'),('prepare_cohort.py','--preview-mode'),
                   ('model_experiment.py','summarize'))

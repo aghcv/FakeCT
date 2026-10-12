@@ -87,6 +87,9 @@ class PopulationRepairMetadataTests(unittest.TestCase):
         cls.config_path.write_bytes(cls.content)
         cls.config = exp.load_config(cls.config_path)
 
+    # Purpose: Verify repaired population metadata preserves allocation and holdouts.
+    # Inputs: 2630 metadata-only samples with 256 edits per case and original experiment stages.
+    # Outputs: Five stages retain 2056 training IDs, fixed test IDs, six visits, and 14336 updates.
     def test_future_metadata_keeps_all_ids_groups_and_fixed_holdouts(self):
         document = exp.plan(self.config)
         self.assertEqual(len(document['stages']), 5)
@@ -106,6 +109,9 @@ class PopulationRepairMetadataTests(unittest.TestCase):
         self.assertFalse(document['reserved_test_evaluated'])
         self.assertFalse(document['classifier_started'])
 
+    # Purpose: Verify repaired metadata freezes and inspects without native source edits.
+    # Inputs: New revision metadata, INI bytes, and incomplete historical case manifests.
+    # Outputs: Inspection equals the frozen lock and excludes incomplete native dependencies.
     def test_new_revision_metadata_can_freeze_and_inspect_without_source_edits(self):
         document = exp.freeze(self.config, self.content)
         inspected = exp.inspect_lock(self.config, self.content)
@@ -117,6 +123,9 @@ class PopulationRepairMetadataTests(unittest.TestCase):
                       if (path.parent/'INCOMPLETE').exists()}
         self.assertFalse(incomplete & set(inspected['dependency_sha256']))
 
+    # Purpose: Preserve partition and source identity across changed accepted repairs.
+    # Inputs: Alternate repaired manifest with accepted distances halved again.
+    # Outputs: Training/test IDs, locator hashes, and every original source field remain identical.
     def test_different_accepted_distances_preserve_partitions_and_original_source(self):
         other = deepcopy(self.rows)
         for row in other:
@@ -139,6 +148,9 @@ class PopulationRepairMetadataTests(unittest.TestCase):
             for field in exp.SOURCE_FIELDS:
                 self.assertEqual(row[field], original[row['sample_id']][field])
 
+    # Purpose: Reject repair metadata that changes reference identity.
+    # Inputs: A repaired sample with an all-zero original reference mask hash.
+    # Outputs: Planning raises ValueError for changed original source or reference mask.
     def test_repair_cannot_change_the_original_reference_source(self):
         rows = deepcopy(self.rows)
         next(row for row in rows if not row['baseline'])['original_reference_mask_sha256'] = '0'*64

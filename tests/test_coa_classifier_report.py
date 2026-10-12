@@ -20,6 +20,9 @@ def record(label, probability, *, score=0.2, prediction=0.25, **extra):
 
 
 class MetricTests(unittest.TestCase):
+    # Purpose: Verify tied ranking and classification confusion metrics.
+    # Inputs: Two positive and two negative records including a 0.7 probability tie.
+    # Outputs: AUROC 0.375, balanced confusion counts and correct severity errors.
     def test_tied_auroc_and_confusion_counts(self):
         rows = [record(1, .7), record(0, .7), record(1, .1), record(0, .2)]
         result = report.summarize(rows)
@@ -34,6 +37,9 @@ class MetricTests(unittest.TestCase):
         self.assertAlmostEqual(result['positive_probability_mean'], .4)
         self.assertAlmostEqual(result['negative_probability_mean'], .45)
 
+    # Purpose: Verify tied probabilities yield chance AUROC under class imbalance.
+    # Inputs: One positive and seven negatives all with probability 0.5.
+    # Outputs: AUROC 0.5, seven false positives and precision 1/8.
     def test_identical_scores_are_chance_even_when_unbalanced(self):
         rows = [record(1, .5)] + [record(0, .5) for _ in range(7)]
         result = report.summarize(rows)
@@ -41,6 +47,9 @@ class MetricTests(unittest.TestCase):
         self.assertEqual(result['confusion_counts'], dict(TP=1, TN=0, FP=7, FN=0))
         self.assertEqual(result['precision'], 1 / 8)
 
+    # Purpose: Verify AUROC ignores record order and reverses with score ranking.
+    # Inputs: Perfectly ranked records, reversed row order and complemented probabilities.
+    # Outputs: AUROC stays 1 after reordering and becomes 0 after score reversal.
     def test_ranking_is_order_independent(self):
         rows = [record(1, .99), record(0, .01), record(1, .55), record(0, .4)]
         self.assertEqual(report.summarize(rows)['auroc'], 1)
@@ -49,6 +58,9 @@ class MetricTests(unittest.TestCase):
             row['probability'] = 1 - row['probability']
         self.assertEqual(report.summarize(rows)['auroc'], 0)
 
+    # Purpose: Verify empty and single-class summaries serialize without NaNs.
+    # Inputs: Empty predictions, two negatives and one low-probability positive.
+    # Outputs: Undefined metrics return None, defined rates remain correct and JSON serialization succeeds.
     def test_empty_and_one_class_are_json_safe(self):
         self.assertIsNone(report.summarize([]))
         negatives = report.summarize([record(0, .2), record(0, .1)])
@@ -61,6 +73,9 @@ class MetricTests(unittest.TestCase):
         self.assertEqual(positives['sensitivity'], 0)
         json.dumps([negatives, positives], allow_nan=False)
 
+    # Purpose: Verify BCE clipping and severity error units.
+    # Inputs: Opposite binary endpoint probabilities and known score errors.
+    # Outputs: Float32-epsilon BCE, MAE 0.2, 20 percentage points and analytic RMSE.
     def test_float32_epsilon_bce_compatibility_and_rmse_units(self):
         rows = [record(1, 0, score=.1, prediction=.4), record(0, 1, score=.2, prediction=.3)]
         result = report.summarize(rows)
@@ -69,6 +84,9 @@ class MetricTests(unittest.TestCase):
         self.assertAlmostEqual(result['severity_mae_percentage_points'], 20)
         self.assertAlmostEqual(result['regression_rmse'], math.sqrt(.05))
 
+    # Purpose: Reject invalid classification labels and nonfinite or out-of-range values.
+    # Inputs: Label 2, probabilities outside 0-1 or NaN and infinite severity prediction.
+    # Outputs: Every malformed record raises ValueError.
     def test_invalid_values_are_rejected_instead_of_silent_nan(self):
         for row in [record(2, .5), record(0, -.1), record(1, 1.1),
                     record(1, float('nan')), record(1, .3, prediction=float('inf'))]:
@@ -80,6 +98,9 @@ class ReportTests(unittest.TestCase):
     def write(self, directory, name, value):
         (Path(directory) / name).write_text(json.dumps(value))
 
+    # Purpose: Verify plan reports need only metadata and preserve the lock.
+    # Inputs: Experiment lock with planned counts and nonexistent source/model paths.
+    # Outputs: Plan-only HTML reports counts and locator epoch without images or lock mutation.
     def test_plan_only_report_needs_no_images_or_models(self):
         with tempfile.TemporaryDirectory() as directory:
             lock = dict(pilot_counts={'train': {'samples': 32}, 'validation': {'samples': 8}},
@@ -96,6 +117,9 @@ class ReportTests(unittest.TestCase):
             self.assertNotIn('data:image/png', text)
             self.assertEqual(json.loads((Path(directory) / 'experiment-lock.json').read_text()), lock)
 
+    # Purpose: Verify completed reports plot errors and escape sample identifiers.
+    # Inputs: Completed predictions with false positives, false negatives and a script-like ID.
+    # Outputs: Escaped HTML, near-threshold flags, three valid embedded PNGs and preserved result rows.
     def test_completed_report_plots_roles_threshold_errors_and_escapes_text(self):
         with tempfile.TemporaryDirectory() as directory:
             rows = [record(0, .6, score=0, prediction=.1, role='original', sample_id='case:<script>'),
@@ -125,6 +149,9 @@ class ReportTests(unittest.TestCase):
                 self.assertEqual(figure.read_bytes()[:8], b'\x89PNG\r\n\x1a\n')
             self.assertEqual(json.loads((Path(directory) / 'results.json').read_text())['predictions'], rows)
 
+    # Purpose: Verify incomplete prediction and history fallbacks are labeled accurately.
+    # Inputs: Saved epoch-2 prediction file, then unfinished epoch-3 history.
+    # Outputs: HTML identifies unfinished checkpoints or active training and omits finalized-result claims.
     def test_prediction_file_fallback_and_live_history_are_marked(self):
         with tempfile.TemporaryDirectory() as directory:
             rows = [record(0, .1, role='original', score=0)]

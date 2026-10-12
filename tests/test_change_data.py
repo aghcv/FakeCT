@@ -19,6 +19,9 @@ def checksum(path):
 
 
 class ChangeLabelsTests(unittest.TestCase):
+    # Purpose: Verify change labels describe final additions and removals.
+    # Inputs: Binary masks with one added voxel, one removed voxel, and cancelled edits.
+    # Outputs: Class 1 addition, class 2 removal, exact difference mask, and zero cancelled targets.
     def test_net_not_edit_history_includes_removed_outside_current_aorta(self):
         before = np.zeros((2, 3, 4), np.uint8)
         before[0, 1, 1:3] = 1
@@ -35,6 +38,9 @@ class ChangeLabelsTests(unittest.TestCase):
         # An expansion followed by a restoring erosion has no final difference.
         np.testing.assert_array_equal(net_change_labels(before, before), np.zeros_like(before))
 
+    # Purpose: Verify invalid acquisition padding and malformed masks are handled explicitly.
+    # Inputs: Binary masks with invalid slab, nonbinary/NaN values, and mismatched shapes.
+    # Outputs: Padding suppressed and ValueError for nonbinary or unaligned masks.
     def test_invalid_and_padding_are_explicit(self):
         b = np.zeros((2, 2, 2), np.uint8)
         a = np.ones_like(b)
@@ -114,6 +120,9 @@ class FocusedChangeVolumeTests(unittest.TestCase):
             expected[q] = 1 if a and not b else 2 if b and not a else 0
         return expected, valid
 
+    # Purpose: Verify change targets align with physically resampled predictor channels.
+    # Inputs: Anisotropic native/variant fixture, negative origin, and 12x11x14 detail grid.
+    # Outputs: Brute-force labels/validity agreement, zero padding, and removed targets outside current mask.
     def test_anisotropic_same_grid_native_origin_and_padding(self):
         reader = self.open()
         out = reader.whole_focus(0)
@@ -133,6 +142,9 @@ class FocusedChangeVolumeTests(unittest.TestCase):
                                        self.runtime['input.detail']['spacing_ijk_mm'])
         self.assertFalse(np.any(block['mask'][removed]))
 
+    # Purpose: Verify target annotations cannot leak into input channels.
+    # Inputs: Same volume with original change masks and then zeroed target masks.
+    # Outputs: Identical predictors while change labels become zero.
     def test_targets_cannot_change_predictor_channels(self):
         a = self.open().whole_focus(0)
         self.mask_data.update(before=np.zeros_like(self.before), after=np.zeros_like(self.after),
@@ -143,6 +155,9 @@ class FocusedChangeVolumeTests(unittest.TestCase):
         self.assertTrue(np.any(a['labels']))
         self.assertFalse(np.any(b['labels']))
 
+    # Purpose: Verify inference scheduling covers the focus without consulting targets.
+    # Inputs: 5x6x7 tiles with overlap and a truth-query mock that raises.
+    # Outputs: Complete coverage, reconstructed labels, and unchanged inference schedule.
     def test_inference_tiles_complete_and_target_independent(self):
         reader = self.open()
         schedule = list(reader.inference_tiles([5, 6, 7], [1, 2, 3]))
@@ -160,6 +175,9 @@ class FocusedChangeVolumeTests(unittest.TestCase):
         with patch.object(reader, '_change_points', side_effect=AssertionError('target leakage')):
             self.assertEqual(schedule, list(reader.inference_tiles([5, 6, 7], [1, 2, 3])))
 
+    # Purpose: Verify class-centered training sampling stays bounded.
+    # Inputs: Seeded 4-cubed added/removed sampling and truth-query guard for uniform mode.
+    # Outputs: Requested class in every patch, bounded reused reservoir, and target-free uniform sampling.
     def test_training_class_sampling_contains_requested_class(self):
         reader = self.open()
         rng = np.random.default_rng(8)
@@ -173,6 +191,9 @@ class FocusedChangeVolumeTests(unittest.TestCase):
             reader.training_offset(0, [4, 4, 4], rng, mode='uniform')
             reader.training_patch([4, 4, 4], rng, mode='uniform')
 
+    # Purpose: Verify training chooses proposals containing the requested class.
+    # Inputs: Two origins, one outside the acquisition and one containing additions/removals.
+    # Outputs: Changed-class training uses proposal 1 while inference includes both proposals.
     def test_changed_training_selects_eligible_proposal_without_changing_inference(self):
         runtime = deepcopy(self.runtime)
         runtime['input.detail']['proposals'] = 2
@@ -187,6 +208,9 @@ class FocusedChangeVolumeTests(unittest.TestCase):
         schedule = list(reader.inference_tiles([4, 4, 4]))
         self.assertEqual({r['proposal_index'] for r in schedule}, {0, 1})
 
+    # Purpose: Verify native baseline controls bypass edited signals and labels.
+    # Inputs: Native-grid baseline_control reader over the edited fixture.
+    # Outputs: Original attenuation, zero targets, baseline metadata, and usable training offsets.
     def test_native_control_restores_original_attenuation_and_has_zero_targets(self):
         control = self.open(baseline_control=True)
         runtime = deepcopy(self.runtime)
@@ -201,6 +225,9 @@ class FocusedChangeVolumeTests(unittest.TestCase):
         rng = np.random.default_rng(5)
         self.assertEqual(len(control.training_offset(0, [3, 3, 3], rng, mode='removed')), 3)
 
+    # Purpose: Verify unchanged target masks remain valid for baseline and edited rows.
+    # Inputs: Restored before/after masks with zero net changes and baseline flag toggled.
+    # Outputs: Zero change labels in both real baseline and cancelled-edit views.
     def test_real_baseline_and_cancelled_edits_remain_unchanged(self):
         self.mask_data.update(after=self.before, added=np.zeros_like(self.before), removed=np.zeros_like(self.before))
         self.save_masks()
@@ -209,6 +236,9 @@ class FocusedChangeVolumeTests(unittest.TestCase):
         self.assertFalse(np.any(self.open(row=row).whole_focus(0)['labels']))
         self.assertFalse(np.any(self.open().whole_focus(0)['labels']))
 
+    # Purpose: Verify focused readers reject invalid geometry and inconsistent baselines.
+    # Inputs: Fractional origins, oversized grid, edited baseline, invalid patches, and excessive overlap.
+    # Outputs: ValueError for each invalid origin, budget, baseline, patch, and tile schedule.
     def test_rejects_invalid_geometry_budget_and_nonnoop_baseline(self):
         with self.assertRaisesRegex(ValueError, 'integer'):
             self.open(origins=[[-.1, -1, -2]])

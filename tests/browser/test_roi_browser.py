@@ -13,6 +13,9 @@ sys.path.insert(0,str(ROOT/'scripts'))
 @unittest.skipUnless(os.environ.get('FAKECT_TEST_BROWSER') == '1',
                      'Set FAKECT_TEST_BROWSER=1 and install the browser test profile')
 class RoiBrowserTests(unittest.TestCase):
+    # Purpose: Verify offline ROI controls navigate and switch image content.
+    # Inputs: Generated ROI report opened in headless Chromium with request and error listeners.
+    # Outputs: One card stays visible, all images load, and no network requests or script errors occur.
     def test_offline_control_navigation_content_and_no_script_errors(self):
         # Explicit browser mode requires its dependency; do not turn a broken
         # mandatory browser lane into a misleading optional skip.

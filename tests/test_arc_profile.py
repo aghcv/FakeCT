@@ -30,6 +30,9 @@ class ArcProfileTests(unittest.TestCase):
                   'roi': {'shape': 'tube', 'center_ijk': nodes, 'radius_mm': (2.,) * len(nodes)}}
         return edit, resolved, config, np.ones(shape, dtype=bool)
 
+    # Purpose: Verify arc bins conserve every mask series including endpoints.
+    # Inputs: Anisotropic tube fixture with before, after, added, removed, blocked, and unresolved voxels.
+    # Outputs: Interior plus endpoint volumes match voxel counts; density times bin width equals volume.
     def test_all_mask_series_conserve_volume_interior_plus_endpoint_bins(self):
         edit, resolved, config, region = self.fixture(
             shape=(7, 5, 9), nodes=((2., 2., 1.), (6., 2., 5.)), spacing=(1., 2., 3.))
@@ -62,6 +65,9 @@ class ArcProfileTests(unittest.TestCase):
                 np.testing.assert_allclose(density * widths, volume)
         np.testing.assert_allclose(profile['endpoint_volume_mm3']['before'], [12., 12.])
 
+    # Purpose: Verify arc lengths use physical spacing and crop coordinates.
+    # Inputs: KJI masks, origin [10,20,30], spacing [2,3,4], and a four-cell K path.
+    # Outputs: Length is 16 mm with 8 mm bins, 24 mm3 volumes, and 3 mm2 densities.
     def test_anisotropic_kji_arrays_and_nonzero_ijk_origin_use_physical_arc_length(self):
         edit, resolved, config, region = self.fixture(
             shape=(7, 3, 3), nodes=((11., 21., 31.), (11., 21., 35.)),
@@ -77,6 +83,9 @@ class ArcProfileTests(unittest.TestCase):
         np.testing.assert_allclose(profile['volume_per_length_mm2']['before'], [3., 3.])
         np.testing.assert_allclose(profile['endpoint_volume_mm3']['before'], [24., 24.])
 
+    # Purpose: Separate curved-path positions sharing the same native K coordinate.
+    # Inputs: U-shaped tube with removal and addition on opposite arms at K=3.
+    # Outputs: Before and removed occupy bin 1; after and added occupy bin 6.
     def test_curved_path_separates_locations_with_the_same_native_k(self):
         nodes = ((1., 1., 1.), (1., 1., 5.), (7., 1., 5.), (7., 1., 1.))
         edit, resolved, config, region = self.fixture(shape=(7, 3, 9), nodes=nodes)
@@ -90,6 +99,9 @@ class ArcProfileTests(unittest.TestCase):
         np.testing.assert_array_equal(profile['volume_mm3']['before'], profile['volume_mm3']['removed'])
         np.testing.assert_array_equal(profile['volume_mm3']['after'], profile['volume_mm3']['added'])
 
+    # Purpose: Retain parent coordinates when profiling a tube subrange.
+    # Inputs: A 4-8 mm subrange of a 12 mm parent with before and after voxels.
+    # Outputs: Profile spans the full parent and places changes in bins 2 and 3.
     def test_subrange_retains_full_parent_origin_length_and_interval(self):
         parent = ((0., 1., 1.), (4., 1., 1.), (8., 1., 1.), (12., 1., 1.))
         edit, resolved, config, region = self.fixture(nodes=parent[1:3])
@@ -104,6 +116,9 @@ class ArcProfileTests(unittest.TestCase):
         np.testing.assert_array_equal(np.flatnonzero(profile['volume_mm3']['before']), [2])
         np.testing.assert_array_equal(np.flatnonzero(profile['volume_mm3']['after']), [3])
 
+    # Purpose: Assign growth to its current nearest arc position.
+    # Inputs: Added voxel at I=9 with ancestry pointing to the original voxel at I=2.
+    # Outputs: Original occupies bin 1 and growth occupies bin 4.
     def test_growth_is_binned_at_current_nearest_arc_position_not_ancestor_position(self):
         edit, resolved, config, region = self.fixture()
         edit['target_mask_before'][1, 1, 2] = True
@@ -117,6 +132,9 @@ class ArcProfileTests(unittest.TestCase):
         np.testing.assert_array_equal(np.flatnonzero(profile['volume_mm3']['added']), [4])
         np.testing.assert_array_equal(np.flatnonzero(profile['volume_mm3']['after']), [1, 4])
 
+    # Purpose: Exclude out-of-region strengths from arc maxima.
+    # Inputs: Strengths 3 and 2 inside the region, 99 outside, and 11 at an endpoint.
+    # Outputs: Interior maxima are [0,0,3,2,0,0] and endpoint maxima are [11,0].
     def test_maximum_strength_ignores_values_outside_edit_region(self):
         edit, resolved, config, region = self.fixture()
         region[:] = False
@@ -130,6 +148,9 @@ class ArcProfileTests(unittest.TestCase):
         np.testing.assert_allclose(profile['maximum_strength_mm'], [0., 0., 3., 2., 0., 0.])
         np.testing.assert_allclose(profile['endpoint_maximum_strength_mm'], [11., 0.])
 
+    # Purpose: Verify profile ROI naming precedence.
+    # Inputs: Main ROI, parent name ascending, and explicit reference named_reference.
+    # Outputs: Names resolve to main, ascending, then named_reference.
     def test_profile_name_uses_explicit_reference_then_parent_then_main(self):
         edit, resolved, config, region = self.fixture()
         self.assertEqual(build_arc_profile(edit, resolved, config, region)['profile_roi_name'], 'main')
@@ -138,6 +159,9 @@ class ArcProfileTests(unittest.TestCase):
         config['profile_roi_name'] = 'named_reference'
         self.assertEqual(build_arc_profile(edit, resolved, config, region)['profile_roi_name'], 'named_reference')
 
+    # Purpose: Bound arc bin counts while covering the entire path.
+    # Inputs: Tube lengths 0.5 and 2000 mm.
+    # Outputs: Profiles have 1 and 512 bins, matching edges, total widths, and full range intervals.
     def test_bin_count_is_bounded_for_short_and_long_parent_paths(self):
         for length, count in ((.5, 1), (2000., 512)):
             with self.subTest(length=length):
@@ -149,6 +173,9 @@ class ArcProfileTests(unittest.TestCase):
                 self.assertAlmostEqual(np.sum(profile['widths_mm']), length)
                 np.testing.assert_allclose(profile['range_interval_mm'], [0., length])
 
+    # Purpose: Verify profiling preserves caller-owned masks and metadata.
+    # Inputs: Before/after masks, 2.5 mm strength field, geometry, config, and edit region.
+    # Outputs: All arrays and dictionaries remain equal to their saved copies.
     def test_input_masks_strength_geometry_and_config_are_unchanged(self):
         edit, resolved, config, region = self.fixture()
         edit['target_mask_before'][1, 1, 3] = True
@@ -163,9 +190,15 @@ class ArcProfileTests(unittest.TestCase):
         self.assertEqual(resolved, saved_resolved)
         self.assertEqual(config, saved_config)
 
+    # Purpose: Verify non-tube profiling uses the fallback.
+    # Inputs: Sphere geometry with empty edit/config and no region.
+    # Outputs: The profile builder returns None.
     def test_non_tube_uses_fallback_without_requiring_tube_inputs(self):
         self.assertIsNone(build_arc_profile({}, {'roi_kind': 'sphere'}, {}, None))
 
+    # Purpose: Verify guarded erosion plots label accepted trial strengths.
+    # Inputs: Erosion requested at 4 mm, accepted at 2 mm, with 75% retention and a captured figure.
+    # Outputs: CSV and plot show accepted strength and guard details; disabling the guard restores legacy semantics.
     def test_guarded_strength_plot_reports_accepted_field_and_original_requested_distance(self):
         from matplotlib.figure import Figure
         edit, resolved, config, region = self.fixture()

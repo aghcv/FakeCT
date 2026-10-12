@@ -83,6 +83,9 @@ class PreviewReportTests(unittest.TestCase):
         metadata = write_preview_report(self.output, report or self.report, self.ini if text is None else text)
         return metadata, Path(metadata['path']).read_text()
 
+    # Purpose: Verify preview reports remain portable after removing all sibling assets.
+    # Inputs: Three PNG previews, inline 3D HTML, then copied report and deleted output tree.
+    # Outputs: Exact embedded assets, sandboxed iframe, no external links, and correct byte/hash metadata.
     def test_self_contained_assets_survive_copy_without_sibling_files(self):
         metadata, document = self.write()
         moved = Path(self.temp.name) / 'copied-report.html'
@@ -108,6 +111,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertEqual(metadata['sha256'], hashlib.sha256(document.encode('utf-8')).hexdigest())
         self.assertEqual(set(metadata['embedded_assets']), {'roi-closeups.png', 'roi-z-stack.png', 'roi-surfaces.png', 'roi-volume.html'})
 
+    # Purpose: Verify reports expose physical controls and auditable fine-label counts.
+    # Inputs: Tube metadata with two controls, signed IDs, component counts, and unknown-label warnings.
+    # Outputs: Correct counts/rows, scoped selection explanation, provenance, and editable captured INI.
     def test_counts_control_points_and_fine_labels(self):
         _, document = self.write()
         self.assertIn('1,250', document)
@@ -129,6 +135,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('provide exactly one radius for each point', document)
         self.assertNotIn('shared radius', document)
 
+    # Purpose: Verify report tabs link accessible content and support legacy local-only reports.
+    # Inputs: Standard local preview without global assets.
+    # Outputs: Consistent tab/panel ARIA links, local default, all content accessible, and explicit global fallback.
     def test_accessible_tab_targets_and_legacy_report_fallback(self):
         _, document = self.write()
         parsed = Document(document)
@@ -155,6 +164,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('source_ids =</code> blank for tissue-only selection', document)
         self.assertIn('individual overrides in <code>[stiffness.labels]</code> are optional', document)
 
+    # Purpose: Verify global assets embed once and select the global tab safely.
+    # Inputs: Global PNG/HTML with script text in warning/source metadata.
+    # Outputs: Two iframes/four images, escaped metadata, global default, and standalone portability.
     def test_global_view_embeds_once_with_metadata_escaped_and_defaults_to_global(self):
         (self.output / 'roi-global.html').write_text(self.volume)
         (self.output / 'roi-global.png').write_bytes(PNG)
@@ -183,12 +195,18 @@ class PreviewReportTests(unittest.TestCase):
         shutil.rmtree(self.output)
         self.assertEqual(moved.read_text(), document)
 
+    # Purpose: Verify network-linked global previews cannot enter portable reports.
+    # Inputs: Global HTML containing HTTPS image source.
+    # Outputs: ValueError requiring embedded resources and no report file.
     def test_global_view_rejects_network_resources(self):
         (self.output / 'roi-global.html').write_text('<img src="https://example.com/image.png">')
         with self.assertRaisesRegex(ValueError, 'must embed its resources'):
             self.write()
         self.assertFalse((self.output / 'report.html').exists())
 
+    # Purpose: Verify report metadata and captured INI cannot create active HTML.
+    # Inputs: Textarea/script/image-event payload in title, names, warnings, paths, time, and INI.
+    # Outputs: Escaped text, one legitimate script/textarea, three images, and no injected event attributes.
     def test_user_metadata_and_ini_cannot_inject_active_markup(self):
         payload = '</textarea><script>window.BAD=true</script><img src=x onerror="evil()">&'
         report = copy.deepcopy(self.report)
@@ -206,6 +224,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('&lt;/textarea&gt;&lt;script&gt;window.BAD=true&lt;/script&gt;', document)
         self.assertFalse(any('onerror' in attrs for _, attrs in parsed.tags))
 
+    # Purpose: Verify legacy sphere reports avoid claiming unrecorded per-ID ROI counts.
+    # Inputs: Legacy global label count 100 but only five selected ROI voxels.
+    # Outputs: Correct sphere control row and explicit absent per-ID ROI evidence.
     def test_legacy_sphere_does_not_misstate_per_id_roi_counts(self):
         report = copy.deepcopy(self.report)
         report.pop('selection')
@@ -220,6 +241,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('Per-ID counts inside the ROI were not recorded', document)
         self.assertNotIn('<td>1185</td>', document)
 
+    # Purpose: Verify study previews expose future target plans without generating cohorts.
+    # Inputs: Three-variant plan, training-target PNG, train command, and unsafe plan text.
+    # Outputs: Embedded target preview, separate training panel, correct counts/command, and escaped metadata.
     def test_study_target_plan_is_embedded_separate_from_roi_and_escaped(self):
         payload = '<script>window.BAD=true</script>'
         self.report['training_plan'] = {
@@ -247,6 +271,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('panel-training', parsed.parent_ids['training'])
         self.assertIn('panel-local', parsed.parent_ids['selection'])
 
+    # Purpose: Verify empty selections and missing previews are clearly represented.
+    # Inputs: Zero selected voxels/IDs/components and all optional assets removed.
+    # Outputs: Explicit empty intersection, missing IDs, and unavailable 2D/3D preview messages.
     def test_empty_selection_and_missing_optional_assets_render_explicitly(self):
         report = copy.deepcopy(self.report)
         report['selection'].update(selected_voxels=0, selected_original_ids=[], selected_original_id_counts={},
@@ -259,6 +286,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('Interactive 3D preview was not generated', document)
         self.assertIn('Native orthogonal close-ups: preview not generated', document)
 
+    # Purpose: Verify portable local 3D assets cannot depend on linked scripts/styles.
+    # Inputs: CDN/local script sources and local stylesheet link.
+    # Outputs: ValueError requiring embedded resources and no partial report.
     def test_rejects_linked_3d_assets_and_does_not_leave_partial_report(self):
         for linked in ('<script src="https://cdn.example/plotly.js"></script>',
                        '<script src="plotly.js"></script>', '<link rel="stylesheet" href="theme.css">'):
@@ -268,6 +298,9 @@ class PreviewReportTests(unittest.TestCase):
                     self.write()
                 self.assertFalse((self.output / 'report.html').exists())
 
+    # Purpose: Verify report generation preserves metadata and refuses existing outputs.
+    # Inputs: Original report dictionary rendered twice.
+    # Outputs: Unchanged report data, FileExistsError, and preserved first HTML bytes.
     def test_refuses_overwrite_and_does_not_mutate_report(self):
         original = json.dumps(self.report, sort_keys=True)
         metadata, document = self.write()
@@ -276,6 +309,9 @@ class PreviewReportTests(unittest.TestCase):
             self.write()
         self.assertEqual(Path(metadata['path']).read_text(), document)
 
+    # Purpose: Verify report counts accept structured component and label records.
+    # Inputs: Component voxel_count/size rows and signed-ID count records.
+    # Outputs: Correct signed-label count and component-size HTML rows.
     def test_components_and_id_counts_accept_record_form(self):
         report = copy.deepcopy(self.report)
         report['selection']['components_voxels_6'] = [{'voxel_count': 140}, {'size': 10}]
@@ -309,6 +345,9 @@ class PreviewReportTests(unittest.TestCase):
             (self.output / 'after/roi-surfaces.png').write_bytes(PNG)
         return report
 
+    # Purpose: Verify edit reports distinguish original evidence from applied morphology.
+    # Inputs: Dilation summary with proposed/applied counts, transitions, and before/after assets.
+    # Outputs: Accurate edit/volume rows, distinct original/after panels, eight assets, and proxy caveats.
     def test_morphology_counts_transitions_and_original_views_are_distinct(self):
         report = self.morphology_report()
         metadata, document = self.write(report)
@@ -335,6 +374,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('python3 scripts/preview_roi.py --config /path/to/xcat-roi.ini', document)
         self.assertEqual(len(metadata['embedded_assets']), 8)
 
+    # Purpose: Verify arc-profile reports preserve parent-path coordinate semantics.
+    # Inputs: 205.25 mm main profile with endpoint volumes, CSV name, and optional axial PNG.
+    # Outputs: Physical arc labels, endpoint rows, embedded axial diagnostic, and CSV referenced without embedding.
     def test_single_edit_arc_profile_labels_and_optional_axial_diagnostic(self):
         report = self.morphology_report()
         report['edit']['figures'] = {
@@ -359,6 +401,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('edit-profile-axial.png', metadata['embedded_assets'])
         self.assertEqual(document.count('<summary>Native axial diagnostic (k slices)</summary>'), 1)
 
+    # Purpose: Verify recipes can mix arc-length profiles with historical axial profiles.
+    # Inputs: Growth arc figures, legacy erosion figure, and final arc/axial diagnostic assets.
+    # Outputs: Correct per-pass/final coordinate labels, two axial details, and all profile images embedded.
     def test_recipe_profiles_can_mix_recorded_arc_and_legacy_axial_coordinates(self):
         arc = {'profile_coordinate': 'centerline_arc_length_mm', 'profile_roi_name': 'main',
                'profile_length_mm': 100, 'profile_area_semantics': 'Interior voxel volume per bin length.'}
@@ -389,6 +434,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertEqual(document.count('<summary>Native axial diagnostic (k slices)</summary>'), 2)
         self.assertTrue(set(paths).issubset(metadata['embedded_assets']))
 
+    # Purpose: Verify profile-coordinate metadata is escaped before rendering.
+    # Inputs: Script/image-event payload in profile ROI, length, and area semantics.
+    # Outputs: Escaped text and only the legitimate report script.
     def test_profile_coordinate_metadata_cannot_inject_markup(self):
         report = self.morphology_report(after_assets=False)
         payload = '<script>window.BAD=true</script><img src=x onerror="evil()">'
@@ -400,6 +448,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('&lt;script&gt;window.BAD=true&lt;/script&gt;', document)
         self.assertEqual(sum(tag == 'script' for tag, _ in Document(document).tags), 1)
 
+    # Purpose: Verify registered overlays appear once with final-category controls.
+    # Inputs: Before/after overlay PNG/HTML plus unsafe description metadata.
+    # Outputs: One overlay before after-view, standard opacity text, embedded assets, and escaped description.
     def test_registered_surface_overlay_is_portable_and_metadata_is_escaped(self):
         report = self.morphology_report()
         payload = '<script>window.UNSAFE=true</script>'
@@ -422,6 +473,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertNotIn(payload, document)
         self.assertIn('&lt;script&gt;window.UNSAFE=true&lt;/script&gt;', document)
 
+    # Purpose: Verify edit reports inline original and edited views for standalone use.
+    # Inputs: Morphology before/after HTML and PNG assets then removed sibling tree.
+    # Outputs: Two sandboxed lazy iframes, six embedded images, and unchanged copied report.
     def test_morphology_assets_are_portable_including_after_frame(self):
         report = self.morphology_report()
         metadata, document = self.write(report)
@@ -444,6 +498,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertEqual(copied.read_text(), document)
         self.assertIn('after/roi-volume.html', metadata['embedded_assets'])
 
+    # Purpose: Verify after-edit 3D views must embed their own resources.
+    # Inputs: Edited HTML containing external Plotly script URL.
+    # Outputs: ValueError and no report publication.
     def test_morphology_rejects_external_assets_in_after_view(self):
         report = self.morphology_report()
         (self.output / 'after/roi-volume.html').write_text('<script src="https://example.test/plotly.js"></script>')
@@ -451,6 +508,9 @@ class PreviewReportTests(unittest.TestCase):
             self.write(report)
         self.assertFalse((self.output / 'report.html').exists())
 
+    # Purpose: Verify unsafe edit metadata and absent optional figures render safely.
+    # Inputs: Script payload across edit fields and missing comparison/profile/after assets.
+    # Outputs: Escaped text, single legitimate script, explicit missing figures, and no after-view section.
     def test_morphology_metadata_is_escaped_and_missing_optional_views_are_explicit(self):
         report = self.morphology_report(after_assets=False)
         payload = '</p><script>window.BAD=true</script>'
@@ -469,6 +529,9 @@ class PreviewReportTests(unittest.TestCase):
         self.assertIn('Achieved cross-sections and edit profile: preview not generated.', document)
         self.assertNotIn('After-edit 3D context', document)
 
+    # Purpose: Verify extra morphology files cannot imply an edit without summary metadata.
+    # Inputs: Preview-only report directory containing generated morphology assets.
+    # Outputs: Preview-only wording, no edit section/link, and extra edit/after assets excluded.
     def test_no_edit_summary_keeps_preview_mode_even_if_extra_files_exist(self):
         self.morphology_report()
         metadata, document = self.write()

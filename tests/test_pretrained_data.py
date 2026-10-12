@@ -70,6 +70,9 @@ class PretrainedDataTests(unittest.TestCase):
                                    self.selection,self.f.evidence,**kwargs)
         self.addCleanup(volume.close);return volume
 
+    # Purpose: Verify fixed pretrained grids depend on source geometry and use canonical RAS.
+    # Inputs: Isotropic edited/baseline rows with the same fixed selection.
+    # Outputs: Identical 6-cube grid, expected origin, R/A/S axes and matching physical center.
     def test_fixed_grid_is_target_independent_and_canonical_ras(self):
         self.isotropic();grid=self.grid()
         baseline=self.baseline()
@@ -84,6 +87,9 @@ class PretrainedDataTests(unittest.TestCase):
         expected=np.asarray(self.f.evidence['orientation']['affine_ras_ijk'])@[6,5,0,1]
         np.testing.assert_allclose(np.asarray(grid['affine_ras_ijk'])@[0,0,0,1],expected)
 
+    # Purpose: Verify image and supervision flip native i/j axes together.
+    # Inputs: Isotropic native fixture read on a canonical RAS grid.
+    # Outputs: Normalized image and all masks match joint flips; added/removed masks preserve net identity.
     def test_image_and_all_masks_flip_i_j_together(self):
         self.isotropic();grid=self.grid();volume=self.volume(grid)
         result=volume.read_patch([0,0,0],grid['shape_kji'])
@@ -99,6 +105,9 @@ class PretrainedDataTests(unittest.TestCase):
         np.testing.assert_array_equal(result['added'],result['target']&~result['baseline'])
         np.testing.assert_array_equal(result['removed'],result['baseline']&~result['target'])
 
+    # Purpose: Verify native HU integer conversion occurs before interpolation.
+    # Inputs: Anisotropic fixture sampled at 1.5 mm with an explicit eight-corner reference.
+    # Outputs: Interior normalized intensity matches integer-HU-first physical interpolation.
     def test_native_hu_integer_truncation_precedes_linear_interpolation(self):
         grid=self.grid(spacing=1.5);volume=self.volume(grid)
         result=volume.read_patch([0,0,0],grid['shape_kji'])['image'][0]
@@ -119,6 +128,9 @@ class PretrainedDataTests(unittest.TestCase):
         expected_norm=(np.clip(int(expected),-101,813)-CT_MEAN)/CT_STD
         self.assertAlmostEqual(float(result[tuple(point)]),expected_norm,places=5)
 
+    # Purpose: Verify normalization and padded patches preserve inputs.
+    # Inputs: HU values -200.7, 0.9, 900.4 and an offset 8-cube patch around a 6-cube grid.
+    # Outputs: Correct clipped normalized values, unchanged input and zero invalid image/target voxels.
     def test_normalization_and_padding_do_not_mutate_input(self):
         values=np.asarray([-200.7,.9,900.4],np.float32);old=values.copy()
         expected=(np.asarray([-101.,0.,813.])-CT_MEAN)/CT_STD
@@ -129,6 +141,9 @@ class PretrainedDataTests(unittest.TestCase):
         self.assertTrue(np.all(patch['image'][0][patch['valid']==0]==0))
         self.assertTrue(np.all(patch['target'][patch['valid']==0]==0))
 
+    # Purpose: Verify cached native-core extents equal direct provider counts.
+    # Inputs: Baseline template and mixed edited sibling.
+    # Outputs: One addition/removal, correct physical change volume and immutable reused provider.
     def test_native_core_counts_cache_matches_direct_provider(self):
         template=NativeCoreTemplate(self.baseline(),self.selection,self.f.evidence)
         cached=template.extent(self.f.row)
@@ -142,6 +157,9 @@ class PretrainedDataTests(unittest.TestCase):
         self.assertFalse(provider.current_edit_core.flags.writeable)
         self.assertIs(provider,template.provider(self.f.row))
 
+    # Purpose: Verify model-to-native round trips undo axis flips without losing targets.
+    # Inputs: Isotropic target masks on the fixed canonical grid.
+    # Outputs: Exact native mask, global/local Dice ceilings 1 and zero lost truth voxels.
     def test_model_to_native_roundtrip_undoes_both_axis_flips(self):
         self.isotropic();grid=self.grid();volume=self.volume(grid)
         model=volume.masks_full()['target']
@@ -153,6 +171,9 @@ class PretrainedDataTests(unittest.TestCase):
         self.assertEqual(audit['local_change_dice_ceiling'],1.)
         self.assertEqual(audit['native_gt_lost_voxels'],0)
 
+    # Purpose: Verify baseline sampling avoids absent changes and inference tiles cover the grid.
+    # Inputs: Unchanged baseline, positive_fraction 1 and deterministic overlapping 4-cube tiles.
+    # Outputs: Target-based samples contain foreground; fixed tiles cover every grid voxel.
     def test_training_sampler_avoids_absent_changes_and_fixed_tiles_cover_grid(self):
         self.isotropic();grid=self.grid();baseline=self.baseline()
         volume=PretrainedCaseVolume(baseline,grid,self.selection,self.f.evidence)
@@ -169,6 +190,9 @@ class PretrainedDataTests(unittest.TestCase):
         self.assertTrue(np.all(coverage>0))
         self.assertEqual(tiles,inference_tiles(grid,[4,4,4],overlap=2))
 
+    # Purpose: Verify shared native exports have exact mask extent and affine.
+    # Inputs: Baseline template, edited sibling and two-slice native export with baseline enabled.
+    # Outputs: One addition/removal, matching image/truth shape and affine plus baseline NIfTI.
     def test_shared_native_reference_export_has_exact_extent_and_affine(self):
         self.isotropic();grid=self.grid();template=NativeCoreTemplate(self.baseline(),self.selection,self.f.evidence)
         record=export_native_reference(self.f.row,grid,self.selection,self.f.evidence,
@@ -182,6 +206,9 @@ class PretrainedDataTests(unittest.TestCase):
         np.testing.assert_allclose(affine,grid['native_affine_ras_ijk'],atol=1e-6)
         self.assertTrue(Path(record['baseline_nifti']).exists())
 
+    # Purpose: Verify balanced training rosters are nested and evaluation siblings disjoint.
+    # Inputs: Baseline plus 20 addition-only, removal-only and mixed siblings each.
+    # Outputs: 17 training/13 evaluation IDs share only baseline; balanced nested subsets deterministic.
     def test_balanced_rosters_are_nested_and_disjoint_from_evaluation(self):
         rows=[{'sample_id':'c:baseline','case_id':'c','baseline':True}]
         extents={'c:baseline':{'change_kind':'none','changed_voxels':0}}

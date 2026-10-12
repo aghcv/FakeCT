@@ -28,6 +28,9 @@ class TissueCLIContracts(unittest.TestCase):
         self.catalog_path = self.root / "catalog.json"
         cli.write_json(self.catalog_path, self.catalog)
 
+    # Purpose: Merge organ dictionaries without silently replacing conflicting IDs.
+    # Inputs: Two dictionaries sharing an artery ID, then a conflicting name for that ID.
+    # Outputs: Merged names retain both sources; conflicting identity raises ValueError.
     def test_dictionary_union_has_no_silent_precedence(self):
         a, b = self.root / "a.txt", self.root / "b.txt"
         a.write_text("artery = 1\nvein = -3\n")
@@ -39,6 +42,9 @@ class TissueCLIContracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Conflicting"):
             cli.merge_dictionaries([a, b])
 
+    # Purpose: Inventory surface names independently of triangle geometry and voxel IDs.
+    # Inputs: Six RAW groups containing repeated names and numeric/NaN triangle lines.
+    # Outputs: Both occurrences retain local indices; geometry lines create no names or original IDs.
     def test_surface_scan_keeps_duplicate_occurrences_and_local_indices(self):
         case = self.root / "123"
         case.mkdir()
@@ -63,6 +69,9 @@ class TissueCLIContracts(unittest.TestCase):
                                   geometry=self.root / "geometry.json", out=self.root / "view.npz",
                                   strict=False, max_voxels=100), original, geometry
 
+    # Purpose: Verify reversible coarse-label export preserves native metadata.
+    # Inputs: Signed 2-cube label array, tissue catalog, anisotropic spacing and crop geometry.
+    # Outputs: NPZ retains original IDs/provenance, marks unknown tissue and rejects overwrite.
     def test_crop_roundtrip_keeps_exact_ids_geometry_catalog_and_unknown(self):
         args, original, geometry = self.reduce_args()
         with contextlib.redirect_stdout(io.StringIO()):
@@ -78,6 +87,9 @@ class TissueCLIContracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "overwrite"):
             cli.reduce_command(args)
 
+    # Purpose: Reject invalid or unbounded reversible-label exports.
+    # Inputs: Incorrect axis order, shape or spacing, insufficient voxel budget and strict unknown labels.
+    # Outputs: ValueError and no output for invalid geometry; budget and unresolved-label errors.
     def test_crop_rejects_bad_geometry_unknowns_and_unbounded_export(self):
         for geometry in [{"array_order": "xyz", "shape_zyx": [2, 2, 2], "spacing_ijk_mm": [1, 1, 1]},
                          {"array_order": "zyx", "shape_zyx": [3, 2, 2], "spacing_ijk_mm": [1, 1, 1]},
@@ -94,6 +106,9 @@ class TissueCLIContracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unresolved"):
             cli.reduce_command(args)
 
+    # Purpose: Preserve ambiguity when tissue groups share attenuation values.
+    # Inputs: Paired audit with artery/vein/unknown IDs and two materials at 0.17 cm^-1, then a changed log.
+    # Outputs: Overlapping candidates and unknown IDs retained; changed source log rejected before output.
     def test_profile_preserves_material_ambiguity_and_cross_group_overlap(self):
         log = self.root / "case_log"
         log.write_text("Linear Attenuation Coefficients (1/cm):\n Blood = 0.1700\n Tissue = 0.1700\n"

@@ -46,6 +46,9 @@ class ErosionSafeguardReportTests(unittest.TestCase):
                              '[edit]\noperation = erosion\ndistance_mm = 4\n')
         return (output/'report.html').read_text()
 
+    # Purpose: Verify erosion reductions expose accepted and rejected geometric attempts.
+    # Inputs: Requested 4 mm erosion reduced to 2 mm with 200 baseline and 150 retained voxels.
+    # Outputs: HTML shows distances, 75 percent retention, rejected trials and fixed-baseline semantics.
     def test_reduced_single_edit_distances_ratios_and_rejected_trials_are_visible(self):
         document = self.write()
         self.assertIn('<td>Requested erosion distance (mm)</td><td>4</td>', document)
@@ -61,6 +64,9 @@ class ErosionSafeguardReportTests(unittest.TestCase):
         self.assertIn('rejected trials do not accumulate changes', document)
         self.assertIn('does not bound minimum cross-sectional area', document)
 
+    # Purpose: Verify skipped erosion reports zero accepted distance and preserved input.
+    # Inputs: Skipped safeguard with accepted distance zero, full retention and rejected attempt.
+    # Outputs: HTML shows retained pass input and earlier accepted passes without success claims.
     def test_skipped_pass_reports_zero_accepted_distance_and_kept_input(self):
         guard = self.report['edit']['erosion_safeguard']
         guard.update(status='skipped', accepted_distance_mm=0, retained_volume_ratio=1,
@@ -72,6 +78,9 @@ class ErosionSafeguardReportTests(unittest.TestCase):
         self.assertIn('earlier accepted passes remain in place', document)
         self.assertNotIn('Checks passed</td>', document)
 
+    # Purpose: Verify physical volumes, reason codes and component splits are readable.
+    # Inputs: 1600/1200 mm3 guard, coded/unsafe reasons and surviving component counts 12 and 1.
+    # Outputs: Readable escaped reasons, physical volumes and baseline-to-survivor counts.
     def test_physical_volumes_reason_codes_and_fragment_counts_are_readable(self):
         guard = self.report['edit']['erosion_safeguard']
         guard.update(baseline_volume_mm3=1600, retained_volume_mm3=1200)
@@ -89,6 +98,9 @@ class ErosionSafeguardReportTests(unittest.TestCase):
         self.assertIn('<td>Component 2: 1 → 12</td>', document)
         self.assertIn('<td>Component 2: 1 → 1</td>', document)
 
+    # Purpose: Verify disabled connectivity checks do not claim connectivity success.
+    # Inputs: Accepted 4 mm erosion with connectivity disabled and no attempt history.
+    # Outputs: HTML says connectivity not requested and omits retry table.
     def test_accepted_edit_with_connectivity_disabled_does_not_claim_a_passed_check(self):
         guard = self.report['edit']['erosion_safeguard']
         guard.update(status='accepted', accepted_distance_mm=4,
@@ -99,6 +111,9 @@ class ErosionSafeguardReportTests(unittest.TestCase):
         self.assertIn('<td>Connectivity check</td><td>Not requested</td>', document)
         self.assertNotIn('Erosion attempts and retry reasons', document)
 
+    # Purpose: Verify recipe tables show reductions and skips against fixed baselines.
+    # Inputs: Growth plus two erosion iterations reduced to 2 mm then skipped at zero.
+    # Outputs: Requested/accepted columns, two safeguard sections and baseline count 200 in both.
     def test_recipe_table_exposes_reduction_and_skip_across_fixed_baseline_iterations(self):
         first = copy.deepcopy(self.report['edit'])
         second = copy.deepcopy(first)
@@ -122,6 +137,9 @@ class ErosionSafeguardReportTests(unittest.TestCase):
         self.assertEqual(document.count('<div class="erosion-safeguard">'), 2)
         self.assertEqual(document.count('<td>Target voxels in the fixed baseline</td><td>200</td>'), 2)
 
+    # Purpose: Verify missing or disabled safeguards preserve legacy report sections.
+    # Inputs: Single-edit and recipe reports with absent or disabled safeguard metadata.
+    # Outputs: No safeguard section or recipe safeguard column rendered.
     def test_optional_metadata_preserves_legacy_single_and_recipe_sections(self):
         for metadata in (None, {'enabled': False, 'status': 'skipped'}):
             with self.subTest(metadata=metadata):
@@ -137,6 +155,9 @@ class ErosionSafeguardReportTests(unittest.TestCase):
                 self.assertNotIn('<th scope="col">Erosion safeguard</th>', document)
                 self.assertNotIn('class="erosion-safeguard"', document)
 
+    # Purpose: Verify safeguard metadata and retry reasons cannot inject HTML.
+    # Inputs: Script/image payload placed in status, semantics and attempt reasons.
+    # Outputs: Payload escaped and parsed document contains only its existing script.
     def test_metadata_and_attempt_reasons_are_escaped(self):
         payload = '<script>window.BAD=true</script><img src=x onerror=bad()>'
         guard = self.report['edit']['erosion_safeguard']

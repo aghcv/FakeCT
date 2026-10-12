@@ -21,6 +21,9 @@ class TubeRangeTests(unittest.TestCase):
                                   kwargs.pop('radii_mm', self.radii),
                                   kwargs.pop('spacing_ijk_mm', self.spacing), **kwargs)
 
+    # Purpose: Preserve full-path geometry and read-only inputs.
+    # Inputs: Four ordered tube nodes, varying radii and anisotropic spacing on read-only arrays.
+    # Outputs: Identical immutable controls, 34-mm arc metadata, valid JSON and unchanged inputs.
     def test_full_path_is_identity_with_immutable_serializable_output(self):
         originals = [item.copy() for item in (self.nodes, self.radii, self.spacing)]
         for item in (self.nodes, self.radii, self.spacing):
@@ -40,6 +43,9 @@ class TubeRangeTests(unittest.TestCase):
         for source, original in zip((self.nodes, self.radii, self.spacing), originals):
             np.testing.assert_array_equal(source, original)
 
+    # Purpose: Interpret control-point ranges as ordered one-based intervals.
+    # Inputs: Four-node tube and point_range=(2,3).
+    # Outputs: Middle segment and its radii retained with correct 6-to-18-mm arc coordinates.
     def test_point_range_is_one_based_inclusive_without_reordering(self):
         result = self.resolve(point_range=(2, 3))
         self.assertEqual(result['nodes_ijk'], ((4., 2., 3.), (4., 6., 3.)))
@@ -54,6 +60,9 @@ class TubeRangeTests(unittest.TestCase):
         self.assertAlmostEqual(metadata['start_fraction'], 6 / 34)
         self.assertAlmostEqual(metadata['end_fraction'], 18 / 34)
 
+    # Purpose: Resolve percent intervals by physical length rather than point count.
+    # Inputs: Anisotropic four-node tube with 25-to-75 and 30-to-40 percent intervals.
+    # Outputs: Interpolated endpoints/radii, retained interior controls and correct selected lengths.
     def test_percentage_interpolates_physical_arc_length_and_radius(self):
         result = self.resolve(path_percent=(25, 75))
         np.testing.assert_allclose(result['nodes_ijk'],
@@ -71,6 +80,9 @@ class TubeRangeTests(unittest.TestCase):
         self.assertEqual(short['metadata']['original_node_numbers_retained'], [])
         self.assertAlmostEqual(short['metadata']['selected_length_mm'], 3.4)
 
+    # Purpose: Avoid duplicate controls when range endpoints coincide with nodes.
+    # Inputs: Percent intervals aligned to original controls and the full 0-to-100 range.
+    # Outputs: Exact original nodes/radii and correct retained-node lists without duplicate endpoints.
     def test_node_coincidences_and_full_percent_do_not_duplicate_endpoints(self):
         result = self.resolve(path_percent=(6 / 34 * 100, 18 / 34 * 100))
         self.assertEqual(result['nodes_ijk'], ((4., 2., 3.), (4., 6., 3.)))
@@ -81,6 +93,9 @@ class TubeRangeTests(unittest.TestCase):
         self.assertEqual(complete['radii_mm'], self.resolve()['radii_mm'])
         self.assertEqual(complete['metadata']['original_node_numbers_retained'], [1, 2, 3, 4])
 
+    # Purpose: Respect the supplied proximal-to-distal control order.
+    # Inputs: Forward path and reversed nodes/radii with complementary percent intervals.
+    # Outputs: Selected controls reverse exactly; point selection follows the reversed input order.
     def test_reversing_parent_reverses_percentage_direction(self):
         forward = self.resolve(path_percent=(20, 65))
         reversed_result = self.resolve(nodes_ijk=self.nodes[::-1], radii_mm=self.radii[::-1],
@@ -91,12 +106,18 @@ class TubeRangeTests(unittest.TestCase):
         self.assertEqual(reverse_points['nodes_ijk'], ((4., 6., 7.), (4., 6., 3.)))
         self.assertEqual(reverse_points['radii_mm'], (5., 9.))
 
+    # Purpose: Allow a path to revisit a point without collapsing traversal length.
+    # Inputs: Ordered four-node path revisiting its first coordinate with unit spacing.
+    # Outputs: Controls stay ordered and total travelled arc length is 4 mm.
     def test_nonadjacent_repeated_node_keeps_order_and_arc_length(self):
         nodes = ((0, 0, 0), (1, 0, 0), (0, 0, 0), (0, 2, 0))
         result = self.resolve(nodes_ijk=nodes, radii_mm=(1, 1, 1, 1), spacing_ijk_mm=(1, 1, 1))
         self.assertEqual(result['nodes_ijk'], nodes)
         self.assertEqual(result['metadata']['parent_total_length_mm'], 4)
 
+    # Purpose: Reject ambiguous or malformed tube-range selectors.
+    # Inputs: Simultaneous selectors, invalid point indices/types and invalid percent bounds.
+    # Outputs: ValueError for each incompatible, degenerate or nonfinite interval.
     def test_rejects_invalid_selectors(self):
         invalid = [dict(point_range=(1, 3), path_percent=(0, 50)),
                    *[dict(point_range=value) for value in
@@ -108,6 +129,9 @@ class TubeRangeTests(unittest.TestCase):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 self.resolve(**kwargs)
 
+    # Purpose: Validate tube geometry before resolving a subpath.
+    # Inputs: Invalid node shapes, adjacent duplicates, coordinates, radii, spacing and overflow-scale geometry.
+    # Outputs: ValueError for every malformed or nonfinite physical path.
     def test_rejects_invalid_parent_geometry(self):
         invalid = [dict(nodes_ijk=((0, 0, 0),)),
                    dict(nodes_ijk=((0, 0), (1, 1))),

@@ -40,6 +40,9 @@ class ExperimentTests(unittest.TestCase):
         self.reader = patch('fakect_context_data.inspect_dataset', side_effect=lambda *a,**kw:copy.deepcopy(self.dataset)).start()
         self.addCleanup(patch.stopall)
 
+    # Purpose: Verify planning preserves families and estimates full-volume resources.
+    # Inputs: Twelve synthetic cases across six families with 257x193x193 native shapes.
+    # Outputs: Splits are 8/2/2, test needs 54 tiles, slab bounds match, and no output is created.
     def test_plan_preserves_families_and_counts_full_volume_tiles(self):
         result = plan(self.config)
         self.assertEqual(result['split_counts'], {'train':8,'validation':2,'test':2})
@@ -53,16 +56,25 @@ class ExperimentTests(unittest.TestCase):
         self.assertEqual(len({r['anatomy_family'] for r in result['samples'] if r['split']=='test'}),1)
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    # Purpose: Exclude held-out samples from diagnostics.
+    # Inputs: Diagnostic sample ID replaced by a planned test sample.
+    # Outputs: Planning raises ValueError requiring the training partition.
     def test_diagnostic_cannot_use_held_out_case(self):
         result = plan(self.config)
         self.config['model']['diagnostic_sample_id'] = next(r['sample_id'] for r in result['samples'] if r['split']=='test')
         with self.assertRaisesRegex(ValueError,'training partition'):
             plan(self.config)
 
+    # Purpose: Require explicit opt-in for provisional anatomical extent.
+    # Inputs: Unreviewed dataset with allow_provisional_anatomy false.
+    # Outputs: Planning marks the experiment unready.
     def test_provisional_extent_requires_explicit_opt_in(self):
         self.config['data']['allow_provisional_anatomy'] = False
         self.assertFalse(plan(self.config)['ready'])
 
+    # Purpose: Prevent identical native anatomy from crossing partitions.
+    # Inputs: Test reference-mask hash replaced by a training reference hash.
+    # Outputs: Planning raises ValueError for cross-split anatomy identity.
     def test_identical_anatomy_cannot_cross_families_and_splits(self):
         result = plan(self.config)
         a = next(r for r in result['samples'] if r['split']=='train')
@@ -71,6 +83,9 @@ class ExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'crosses splits'):
             plan(self.config)
 
+    # Purpose: Require well-formed reference-mask fingerprints.
+    # Inputs: Missing, null, empty, malformed, short, or uppercase hashes.
+    # Outputs: Planning raises ValueError naming original_reference_mask_sha256.
     def test_reference_hash_is_required_and_well_formed(self):
         row = self.dataset['samples'][0]
         for bad in (None, '', 'not-a-hash', 'a'*63, 'A'*64):
@@ -81,6 +96,9 @@ class ExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'original_reference_mask_sha256'):
             plan(self.config)
 
+    # Purpose: Enforce native interpolation memory bounds before freezing.
+    # Inputs: Twelve 2000x1000x1000 sources at 0.2 mm spacing.
+    # Outputs: Plan reports twelve slab errors and [637,477,477] bounds; freeze fails without output.
     def test_native_slab_memory_checked_before_execution(self):
         for row in self.dataset['samples']:
             row['source_shape_kji'] = [2000, 1000, 1000]
@@ -97,6 +115,9 @@ class ExperimentTests(unittest.TestCase):
             freeze(self.config, self.path.read_bytes())
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    # Purpose: Clip native slab bounds to small source volumes.
+    # Inputs: 20x15x10 sources with spacing [0.2,0.3,0.4].
+    # Outputs: Plan is ready and slab bounds equal the source shape.
     def test_native_slab_bound_clips_to_small_source(self):
         for row in self.dataset['samples']:
             row['source_shape_kji'] = [20, 15, 10]
@@ -105,6 +126,9 @@ class ExperimentTests(unittest.TestCase):
         self.assertTrue(result['ready'])
         self.assertEqual(result['model_grids']['0-0']['native_slab_upper_bound_shape_kji'], [20,15,10])
 
+    # Purpose: Verify planning rounds model grids consistently with the loader.
+    # Inputs: 7x13x19 sources, fractional native spacing, and target spacing [0.7,0.3,0.7].
+    # Outputs: Planned model shape equals ContextVolume.model_shape with first axis length 2.
     def test_grid_rounding_matches_loader_at_float_boundary(self):
         for row in self.dataset['samples']:
             row['source_shape_kji'] = [7, 13, 19]
@@ -119,6 +143,9 @@ class ExperimentTests(unittest.TestCase):
         result = plan(self.config)
         self.assertEqual(tuple(result['model_grids']['0-0']['model_shape_kji']), expected)
 
+    # Purpose: Verify frozen experiment detects INI and dataset changes.
+    # Inputs: Frozen config followed by added input bytes or changed dataset manifest.
+    # Outputs: Inspection raises ValueError for either mutation.
     def test_lock_detects_dataset_and_configuration_changes(self):
         raw = self.path.read_bytes()
         freeze(self.config,raw)
@@ -129,6 +156,9 @@ class ExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'dataset changed'):
             inspect_lock(self.config,raw)
 
+    # Purpose: Prevent freezing when cohort target-grid audit fails.
+    # Inputs: Cohort mode with mocked fragmentation audit for twelve samples.
+    # Outputs: Planning includes the audit error and freezing raises ValueError without output.
     def test_cohort_grid_failures_block_freeze(self):
         self.config['experiment']['mode'] = 'cohort'
         failed = {'ready': False, 'errors': ['Material target fragmentation on model grid'],
@@ -143,6 +173,9 @@ class ExperimentTests(unittest.TestCase):
                 freeze(self.config, self.path.read_bytes())
         self.assertFalse(Path(self.config['experiment']['output_directory']).exists())
 
+    # Purpose: Verify absent dataset evidence blocks planning.
+    # Inputs: Dataset manifest removed from the configured path.
+    # Outputs: Planning reports ready false.
     def test_missing_dataset_not_ready(self):
         self.manifest.unlink()
         self.assertFalse(plan(self.config)['ready'])

@@ -79,6 +79,9 @@ def prepared64(tmp_path_factory):
             'manifest_path': manifest_path, 'registry': registry, 'registered': registered}
 
 
+# Purpose: Verify metadata validation avoids native voxel reads and publication.
+# Inputs: Unreviewed 64-cube fixture with crop and binary reads mocked to fail.
+# Outputs: Valid variant counts, unassigned splits, no output files, unchanged file inventory.
 def test_metadata_only_sweep_reads_no_voxels_and_creates_no_outputs(tmp_path):
     fixture = write_voxel_fixture(tmp_path / 'metadata64', size=64)
     config = load_study_config(fixture['cohort_ini'])
@@ -96,6 +99,9 @@ def test_metadata_only_sweep_reads_no_voxels_and_creates_no_outputs(tmp_path):
         assert not config['train'][key].exists()
 
 
+# Purpose: Verify recipe preflight records growth and erosion and rejects missing halo.
+# Inputs: Reviewed 96-cube fixture, then crop width reduced to maximum ROI radius.
+# Outputs: Both step outcomes recorded; halo error occurs before reads or file changes.
 def test_96_volume_local_recipe_records_both_steps_and_refuses_insufficient_halo(tmp_path):
     fixture = write_voxel_fixture(tmp_path / 'native96', size=96, reviewed=True)
     path = fixture['cohort_ini']
@@ -120,6 +126,9 @@ def test_96_volume_local_recipe_records_both_steps_and_refuses_insufficient_halo
     assert _file_inventory(tmp_path) == before
 
 
+# Purpose: Verify reviewed publication and registry preserve frozen cohort identity.
+# Inputs: 64-cube fixture passed through review, preflight, freeze, prepare and registration.
+# Outputs: Matching fingerprints, verified artifacts, unassigned lineage masks and idempotent registration.
 def test_reviewed_native_pipeline_publishes_decoupled_verified_cohort(prepared64):
     data = prepared64
     preflight, manifest = data['preflight'], data['manifest']
@@ -142,6 +151,9 @@ def test_reviewed_native_pipeline_publishes_decoupled_verified_cohort(prepared64
     assert repeat['already_registered'] is True
 
 
+# Purpose: Verify exported crop geometry, masks, attenuation and protected lineage.
+# Inputs: Prepared 64-cube samples with neighbor artery, bone, skin and source provenance.
+# Outputs: Correct lineage and attenuation, protected labels unchanged, source hashes preserved.
 def test_exported_masks_attenuation_lineage_and_crop_provenance(prepared64):
     data = prepared64
     folder, manifest = data['manifest_path'].parent, data['manifest']
@@ -219,6 +231,9 @@ def test_exported_masks_attenuation_lineage_and_crop_provenance(prepared64):
     assert max(path.stat().st_size for path in folder.rglob('*.npz')) < 4 * 1024**2
 
 
+# Purpose: Reject payload tampering, repeated publication and rewritten frozen inputs.
+# Inputs: Copied dataset with appended payload bytes and modified INI revision.
+# Outputs: Checksum, overwrite and freeze errors; original dataset inventory stays unchanged.
 def test_published_data_tamper_and_frozen_input_rewrites_are_rejected(prepared64, tmp_path):
     data = prepared64
     original = data['manifest_path'].parent

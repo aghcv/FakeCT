@@ -15,6 +15,9 @@ def rows(count=256):
 
 
 class ScheduleTests(unittest.TestCase):
+    # Purpose: Verify population scheduling visits all siblings at the original control budget.
+    # Inputs: Eight cases with 256 siblings each across 64 seeded blocks.
+    # Outputs: 28 updates per case/block, six visits per sibling, and 256 controls per case.
     def test_all_variants_seen_and_old_control_budget_preserved(self):
         schedule=PopulationSchedule(rows(),[str(i) for i in range(8)],42)
         by_id={r['sample_id']:r for r in rows()}
@@ -29,6 +32,9 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual((r['minimum_edited_visits'],r['maximum_edited_visits']),(6,6))
         self.assertEqual(set(r['controls_per_case'].values()),{256})
 
+    # Purpose: Verify seeded population queues reproduce and avoid premature repeats.
+    # Inputs: Two seed-42 schedules and 244 successive draws from case 0.
+    # Outputs: Identical initial blocks and unique sibling draws.
     def test_order_reproducible_without_replacement(self):
         first=PopulationSchedule(rows(),[str(i) for i in range(8)],42)
         second=PopulationSchedule(rows(),[str(i) for i in range(8)],42)
@@ -36,10 +42,16 @@ class ScheduleTests(unittest.TestCase):
         values=[first._next('0') for _ in range(244)]
         self.assertEqual(len(values),len(set(values)))
 
+    # Purpose: Verify population schedules enforce case-count and control requirements.
+    # Inputs: One-case roster and eight-case rows missing case 0 baseline.
+    # Outputs: ValueError for invalid case count and missing baseline.
     def test_missing_control_and_wrong_case_count_rejected(self):
         with self.assertRaises(ValueError):PopulationSchedule(rows(),['0'],42)
         with self.assertRaises(ValueError):PopulationSchedule([r for r in rows() if r['sample_id']!='0:baseline'],[str(i) for i in range(8)],42)
 
+    # Purpose: Verify new net-change proposals bypass legacy per-condition cancellation proof.
+    # Inputs: Mock frozen locator and coverage for enlargement-only sample without step outcomes.
+    # Outputs: Coverage passes, proposed origins retained, and legacy cancellation check never runs.
     def test_new_net_targets_do_not_require_original_three_active_steps(self):
         import fakect_multiscale_network_v3 as locator
         import fakect_multiscale_learning_v3 as legacy

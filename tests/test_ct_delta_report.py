@@ -20,6 +20,9 @@ class CTDeltaReportTests(unittest.TestCase):
                                 "fallback_reasons": ["candidate_contains_small_cluster"],
                                 "candidates": [dict(k=2, silhouette=.4)]}), rows, np.array([[0., 0.], [1., 1.], [-1., 1.]]), np.array([0, 0, 1])
 
+    # Purpose: Verify offline PCA reports retain all siblings and export verified artifacts.
+    # Inputs: Three sibling CT-delta records, PCA coordinates, fallback clustering and optional baseline.
+    # Outputs: Offline HTML, PNG/PDF/SVG/CSV exports, matching output hashes and overwrite rejection.
     def test_offline_report_all_siblings_exports_and_hashes(self):
         analysis, rows, scores, labels = self.fixture()
         with tempfile.TemporaryDirectory() as tmp:
@@ -46,6 +49,9 @@ class CTDeltaReportTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 write_report(destination, analysis, rows, scores, labels)
 
+    # Purpose: Verify CT cluster summaries ignore anatomical mask counts.
+    # Inputs: CT energy records with one added_voxels count changed to 100000.
+    # Outputs: Identical summaries, cluster-one labeling and CT median 0.01.
     def test_ct_summary_does_not_use_mask_counts(self):
         _, rows, _, labels = self.fixture()
         first = cluster_summary(rows, labels)
@@ -55,6 +61,9 @@ class CTDeltaReportTests(unittest.TestCase):
         self.assertEqual(first[0]["cluster"], 1)
         self.assertEqual(first[0]["cluster_index"], 0)
 
+    # Purpose: Verify native CT extractor energy fields are accepted.
+    # Inputs: One record with normalized positive energy 0.2 and negative energy 0.3.
+    # Outputs: Relative CT energy median 0.5 and positive median 0.2.
     def test_native_extractor_energy_names_supported(self):
         rows = [dict(sample_id="A:one", case_id="A", normalized_positive_ct_energy=.2,
                      normalized_negative_ct_energy=.3)]
@@ -62,6 +71,9 @@ class CTDeltaReportTests(unittest.TestCase):
         self.assertAlmostEqual(summary["ct_relative_l1"]["median"], .5)
         self.assertAlmostEqual(summary["ct_positive_l1"]["median"], .2)
 
+    # Purpose: Reject PCA coordinate and sibling identity mismatches.
+    # Inputs: Wrong coordinate count, float cluster labels, NaN coordinates or duplicate sample IDs.
+    # Outputs: ValueError for every malformed report input.
     def test_reject_coordinate_and_identity_mismatches(self):
         analysis, rows, scores, labels = self.fixture()
         with tempfile.TemporaryDirectory() as tmp:
@@ -73,6 +85,9 @@ class CTDeltaReportTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 write_report(Path(tmp) / "review", analysis, rows, scores, labels)
 
+    # Purpose: Reject baseline records without matching PCA coordinates.
+    # Inputs: Sibling report inputs plus baseline records without baseline_scores.
+    # Outputs: ValueError prevents report publication.
     def test_missing_baseline_coordinates_rejected(self):
         analysis, rows, scores, labels = self.fixture()
         with tempfile.TemporaryDirectory() as tmp:

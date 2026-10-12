@@ -18,6 +18,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
         self.box = np.r_[(lo + hi) / (2 * self.shape), (hi - lo) / self.shape].astype(np.float32)[None]
         self.settings = dict(translate_fraction_kji=(.08, .06, .06), scale_range=(.85, 1.15), crop_fraction_max=.12)
 
+    # Purpose: Verify identity augmentation preserves values, geometry and inputs.
+    # Inputs: 20x18x16 two-channel image with invalid planes and normalized target box.
+    # Outputs: Exact independent float32 image and box copies with original crop faces.
     def test_identity_preserves_values_grid_and_inputs(self):
         rng = np.random.default_rng(7)
         self.x[..., 0] = rng.random(self.x[..., 0].shape)
@@ -32,6 +35,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
         self.assertEqual(metadata['crop_faces_k'], [0, 20])
         self.assertEqual(result.dtype, np.float32)
 
+    # Purpose: Verify integer translation moves landmarks and boxes without wrapping.
+    # Inputs: Single landmark translated by 2,-1,1 voxels.
+    # Outputs: Landmark and box shifted correctly, exposed borders zero and inverse restores original box.
     def test_integer_translation_moves_landmark_and_exact_face_box_without_wrap(self):
         point = np.array([8, 7, 6])
         self.x[(0, *point, 0)] = 1
@@ -46,6 +52,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
         self.assertTrue(np.all(result[:, :, :, :1] == 0))
         np.testing.assert_allclose(inverse_box(box, metadata), self.box, atol=1e-7)
 
+    # Purpose: Verify physical ramp interpolation and box geometry share one affine.
+    # Inputs: Anisotropic linear ramp, scale 1.12 and fractional translation.
+    # Outputs: Analytic sampled intensities and physical box extents match; inverse recovers supervision.
     def test_anisotropic_physical_ramp_and_box_use_identical_affine(self):
         spacing = np.array([2.3, 1.1, .8])  # k,j,i mm
         coords = np.indices(tuple(self.shape), dtype=np.float64)
@@ -66,6 +75,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
         np.testing.assert_allclose(inverse_box(box[0], metadata), self.box[0], atol=1e-7)
         self.assertEqual(inverse_box(box[0], metadata).shape, (6,))
 
+    # Purpose: Verify partial-edge validity weighting preserves constant tissue.
+    # Inputs: Constant intensity 0.73 with zero/fractional validity and affine resampling.
+    # Outputs: Positive-validity intensities remain 0.73, padding zero and validity bounded 0-1.
     def test_validity_weighting_preserves_constant_tissue_at_partial_edges(self):
         self.x[..., 0] = .73
         self.x[:, :2, ..., 1] = 0
@@ -79,6 +91,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
         np.testing.assert_array_equal(result[..., 0][valid == 0], 0)
         self.assertTrue(np.all((valid >= 0) & (valid <= 1)))
 
+    # Purpose: Verify truncation snaps inward without renumbering boxes.
+    # Inputs: Crop bounds 0.051-0.949 on a 20-plane image.
+    # Outputs: Crop faces 2-18, normalized bounds 0.1-0.9, unchanged boxes and interior values.
     def test_truncation_snaps_inward_and_does_not_renumber_boxes(self):
         self.x[..., 0] = .4
         result, box, metadata = apply_transform(self.x, self.box, crop_bounds_k=(.051, .949))
@@ -89,6 +104,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
         self.assertTrue(np.all(result[:, 18:] == 0))
         np.testing.assert_array_equal(result[:, 2:18], self.x[:, 2:18])
 
+    # Purpose: Reject probes losing target or safety context before interpolation.
+    # Inputs: Excessive translation/scale/crops with interpolation mocked to fail.
+    # Outputs: Ineligible ValueError before interpolation; explicit zero safety context permits smaller crop.
     def test_fixed_probe_rejects_target_or_safety_context_loss_before_interpolation(self):
         with patch('fakect_multiscale_augmentation.affine_transform', side_effect=AssertionError('interpolated')):
             for settings in [dict(translation_kji=(.6, 0, 0)), dict(scale=4),
@@ -99,6 +117,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
         _, _, metadata = apply_transform(self.x, self.box, crop_bounds_k=(.21, 1), safety_context_voxels=0)
         self.assertEqual(metadata['crop_faces_k'], [5, 20])
 
+    # Purpose: Verify random overview augmentation is reproducible and context-safe.
+    # Inputs: Two seed-42 generators and 30 bounded scale/translation/crop draws.
+    # Outputs: Identical samples, settings bounds respected, target margin retained and invertible boxes.
     def test_random_samples_are_reproducible_bounded_and_keep_target_context(self):
         rng_a, rng_b = np.random.default_rng(42), np.random.default_rng(42)
         for _ in range(30):
@@ -118,6 +139,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
             self.assertLessEqual(1 - meta_a['crop_bounds_k'][1], .12)
             np.testing.assert_allclose(inverse_box(box_a, meta_a), self.box, atol=1e-7)
 
+    # Purpose: Verify random scales are conditioned on feasible target support.
+    # Inputs: Large 0.7-extent box with scale range 0.95-2, then infeasible 2-3.
+    # Outputs: Feasible upper range reduced without underflow; impossible range raises ValueError.
     def test_random_feasible_scale_is_conditioned_without_out_of_range_fallback(self):
         large = np.array([[.5, .5, .5, .7, .7, .7]], np.float32)
         _, _, metadata = augment_overview(self.x, large, np.random.default_rng(0),
@@ -128,6 +152,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
             augment_overview(self.x, large, np.random.default_rng(0),
                 translate_fraction_kji=(0, 0, 0), scale_range=(2., 3.), crop_fraction_max=0)
 
+    # Purpose: Verify inverse boxes retain out-of-field prediction error.
+    # Inputs: Scale 0.8, translation 0.02 and an off-field predicted box.
+    # Outputs: Inverse center remains negative and extent becomes 0.25.
     def test_inverse_preserves_out_of_fov_prediction_error(self):
         _, _, metadata = apply_transform(self.x, self.box, .8, (.02, 0, 0))
         prediction = np.array([.01, .5, .5, .2, .2, .2], np.float32)
@@ -135,6 +162,9 @@ class MultiscaleAugmentationTests(unittest.TestCase):
         self.assertLess(inverse[0], 0)
         self.assertAlmostEqual(float(inverse[3]), .25, places=6)
 
+    # Purpose: Reject invalid augmentation contracts and excessive voxel budgets.
+    # Inputs: Invalid transforms, RNG/settings, image dtype/shape/validity, huge image or unknown inverse schema.
+    # Outputs: ValueError rejects each malformed contract and explicit budget excess.
     def test_invalid_contracts_and_budgets(self):
         for options in [dict(scale=0), dict(scale=float('nan')), dict(translation_kji=(0, 0)),
                         dict(crop_bounds_k=(.9, .1)), dict(crop_bounds_k=(.101, .102)),

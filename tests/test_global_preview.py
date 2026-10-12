@@ -75,6 +75,9 @@ class GlobalPreviewTests(unittest.TestCase):
                                'radius_mm': (2, 3)},
                        'rois': {'upper': {'shape': 'sphere', 'center_ijk': (3, 3, 8), 'radius_mm': 2}}}
 
+    # Purpose: Verify bounded anisotropic sampling retains native edges.
+    # Inputs: 39x23x31 volume, spacing [0.5,1,2.5], and a 700-voxel sample budget.
+    # Outputs: Axes stay sorted and edge-complete; sampled data/hash match and source bytes remain intact.
     def test_anisotropic_sampling_is_bounded_and_retains_exact_final_edges(self):
         shape, spacing = (39, 23, 31), (0.5, 1, 2.5)
         axes, strides = sampling_axes(shape, spacing, max_voxels=700)
@@ -96,6 +99,9 @@ class GlobalPreviewTests(unittest.TestCase):
         self.assertEqual(metadata['source_bytes_read'], len(axes[2])*shape[1]*shape[2]*4)
         self.assertEqual(path.read_bytes(), before)
 
+    # Purpose: Verify global selection includes all artery IDs beyond the local crop.
+    # Inputs: Signed artery labels 7/-8, no explicit filter, then explicit ID 7.
+    # Outputs: Global candidates include both arteries by default and restrict to 7 when requested.
     def test_no_id_filter_selects_both_arteries_outside_local_crop(self):
         arrays, metadata = prepare_global(self.resolved, self.config)
         np.testing.assert_array_equal(arrays['candidates'], np.isin(self.labels, (7, -8)))
@@ -113,6 +119,9 @@ class GlobalPreviewTests(unittest.TestCase):
         np.testing.assert_array_equal(arrays['candidates'], self.labels == 7)
         self.assertTrue(metadata['selection']['source_ids_explicit'])
 
+    # Purpose: Verify irregular sample coordinates preserve native ROI geometry.
+    # Inputs: Irregular IJK axes and native tube/sphere definitions.
+    # Outputs: Sampled masks equal native mask indexing and clipped overlays remain within the tube.
     def test_sampled_geometries_match_native_masks_at_irregular_coordinates(self):
         axes = [np.array([0, 2, 3, 7, 10]), np.array([0, 3, 5, 8]), np.array([0, 4, 6, 8, 12])]
         spacing = self.resolved['spacing_ijk_mm']
@@ -125,6 +134,9 @@ class GlobalPreviewTests(unittest.TestCase):
         clipped = global_preview._plane_masks(axes, spacing, [tube, sphere], 2, 3)
         self.assertFalse(np.any(clipped[1] & ~clipped[0]))
 
+    # Purpose: Reject native sources changed between channel reads.
+    # Inputs: Read mock changes ACT bytes after attenuation sampling.
+    # Outputs: Global preparation raises ValueError for a changing source.
     def test_changed_source_between_channel_reads_is_rejected(self):
         original = global_preview.read_sampled
 
@@ -140,6 +152,9 @@ class GlobalPreviewTests(unittest.TestCase):
                 self.assertRaisesRegex(ValueError, 'changed while preparing'):
             prepare_global(self.resolved, self.config)
 
+    # Purpose: Reject invalid sampling axes, values, and read budgets.
+    # Inputs: Too-small edge budget, duplicate coordinates, NaN attenuation, or 10-byte plane limit.
+    # Outputs: Sampling/preparation raises ValueError for each invalid input.
     def test_invalid_axes_size_and_sample_values_are_rejected(self):
         with self.assertRaisesRegex(ValueError, 'retain both edges'):
             sampling_axes((3, 4, 5), (1, 1, 1), max_voxels=7)
@@ -154,6 +169,9 @@ class GlobalPreviewTests(unittest.TestCase):
                 self.assertRaisesRegex(ValueError, 'axial plane'):
             prepare_global(self.resolved, self.config)
 
+    # Purpose: Verify portable global HTML embeds accurate samples and safe names.
+    # Inputs: Global preview with a script-like ROI name and native source snapshots.
+    # Outputs: HTML has no external resources, decodes exact targets, escapes names, and preserves source bytes.
     def test_portable_html_embeds_exact_axes_samples_and_safe_names(self):
         config = deepcopy(self.config)
         config['rois']['upper</script><script>alert(1)</script>'] = config['rois'].pop('upper')

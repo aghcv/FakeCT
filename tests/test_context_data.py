@@ -115,6 +115,9 @@ surface_inventory_pattern =
         module._write(output / 'selection.json', report)
         return report
 
+    # Purpose: Verify context preparation reuses images and transfers edits into broad anatomy masks.
+    # Inputs: Two-case baseline/edited fixtures with mocked broad-anatomy selection.
+    # Outputs: Four verified samples, shared source paths, preserved broad voxels, and no copied BIN payloads.
     def test_prepare_shares_images_preserves_broad_masks_and_is_inspectable(self):
         result = module.prepare(self.config)
         self.assertEqual(result['sample_count'], 4)
@@ -131,12 +134,18 @@ surface_inventory_pattern =
                 self.assertTrue(data['after'][0, 0, 0])
                 self.assertEqual(int(data['added'].sum()), int(not row['baseline']))
 
+    # Purpose: Verify context validation remains read-only.
+    # Inputs: Two-case context config and mocked anatomy extraction.
+    # Outputs: Four validated samples, absent output directory, and no extraction call.
     def test_metadata_only_does_not_extract_or_write(self):
         result = module.validate(self.config)
         self.assertEqual(result['sample_count'], 4)
         self.assertFalse(self.output.exists())
         self.mock_run.assert_not_called()
 
+    # Purpose: Verify one invalid anatomy scope prevents atomic dataset publication.
+    # Inputs: Case one missing a dilation ancestor while case two completes.
+    # Outputs: INCOMPLETE retained, both case statuses recorded, two prepared samples, and no final manifest.
     def test_failed_scope_keeps_incomplete_and_all_case_failures(self):
         self.bad_case = 'one'
         with self.assertRaisesRegex(ValueError, 'remains INCOMPLETE'):
@@ -149,6 +158,9 @@ surface_inventory_pattern =
         self.assertTrue((self.output / 'INCOMPLETE').exists())
         self.assertFalse((self.output / 'dataset-manifest.json').exists())
 
+    # Purpose: Verify preparation resume is explicit and fingerprint-bound.
+    # Inputs: Completed dataset, repeated prepare, explicit resume, then changed anatomy template.
+    # Outputs: Unrequested resume rejected, matching resume reused, and changed fingerprint rejected.
     def test_resume_requires_explicit_matching_request(self):
         module.prepare(self.config)
         with self.assertRaisesRegex(ValueError, 'explicitly use --resume'):
@@ -161,6 +173,9 @@ surface_inventory_pattern =
         with self.assertRaisesRegex(ValueError, 'fingerprint differs'):
             module.prepare(self.config)
 
+    # Purpose: Verify completed case artifacts are reused after interrupted finalization.
+    # Inputs: Input-check mock interrupting the third call after both cases finish.
+    # Outputs: INCOMPLETE before resume, four final samples, and only two total anatomy extractions.
     def test_completed_cases_resume_after_interruption(self):
         # Stop after both case artifacts exist, before root finalization.
         original_inputs = module._inputs
@@ -180,6 +195,9 @@ surface_inventory_pattern =
         self.assertEqual(result['sample_count'], 4)
         self.assertEqual(self.mock_run.call_count, 2)
 
+    # Purpose: Verify metadata inspection detects changed whole-body sources.
+    # Inputs: Prepared dataset then appended byte in case one's native attenuation file.
+    # Outputs: ValueError for changed source stat in metadata-only inspection.
     def test_changed_source_file_stat_rejected_even_without_payload_verification(self):
         module.prepare(self.config)
         path = Path(self.sources['one']['atn']['path'])
@@ -187,6 +205,9 @@ surface_inventory_pattern =
         with self.assertRaisesRegex(ValueError, 'Whole-body source changed'):
             module.inspect_dataset(self.output / 'dataset-manifest.json', verify_payloads=False)
 
+    # Purpose: Verify resigned root manifests cannot substitute duplicate sample identities.
+    # Inputs: Prepared manifest with second sample replaced by first.
+    # Outputs: ValueError reporting disagreement with the per-case sample contract.
     def test_duplicate_or_omitted_rows_fail_after_manifest_resigning(self):
         module.prepare(self.config)
         path = self.output / 'dataset-manifest.json'
@@ -196,6 +217,9 @@ surface_inventory_pattern =
         with self.assertRaisesRegex(ValueError, 'sample disagrees'):
             module.inspect_dataset(path, verify_payloads=False)
 
+    # Purpose: Verify transferred compact masks remain checksum-bound.
+    # Inputs: Prepared mask NPZ with appended byte.
+    # Outputs: ValueError identifying a changed transferred mask.
     def test_compact_mask_corruption_is_rejected(self):
         result = module.prepare(self.config)
         pair = Path(result['samples'][0]['mask_npz'])
@@ -203,6 +227,9 @@ surface_inventory_pattern =
         with self.assertRaisesRegex(ValueError, 'Transferred mask changed'):
             module.inspect_dataset(self.output / 'dataset-manifest.json')
 
+    # Purpose: Verify case anatomy metadata cannot change frame after preparation.
+    # Inputs: Anatomy selection frame changed to 2 with updated selection digest in preview.
+    # Outputs: ValueError identifying frame/geometry/source inconsistency.
     def test_case_frame_mutation_rejected(self):
         module.prepare(self.config)
         path = self.output / 'one/anatomy/selection.json'
@@ -216,6 +243,9 @@ surface_inventory_pattern =
         with self.assertRaisesRegex(ValueError, 'frame/geometry/source'):
             module.inspect_dataset(self.output / 'dataset-manifest.json')
 
+    # Purpose: Verify context INI accepts only documented unique case selections.
+    # Inputs: Unexpected cohort key then duplicate case list one,one.
+    # Outputs: ValueError for undocumented input and duplicate cases.
     def test_unknown_input_and_invalid_case_list_rejected(self):
         self.ini.write_text(self.ini.read_text() + 'unexpected = true\n')
         with self.assertRaisesRegex(ValueError, 'documented'):

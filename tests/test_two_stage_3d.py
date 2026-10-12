@@ -46,6 +46,9 @@ class TwoStage3DTests(unittest.TestCase):
         return {'sample_id': 'case:example', 'is_control': False,
                 'prediction_sha256': hashlib.sha256(self.path.read_bytes()).hexdigest()}
 
+    # Purpose: Verify 3D surfaces use exact native physical coordinates.
+    # Inputs: Boolean 5x7x9 baseline mask and anisotropic 0.5/0.75/1-mm spacing.
+    # Outputs: Correct mesh bounds and foreground count; original mask unchanged.
     def test_exact_surface_coordinates_and_input_unchanged(self):
         original = self.before.copy()
         scene = viewer.build_scene({'before': self.before}, [.5, .75, 1.], sample_id='test')
@@ -58,6 +61,9 @@ class TwoStage3DTests(unittest.TestCase):
         self.assertEqual(scene['bounds_ijk_mm'], [[0, 4.5], [0, 5.25], [0, 5.]])
         self.assertEqual(scene['triangles'], surface['triangles'])
 
+    # Purpose: Separate reference changes from segmentation errors in viewer modes.
+    # Inputs: Saved before/after masks, reference probabilities and deliberately imperfect stage-one prediction.
+    # Outputs: One added/removed voxel and one segmentation false positive/negative; three mode definitions.
     def test_derived_binary_changes_and_segmentation_errors(self):
         row = self.prediction()
         scene = viewer._prediction_scene(self.path, row, .7, .5)
@@ -69,12 +75,18 @@ class TwoStage3DTests(unittest.TestCase):
         self.assertEqual([mode['key'] for mode in scene['modes']], ['oracle', 'chained', 'segmentation'])
         self.assertIn('include segmentation errors', scene['modes'][1]['explanation'])
 
+    # Purpose: Support reference-recovery viewing without a segmentation model output.
+    # Inputs: Prediction archive containing oracle fields only.
+    # Outputs: Oracle mode exists without a segmentation surface.
     def test_oracle_only_prediction_needs_no_model1(self):
         row = self.prediction(chained=False)
         scene = viewer._prediction_scene(self.path, row, .7, .5)
         self.assertEqual([mode['key'] for mode in scene['modes']], ['oracle'])
         self.assertNotIn('segmentation', scene['surfaces'])
 
+    # Purpose: Verify prediction archives match their pinned sample identity.
+    # Inputs: Correct archive paired with a wrong digest or a different sample ID.
+    # Outputs: Checksum or sample-identity ValueError.
     def test_hash_and_identity_mismatch_rejected(self):
         row = self.prediction()
         with self.assertRaisesRegex(ValueError, 'checksum'):
@@ -82,6 +94,9 @@ class TwoStage3DTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'another sample'):
             viewer._prediction_scene(self.path, dict(row, sample_id='other'), .7, .5)
 
+    # Purpose: Reject invalid binary geometry and inconsistent thresholded changes.
+    # Inputs: Fractional mask values and a saved prediction replayed with a conflicting threshold.
+    # Outputs: Binary-mask or binary-change disagreement errors.
     def test_binary_and_probability_validation(self):
         with self.assertRaisesRegex(ValueError, 'binary'):
             viewer.build_scene({'bad': self.before.astype(float)*.5}, [1, 1, 1], sample_id='bad')
@@ -90,6 +105,9 @@ class TwoStage3DTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'binary changes disagree'):
             viewer._prediction_scene(self.path, row, .5, .5)
 
+    # Purpose: Enforce mesh display budgets without silently downsampling anatomy.
+    # Inputs: Foreground mask with MAX_SURFACE_TRIANGLES mocked to 10.
+    # Outputs: Surface explicitly omitted, foreground count retained and a display-budget warning.
     def test_oversized_surface_is_explicitly_omitted_without_pooling(self):
         with patch.object(viewer, 'MAX_SURFACE_TRIANGLES', 10):
             scene = viewer.build_scene({'before': self.before}, [1, 1, 1], sample_id='big')
@@ -98,6 +116,9 @@ class TwoStage3DTests(unittest.TestCase):
         self.assertEqual(scene['triangles'], 0)
         self.assertIn('display budget', scene['warnings'][0])
 
+    # Purpose: Represent empty segmentation labels without reporting a budget omission.
+    # Inputs: All-false mask on the baseline grid.
+    # Outputs: Zero voxel/triangle counts and omitted=False.
     def test_empty_mask_retained_with_zero_counts(self):
         scene = viewer.build_scene({'empty': np.zeros_like(self.before)}, [1, 1, 1], sample_id='empty')
         entry = scene['surfaces']['empty']
@@ -105,6 +126,9 @@ class TwoStage3DTests(unittest.TestCase):
         self.assertEqual(entry['triangles'], 0)
         self.assertFalse(entry['omitted'])
 
+    # Purpose: Package local viewer assets and safely encode sample text.
+    # Inputs: Native scene whose sample ID contains script-closing text.
+    # Outputs: Offline assets and matching scene hashes; escaped payload restores the exact sample ID.
     def test_file_protocol_packaging_and_safe_sample_text(self):
         scene = viewer.build_scene({'before': self.before}, [1, 1, 1], sample_id='</script><script>bad()</script>')
         result = viewer.render_viewer(self.root/'view', [scene])
@@ -132,6 +156,9 @@ class TwoStage3DTests(unittest.TestCase):
         self.assertEqual(manifest['scenes'][0]['sha256'], hashlib.sha256(payload.encode()).hexdigest())
         self.assertIn('no pooling', manifest['sampling'])
 
+    # Purpose: Present native atlas geometry independently of model-evaluation labels.
+    # Inputs: Atlas mask, custom native coordinates/footer and show_metrics=False.
+    # Outputs: Display metadata retained, note escaped and model-specific scope/metrics hidden.
     def test_native_atlas_viewer_overrides_scope_and_hides_model_metrics(self):
         scene = viewer.build_scene({'aorta': self.before}, [.5, .75, 1.], sample_id='atlas:260602')
         coordinates = 'Native voxel geometry, millimeters from the lower crop face; orientation unverified.'
@@ -153,6 +180,9 @@ class TwoStage3DTests(unittest.TestCase):
         self.assertIn("document.getElementById('metrics').hidden=!shown", script)
         self.assertIn("text('metrics','');return;", script)
 
+    # Purpose: Merge scene-specific display settings with viewer defaults.
+    # Inputs: Default and custom atlas scenes in one rendered viewer.
+    # Outputs: Default metrics/footer retained globally; custom scene overrides preserved in payload.
     def test_scene_display_overrides_and_default_model_behavior(self):
         default = viewer.build_scene({'aorta': self.before}, [1, 1, 1], sample_id='default')
         custom = viewer.build_scene({'aorta': self.before}, [1, 1, 1], sample_id='native',
@@ -172,6 +202,9 @@ class TwoStage3DTests(unittest.TestCase):
         script = (output/'viewer.js').read_text()
         self.assertIn('{...manifest.display,...(scene.display||{})}', script)
 
+    # Purpose: Require explicit types for viewer display controls.
+    # Inputs: String-valued metrics flag, numeric coordinate description and list-valued footer.
+    # Outputs: ValueError for each invalid display option.
     def test_display_options_reject_ambiguous_types(self):
         for kwargs in (dict(show_metrics='false'), dict(coordinate_description=1), dict(footer_note=['text'])):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):

@@ -123,6 +123,9 @@ class InputIsolationTests(unittest.TestCase):
     def tearDown(self):
         MiniVolume.returned_mask_value = None
 
+    # Purpose: Verify classifier inputs ignore supervision returned by the image reader.
+    # Inputs: MiniVolume detail blocks with mask changed to all ones.
+    # Outputs: Overview/boxes/detail tensors stay identical and validity retains observed and padded voxels.
     def test_classifier_inputs_ignore_readers_supervision_mask(self):
         row = fixture_rows()[1]
         config = fixture_config('/tmp/not_written')
@@ -141,6 +144,9 @@ class InputIsolationTests(unittest.TestCase):
         self.assertTrue(np.any(before['detail_0'][..., 1] == 0))
         self.assertTrue(np.any(before['detail_0'][..., 1] == 1))
 
+    # Purpose: Reject test preparation before image loading.
+    # Inputs: Inspected fixture lock with one test-split row.
+    # Outputs: Prepare raises ValueError and the overview reader is never called.
     def test_prepare_rejects_test_before_any_image_load(self):
         with tempfile.TemporaryDirectory() as directory:
             config, lock = fixture_config(directory), fixture_lock(directory)
@@ -175,6 +181,9 @@ class StagedTensorFlowIntegrationTests(unittest.TestCase):
         stack.enter_context(patch.object(learning, 'configure_tensorflow', return_value=(self.tf, self.network)))
         return stack
 
+    # Purpose: Verify real multiscale preparation, fitting, and checkpoint reload isolation.
+    # Inputs: Eight train/validation MiniVolume fixtures and small TensorFlow networks.
+    # Outputs: Both checkpoints save, reload scores match, report exists, and reserved test payloads stay unread.
     def test_real_prepare_fit_save_reload_and_no_test_payloads(self):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -197,6 +206,9 @@ class StagedTensorFlowIntegrationTests(unittest.TestCase):
             self.assertTrue((out / 'report.html').exists())
             self.assertNotIn('test:never_open', MiniVolume.accessed)
 
+    # Purpose: Stop classifier construction when locator coverage is insufficient.
+    # Inputs: Changed coverage 0.95 and removed coverage 0.99 with build_classifier spy.
+    # Outputs: Fit stops at coverage gate without training/saving a classifier or evaluating tests.
     def test_failed_coverage_stops_before_classifier_construction(self):
         with tempfile.TemporaryDirectory() as directory:
             config, lock = fixture_config(directory), fixture_lock(directory)

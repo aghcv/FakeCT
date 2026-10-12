@@ -30,6 +30,9 @@ class MultiscalePreviewTests(unittest.TestCase):
         import matplotlib.pyplot as plt
         self.assertEqual(plt.get_fignums(), [])
 
+    # Purpose: Verify preview proposals retain absolute physical coordinates.
+    # Inputs: Anisotropic overview with supervision, prediction and two list proposals including off-FOV box.
+    # Outputs: Valid PNG, expected slices/overlays and unclipped physical coordinates.
     def test_renders_production_list_proposals_at_unchanged_absolute_coordinates(self):
         result = preview(self.row, self.ov, self.target, self.path,
                          predicted=self.predicted, proposal_boxes=self.proposals)
@@ -46,6 +49,9 @@ class MultiscalePreviewTests(unittest.TestCase):
         self.assertGreater(outside['box_kji'][0], 1)
         np.testing.assert_allclose(outside['box_kji'], self.proposals[-1])
 
+    # Purpose: Verify previews accept NumPy box/proposal arrays.
+    # Inputs: Supervision/prediction singleton arrays and proposal matrix.
+    # Outputs: Valid PNG with supervision, prediction and two detail-block overlays.
     def test_renders_numpy_arrays_without_ambiguous_truth_value(self):
         result = preview(self.row, self.ov, np.array(self.target)[None], self.path,
                          predicted=np.array(self.predicted)[None], proposal_boxes=np.array(self.proposals))
@@ -53,6 +59,9 @@ class MultiscalePreviewTests(unittest.TestCase):
         self.assertEqual([r['label'] for r in result['overlays']],
                          ['Supervision', 'Prediction', 'Detail block 1', 'Detail block 2'])
 
+    # Purpose: Verify absent or empty proposal lists render supervision alone.
+    # Inputs: Proposal argument None, empty list or empty 0x6 array.
+    # Outputs: Valid PNG with exactly one overlay.
     def test_optional_and_empty_proposals_render(self):
         for proposals in [None, [], np.empty((0, 6))]:
             with self.subTest(proposals=proposals):
@@ -60,6 +69,9 @@ class MultiscalePreviewTests(unittest.TestCase):
                 self.check_png()
                 self.assertEqual(len(result['overlays']), 1)
 
+    # Purpose: Verify a single proposal and off-FOV prediction are rendered accurately.
+    # Inputs: One detail box and negative-center prediction.
+    # Outputs: Three overlays, preserved prediction coordinates and no false slice intersection.
     def test_single_proposal_and_off_fov_prediction_are_allowed(self):
         prediction = [-.1, .5, .5, .1, .2, .2]
         result = preview(self.row, self.ov, self.target, self.path,
@@ -69,6 +81,9 @@ class MultiscalePreviewTests(unittest.TestCase):
         self.assertEqual(result['overlays'][1]['box_kji'], prediction)
         self.assertEqual(len(result['overlays']), 3)
 
+    # Purpose: Reject invalid preview geometry before writing figures.
+    # Inputs: Invalid box extents/shape/nonfinite values, spacing or 2-D overview image.
+    # Outputs: ValueError and no PNG file for every invalid input.
     def test_invalid_geometry_fails_before_writing_a_figure(self):
         bad = [[.5, .5, .5, -.1, .2, .2], [.5, .5, .5, .1, 0, .2],
                [.5, .5, float('nan'), .1, .2, .2], [.5, .5, .5, .1, .2],

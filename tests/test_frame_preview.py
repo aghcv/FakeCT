@@ -44,6 +44,9 @@ class FramePreviewTests(unittest.TestCase):
                                      (np.abs(k-3) < 2) & (i >= 10) & (j >= 10)}
         self.resolved = {'crop_low_ijk': (0, 0, 0), 'spacing_ijk_mm': spacing.tolist()}
 
+    # Purpose: Verify portable frame views preserve geometry and suppress unsafe/untrusted arrows.
+    # Inputs: 31-sample quarter-circle frame with three unreliable samples and injected script status.
+    # Outputs: Trusted normal arrows, preserved arrays, hashed portable artifacts, escaped text, and overwrite refusal.
     def test_portable_views_preserve_frame_and_only_show_trusted_normal_arrows(self):
         original = copy.deepcopy(self.frame)
         target = self.arrays['candidates'].copy()
@@ -86,6 +89,9 @@ class FramePreviewTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             render_centerline_frames({'main': self.frame}, self.arrays, self.resolved, self.config, self.output)
 
+    # Purpose: Verify unreliable straight frames show only tangent directions.
+    # Inputs: Quarter-circle display frame marked fully unreliable with zero curvature.
+    # Outputs: No inner/outer/binormal arrows and tangent arrows retained.
     def test_unreliable_reference_never_gets_inner_outer_or_binormal_arrows(self):
         self.frame['reliable'][:] = False
         self.frame['normal_status'] = ['straight; transported display frame']*31
@@ -100,6 +106,9 @@ class FramePreviewTests(unittest.TestCase):
         self.assertNotIn('Inner N (trusted curvature)', document)
         self.assertNotIn('Outer -N (trusted curvature)', document)
 
+    # Purpose: Verify frame rendering rejects malformed evidence before writing.
+    # Inputs: Wrong xyz shape, NaN normals, integer reliability, and reversed parent fractions.
+    # Outputs: ValueError for each invalid frame with empty output directory.
     def test_invalid_frames_fail_before_writing_artifacts(self):
         for key, value in (('xyz_mm', np.ones((4, 2))), ('normal', np.full((31, 3), np.nan)),
                            ('reliable', np.ones(31, dtype=int)),
@@ -110,6 +119,9 @@ class FramePreviewTests(unittest.TestCase):
                     render_centerline_frames({'main': frame}, self.arrays, self.resolved, self.config, self.output)
                 self.assertEqual(list(self.output.iterdir()), [])
 
+    # Purpose: Verify arrows retain sign and dense target context obeys its mesh budget.
+    # Inputs: Positive/negative x arrows and full 64-cubed anisotropic target.
+    # Outputs: Correct shaft endpoints, increased stride, at most 100000 faces, and correct physical bounds.
     def test_arrow_shafts_keep_signed_direction_and_context_sampling_is_bounded(self):
         points = np.array([[10, 20, 30], [20, 30, 40]])
         lines = _arrow_lines(points, [[1, 0, 0], [-1, 0, 0]], 4)

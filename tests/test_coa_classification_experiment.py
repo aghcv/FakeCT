@@ -108,6 +108,9 @@ class ClassificationExperimentTests(unittest.TestCase):
             self.stack.enter_context(patch.object(module, 'CODE_FILES', self.f.code_files))
         self.f.complete_comparison()
 
+    # Purpose: Preserve reviewed experiment panels while disabling severity loss.
+    # Inputs: Completed supervised 200-epoch comparison with five folds.
+    # Outputs: Classification plan retains folds, crops, hashes, and initialization with regression weight zero.
     def test_plan_preserves_five_folds_panels_crops_and_initialization(self):
         lock = exp.plan(self.f.c)
         self.assertEqual(lock['schema_version'], exp.SCHEMA)
@@ -132,6 +135,9 @@ class ClassificationExperimentTests(unittest.TestCase):
                      self.f.stage_folder() / 'final-test/proposal-audit.json'):
             self.assertEqual(lock['dependency_sha256'][str(path)], base.sha256(path))
 
+    # Purpose: Enforce classification-only fixed-budget configuration.
+    # Inputs: Nonzero/NaN regression weight, 100 epochs, interval 30, or extra learning rate.
+    # Outputs: Valid INI loads; each unsupported setting raises ValueError.
     def test_config_enforces_zero_loss_weight_and_fixed_budget(self):
         path = self.f.root / 'classification.ini'
         path.write_bytes(self.f.content)
@@ -149,6 +155,9 @@ class ClassificationExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unsupported'):
             exp.load_config(path)
 
+    # Purpose: Protect parent and comparison directories from classification output.
+    # Inputs: Parent/comparison paths, their descendants, and a shared ancestor.
+    # Outputs: Configuration rejects every non-separate output.
     def test_config_protects_parent_and_comparison_directories(self):
         path = self.f.root / 'classification.ini'
         for output in (self.f.parent, self.f.parent / 'nested', self.f.comparison,
@@ -158,6 +167,9 @@ class ClassificationExperimentTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'separate'):
                     exp.load_config(path)
 
+    # Purpose: Require the completed supervised comparison contract.
+    # Inputs: Comparison lock with changed schema, epochs, parent path, or original regression weight.
+    # Outputs: Planning rejects each substituted comparison.
     def test_comparison_must_be_the_completed_supervised_200_epoch_control(self):
         path = self.f.comparison / 'experiment-lock.json'
         original = base.checked_json(path)
@@ -173,6 +185,9 @@ class ClassificationExperimentTests(unittest.TestCase):
                     exp.plan(self.f.c)
                 base.write_json(path, original)
 
+    # Purpose: Require clean completion of every comparison fold.
+    # Inputs: INCOMPLETE or failure.json marker in a comparison stage.
+    # Outputs: Planning raises ValueError for unfinished comparison evidence.
     def test_missing_or_failed_comparison_fold_blocks_plan(self):
         folder = self.f.comparison_folder()
         for name in ('INCOMPLETE', 'failure.json'):
@@ -183,6 +198,9 @@ class ClassificationExperimentTests(unittest.TestCase):
                     exp.plan(self.f.c)
                 marker.unlink()
 
+    # Purpose: Verify comparison budget, panel, and initialization receipts.
+    # Inputs: Altered epoch/update counts, validation data, initial hash, or training IDs.
+    # Outputs: Planning rejects completion and initialization mismatches.
     def test_comparison_training_selection_and_weight_identity_are_checked(self):
         folder = self.f.comparison_folder()
         old_receipt = base.checked_json(folder / 'classifier/receipt.json')
@@ -199,6 +217,9 @@ class ClassificationExperimentTests(unittest.TestCase):
                 base.write_json(folder / 'classifier/receipt.json', old_receipt)
                 base.write_json(folder / 'results.json', old_result)
 
+    # Purpose: Verify complete training-only comparison history.
+    # Inputs: Missing epoch, selection metric, held-out training pair, or incorrect updates.
+    # Outputs: Planning rejects each malformed fixed-budget history.
     def test_incomplete_or_heldout_selection_history_blocks_plan(self):
         path = self.f.comparison_folder() / 'classifier/history.json'
         original = base.checked_json(path)
@@ -218,6 +239,9 @@ class ClassificationExperimentTests(unittest.TestCase):
                     exp.plan(self.f.c)
                 base.write_json(path, original)
 
+    # Purpose: Reject recentered crops in either comparison split.
+    # Inputs: Training and final-test proposal origins changed to [1,0,0].
+    # Outputs: Planning raises ValueError for crop coordinate differences.
     def test_comparison_cannot_recenter_training_or_heldout_crops(self):
         for name in ('proposal-audit.json', 'final-test/proposal-audit.json'):
             path = self.f.comparison_folder() / name
@@ -227,12 +251,18 @@ class ClassificationExperimentTests(unittest.TestCase):
                 exp.plan(self.f.c)
             base.write_json(path, original)
 
+    # Purpose: Reject duplicated held-out comparison predictions.
+    # Inputs: One repeated final prediction in the comparison results.
+    # Outputs: Planning rejects invalid completion evidence.
     def test_duplicate_comparison_predictions_block_plan(self):
         path = self.f.comparison_folder() / 'results.json'
         self.f.rewrite(path, lambda v: v['final_predictions'].append(deepcopy(v['final_predictions'][0])))
         with self.assertRaisesRegex(ValueError, 'completion, initialization'):
             exp.plan(self.f.c)
 
+    # Purpose: Verify classification freezing preserves ancestors and pins implementations.
+    # Inputs: New freeze, repeated freeze, then changed live and copied source files.
+    # Outputs: Ancestor hashes remain intact; repeat freeze and implementation mutations are rejected.
     def test_freeze_is_separate_and_pins_live_and_snapshot_sources(self):
         parent_before = base.sha256(self.f.parent / 'experiment-lock.json')
         comparison_before = base.sha256(self.f.comparison / 'experiment-lock.json')
@@ -251,6 +281,9 @@ class ClassificationExperimentTests(unittest.TestCase):
                     exp.inspect_lock(self.f.c, self.f.content)
                 path.write_bytes(original)
 
+    # Purpose: Verify all parent/comparison dependencies and INI bytes stay frozen.
+    # Inputs: Modified locks, locator, comparison history/checkpoint/predictions, or input bytes.
+    # Outputs: Inspection rejects each changed pinned artifact or input.
     def test_parent_and_comparison_artifacts_cannot_change_after_freeze(self):
         exp.freeze(self.f.c, self.f.content)
         paths = (self.f.parent / 'experiment-lock.json',
@@ -268,6 +301,9 @@ class ClassificationExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'input changed'):
             exp.inspect_lock(self.f.c, self.f.content + b'\n')
 
+    # Purpose: Verify classification runtime applies the intended settings.
+    # Inputs: Parent runtime and classification plan with 200 epochs and zero regression weight.
+    # Outputs: Output and loss/budget change while geometry and parent config remain intact.
     def test_runtime_changes_only_output_epoch_budget_and_loss_weight(self):
         lock = exp.plan(self.f.c)
         parent_before = deepcopy(self.f.parent_c)
@@ -280,6 +316,9 @@ class ClassificationExperimentTests(unittest.TestCase):
         self.assertEqual(runtime['model'], self.f.runtime['model'])
         self.assertEqual(runtime['input.detail'], self.f.runtime['input.detail'])
 
+    # Purpose: Require independently bound classification-only smoke evidence.
+    # Inputs: Smoke with parent/new lock hashes and missing, zero, or nonzero regression weight.
+    # Outputs: Smoke passes only with the new lock, zero regression weight, and severity_trained false.
     def test_own_smoke_must_bind_new_lock_and_explicit_zero_weight(self):
         lock = exp.freeze(self.f.c, self.f.content)
         smoke = base.checked_json(self.f.parent / 'runtime-smoke.json')
@@ -300,6 +339,9 @@ class ClassificationExperimentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'classification-only loss'):
             exp.require_smoke(self.f.c, lock)
 
+    # Purpose: Verify held-out scoring follows training and hides untrained severity.
+    # Inputs: Mocked classification fit/read/score and one failed locator proposal.
+    # Outputs: Twelve predictions follow fit; severity scores are None and failed coverage remains visible.
     def test_fit_finishes_before_heldout_reads_and_outputs_hide_untrained_severity(self):
         import fakect_coa_classification_learning as classification
         import fakect_coa_rotation_learning as learning
@@ -364,6 +406,9 @@ class ClassificationExperimentTests(unittest.TestCase):
         self.assertFalse(result['locator_retrained'])
         self.assertFalse((self.f.output / 'stages' / stage['id'] / 'INCOMPLETE').exists())
 
+    # Purpose: Stop held-out reads when classifier completion violates the contract.
+    # Inputs: Invalid epoch/update counts, loss weight, severity flag, initialization, or validation IDs.
+    # Outputs: Stage raises ValueError before either reader or scorer runs.
     def test_fit_contract_failure_blocks_every_heldout_read(self):
         import fakect_coa_classification_learning as classification
         import fakect_coa_rotation_learning as learning
@@ -389,6 +434,9 @@ class ClassificationExperimentTests(unittest.TestCase):
 
 
 class ClassificationInventoryTests(unittest.TestCase):
+    # Purpose: Verify classification runtime pins inherited and added dependencies.
+    # Inputs: Budget CODE_FILES and classification modules/scripts.
+    # Outputs: All expected dependencies occur once in CODE_FILES.
     def test_runtime_extends_every_frozen_budget_dependency(self):
         self.assertTrue(set(exp.budget.CODE_FILES).issubset(exp.CODE_FILES))
         self.assertTrue({'src/fakect_coa_classification_experiment.py',

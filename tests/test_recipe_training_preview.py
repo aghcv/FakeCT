@@ -19,6 +19,9 @@ PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4
 
 
 class RecipeTrainingTargetTests(unittest.TestCase):
+    # Purpose: Verify recipe target previews use original selected lineage.
+    # Inputs: 7-cube fixture with labels 20/21, ROI-limited recipe scope, then legacy ID scope.
+    # Outputs: Recipe counts three selected targets; legacy counts seven with four outside ROI, and inputs stay intact.
     def test_recipe_uses_original_roi_selection_while_legacy_keeps_full_source_ids(self):
         from matplotlib.figure import Figure
         shape = (7, 7, 7)
@@ -110,6 +113,9 @@ class RecipeTrainingReportTests(unittest.TestCase):
         metadata = write_preview_report(self.output, self.report, '[train]\ntarget_scope = selected_lineage\n')
         return metadata, (self.output/'report.html').read_text()
 
+    # Purpose: Verify training preview explains ordered recipe sweeps and preflight requirements.
+    # Inputs: Lineage report with grow/narrow steps, parameter sweeps, baseline, and edited variant.
+    # Outputs: HTML embeds target image, orders steps, lists parameters, and states native preflight requirements.
     def test_order_sweeps_variant_parameters_and_native_preflight_are_explicit(self):
         metadata, document = self.write()
         self.assertIn('training-target.png', metadata['embedded_assets'])
@@ -131,6 +137,9 @@ class RecipeTrainingReportTests(unittest.TestCase):
         self.assertNotIn('Unchanged target outside ROI', document)
         self.assertNotIn('[edit] operation = erosion', document)
 
+    # Purpose: Escape untrusted recipe-plan fields in preview HTML.
+    # Inputs: Script/image payload inserted in definitions, sweep names, parameters, and validation scope.
+    # Outputs: Payload markup is escaped and HTML contains only its intended script.
     def test_recipe_plan_fields_cannot_insert_markup(self):
         payload = '<script>window.BAD=true</script><img src=x onerror=bad()>'
         plan = self.report['training_plan']

@@ -57,6 +57,9 @@ def landmark_records():
 
 
 class CalibrationAndOrientationTests(unittest.TestCase):
+    # Purpose: Verify native attenuation calibration records generator energy and precision.
+    # Inputs: 120 keV parameter/log fixture with 1/1/2 mm spacing.
+    # Outputs: Water coefficient 0.1614, rounding 0.00005, scale 10, and zero attenuation at -1000 HU.
     def test_water_scaling_energy_and_declared_rounding(self):
         result = evidence.calibration_evidence(PARAMETERS, LOG, [1, 1, 2])
         self.assertEqual(result['mu_water_cm_inverse'], .1614)
@@ -66,6 +69,9 @@ class CalibrationAndOrientationTests(unittest.TestCase):
         self.assertFalse(result['clinical_reconstruction'])
         self.assertEqual(result['zero_attenuation_HU'], -1000.)
 
+    # Purpose: Verify calibration rejects contradictory frozen metadata.
+    # Inputs: Mismatched energy, inconsistent water per-pixel coefficient, wrong spacing, or duplicate energy.
+    # Outputs: ValueError for every contradictory calibration case.
     def test_energy_spacing_and_perpixel_contradictions_fail(self):
         for par, log, spacing in (
                 (PARAMETERS, LOG.replace('120.0000', '80.0000'), [1, 1, 2]),
@@ -76,6 +82,9 @@ class CalibrationAndOrientationTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     evidence.calibration_evidence(par, log, spacing)
 
+    # Purpose: Verify anatomical landmarks establish signed voxel-center orientation.
+    # Inputs: Left/right lungs/kidneys, sternum/vertebra/head/feet on 100-cubed anisotropic grid.
+    # Outputs: L/P/S axes, expected nonidentity RAS affine, five checks, and no registration claim.
     def test_landmarks_prove_nonidentity_ras_affine_at_voxel_centers(self):
         result = evidence.landmark_orientation(landmark_records(), PARAMETERS, [100, 100, 100], [1, 1, 2], [-50, -50, 0])
         self.assertEqual(result['native_axis_directions'], ['L', 'P', 'S'])
@@ -85,6 +94,9 @@ class CalibrationAndOrientationTests(unittest.TestCase):
         affine = np.asarray(result['affine_ras_ijk'])
         self.assertTrue(np.allclose(affine @ [10, 20, 30, 1], [39.5, 29.5, 61, 1]))
 
+    # Purpose: Verify contradictory or incomplete landmarks cannot be repaired silently.
+    # Inputs: Mirrored x landmark bounds and missing foot landmark.
+    # Outputs: ValueError for generator-axis contradiction and missing independent landmarks.
     def test_mirrored_or_missing_landmarks_cannot_be_silently_reoriented(self):
         records = landmark_records()
         for row in records:
@@ -95,6 +107,9 @@ class CalibrationAndOrientationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing independent'):
             evidence.landmark_orientation(landmark_records()[:-1], PARAMETERS, [100]*3, [1, 1, 2], [-50, -50, 0])
 
+    # Purpose: Verify orientation requires unrotated documented native geometry.
+    # Inputs: 15-degree rotation, reversed axis note, or incorrect grid origin.
+    # Outputs: ValueError for each unsupported orientation contract.
     def test_rotation_missing_axis_notes_or_wrong_origin_are_rejected(self):
         for par, origin in ((PARAMETERS.replace('phan_rotx = 0', 'phan_rotx = 15'), [-50, -50, 0]),
                             (PARAMETERS.replace('feet to the head', 'head to the feet'), [-50, -50, 0]),
@@ -156,6 +171,9 @@ class FrozenCaseEvidenceTests(unittest.TestCase):
         return {'path': str(path), 'bytes': stat.st_size, 'mtime_ns': stat.st_mtime_ns,
                 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
 
+    # Purpose: Verify frozen case evidence binds calibration, orientation, and source metadata.
+    # Inputs: Checksummed parameter/log/generator/audit/surface fixtures for case 260602 frame 1.
+    # Outputs: Expected water calibration and axes, required dependencies, and finite JSON.
     def test_case_evidence_binds_calibration_landmarks_and_external_dependencies(self):
         result = evidence.case_evidence(self.row)
         self.assertEqual(result['calibration']['mu_water_cm_inverse'], .1614)
@@ -164,6 +182,9 @@ class FrozenCaseEvidenceTests(unittest.TestCase):
         self.assertTrue({str(self.par), str(self.log), str(self.generator), str(self.surface_path), str(self.audit_path)} <= paths)
         json.dumps(result, allow_nan=False)
 
+    # Purpose: Verify changed calibration or surface bytes invalidate frozen evidence.
+    # Inputs: Modified water log then overwritten surface-cache JSON.
+    # Outputs: ValueError for both checksum mismatches.
     def test_modified_log_and_surface_cache_fail_frozen_binding(self):
         self.log.write_text(LOG.replace('0.1614', '0.1600'))
         with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
@@ -173,6 +194,9 @@ class FrozenCaseEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
             evidence.case_evidence(self.row)
 
+    # Purpose: Verify case evidence enforces frame scope and native payload byte lengths.
+    # Inputs: Case changed to frame 2 or attenuation byte count changed to 12.
+    # Outputs: ValueError for unsupported frame and inconsistent byte lengths.
     def test_unsupported_frame_and_wrong_source_size_fail(self):
         changed = deepcopy(self.row)
         changed['frame'] = 2

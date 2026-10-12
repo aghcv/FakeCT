@@ -179,12 +179,18 @@ class ContinuationMetadataTests(unittest.TestCase):
             fixture.prepared if prepared is None else prepared,
             fixture.documents() if documents is None else documents)
 
+    # Purpose: Verify reviewed proposals join exactly without changing image-derived crops.
+    # Inputs: Synthetic parent samples, preparation, audit, and robustness documents.
+    # Outputs: Every sample joins with its original proposal origins.
     def test_exact_review_join_keeps_image_only_proposals(self):
         proposals = self.validate()
         self.assertEqual(set(proposals), {r['sample_id'] for r in self.fixture.rows})
         for row in self.fixture.proposals:
             self.assertEqual(proposals[row['sample_id']]['origins_kji'], row['origins_kji'])
 
+    # Purpose: Exclude reserved test partitions from classifier continuation.
+    # Inputs: Sample changed to test split, reserved ID, or test family.
+    # Outputs: Sample validation raises ValueError for each leakage route.
     def test_reserved_test_split_id_and_family_cannot_enter_continuation(self):
         changes = [dict(split='test'), dict(sample_id='test:never_open'),
                    dict(anatomy_family='test_family')]
@@ -195,6 +201,9 @@ class ContinuationMetadataTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.validate_samples(lock)
 
+    # Purpose: Prevent partition overlap in family, case, reference, and source identity.
+    # Inputs: Validation sample reusing a training family, case, mask hash, or source.
+    # Outputs: Sample validation rejects every cross-partition identity collision.
     def test_family_case_reference_and_source_do_not_cross_partitions(self):
         for key in ('anatomy_family', 'case_id', 'original_reference_mask_sha256', 'source_atn'):
             with self.subTest(key=key):
@@ -203,6 +212,9 @@ class ContinuationMetadataTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     exp.validate_samples(lock)
 
+    # Purpose: Require exact proposal membership and split assignments.
+    # Inputs: Missing, duplicate, extra, or wrong-split audit records.
+    # Outputs: Review validation raises ValueError.
     def test_missing_duplicate_extra_or_wrong_split_proposal_rejected(self):
         mutations = (
             lambda rows: rows.pop(),
@@ -217,6 +229,9 @@ class ContinuationMetadataTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.validate(documents=docs)
 
+    # Purpose: Require proposal coverage of original anatomy and removed tissue.
+    # Inputs: Target/before coverage 0.8, removed coverage 0.99, or failed coverage flag.
+    # Outputs: Review validation rejects each insufficient proposal.
     def test_review_cannot_approve_missing_erosion_or_original_anatomy(self):
         mutations = (
             lambda rows: rows[0].update(target_coverage=.8),
@@ -232,6 +247,9 @@ class ContinuationMetadataTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.validate(documents=docs)
 
+    # Purpose: Require each robustness gate independently.
+    # Inputs: Passed summary with one robustness gate flag set false.
+    # Outputs: Review validation raises ValueError for every failed gate.
     def test_each_robustness_gate_is_required_even_if_summary_passed(self):
         for key in ('passed', 'response_gate_passed', 'native_coverage_gate_passed',
                     'image_dependence_gate_passed'):
@@ -241,6 +259,9 @@ class ContinuationMetadataTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.validate(documents=docs)
 
+    # Purpose: Verify robustness flags cannot conceal invalid numeric evidence.
+    # Inputs: Response error 2, blank error 0, or ineligible validation probes.
+    # Outputs: Review validation rejects each altered probe family.
     def test_robustness_flags_cannot_override_bad_numeric_probes(self):
         for field, value in [('relative_response_error', 2.), ('blank_error_mm', 0.),
                              ('eligible', False)]:
@@ -255,6 +276,9 @@ class ContinuationMetadataTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.validate(documents=docs)
 
+    # Purpose: Verify preparation and copied review lock match parent evidence.
+    # Inputs: Missing preparation row or changed pilot role in the copied lock.
+    # Outputs: Review validation rejects both mismatches.
     def test_preparation_and_copied_parent_lock_must_match(self):
         prepared = deepcopy(self.fixture.prepared)
         prepared['samples'].pop()
@@ -265,6 +289,9 @@ class ContinuationMetadataTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.validate(documents=docs)
 
+    # Purpose: Prevent reviewed crop geometry from moving after prediction.
+    # Inputs: First origin or proposal-box coordinate increased by one.
+    # Outputs: Review validation raises ValueError.
     def test_proposal_geometry_cannot_be_moved_after_image_prediction(self):
         for field in ('origins_kji', 'proposal_boxes'):
             with self.subTest(field=field):
@@ -273,6 +300,9 @@ class ContinuationMetadataTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.validate(documents=docs)
 
+    # Purpose: Verify continuation runtime retains inherited image geometry.
+    # Inputs: Parent configuration and new two-epoch classifier settings.
+    # Outputs: New output/epochs apply, overview/detail geometry remains equal, and parent config is intact.
     def test_runtime_reuses_geometry_and_applies_new_classifier_settings(self):
         lock = {'parent_config': deepcopy(self.fixture.parent_config)}
         runtime = exp.runtime_config(self.fixture.c, lock)
@@ -282,6 +312,9 @@ class ContinuationMetadataTests(unittest.TestCase):
         self.assertEqual(runtime['input.overview'], self.fixture.parent_config['input.overview'])
         self.assertEqual(self.fixture.parent_config['experiment']['output_directory'], str(self.fixture.parent))
 
+    # Purpose: Reject test samples before TensorFlow or image access.
+    # Inputs: Verified lock containing a test-split sample and configure/input spies.
+    # Outputs: Fit raises ValueError without configuring TensorFlow or opening inputs.
     def test_fit_rejects_test_before_tensorflow_or_image_reader(self):
         fixture = self.fixture
         fixture.output.mkdir()
@@ -296,6 +329,9 @@ class ContinuationMetadataTests(unittest.TestCase):
             configure.assert_not_called()
             inputs.assert_not_called()
 
+    # Purpose: Verify fit uses the inspected lock rather than caller-supplied samples.
+    # Inputs: Caller training panel replaced by an inspected lock containing a test row.
+    # Outputs: Fit rejects the verified test row before TensorFlow or image access.
     def test_fit_uses_verified_lock_instead_of_unverified_caller_panel(self):
         fixture = self.fixture
         fixture.output.mkdir()
@@ -310,6 +346,9 @@ class ContinuationMetadataTests(unittest.TestCase):
             configure.assert_not_called()
             inputs.assert_not_called()
 
+    # Purpose: Require exact replay of native voxel origins and finite boxes.
+    # Inputs: Proposal origin shifted by one, then a proposal box containing NaN.
+    # Outputs: Replay rejects altered origins and nonfinite geometry.
     def test_proposal_replay_demands_exact_voxel_origin(self):
         proposal = self.fixture.proposals[0]
         origins = deepcopy(proposal['origins_kji'])
@@ -323,6 +362,9 @@ class ContinuationMetadataTests(unittest.TestCase):
             learning.compare_proposal(proposal, proposal['predicted_box'],
                                       proposal['origins_kji'], boxes)
 
+    # Purpose: Verify continuation provenance pins the reviewed locator and dependencies.
+    # Inputs: Synthetic parent/review artifacts and selected locator epoch 2.
+    # Outputs: Contract records epoch 2, checkpoint digest, and required artifact hashes.
     def test_source_contract_pins_parent_review_and_exact_checkpoint(self):
         fixture = self.fixture
         with fixture.parsed_parent():
@@ -333,6 +375,9 @@ class ContinuationMetadataTests(unittest.TestCase):
                     str(fixture.review / 'results.json'), str(fixture.review / 'proposal-audit.json')}
         self.assertTrue(expected <= set(contract['dependency_sha256']))
 
+    # Purpose: Reject substituted parent, checkpoint, or selected-epoch provenance.
+    # Inputs: Changed parent path/hash, checkpoint path/hash, epoch 1, or checkpoint bytes.
+    # Outputs: Source contract validation raises ValueError for each substitution.
     def test_source_contract_rejects_checkpoint_parent_and_epoch_substitution(self):
         changes = [('parent_experiment', str(self.fixture.root / 'other')),
                    ('parent_lock_sha256', '0' * 64),
@@ -349,6 +394,9 @@ class ContinuationMetadataTests(unittest.TestCase):
         with self.fixture.parsed_parent(), self.assertRaises(ValueError):
             exp.source_contract(self.fixture.c)
 
+    # Purpose: Reject rewritten reviews even when their sidecars are refreshed.
+    # Inputs: Frozen continuation followed by changed review results and a new checksum.
+    # Outputs: Initial inspection matches; later dependency inspection raises ValueError.
     def test_frozen_dependency_rejects_rewritten_review_with_new_sidecar(self):
         fixture = self.fixture
         data = b'synthetic continuation input\n'
@@ -361,6 +409,9 @@ class ContinuationMetadataTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '[Dd]ependency|[Cc]hanged'):
                 exp.inspect_lock(fixture.c, data)
 
+    # Purpose: Enforce strict continuation configuration and independent output.
+    # Inputs: Valid INI, then unknown fields, NaN learning rate, or output beneath parent.
+    # Outputs: Valid config round-trips and each malformed variant raises ValueError.
     def test_strict_ini_rejects_unknown_fields_nan_and_parent_output(self):
         fixture = self.fixture
         config_path = fixture.root / 'classifier.ini'
@@ -397,6 +448,9 @@ class ContinuationTensorFlowTests(unittest.TestCase):
         MiniVolume.accessed = []
         ShiftedValidationVolume.returned_mask_value = None
 
+    # Purpose: Verify classifier continuation trains and reloads a frozen locator encoder.
+    # Inputs: Saved small TensorFlow locator, synthetic panels, verified proposals, and two training epochs.
+    # Outputs: Eight updates use one trace; reload matches, encoder hashes stay fixed, and test IDs stay unread.
     def test_saved_locator_classifier_fit_single_trace_and_reload(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = SyntheticSources(directory)

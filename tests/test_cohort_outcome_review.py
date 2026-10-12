@@ -39,11 +39,17 @@ class CohortOutcomeReviewTests(unittest.TestCase):
     def reasons(self, row):
         return {issue['reason'] for issue in row['issues']}
 
+    # Purpose: Verify resistant obstacles are ordinary dilation outcomes.
+    # Inputs: Dilation with 20 accepted and 80 blocked proposed voxels.
+    # Outputs: No review flags and acceptance fraction 0.2.
     def test_blocked_dilation_is_reported_without_failure(self):
         row = review.summarize_step(self.step('dilation'))
         self.assertEqual(row['review_state'], 'no_flags')
         self.assertEqual(row['dilation_acceptance_fraction'], .2)
 
+    # Purpose: Verify erosion review distinguishes partial release from ineffective edits.
+    # Inputs: 20 released of 100 proposed voxels and then zero released with unresolved recipients.
+    # Outputs: Needs-review partial release at 0.2 and rejection for no active effect.
     def test_partial_reassignment_requires_review_but_noop_rejects(self):
         row = review.summarize_step(self.step(unresolved_voxels=80, proposed_removed_voxels=100))
         self.assertEqual(row['review_state'], 'needs_review')
@@ -52,6 +58,9 @@ class CohortOutcomeReviewTests(unittest.TestCase):
         self.assertEqual(row['review_state'], 'reject')
         self.assertIn('active_edit_has_no_effect', self.reasons(row))
 
+    # Purpose: Verify erosion guard outcomes affect review severity.
+    # Inputs: Reduced connected guard, disconnected guard, and skipped edit.
+    # Outputs: Review for reduced distance, rejection for disconnection, and skipped-edit issue.
     def test_guard_reduction_review_and_guard_violation_reject(self):
         guard = {'status': 'reduced', 'connectivity_ok': True, 'baseline_target_voxels': 50,
                  'retained_volume_ratio': .7, 'attempts': [{}, {}]}
@@ -63,6 +72,9 @@ class CohortOutcomeReviewTests(unittest.TestCase):
         step['accepted_distance_mm'] = 0
         self.assertIn('erosion_guard_skipped_edit', self.reasons(review.summarize_step(step)))
 
+    # Purpose: Verify connectivity review considers the full target crop.
+    # Inputs: Full components increase 2 to 3 while ROI components stay 1.
+    # Outputs: Needs-review state and full-target-component-count issue.
     def test_component_count_warning_uses_full_crop_not_clipped_roi(self):
         native = {'full_target_components_before': 2, 'full_target_components_after': 3,
                   'components_before': 1, 'components_after': 1}
@@ -70,6 +82,9 @@ class CohortOutcomeReviewTests(unittest.TestCase):
         self.assertEqual(row['review_state'], 'needs_review')
         self.assertIn('full_target_component_count_changed', self.reasons(row))
 
+    # Purpose: Verify only declared baseline operations may be baseline-equivalent noops.
+    # Inputs: Same zero-change sample marked operation none then recipe.
+    # Outputs: No flags for baseline and reject for ineffective recipe.
     def test_baseline_noop_is_expected_but_edited_baseline_is_rejected(self):
         sample = self.sample(operation='none', baseline_equivalent=True, zero_change=True,
             step_outcomes=[self.step(operation='none', status='no_change', requested_distance_mm=0,
@@ -78,11 +93,17 @@ class CohortOutcomeReviewTests(unittest.TestCase):
         sample['operation'] = 'recipe'
         self.assertEqual(review.summarize_sample(sample)['review_state'], 'reject')
 
+    # Purpose: Verify failed variants retain their diagnostic error.
+    # Inputs: Failed sample with no steps and error no recipient.
+    # Outputs: Reject state with the original no-recipient error.
     def test_failed_variant_preserves_error(self):
         row = review.summarize_sample(self.sample(status='failed', error='no recipient', step_outcomes=[]))
         self.assertEqual(row['review_state'], 'reject')
         self.assertEqual(row['error'], 'no recipient')
 
+    # Purpose: Verify cohort review detects duplicates/input drift and protects artifacts.
+    # Inputs: Two matching preflights, unsafe project title, changed input INI, and repeated review output.
+    # Outputs: Duplicate findings, escaped HTML, drift issue, preserved preflights, and overwrite protection.
     def test_project_reports_duplicate_crops_and_changed_inputs_without_touching_artifacts(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -121,6 +142,9 @@ class CohortOutcomeReviewTests(unittest.TestCase):
                 review.write_review(result, output)
             review.write_review(result, output, overwrite=True)
 
+    # Purpose: Verify outcome review rejects incomplete or inconsistent preflight evidence.
+    # Inputs: Empty document, sample without steps, and variant-count mismatch.
+    # Outputs: ValueError for invalid schema plus rejection/count-mismatch issues.
     def test_invalid_document_and_missing_steps_reject(self):
         with self.assertRaises(ValueError):
             review.summarize_preflight({}, 'a')
@@ -130,6 +154,9 @@ class CohortOutcomeReviewTests(unittest.TestCase):
         self.assertIn('preflight_variant_count_mismatch_or_empty',
                       self.reasons(review.summarize_preflight(document, 'a')))
 
+    # Purpose: Verify duplicate comparison keys require matching known geometry.
+    # Inputs: Missing voxel geometry and otherwise identical summaries with different spacing.
+    # Outputs: Unknown geometry yields no key and different spacing yields distinct keys.
     def test_hash_comparisons_require_known_voxel_geometry(self):
         self.assertIsNone(review._geometry_key({'voxel_geometry': {}}))
         a = review.summarize_sample(self.sample())
@@ -137,6 +164,9 @@ class CohortOutcomeReviewTests(unittest.TestCase):
         b['voxel_geometry']['spacing_ijk_mm'] = [.8, .8, .8]
         self.assertNotEqual(review._geometry_key(a), review._geometry_key(b))
 
+    # Purpose: Verify distance-response audits compare each axis at fixed companion settings.
+    # Inputs: 3x5 growth/erosion sweep then repeated removal count and target-mask hash.
+    # Outputs: Eight increasing clean curves and explicit equal-count/duplicate-mask warnings.
     def test_distance_audit_holds_other_axes_fixed_and_detects_quantization(self):
         samples = []
         for grow in (1., 2., 3.):
@@ -160,6 +190,9 @@ class CohortOutcomeReviewTests(unittest.TestCase):
         self.assertIn('equal_change_counts_at_distinct_distances', self.reasons(affected))
         self.assertIn('distance_axis_contains_duplicate_target_masks', self.reasons(affected))
 
+    # Purpose: Verify guard backoff can trigger nonmonotonic severity warnings.
+    # Inputs: Requested erosions 1/2/3 with accepted distances 1/2/1.5 and removals 20/40/30.
+    # Outputs: Nonmonotonic change and retention flags in the distance response.
     def test_backoff_can_reverse_achieved_severity_and_is_flagged(self):
         samples = []
         for request, accepted, removed, ratio in ((1., 1., 20, .8), (2., 2., 40, .6), (3., 1.5, 30, .7)):

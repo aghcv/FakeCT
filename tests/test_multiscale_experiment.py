@@ -20,6 +20,9 @@ def row(case, variant, score, baseline=False, dilation=1, split='train'):
 
 
 class ExperimentTests(unittest.TestCase):
+    # Purpose: Verify multiscale configs reject unchecked budgets and label acceptance settings.
+    # Inputs: Archived pilot INI with oversized chunk budget, unknown model key, or silent acceptance.
+    # Outputs: Expected default detail shape and ValueError for every invalid config.
     def test_config_rejects_unknown_parameter_and_invalid_budget(self):
         import tempfile
         p=Path(__file__).resolve().parents[1]/'archive/research/configs/models/coa-multiscale-pilot.ini'
@@ -32,6 +35,9 @@ class ExperimentTests(unittest.TestCase):
                 f=Path(d)/'config.ini';f.write_text(text)
                 with self.assertRaises(ValueError):e.load_config(f)
 
+    # Purpose: Verify annotation joins require unique matching identities and finite targets.
+    # Inputs: One correct annotation then missing/duplicate/family-mismatched/unknown/NaN labels.
+    # Outputs: One joined row and ValueError for each invalid annotation panel.
     def test_join_requires_exact_ids_case_family_and_known_labels(self):
         rows=[row('a','x',.3)]
         labels=[dict(rows[0]['annotation'],sample_id='a:x',case_id='a',anatomy_family='a')]
@@ -41,6 +47,9 @@ class ExperimentTests(unittest.TestCase):
                        [dict(labels[0],**{e.SCORE:float('nan')})]]:
             with self.assertRaises(ValueError):e.join_annotations(rows,broken)
 
+    # Purpose: Verify pilot selection balances classes with matched companion edits.
+    # Inputs: TRAIN/validation/test originals and siblings at two dilation levels.
+    # Outputs: Eight unique development samples, four positives, fixed dilation level, and no test rows.
     def test_selection_balances_and_matches_companion_without_test_samples(self):
         rows=[]
         for case,split in [('a','train'),('b','validation'),('c','test')]:
@@ -55,6 +64,9 @@ class ExperimentTests(unittest.TestCase):
         self.assertTrue(all(r['baseline'] or r['parameters']['arch_outer_expand']['distance_mm']==1 for r in selected))
         self.assertEqual(len({r['sample_id'] for r in selected}),len(selected))
 
+    # Purpose: Verify box targets use native voxel faces and padded physical overview extent.
+    # Inputs: Offset anisotropic 4x5x6 target mask and 10x12x14 overview.
+    # Outputs: Normalized box center and extent match physical face coordinates.
     def test_bbox_uses_padded_physical_extent_and_voxel_faces(self):
         mask=np.zeros((4,5,6),np.uint8);mask[1:3,2:4,1:5]=1
         v=SimpleNamespace(mask_after=mask,mask_origin_ijk=np.array([4,5,6]),spacing_ijk_mm=(.5,1.,2.))
@@ -65,6 +77,9 @@ class ExperimentTests(unittest.TestCase):
         np.testing.assert_allclose(b[:3],(lo+hi)/2/extent)
         np.testing.assert_allclose(b[3:],(hi-lo)/extent)
 
+    # Purpose: Verify predicted boxes produce physically consistent image-only crop origins.
+    # Inputs: Normalized predicted box and anisotropic overview/detail grids.
+    # Outputs: Box centers/extents roundtrip to origins and ordered longitudinal proposals.
     def test_proposals_roundtrip_physical_origins_no_mask_input(self):
         ov={'image':np.zeros((10,12,14)), 'spacing_ijk_mm':(1.5,3.,8.)}
         c={'input.detail':{'shape_kji':[16,16,16], 'spacing_ijk_mm':[.5,.75,1.]}}
@@ -75,6 +90,9 @@ class ExperimentTests(unittest.TestCase):
             np.testing.assert_allclose(b[3:]*extent,16*np.array([1,.75,.5]),atol=1e-6)
         self.assertLess(origins[0][0],origins[1][0])
 
+    # Purpose: Verify coverage separately measures removed targets across proposal unions.
+    # Inputs: Mostly dilated 4-cubed mask with distant removed voxel and partial/full proposal unions.
+    # Outputs: Partial removal coverage zero and full union removal/change coverage one.
     def test_coverage_union_and_removed_cannot_hide_in_dilation(self):
         before=np.zeros((4,4,4),np.uint8);before[0,0,0]=1;before[3,3,3]=1
         after=np.ones_like(before);after[3,3,3]=0
@@ -87,12 +105,18 @@ class ExperimentTests(unittest.TestCase):
         self.assertEqual(full['removed_coverage'],1.)
         self.assertEqual(full['changed_coverage'],1.)
 
+    # Purpose: Verify unchanged baselines do not supply change-coverage evidence.
+    # Inputs: Equal 2-cubed before/after masks and full proposal.
+    # Outputs: changed_coverage is None.
     def test_empty_baseline_changes_are_not_coverage_evidence(self):
         a=np.ones((2,2,2),np.uint8)
         v=SimpleNamespace(mask_before=a,mask_after=a,mask_origin_ijk=np.zeros(3,int),spacing_ijk_mm=(1,1,1))
         c={'input.detail':{'shape_kji':[2,2,2], 'spacing_ijk_mm':[1,1,1]}}
         self.assertIsNone(e.coverage(v,[[0,0,0]],c)['changed_coverage'])
 
+    # Purpose: Verify per-step edit accounting matches final net changes and order.
+    # Inputs: Valid expansion/two-erosion steps then changed removal count or reversed order.
+    # Outputs: Valid proof accepted and inconsistent/unsupported recipe evidence rejected.
     def test_no_cancellation_proof_rejects_unsupported_recipe(self):
         b=np.ones((2,2,2),np.uint8);a=b.copy();a[0,0,0]=0;a[1,1,1]=0
         v=SimpleNamespace(mask_before=b,mask_after=a)

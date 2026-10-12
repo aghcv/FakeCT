@@ -38,6 +38,9 @@ class VoxelEditingIntegrationTests(unittest.TestCase):
         for path, expected in fixture['input_hashes'].items():
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), expected, str(path))
 
+    # Purpose: Verify native crops represent the same physical anatomy at two resolutions.
+    # Inputs: 64- and 96-cubed signed-label fixtures with anisotropic spacing.
+    # Outputs: Exact cropped channels, mapped tissues, matched volumes within 8%, and unchanged sources.
     def test_two_resolutions_preserve_signed_native_channels_and_crop_geometry(self):
         volumes = []
         families = set()
@@ -71,6 +74,9 @@ class VoxelEditingIntegrationTests(unittest.TestCase):
         self.assertEqual(families, {'analytic-voxel-configuration'})
         self.assertLess(abs(volumes[1]-volumes[0])/volumes[0], .08)
 
+    # Purpose: Verify growth copies target signals while respecting protected tissues.
+    # Inputs: Native vessel fixture and expansion step with neighbor, bone, and skin obstacles.
+    # Outputs: Growth outside ROI, blocked obstacles, valid seed ownership, and unchanged source bytes.
     def test_dilation_exits_selector_and_preserves_neighbor_and_resistant_obstacles(self):
         fixture, config, resolved, arrays, _ = self.fixture()
         events = []
@@ -96,6 +102,9 @@ class VoxelEditingIntegrationTests(unittest.TestCase):
         np.testing.assert_array_equal(result['attenuation_proxy_per_pixel'][added], before['atn'].ravel()[owners[added]])
         self.assert_inputs_unchanged(fixture)
 
+    # Purpose: Verify eroded voxels receive nearby compatible tissue and its physical signal.
+    # Inputs: Native fixture and second recipe step with bounded recipient search.
+    # Outputs: Allowed recipient labels, matching attenuation, no unresolved voxels, and preserved untouched channels.
     def test_erosion_reassigns_compatible_labels_and_their_native_attenuation(self):
         fixture, config, resolved, arrays, _ = self.fixture()
         events = []
@@ -122,6 +131,9 @@ class VoxelEditingIntegrationTests(unittest.TestCase):
         np.testing.assert_array_equal(result['attenuation_proxy_per_pixel'][untouched], before['atn'][untouched])
         self.assert_inputs_unchanged(fixture)
 
+    # Purpose: Verify serial edits carry state forward and report final net changes.
+    # Inputs: Expansion followed by local narrowing on a native fixture.
+    # Outputs: Chained channels, correct added/removed masks, and unchanged input arrays and files.
     def test_serial_recipe_keeps_state_chain_net_masks_and_source_bytes(self):
         fixture, config, resolved, arrays, _ = self.fixture()
         snapshot = {k:v.copy() for k,v in arrays.items()}
@@ -140,6 +152,9 @@ class VoxelEditingIntegrationTests(unittest.TestCase):
             np.testing.assert_array_equal(arrays[key], original, err_msg=key)
         self.assert_inputs_unchanged(fixture)
 
+    # Purpose: Verify erosion safeguards measure the local edit scope.
+    # Inputs: 2.5 mm local narrowing with 0.4 volume floor and connectivity compared with no guards.
+    # Outputs: Reduced distance and removal, retained local volume above 0.4, and preserved component count.
     def test_local_safeguard_backs_off_without_untouched_parent_diluting_the_floor(self):
         fixture, config, resolved, arrays, _ = self.fixture()
         config = deepcopy(config)
