@@ -490,7 +490,7 @@ def render_global_preview(resolved, config, output):
 
 _HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FakeCT whole-phantom navigator</title>
+<title>syncoCT whole-phantom navigator</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#111a23;color:#e8f1f7}
 body{margin:0;padding:16px}h1{font-size:20px;margin:0 0 8px}p{line-height:1.5;margin:8px 0}

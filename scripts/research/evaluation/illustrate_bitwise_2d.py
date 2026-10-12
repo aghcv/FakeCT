@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render a pixel algorithm example using the actual FakeCT editing kernel.
+"""Render a pixel algorithm example using the actual syncoCT editing kernel.
 
 The inspected plane is inside an extruded synthetic 3D object. At unit spacing,
 its two-round four-neighbor Boolean masks equal the native six-neighbor proposals.
@@ -167,7 +167,7 @@ def generate(output, overwrite=False):
     fig.subplots_adjust(left=.045, right=.982, bottom=.24, top=.80, wspace=.24, hspace=.58)
     fig.text(.035, .968, 'Bitwise morphology → borrowing and label reassignment',
              size=23, weight='bold', color=INK, va='top')
-    fig.text(.035, .929, 'A pixelated algorithm example computed with the current FakeCT kernel. '
+    fig.text(.035, .929, 'A pixelated algorithm example computed with the current syncoCT kernel. '
              'Dilation and erosion each start from the same original grid.', size=11, color=MUTED)
     fig.text(.035, .897, 'Boolean mask T: 1 = selected artery, 0 = everything else.  '
              'Shifted copies N, S, E, W use face neighbors; original label IDs are kept separately.', size=10, color=INK)
@@ -242,7 +242,7 @@ def generate(output, overwrite=False):
     # One self-contained viewing page; vector/print formats remain separate exports.
     svg = (output/'bitwise-morphology-2d.svg').read_text()
     svg = svg[svg.index('<svg'):]
-    page = '<!doctype html><html lang="en"><meta charset="utf-8"><title>FakeCT pixel morphology</title>'
+    page = '<!doctype html><html lang="en"><meta charset="utf-8"><title>syncoCT pixel morphology</title>'
     page += '<style>body{font:16px system-ui;margin:24px;color:#172d42}svg{width:100%;height:auto}.toolbar{display:flex;gap:20px;flex-wrap:wrap}</style>'
     page += '<nav class="toolbar"><a href="bitwise-morphology-2d.png">PNG</a><a href="bitwise-morphology-2d.pdf">PDF</a><a href="bitwise-morphology-2d.svg">Editable SVG</a><a href="evidence.json">Exact pixel counts and labels</a></nav>'
     page += svg + '<p>Counts refer only to the displayed plane. Bitwise operations act on Boolean membership masks; they do not overwrite integer label IDs directly.</p></html>'

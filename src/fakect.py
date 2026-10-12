@@ -4390,7 +4390,7 @@ def run_pipeline(
 def main():
     import argparse
 
-    ap = argparse.ArgumentParser(description="Standalone FakeCT pipeline for STL meshes or VTI voxel volumes")
+    ap = argparse.ArgumentParser(description="Standalone syncoCT pipeline for STL meshes or VTI voxel volumes")
     ap.add_argument("--in", dest="in_mesh", required=True,
                     help="Input mesh (.stl/.obj/.ply), voxel image (.vti), or directory of VTI tiles")
     ap.add_argument("--spacing", type=float, default=None,

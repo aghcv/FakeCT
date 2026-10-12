@@ -327,7 +327,7 @@ def render_report(experiment_directory):
     description = ('Model 2 maps a supplied aorta mask to an estimated unedited reference. ' if mask_only else
                    'Model 1 maps attenuation to the observed aorta. Model 2 maps an aorta mask to an estimated unedited reference. ')
     fragments = ['<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-                 '<title>FakeCT · two-model training review</title><style>'+_STYLE+'</style></head><body><main>',
+                 '<title>syncoCT · two-model training review</title><style>'+_STYLE+'</style></head><body><main>',
                  '<header><span class="tag">Engineering pilot · provisional anatomy groups</span><h1>'+heading+'</h1>',
                  '<p>'+description+
                  'Reference differences identify synthetic expansion and narrowing; they are not established clinical diagnoses.</p>',

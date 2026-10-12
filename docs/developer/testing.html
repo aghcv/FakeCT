@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FakeCT · Testing and contribution guide</title>
+<title>syncoCT · Testing and contribution guide</title>
 <style>
 :root{color-scheme:light;--ink:#18283b;--muted:#536478;--accent:#08698b;--edge:#d6e3eb}
 *{box-sizing:border-box}body{margin:0;background:#f4f7fa;color:var(--ink);font:17px/1.65 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:36px 24px 64px}a{color:var(--accent)}header{border-bottom:3px solid var(--accent);padding-bottom:20px;margin-bottom:24px}h1{font-size:36px;line-height:1.2}h2{font-size:25px;margin-top:36px}h3{font-size:20px}p{margin:12px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#102337;color:#ecf7ff;padding:18px;border-radius:8px;font:14px/1.6 ui-monospace,monospace}code{font-family:ui-monospace,monospace}table{border-collapse:collapse;width:100%;background:white}th,td{padding:12px;text-align:left;border:1px solid var(--edge);vertical-align:top}th{background:#e8f3f8}.callout{padding:16px 20px;border-left:5px solid #087996;background:white}.muted{color:var(--muted)}nav{display:flex;gap:18px;flex-wrap:wrap}li{margin:8px 0}@media(max-width:650px){main{padding:24px 16px}h1{font-size:29px}table{font-size:14px}}
 </style>
 </head>
 <body><main>
-<header><p class="muted">FakeCT algorithm framework · Developer guide</p><h1>Protect the pipeline while changing it</h1>
+<header><p class="muted">syncoCT algorithm framework · Developer guide</p><h1>Protect the pipeline while changing it</h1>
 <nav><a href="index.html">Workflow guide</a><a href="contributing.html">Developer conventions</a><a href="api.html">API reference</a><a href="#setup">Install</a><a href="#coverage">Regression contracts</a><a href="#integration">Voxel integration</a><a href="#tensorflow">TensorFlow</a><a href="#contribute">Before a pull request</a></nav></header>
 <p>The portable tests use small generated arrays, miniature binary volumes, temporary folders and miniature RAW tube surfaces. Larger generated 64³ and 96³ voxel configurations also exercise production ROI, editing and frozen-dataset workflows. These checks need no XCAT download, GPU or existing study outputs.</p>
 <div class="callout"><strong>Three distinct kinds of evidence:</strong> CPU contracts protect reproducibility and data handling; TensorFlow smoke tests check that a small model really learns, saves and reloads; held-out scientific experiments measure model performance. Passing one is not evidence for the other two.</div>

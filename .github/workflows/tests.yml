@@ -1,4 +1,4 @@
-name: FakeCT regression and quality
+name: syncoCT regression and quality
 
 on:
   push:

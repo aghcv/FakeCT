@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preview, plan, prepare, or fit an explicitly staged FakeCT segmentation study."""
+"""Preview, plan, prepare, or fit an explicitly staged syncoCT segmentation study."""
 import argparse
 from collections import Counter
 from datetime import datetime, timezone

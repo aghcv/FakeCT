@@ -211,7 +211,7 @@ def render_slices(arrays, resolved, config, output):
     fig.suptitle(f"{config['study']['name']} | XCAT {config['input']['case_id']}, frame {config['input']['frame']} | {target_title}\n"
                  f"{roi_description}. Native crop, no resampling.\n"
                  f"Top: attenuation + ROI. Bottom: proposed tissue groups + ROI.\n"
-                 f"FakeCT policy {catalog['policy_version']} | DPI source atlas SHA256 {source_hash}", y=.98, fontsize=14)
+                 f"syncoCT policy {catalog['policy_version']} | DPI source atlas SHA256 {source_hash}", y=.98, fontsize=14)
     fig.legend(handles=legend, loc='lower center', bbox_to_anchor=(.5, .045), ncol=5, frameon=False, fontsize=9)
     fig.text(.5, .015, 'Edit roi.center_ijk and radius_mm to relocate or reshape the ROI; slice_ijk controls the displayed planes.\n'
              'Coordinates are native indices / relative mm; anatomical orientation remains unverified. Magenta labels require review.', ha='center', fontsize=10)

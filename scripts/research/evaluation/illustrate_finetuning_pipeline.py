@@ -232,7 +232,7 @@ def render(out):
     out.mkdir(parents=True, exist_ok=False)
     for extension in ('svg', 'pdf', 'png'):
         fig.savefig(out / f'{STEM}.{extension}', dpi=144, facecolor='white',
-                    metadata={'Creator': 'FakeCT poster pipeline schematic'} if extension == 'pdf' else None)
+                    metadata={'Creator': 'syncoCT poster pipeline schematic'} if extension == 'pdf' else None)
     fig.savefig(out / f'{STEM}-preview.png', dpi=72, facecolor='white')
     plt.close(fig)
 

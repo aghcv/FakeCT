@@ -15,7 +15,7 @@ generated; no aorta cohort or GPU training has been launched.
 
 The `fakect.study/1` INI extends the existing ROI/edit input with `[train]` and
 `[model]`. Short comments beside parameters refer to numbered notes at the bottom.
-Relative paths inside the INI are resolved from the integrated FakeCT checkout.
+Relative paths inside the INI are resolved from the integrated syncoCT checkout.
 The original input text is captured with outputs.
 
 To combine edits in several regions of one anatomy, use the separate

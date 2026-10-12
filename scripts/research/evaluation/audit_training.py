@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only FakeCT audit: headers/CSV/logs/Keras metadata and tiny morphology arrays.
+"""Read-only syncoCT audit: headers/CSV/logs/Keras metadata and tiny morphology arrays.
 
 No TensorFlow import, volume pixel reads, training, Slurm submission, or source edits.
 Only --out-json is written. Existing scientific Python dependencies are required.

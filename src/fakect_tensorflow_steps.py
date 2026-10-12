@@ -273,7 +273,7 @@ def make_locator_steps(model, overview_shape, learning_rate=.001, clipnorm=1., l
     The injected loss receives ``(target_boxes, model_output)`` and may accept
     tensor or dictionary model outputs. Predict returns the same output structure
     as the model, including optional auxiliary logits. The default loss supports
-    the original tensor-output FakeCT locator.
+    the original tensor-output syncoCT locator.
     """
     shape = _shape(overview_shape, 'overview_shape')
     learning_rate = _positive(learning_rate, 'learning_rate')
@@ -344,7 +344,7 @@ def make_classifier_steps(model, overview_shape, detail_shape, num_proposals=2,
 
     Return fixed-dictionary classifier train/inference functions.
 
-    Input keys match FakeCT's classifier: ``overview``, ``proposal_boxes`` and
+    Input keys match syncoCT's classifier: ``overview``, ``proposal_boxes`` and
     ``detail_0`` ... ``detail_N``. Target keys are ``coa_logit`` (binary float
     supervision) and ``local_volume_loss``. Loss is mean sigmoid cross entropy
     plus weighted Huber(delta=.1), matching the original Keras configuration.

@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FakeCT · Developer conventions</title>
+<title>syncoCT · Developer conventions</title>
 <style>
 :root{--ink:#18283b;--muted:#536478;--accent:#08698b;--edge:#d6e3eb}*{box-sizing:border-box}body{margin:0;background:#f4f7fa;color:var(--ink);font:17px/1.65 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:36px 24px 64px}a{color:var(--accent)}header{border-bottom:3px solid var(--accent);padding-bottom:20px;margin-bottom:24px}h1{font-size:36px;line-height:1.2}h2{font-size:25px;margin-top:36px}h3{font-size:20px}p{margin:12px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#102337;color:#ecf7ff;padding:18px;border-radius:8px;font:14px/1.6 ui-monospace,monospace}code{font-family:ui-monospace,monospace}table{border-collapse:collapse;width:100%;background:white}th,td{padding:12px;text-align:left;border:1px solid var(--edge);vertical-align:top}th{background:#e8f3f8}.callout{padding:16px 20px;border-left:5px solid #087996;background:white}.muted{color:var(--muted)}nav{display:flex;gap:18px;flex-wrap:wrap}li{margin:8px 0}@media(max-width:650px){main{padding:24px 16px}h1{font-size:29px}table{font-size:14px}}
 </style>
 </head>
 <body><main>
-<header><p class="muted">FakeCT · Algorithm development</p><h1>Developer conventions and extension contracts</h1><nav><a href="index.html">Workflow guide</a><a href="api.html">API reference</a><a href="testing.html">Testing guide</a><a href="../reference/index.html">Method references</a></nav></header>
-<p>FakeCT separates source-volume access, physical geometry, morphology, immutable dataset preparation and model experiments. Extend one boundary at a time, document the data contract and verify the expected behavior with a small reproducible example.</p>
+<header><p class="muted">syncoCT · Algorithm development</p><h1>Developer conventions and extension contracts</h1><nav><a href="index.html">Workflow guide</a><a href="api.html">API reference</a><a href="testing.html">Testing guide</a><a href="../reference/index.html">Method references</a></nav></header>
+<p>syncoCT separates source-volume access, physical geometry, morphology, immutable dataset preparation and model experiments. Extend one boundary at a time, document the data contract and verify the expected behavior with a small reproducible example.</p>
 
 <h2 id="layout">1. Choose the implementation boundary</h2>
 <table><thead><tr><th>Location</th><th>Responsibility</th></tr></thead><tbody>
@@ -27,7 +27,7 @@
 <h2 id="functions">2. Make function contracts visible</h2>
 <p>Start every maintained function with a docstring that states its purpose, inputs and outputs. Use NumPy-style <code>Parameters</code> and <code>Returns</code> sections; add <code>Raises</code> for relevant failure conditions and <code>Notes</code> for units, array order, mutation, filesystem effects or implementation limits. Document public classes and their responsibilities. Private helpers still need a clear purpose and contract.</p>
 <p>State exact array shapes, dtypes, coordinate order and units when they affect correctness. Describe optional values and defaults. A function returning <code>None</code> should say what it writes or mutates. Avoid comments that merely restate the next line; explain assumptions, algorithmic choices and invariants.</p>
-<pre><code># Docstring template for a numerical helper; not an additional FakeCT API.
+<pre><code># Docstring template for a numerical helper; not an additional syncoCT API.
 def mask_volume_mm3(mask, spacing_ijk_mm):
     """Measure physical foreground volume from a binary native-grid mask.
 

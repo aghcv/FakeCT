@@ -1,4 +1,4 @@
-"""Bounded, anti-aliased anatomical overviews of compact FakeCT siblings.
+"""Bounded, anti-aliased anatomical overviews of compact syncoCT siblings.
 
 ``build_overview`` pools native float32 XCAT attenuation into integer box cells.
 Cells share the native grid's lower faces. Partial edge cells are averaged over

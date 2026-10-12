@@ -83,12 +83,12 @@ def render_reference(root: Path, scope: dict) -> str:
     return '''<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FakeCT · API reference</title>
+<title>syncoCT · API reference</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f7fa;color:#18283b;font:17px/1.6 system-ui,sans-serif}
 main{max-width:1200px;margin:auto;padding:32px 24px 60px}h1{font-size:36px;line-height:1.2}h2{font-size:24px;overflow-wrap:anywhere;margin-top:36px}h3{font-size:17px;overflow-wrap:anywhere}a{color:#08698b}nav{display:flex;flex-wrap:wrap;gap:18px}.modules{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px}.contract{background:white;border:1px solid #d6e3eb;border-left:4px solid #08698b;border-radius:6px;margin:18px 0;padding:14px 20px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.6 ui-monospace,monospace;margin:0}.source{font-size:13px;color:#536478}input{width:100%;max-width:700px;padding:12px;font:inherit;border:1px solid #b8c9d6;border-radius:6px}.module-purpose{white-space:pre-wrap;color:#536478}code{font-family:ui-monospace,monospace}.count{color:#536478}section{scroll-margin-top:16px}[hidden]{display:none!important}
 </style></head><body><main>
-<header><h1>FakeCT API reference</h1><nav><a href="index.html">Workflow guide</a><a href="contributing.html">Developer conventions</a><a href="testing.html">Testing guide</a><a href="../reference/index.html">Method references</a></nav></header>
+<header><h1>syncoCT API reference</h1><nav><a href="index.html">Workflow guide</a><a href="contributing.html">Developer conventions</a><a href="testing.html">Testing guide</a><a href="../reference/index.html">Method references</a></nav></header>
 <p>Purpose, inputs, outputs and side effects for the maintained workflow API.
 Generated from source syntax; no runtime modules or optional learning backends are imported.
 Experimental research modules and local callbacks are outside this declared API scope.</p>

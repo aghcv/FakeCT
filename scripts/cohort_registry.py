@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Register, list, or verify immutable prepared FakeCT cohort revisions."""
+"""Register, list, or verify immutable prepared syncoCT cohort revisions."""
 import argparse
 import json
 from pathlib import Path

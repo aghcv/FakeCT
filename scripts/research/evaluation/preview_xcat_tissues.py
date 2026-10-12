@@ -167,7 +167,7 @@ def draw(case, catalog, channels, crosshair, context_step, inplane_step, output)
                            'unknown_voxels': int(np.count_nonzero(tissue == unknown_code))})
     atlas_hash = catalog.get('sources', {}).get('atlas', {}).get('sha256', 'unrecorded')
     hierarchy_hash = catalog.get('sources', {}).get('hierarchy', {}).get('sha256', 'unrecorded')
-    fig.suptitle(f"XCAT {case['case_id']}, frame {channels['frame']} | {case['organ_file']} | FakeCT tissue policy {catalog['policy_version']}\n"
+    fig.suptitle(f"XCAT {case['case_id']}, frame {channels['frame']} | {case['organ_file']} | syncoCT tissue policy {catalog['policy_version']}\n"
                  f"DPI source atlas SHA256 {atlas_hash[:12]} | hierarchy SHA256 {hierarchy_hash[:12]} (independent of tissue-policy version)\n"
                  f"Crosshair: i={i}, j={j}, k={k}. Axial: full resolution. Whole-body context: k stride {context_step}, in-plane stride {inplane_step}.\n"
                  'Native array [k,j,i]; anatomical orientation and physical origin unverified. Coarse groups preserve original labels.',

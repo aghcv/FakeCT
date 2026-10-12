@@ -485,7 +485,7 @@ def export_case_native_inputs(row,grid,selection,evidence,output_directory,*,
             for key,path in paths.items():
                 writer,temp,final=_open_writer(stack,path,shape,affine,
                     np.float32 if key=='image' else np.uint8,
-                    'FakeCT fixed native atlas thoracic ROI; common matched-arm '+key)
+                    'syncoCT fixed native atlas thoracic ROI; common matched-arm '+key)
                 writers[key]=writer;staged.append((temp,final))
             volume=stack.enter_context(ContextVolume(row,verify_hashes=verify_hashes))
             for z in range(0,shape[0],count_slices):

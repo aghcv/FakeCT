@@ -366,12 +366,12 @@ def export_thorax_nifti(row, selection_manifest, evidence, output_path, *,
     try:
         with ExitStack() as stack:
             image_writer, temporary, final = _open_writer(stack, output_path, shape, affine,
-                np.float32, 'FakeCT calibrated HU; atlas thorax + context; synthetic benchmark')
+                np.float32, 'syncoCT calibrated HU; atlas thorax + context; synthetic benchmark')
             staged.append((temporary, final))
             masks = {}
             for key, path in mask_output_paths.items():
                 writer, temporary, final = _open_writer(stack, path, shape, affine, np.uint8,
-                    'FakeCT native thoracic aorta ' + key + '; atlas core excludes branches')
+                    'syncoCT native thoracic aorta ' + key + '; atlas core excludes branches')
                 staged.append((temporary, final)); masks[key] = writer
             volume = stack.enter_context(ContextVolume(row, verify_hashes=verify_hashes))
             for offset in range(0, shape[0], slab_slices):
@@ -422,7 +422,7 @@ def export_mask_nifti(mask_kji, output_path, *, origin_ijk, evidence):
     try:
         with ExitStack() as stack:
             writer, temporary, final = _open_writer(stack, output_path, mask.shape, affine,
-                np.uint8, 'FakeCT native thoracic aorta core truth')
+                np.uint8, 'syncoCT native thoracic aorta core truth')
             staged = (temporary, final)
             writer.write(np.asarray(mask, np.uint8).tobytes(order='C'))
         os.link(temporary, final); temporary.unlink()

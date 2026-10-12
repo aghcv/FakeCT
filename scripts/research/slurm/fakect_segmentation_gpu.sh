@@ -9,7 +9,7 @@
 #SBATCH --cpus-per-task=8
 
 # Submit only after reviewing the study ROI, parameter ranges, and prepared data.
-# From the integrated FakeCT checkout, create logs BEFORE submitting:
+# From the integrated syncoCT checkout, create logs BEFORE submitting:
 #   mkdir -p logs
 #   sbatch scripts/research/slurm/fakect_segmentation_gpu.sh /absolute/path/to/study.ini
 # The prepared dataset and a new train.model_directory must be set in that INI.
@@ -20,7 +20,7 @@ fakect_study_ini=${1:?Pass the reviewed study INI path as the first argument}
 fakect_checkout=${FAKECT_CHECKOUT:-${SLURM_SUBMIT_DIR:-$PWD}}
 cd -- "$fakect_checkout"
 if [[ ! -f scripts/train_study.py ]]; then
-    echo 'Submit from the integrated FakeCT checkout, or set FAKECT_CHECKOUT.' >&2
+    echo 'Submit from the integrated syncoCT checkout, or set FAKECT_CHECKOUT.' >&2
     exit 2
 fi
 module load container_env tensorflow-gpu/2.17

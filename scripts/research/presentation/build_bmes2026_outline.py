@@ -45,7 +45,7 @@ def layout():
     rectangle('title-banner', 0, 0, WIDTH, 3.8, NAVY)
     text('meeting-label', .95, .3, 45.5, .4, 'BMES 2026  |  EDITABLE POSTER OUTLINE', 20, 'B9D4E2', True)
     text('poster-title', .95, .9, 46, 2.05,
-         'FakeCT: Controlled Digital Sibling Populations\nfor Coarctation-Focused AI Evaluation', 66, 'FFFFFF', True)
+         'syncoCT: Controlled Digital Sibling Populations\nfor Coarctation-Focused AI Evaluation', 66, 'FFFFFF', True)
     text('author-placeholder', .95, 3.10, 46, .5,
          '[Authors]  |  [Affiliations]  |  [Contact]', 28, 'FFFFFF')
 
@@ -64,7 +64,7 @@ def layout():
          'Robust AI needs controllable, consistently labeled data with deliberate coverage of uncommon anatomical configurations. Clinical cohort assembly can be limited by labeling effort and uneven disease coverage.', 29)
     text('hypothesis-heading', x, 8.78, cw, .55, 'RESEARCH HYPOTHESIS', 31, ACCENTS[0], True)
     text('hypothesis-copy', x, 9.48, cw, 2.08,
-         'Anatomically diverse digital siblings may improve robustness on unseen anatomy and, ultimately, clinical CT. FakeCT makes this hypothesis testable through reproducible anatomical editing.', 28)
+         'Anatomically diverse digital siblings may improve robustness on unseen anatomy and, ultimately, clinical CT. syncoCT makes this hypothesis testable through reproducible anatomical editing.', 28)
 
     x = cols[1]
     text('population-heading', x, 5.6, cw, .55, 'A CONTROLLED CoA-LIKE CASE STUDY', 31, ACCENTS[1], True)
@@ -164,7 +164,7 @@ def build(output):
     presentation = Presentation()
     presentation.slide_width, presentation.slide_height = Inches(WIDTH), Inches(HEIGHT)
     slide = presentation.slides.add_slide(presentation.slide_layouts[6])
-    presentation.core_properties.title = 'FakeCT BMES 2026 poster outline'
+    presentation.core_properties.title = 'syncoCT BMES 2026 poster outline'
     presentation.core_properties.subject = 'Three-column 48 x 36 inch editable research poster'
     for i in items:
         if i['kind'] == 'rect':

@@ -6,7 +6,7 @@
 #SBATCH --time=01:00:00
 #SBATCH --job-name=coa-two-data
 set -euo pipefail
-cd "${SLURM_SUBMIT_DIR:?Submit from the FakeCT integration worktree}"
+cd "${SLURM_SUBMIT_DIR:?Submit from the syncoCT integration worktree}"
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
 export PYTHONUNBUFFERED=1
 export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"

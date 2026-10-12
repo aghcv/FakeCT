@@ -1,4 +1,4 @@
-# Developing FakeCT
+# Developing syncoCT
 
 Use the [developer conventions](docs/developer/contributing.html) for extension
 boundaries, function contracts, array order, units and immutable dataset handling.

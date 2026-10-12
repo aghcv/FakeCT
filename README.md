@@ -1,9 +1,12 @@
-# FakeCT — synthetic anatomy and AI development
+# syncoCT
 
-Review an ROI, apply controlled dilation/erosion, freeze paired images and labels,
-then use them in a separate model experiment. Reusable geometry, morphology,
-dataset and learning modules support algorithm development. A public mathematical
-phantom demo and the XCAT CoA case study illustrate the same workflow.
+**A synthetic CT cohort for hybrid physics-based AI development.**
+
+Build virtual CT populations with paired images and labels, then use those cohorts
+in separate AI model experiments. Review an ROI, apply controlled dilation/erosion
+and freeze reproducible pairs. Reusable geometry, morphology, dataset and learning
+modules support this workflow. A public mathematical phantom demo and the XCAT CoA
+case study illustrate the same approach.
 
 Open [the offline workflow guide](docs/developer/index.html) in a browser for the
 stepwise workflow, INI reference, four-panel ROI interface and development
@@ -15,7 +18,7 @@ contracts and extension boundaries.
 ## Repository structure
 
 ```text
-FakeCT/
+syncoCT/
   configs/templates/         Editable configuration templates
   configs/development/       Maintained API and quality-check scope
   configs/examples/          Small ROI/edit input examples
@@ -66,8 +69,8 @@ the repository root. Python 3.10 or 3.11 is a practical starting environment.
 Clone the repository:
 
 ```bash
-git clone https://github.com/aghcv/FakeCT.git
-cd FakeCT
+git clone https://github.com/aghcv/FakeCT.git syncoCT
+cd syncoCT
 ```
 
 ```bash
@@ -161,6 +164,6 @@ phantom or downloaded dataset is required.
 - [Research studies and preserved provenance](archive/research/README.html)
 
 Historical research documents retain earlier milestones and local source paths.
-Use the workflow guide for the current entry point. FakeCT code is
+Use the workflow guide for the current entry point. syncoCT code is
 [MIT licensed](LICENSE); third-party phantom assets and pretrained weights retain
 their respective terms.

@@ -657,7 +657,7 @@ def summarize_evaluation(config, input_bytes):
     # Exact, inspectable JSON is also embedded in the portable report.
     rows = ''.join('<tr><th>'+html.escape(str(name))+'</th><td>'+html.escape(str(value))+'</td></tr>'
                    for name, value in summary['macro_average'].items())
-    page = '<!doctype html><html lang="en"><meta charset="utf-8"><title>FakeCT evaluation</title>'
+    page = '<!doctype html><html lang="en"><meta charset="utf-8"><title>syncoCT evaluation</title>'
     page += '<style>body{max-width:1000px;margin:40px auto;font:16px system-ui;color:#203047}td,th{padding:10px;text-align:left;border-bottom:1px solid #ddd}pre{white-space:pre-wrap}</style>'
     page += '<h1>Held-out family evaluation</h1><p>Binary aorta segmentation. Equal weight per family; training repeats are averaged within family.</p><table>'+rows+'</table>'
     page += '<h2>Held-out families</h2><table><tr><th>Family</th><th>Cases</th><th>Dice</th><th>IoU</th><th>Precision</th><th>Recall</th></tr>'
